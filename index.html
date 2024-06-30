@@ -221,7 +221,7 @@
         var geojsonLayer;
         var markers = L.markerClusterGroup({
             maxClusterRadius: 80,
-            disableClusteringAtZoom: 16
+            disableClusteringAtZoom: 17
         });
         var allData;
         var searchResultsLayer;
@@ -339,7 +339,7 @@
                 searchResultsLayer.eachLayer(function(layer) {
                     if (!found) {
                         var latLng = layer.getLatLng();
-                        map.setView(latLng, 18);
+                        map.setView(latLng, 17);
                         layer.openPopup();
                         found = true;
 
@@ -398,7 +398,7 @@
                 navigator.geolocation.getCurrentPosition(function(position) {
                     var lat = position.coords.latitude;
                     var lon = position.coords.longitude;
-                    map.setView([lat, lon], 13);
+                    map.setView([lat, lon], 16);
                     L.marker([lat, lon]).addTo(map).bindPopup("Você está aqui.").openPopup();
                 }, function() {
                     alert("Erro ao obter a localização.");
