@@ -209,7 +209,7 @@
 
         // Adicionando camadas de base do OpenStreetMap
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 16,
+            maxZoom: 18,
         }).addTo(map);
 
         var loader = document.getElementById('loader');
@@ -221,7 +221,7 @@
         var geojsonLayer;
         var markers = L.markerClusterGroup({
             maxClusterRadius: 80,
-            disableClusteringAtZoom: 17
+            disableClusteringAtZoom: 18
         });
         var allData;
         var searchResultsLayer;
