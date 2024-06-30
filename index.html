@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visualizador de Mapas.</title>
+    <title>Visualizador de Mapas</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -180,6 +180,7 @@
                 <button onclick="searchPoint()">Buscar</button>
             </div>
             <input type="file" id="fileInput" accept=".geojson,.kml,.kmz">
+            <button onclick="loadTrevoKML()">Carregar Trevo KML</button>
             <div class="loader" id="loader"></div>
             <div id="fileList"></div>
             <div class="result" id="result"></div>
@@ -254,139 +255,105 @@
                     allData = geojsonData;
                     addDataToMap(geojsonData);
                 } else {
-                    alert("Formato de arquivo não suportado. Por favor, selecione um arquivo GeoJSON, KML ou KMZ.");
-                    loader.style.display = 'none';
+                    alert("Formato de arquivo não suportado. Por favor, selecione um arquivo .geojson, .kml ou .kmz.");
                 }
+
+                loader.style.display = 'none';
             };
 
-            if (file.name.endsWith('.kmz')) {
-                reader.readAsArrayBuffer(file);
-            } else {
-                reader.readAsText(file);
-            }
+            reader.readAsText(file);
         });
 
+        function loadTrevoKML() {
+            loader.style.display = 'block';
+            fetch('se trevo.kml') // Assume que o arquivo está na mesma pasta do site
+                .then(response => response.text())
+                .then(data => {
+                    var geojson = toGeoJSON.kml(new DOMParser().parseFromString(data, 'text/xml'));
+                    allData = geojson;
+                    addDataToMap(geojson);
+                })
+                .catch(error => {
+                    alert('Erro ao carregar o arquivo se trevo.kml.');
+                    console.error('Erro:', error);
+                    loader.style.display = 'none';
+                });
+        }
+
         function addDataToMap(data) {
-            markers.clearLayers();
             if (geojsonLayer) {
                 map.removeLayer(geojsonLayer);
             }
-
-            geojsonLayer = L.geoJSON(data, {
-                style: function(feature) {
-                    var color = getRandomColor();
-                    return {
-                        color: color
-                    };
-                },
-                onEachFeature: function(feature, layer) {
+            markers.clearLayers();
+            geojsonLayer = L.geoJson(data, {
+                onEachFeature: function (feature, layer) {
                     if (feature.properties && feature.properties.name) {
-                        var name = feature.properties.name;
-                        layer.bindTooltip(name, { permanent: true, direction: 'top' }).openTooltip();
-                        var popupContent = '<p>';
-                        for (var prop in feature.properties) {
-                            popupContent += prop + ': ' + feature.properties[prop] + '<br>';
-                        }
-                        popupContent += '</p>';
-                        layer.bindPopup(popupContent);
+                        layer.bindPopup(feature.properties.name);
                     }
+                    markers.addLayer(layer);
                 }
             });
-
-            // Adicionar marcadores apenas a partir do zoom 16
-            map.on('zoomend', function() {
-                if (map.getZoom() >= 16) {
-                    markers.addLayer(geojsonLayer);
-                } else {
-                    markers.removeLayer(geojsonLayer);
-                }
-            });
-
             map.addLayer(markers);
-            loader.style.display = 'none';
-            fileInput.value = ''; // Limpar a seleção do arquivo
+            map.fitBounds(markers.getBounds());
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('active');
         }
 
         function searchPoint() {
-            var searchTerm = searchInput.value.toLowerCase();
-            var found = false;
+            var searchText = searchInput.value.toLowerCase();
+            if (allData) {
+                var features = allData.features.filter(function(feature) {
+                    return feature.properties.name && feature.properties.name.toLowerCase().includes(searchText);
+                });
 
-            if (geojsonLayer) {
                 if (searchResultsLayer) {
                     map.removeLayer(searchResultsLayer);
                 }
 
-                searchResultsLayer = L.geoJSON(allData, {
-                    filter: function(feature) {
-                        return feature.properties && feature.properties.name && feature.properties.name.toLowerCase().includes(searchTerm);
-                    },
-                    onEachFeature: function(feature, layer) {
-                        if (feature.properties && feature.properties.name) {
-                            var name = feature.properties.name;
-                            layer.bindTooltip(name, { permanent: true, direction: 'top' }).openTooltip();
-                            var popupContent = '<p>';
-                            for (var prop in feature.properties) {
-                                popupContent += prop + ': ' + feature.properties[prop] + '<br>';
-                            }
-                            popupContent += '</p>';
-                            layer.bindPopup(popupContent);
-                        }
-                    }
-                });
-
+                searchResultsLayer = L.geoJson({ type: 'FeatureCollection', features: features });
                 map.addLayer(searchResultsLayer);
 
-                searchResultsLayer.eachLayer(function(layer) {
-                    if (!found) {
-                        var latLng = layer.getLatLng();
-                        map.setView(latLng, 17);
-                        layer.openPopup();
-                        found = true;
-
-                        var googleMapsLink = 'https://www.google.com/maps?q=' + latLng.lat + ',' + latLng.lng;
-                        result.innerHTML = `
-                            <p>${layer.feature.properties.name}</p>
-                            <p>${latLng.lat}, ${latLng.lng}</p>
-                            <a href="${googleMapsLink}" target="_blank">Ver no Google Maps</a>
-                        `;
-                    }
-                });
-
-                if (!found) {
-                    result.innerHTML = "<p>Nenhum ponto correspondente encontrado.</p>";
+                if (features.length > 0) {
+                    map.fitBounds(searchResultsLayer.getBounds());
+                    result.innerHTML = 'Resultado da busca:';
+                    features.forEach(function(feature) {
+                        var p = document.createElement('p');
+                        p.innerHTML = feature.properties.name;
+                        result.appendChild(p);
+                    });
+                } else {
+                    result.innerHTML = 'Nenhum resultado encontrado.';
                 }
             } else {
-                result.innerHTML = "<p>Nenhum dado carregado para buscar.</p>";
+                result.innerHTML = 'Nenhum dado carregado.';
             }
         }
 
         function toggleMarkers() {
             if (markersVisible) {
                 map.removeLayer(markers);
-                toggleMarkersBtn.textContent = '👁';
+                toggleMarkersBtn.innerHTML = '&#128065;';
             } else {
                 map.addLayer(markers);
-                toggleMarkersBtn.textContent = '👁️‍🗨️';
+                toggleMarkersBtn.innerHTML = '&#128064;';
             }
             markersVisible = !markersVisible;
         }
 
         function toggleNames() {
-            if (namesVisible) {
-                markers.eachLayer(function(layer) {
-                    layer.unbindTooltip();
-                });
-                toggleNamesBtn.textContent = '🔍';
-            } else {
-                markers.eachLayer(function(layer) {
-                    if (layer.feature && layer.feature.properties && layer.feature.properties.name) {
-                        var name = layer.feature.properties.name;
-                        layer.bindTooltip(name, { permanent: true, direction: 'top' }).openTooltip();
-                    }
-                });
-                toggleNamesBtn.textContent = '🧾';
-            }
             namesVisible = !namesVisible;
+            map.eachLayer(function (layer) {
+                if (layer.getPopup) {
+                    if (namesVisible) {
+                        layer.bindPopup(layer.feature.properties.name);
+                    } else {
+                        layer.unbindPopup();
+                    }
+                }
+            });
+            toggleNamesBtn.innerHTML = namesVisible ? '&#128100;' : '&#128101;';
         }
 
         function resetView() {
@@ -398,28 +365,11 @@
                 navigator.geolocation.getCurrentPosition(function(position) {
                     var lat = position.coords.latitude;
                     var lon = position.coords.longitude;
-                    map.setView([lat, lon], 16);
-                    L.marker([lat, lon]).addTo(map).bindPopup("Você está aqui.").openPopup();
-                }, function() {
-                    alert("Erro ao obter a localização.");
+                    map.setView([lat, lon], 13);
                 });
             } else {
-                alert("Geolocalização não é suportada pelo seu navegador.");
+                alert('Geolocalização não é suportada pelo seu navegador.');
             }
-        }
-
-        function toggleSidebar() {
-            var sidebar = document.getElementById('sidebar');
-            sidebar.classList.toggle('active');
-        }
-
-        function getRandomColor() {
-            var letters = '0123456789ABCDEF';
-            var color = '#';
-            for (var i = 0; i < 6; i++) {
-                color += letters[Math.floor(Math.random() * 14)];
-            }
-            return color;
         }
     </script>
 </body>
