@@ -167,6 +167,12 @@
             font-size: 12px;
             color: gray;
         }
+
+        /* Reduzindo o tamanho dos tooltips */
+        .leaflet-tooltip {
+            font-size: 0.5em;
+            padding: 2px 4px;
+        }
     </style>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.0/dist/MarkerCluster.Default.css">
@@ -180,6 +186,7 @@
                 <button onclick="searchPoint()">Buscar</button>
             </div>
             <input type="file" id="fileInput" accept=".geojson,.kml,.kmz">
+            <button onclick="loadSeTrevo()">Carregar se_trevo.kml</button>
             <div class="loader" id="loader"></div>
             <div id="fileList"></div>
             <div class="result" id="result"></div>
@@ -207,6 +214,7 @@
     <script>
         var map = L.map('map', { zoomControl: false }).setView([-22.907104, -47.063240], 13); // Coordenadas de Campinas
 
+        // Adicionando camadas de base do OpenStreetMap
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
         }).addTo(map);
@@ -220,22 +228,12 @@
         var geojsonLayer;
         var markers = L.markerClusterGroup({
             maxClusterRadius: 80,
-            disableClusteringAtZoom: 16
+            disableClusteringAtZoom: 19
         });
         var allData;
         var searchResultsLayer;
         var markersVisible = true;
         var namesVisible = true;
-
-        // Função para gerar uma cor aleatória
-        function getRandomColor() {
-            var letters = '0123456789ABCDEF';
-            var color = '#';
-            for (var i = 0; i < 6; i++) {
-                color += letters[Math.floor(Math.random() * 16)];
-            }
-            return color;
-        }
 
         fileInput.addEventListener('change', function(e) {
             loader.style.display = 'block';
@@ -243,46 +241,60 @@
             var file = e.target.files[0];
             var reader = new FileReader();
 
-            if (file.name.endsWith('.kml')) {
-                reader.onload = function(event) {
-                    var kmlData = event.target.result;
-                    var geojson = toGeoJSON.kml(new DOMParser().parseFromString(kmlData, 'text/xml'));
+            reader.onload = function(event) {
+                var data = event.target.result;
+
+                if (file.name.endsWith('.kml')) {
+                    var geojson = toGeoJSON.kml(new DOMParser().parseFromString(data, 'text/xml'));
                     allData = geojson;
                     addDataToMap(geojson);
-                };
-                reader.readAsText(file);
-            } else if (file.name.endsWith('.kmz')) {
-                reader.onload = function(event) {
-                    JSZip.loadAsync(event.target.result).then(function(zip) {
-                        Object.keys(zip.files).forEach(function(filename) {
-                            zip.files[filename].async('string').then(function(fileData) {
-                                var geojson = toGeoJSON.kml(new DOMParser().parseFromString(fileData, 'text/xml'));
-                                allData = geojson;
-                                addDataToMap(geojson);
-                            });
+                } else if (file.name.endsWith('.kmz')) {
+                    JSZip.loadAsync(data).then(function(zip) {
+                        zip.file(Object.keys(zip.files)[0]).async('string').then(function(fileData) {
+                            var geojson = toGeoJSON.kml(new DOMParser().parseFromString(fileData, 'text/xml'));
+                            allData = geojson;
+                            addDataToMap(geojson);
                         });
                     });
-                };
-                reader.readAsArrayBuffer(file);
-            } else if (file.name.endsWith('.geojson')) {
-                reader.onload = function(event) {
-                    var geojsonData = JSON.parse(event.target.result);
+                } else if (file.name.endsWith('.geojson')) {
+                    var geojsonData = JSON.parse(data);
                     allData = geojsonData;
                     addDataToMap(geojsonData);
-                };
-                reader.readAsText(file);
+                } else {
+                    alert("Formato de arquivo não suportado. Por favor, selecione um arquivo GeoJSON, KML ou KMZ.");
+                    loader.style.display = 'none';
+                }
+            };
+
+            if (file.name.endsWith('.kmz')) {
+                reader.readAsArrayBuffer(file);
             } else {
-                alert("Formato de arquivo não suportado. Por favor, selecione um arquivo GeoJSON, KML ou KMZ.");
-                loader.style.display = 'none';
+                reader.readAsText(file);
             }
         });
+
+        function loadSeTrevo() {
+            loader.style.display = 'block';
+
+            fetch('se_trevo.kml')
+                .then(response => response.text())
+                .then(data => {
+                    var geojson = toGeoJSON.kml(new DOMParser().parseFromString(data, 'text/xml'));
+                    allData = geojson;
+                    addDataToMap(geojson);
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar o arquivo se_trevo.kml:', error);
+                    alert('Erro ao carregar o arquivo se_trevo.kml.');
+                    loader.style.display = 'none';
+                });
+        }
 
         function addDataToMap(data) {
             markers.clearLayers();
             if (geojsonLayer) {
                 map.removeLayer(geojsonLayer);
             }
-            var featureIndex = 0; // Índice para rastrear conjuntos de recursos
 
             geojsonLayer = L.geoJSON(data, {
                 style: function(feature) {
@@ -291,8 +303,17 @@
                         color: color
                     };
                 },
+                pointToLayer: function (feature, latlng) {
+                    return L.marker(latlng, {
+                        icon: L.icon({
+                            iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+                            iconSize: [12, 20],  // Metade do tamanho padrão (24, 40)
+                            iconAnchor: [6, 20],  // Metade do tamanho padrão (12, 40)
+                            popupAnchor: [0, -20]  // Metade do tamanho padrão (0, -40)
+                        })
+                    });
+                },
                 onEachFeature: function(feature, layer) {
-                    var color = getRandomColor();
                     if (feature.properties && feature.properties.name) {
                         var name = feature.properties.name;
                         layer.bindTooltip(name, { permanent: true, direction: 'top' }).openTooltip();
@@ -308,7 +329,7 @@
             markers.addLayer(geojsonLayer);
             map.addLayer(markers);
             loader.style.display = 'none';
-            fileList.innerHTML = '';
+            fileInput.value = ''; // Limpar a seleção do arquivo
         }
 
         function searchPoint() {
@@ -358,8 +379,6 @@
 
                 if (!found) {
                     result.innerHTML = "<p>Nenhum ponto correspondente encontrado.</p>";
-                } else {
-                    toggleAllBtn.style.display = 'block';
                 }
             } else {
                 result.innerHTML = "<p>Nenhum dado carregado para buscar.</p>";
@@ -418,6 +437,16 @@
             var sidebar = document.getElementById('sidebar');
             sidebar.classList.toggle('active');
         }
+
+        function getRandomColor() {
+            var letters = '0123456789ABCDEF';
+            var color = '#';
+            for (var i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
     </script>
 </body>
-</html>
+    </html>
+    
