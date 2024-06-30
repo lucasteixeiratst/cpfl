@@ -228,7 +228,7 @@
         var geojsonLayer;
         var markers = L.markerClusterGroup({
             maxClusterRadius: 80,
-            disableClusteringAtZoom: 17
+            disableClusteringAtZoom: 19
         });
         var allData;
         var searchResultsLayer;
@@ -261,24 +261,31 @@
                     allData = geojsonData;
                     addDataToMap(geojsonData);
                 } else {
-                    alert("Formato de arquivo não suportado. Por favor, selecione um arquivo GeoJSON, KML ou KMZ.");
+                    alert('Formato de arquivo não suportado. Por favor, carregue um arquivo KML, KMZ ou GeoJSON.');
                     loader.style.display = 'none';
                 }
             };
 
-            if (file.name.endsWith('.kmz')) {
-                reader.readAsArrayBuffer(file);
-            } else {
-                reader.readAsText(file);
-            }
+            reader.onerror = function() {
+                alert('Erro ao ler o arquivo.');
+                loader.style.display = 'none';
+            };
+
+            reader.readAsText(file);
         });
 
         function loadSeTrevo() {
             loader.style.display = 'block';
 
-            fetch('se trevo.kml')
-                .then(response => response.text())
+            fetch('https://lucasteixeiratst.github.io/cpfl/se%20trevo.kml')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok ' + response.statusText);
+                    }
+                    return response.text();
+                })
                 .then(data => {
+                    console.log("Arquivo KML carregado com sucesso.");
                     var geojson = toGeoJSON.kml(new DOMParser().parseFromString(data, 'text/xml'));
                     allData = geojson;
                     addDataToMap(geojson);
@@ -291,145 +298,58 @@
         }
 
         function addDataToMap(data) {
-            markers.clearLayers();
             if (geojsonLayer) {
-                map.removeLayer(geojsonLayer);
+                geojsonLayer.removeFrom(map);
+            }
+            if (markersVisible) {
+                markers.clearLayers();
             }
 
             geojsonLayer = L.geoJSON(data, {
-                style: function(feature) {
-                    var color = getRandomColor();
-                    return {
-                        color: color
-                    };
-                },
-                pointToLayer: function (feature, latlng) {
-                    return L.marker(latlng, {
-                        icon: L.icon({
-                            iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-                            iconSize: [12, 20],  // Metade do tamanho padrão (24, 40)
-                            iconAnchor: [6, 20],  // Metade do tamanho padrão (12, 40)
-                            popupAnchor: [0, -20]  // Metade do tamanho padrão (0, -40)
-                        })
-                    });
-                },
                 onEachFeature: function(feature, layer) {
                     if (feature.properties && feature.properties.name) {
-                        var name = feature.properties.name;
-                        layer.bindTooltip(name, { permanent: true, direction: 'top' }).openTooltip();
-                        var popupContent = '<p>';
-                        for (var prop in feature.properties) {
-                            popupContent += prop + ': ' + feature.properties[prop] + '<br>';
-                        }
-                        popupContent += '</p>';
-                        layer.bindPopup(popupContent);
+                        layer.bindTooltip(feature.properties.name, { permanent: namesVisible });
                     }
                 }
             });
+
             markers.addLayer(geojsonLayer);
             map.addLayer(markers);
+
+            map.fitBounds(geojsonLayer.getBounds());
             loader.style.display = 'none';
-            fileInput.value = ''; // Limpar a seleção do arquivo
         }
 
         function searchPoint() {
-            var searchTerm = searchInput.value.toLowerCase();
-            var found = false;
+            var searchTerm = searchInput.value.trim().toLowerCase();
+            if (!searchTerm) {
+                alert('Por favor, insira um termo de busca válido.');
+                return;
+            }
 
-            if (geojsonLayer) {
-                if (searchResultsLayer) {
-                    map.removeLayer(searchResultsLayer);
-                }
+            if (searchResultsLayer) {
+                searchResultsLayer.removeFrom(map);
+            }
 
-                searchResultsLayer = L.geoJSON(allData, {
-                    filter: function(feature) {
-                        return feature.properties && feature.properties.name && feature.properties.name.toLowerCase().includes(searchTerm);
-                    },
+            var results = allData.features.filter(function(feature) {
+                return feature.properties && feature.properties.name && feature.properties.name.toLowerCase().includes(searchTerm);
+            });
+
+            if (results.length === 0) {
+                result.innerHTML = '<p>Nenhum resultado encontrado para: ' + searchTerm + '</p>';
+            } else {
+                result.innerHTML = '<p>Resultados para: ' + searchTerm + '</p>';
+                var searchResultGeojson = {
+                    type: 'FeatureCollection',
+                    features: results
+                };
+                searchResultsLayer = L.geoJSON(searchResultGeojson, {
                     onEachFeature: function(feature, layer) {
-                        if (feature.properties && feature.properties.name) {
-                            var name = feature.properties.name;
-                            layer.bindTooltip(name, { permanent: true, direction: 'top' }).openTooltip();
-                            var popupContent = '<p>';
-                            for (var prop in feature.properties) {
-                                popupContent += prop + ': ' + feature.properties[prop] + '<br>';
-                            }
-                            popupContent += '</p>';
-                            layer.bindPopup(popupContent);
-                        }
+                        layer.bindPopup('<b>' + feature.properties.name + '</b>');
                     }
-                });
+                }).addTo(map);
 
-                map.addLayer(searchResultsLayer);
-
-                searchResultsLayer.eachLayer(function(layer) {
-                    if (!found) {
-                        var latLng = layer.getLatLng();
-                        map.setView(latLng, 18);
-                        layer.openPopup();
-                        found = true;
-
-                        var googleMapsLink = 'https://www.google.com/maps?q=' + latLng.lat + ',' + latLng.lng;
-                        result.innerHTML = `
-                            <p>${layer.feature.properties.name}</p>
-                            <p>${latLng.lat}, ${latLng.lng}</p>
-                            <a href="${googleMapsLink}" target="_blank">Ver no Google Maps</a>
-                        `;
-                    }
-                });
-
-                if (!found) {
-                    result.innerHTML = "<p>Nenhum ponto correspondente encontrado.</p>";
-                }
-            } else {
-                result.innerHTML = "<p>Nenhum dado carregado para buscar.</p>";
-            }
-        }
-
-        function toggleMarkers() {
-            if (markersVisible) {
-                map.removeLayer(markers);
-                toggleMarkersBtn.textContent = '👁';
-            } else {
-                map.addLayer(markers);
-                toggleMarkersBtn.textContent = '👁️‍🗨️';
-            }
-            markersVisible = !markersVisible;
-        }
-
-        function toggleNames() {
-            if (namesVisible) {
-                markers.eachLayer(function(layer) {
-                    layer.unbindTooltip();
-                });
-                toggleNamesBtn.textContent = '🔍';
-            } else {
-                markers.eachLayer(function(layer) {
-                    if (layer.feature && layer.feature.properties && layer.feature.properties.name) {
-                        var name = layer.feature.properties.name;
-                        layer.bindTooltip(name, { permanent: true, direction: 'top' }).openTooltip();
-                    }
-                });
-                toggleNamesBtn.textContent = '🧾';
-            }
-            namesVisible = !namesVisible;
-        }
-
-        function resetView() {
-            map.setView([-22.907104, -47.063240], 13);
-        }
-
-        function goToCurrentLocation() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(function(position) {
-                    var lat = position.coords.latitude;
-                    var lon = position.coords.longitude;
-                    map.setView([lat, lon], 13);
-                    L.marker([lat, lon]).addTo(map).bindPopup("Você está aqui.").openPopup();
-                }, function() {
-                    alert("Erro ao obter a localização.");
-                });
-            } else {
-                alert("Geolocalização não é suportada pelo seu navegador.");
+                map.fitBounds(searchResultsLayer.getBounds());
             }
         }
 
@@ -438,13 +358,31 @@
             sidebar.classList.toggle('active');
         }
 
-        function getRandomColor() {
-            var letters = '0123456789ABCDEF';
-            var color = '#';
-            for (var i = 0; i < 6; i++) {
-                color += letters[Math.floor(Math.random() * 16)];
+        function toggleMarkers() {
+            if (markersVisible) {
+                markers.clearLayers();
+                toggleMarkersBtn.innerText = '\u2714';
+            } else {
+                markers.addLayer(geojsonLayer);
+                toggleMarkersBtn.innerText = '\u2715';
             }
-            return color;
+            markersVisible = !markersVisible;
+        }
+
+        function toggleNames() {
+            namesVisible = !namesVisible;
+            geojsonLayer.eachLayer(function(layer) {
+                layer.getTooltip().setOpacity(namesVisible ? 1 : 0);
+            });
+            toggleNamesBtn.innerText = namesVisible ? '\u2714' : '\u2715';
+        }
+
+        function resetView() {
+            map.setView([-22.907104, -47.063240], 13); // Coordenadas de Campinas
+        }
+
+        function goToCurrentLocation() {
+            map.locate({ setView: true, maxZoom: 16 });
         }
     </script>
 </body>
