@@ -180,7 +180,6 @@
                 <button onclick="searchPoint()">Buscar</button>
             </div>
             <input type="file" id="fileInput" accept=".geojson,.kml,.kmz">
-            <button onclick="loadTrevoKML()">Carregar Trevo KML</button>
             <div class="loader" id="loader"></div>
             <div id="fileList"></div>
             <div class="result" id="result"></div>
@@ -208,9 +207,8 @@
     <script>
         var map = L.map('map', { zoomControl: false }).setView([-22.907104, -47.063240], 13); // Coordenadas de Campinas
 
-        // Adicionando camadas de base do OpenStreetMap
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 20,
+            maxZoom: 19,
         }).addTo(map);
 
         var loader = document.getElementById('loader');
@@ -222,12 +220,22 @@
         var geojsonLayer;
         var markers = L.markerClusterGroup({
             maxClusterRadius: 80,
-            disableClusteringAtZoom: 18
+            disableClusteringAtZoom: 16
         });
         var allData;
         var searchResultsLayer;
         var markersVisible = true;
         var namesVisible = true;
+
+        // Função para gerar uma cor aleatória
+        function getRandomColor() {
+            var letters = '0123456789ABCDEF';
+            var color = '#';
+            for (var i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
 
         fileInput.addEventListener('change', function(e) {
             loader.style.display = 'block';
@@ -235,125 +243,156 @@
             var file = e.target.files[0];
             var reader = new FileReader();
 
-            reader.onload = function(event) {
-                var data = event.target.result;
-
-                if (file.name.endsWith('.kml')) {
-                    var geojson = toGeoJSON.kml(new DOMParser().parseFromString(data, 'text/xml'));
+            if (file.name.endsWith('.kml')) {
+                reader.onload = function(event) {
+                    var kmlData = event.target.result;
+                    var geojson = toGeoJSON.kml(new DOMParser().parseFromString(kmlData, 'text/xml'));
                     allData = geojson;
                     addDataToMap(geojson);
-                } else if (file.name.endsWith('.kmz')) {
-                    JSZip.loadAsync(data).then(function(zip) {
-                        zip.file(Object.keys(zip.files)[0]).async('string').then(function(fileData) {
-                            var geojson = toGeoJSON.kml(new DOMParser().parseFromString(fileData, 'text/xml'));
-                            allData = geojson;
-                            addDataToMap(geojson);
+                };
+                reader.readAsText(file);
+            } else if (file.name.endsWith('.kmz')) {
+                reader.onload = function(event) {
+                    JSZip.loadAsync(event.target.result).then(function(zip) {
+                        Object.keys(zip.files).forEach(function(filename) {
+                            zip.files[filename].async('string').then(function(fileData) {
+                                var geojson = toGeoJSON.kml(new DOMParser().parseFromString(fileData, 'text/xml'));
+                                allData = geojson;
+                                addDataToMap(geojson);
+                            });
                         });
                     });
-                } else if (file.name.endsWith('.geojson')) {
-                    var geojsonData = JSON.parse(data);
+                };
+                reader.readAsArrayBuffer(file);
+            } else if (file.name.endsWith('.geojson')) {
+                reader.onload = function(event) {
+                    var geojsonData = JSON.parse(event.target.result);
                     allData = geojsonData;
                     addDataToMap(geojsonData);
-                } else {
-                    alert("Formato de arquivo não suportado. Por favor, selecione um arquivo .geojson, .kml ou .kmz.");
-                }
-
+                };
+                reader.readAsText(file);
+            } else {
+                alert("Formato de arquivo não suportado. Por favor, selecione um arquivo GeoJSON, KML ou KMZ.");
                 loader.style.display = 'none';
-            };
-
-            reader.readAsText(file);
+            }
         });
 
-        function loadTrevoKML() {
-            loader.style.display = 'block';
-            fetch('se trevo.kml') // Assume que o arquivo está na mesma pasta do site
-                .then(response => response.text())
-                .then(data => {
-                    var geojson = toGeoJSON.kml(new DOMParser().parseFromString(data, 'text/xml'));
-                    allData = geojson;
-                    addDataToMap(geojson);
-                })
-                .catch(error => {
-                    alert('Erro ao carregar o arquivo se trevo.kml.');
-                    console.error('Erro:', error);
-                    loader.style.display = 'none';
-                });
-        }
-
         function addDataToMap(data) {
+            markers.clearLayers();
             if (geojsonLayer) {
                 map.removeLayer(geojsonLayer);
             }
-            markers.clearLayers();
-            geojsonLayer = L.geoJson(data, {
-                onEachFeature: function (feature, layer) {
+            var featureIndex = 0; // Índice para rastrear conjuntos de recursos
+
+            geojsonLayer = L.geoJSON(data, {
+                style: function(feature) {
+                    var color = getRandomColor();
+                    return {
+                        color: color
+                    };
+                },
+                onEachFeature: function(feature, layer) {
+                    var color = getRandomColor();
                     if (feature.properties && feature.properties.name) {
-                        layer.bindPopup(feature.properties.name);
+                        var name = feature.properties.name;
+                        layer.bindTooltip(name, { permanent: true, direction: 'top' }).openTooltip();
+                        var popupContent = '<p>';
+                        for (var prop in feature.properties) {
+                            popupContent += prop + ': ' + feature.properties[prop] + '<br>';
+                        }
+                        popupContent += '</p>';
+                        layer.bindPopup(popupContent);
                     }
-                    markers.addLayer(layer);
                 }
             });
+            markers.addLayer(geojsonLayer);
             map.addLayer(markers);
-            map.fitBounds(markers.getBounds());
-        }
-
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('active');
+            loader.style.display = 'none';
+            fileList.innerHTML = '';
         }
 
         function searchPoint() {
-            var searchText = searchInput.value.toLowerCase();
-            if (allData) {
-                var features = allData.features.filter(function(feature) {
-                    return feature.properties.name && feature.properties.name.toLowerCase().includes(searchText);
-                });
+            var searchTerm = searchInput.value.toLowerCase();
+            var found = false;
 
+            if (geojsonLayer) {
                 if (searchResultsLayer) {
                     map.removeLayer(searchResultsLayer);
                 }
 
-                searchResultsLayer = L.geoJson({ type: 'FeatureCollection', features: features });
+                searchResultsLayer = L.geoJSON(allData, {
+                    filter: function(feature) {
+                        return feature.properties && feature.properties.name && feature.properties.name.toLowerCase().includes(searchTerm);
+                    },
+                    onEachFeature: function(feature, layer) {
+                        if (feature.properties && feature.properties.name) {
+                            var name = feature.properties.name;
+                            layer.bindTooltip(name, { permanent: true, direction: 'top' }).openTooltip();
+                            var popupContent = '<p>';
+                            for (var prop in feature.properties) {
+                                popupContent += prop + ': ' + feature.properties[prop] + '<br>';
+                            }
+                            popupContent += '</p>';
+                            layer.bindPopup(popupContent);
+                        }
+                    }
+                });
+
                 map.addLayer(searchResultsLayer);
 
-                if (features.length > 0) {
-                    map.fitBounds(searchResultsLayer.getBounds());
-                    result.innerHTML = 'Resultado da busca:';
-                    features.forEach(function(feature) {
-                        var p = document.createElement('p');
-                        p.innerHTML = feature.properties.name;
-                        result.appendChild(p);
-                    });
+                searchResultsLayer.eachLayer(function(layer) {
+                    if (!found) {
+                        var latLng = layer.getLatLng();
+                        map.setView(latLng, 18);
+                        layer.openPopup();
+                        found = true;
+
+                        var googleMapsLink = 'https://www.google.com/maps?q=' + latLng.lat + ',' + latLng.lng;
+                        result.innerHTML = `
+                            <p>${layer.feature.properties.name}</p>
+                            <p>${latLng.lat}, ${latLng.lng}</p>
+                            <a href="${googleMapsLink}" target="_blank">Ver no Google Maps</a>
+                        `;
+                    }
+                });
+
+                if (!found) {
+                    result.innerHTML = "<p>Nenhum ponto correspondente encontrado.</p>";
                 } else {
-                    result.innerHTML = 'Nenhum resultado encontrado.';
+                    toggleAllBtn.style.display = 'block';
                 }
             } else {
-                result.innerHTML = 'Nenhum dado carregado.';
+                result.innerHTML = "<p>Nenhum dado carregado para buscar.</p>";
             }
         }
 
         function toggleMarkers() {
             if (markersVisible) {
                 map.removeLayer(markers);
-                toggleMarkersBtn.innerHTML = '&#128065;';
+                toggleMarkersBtn.textContent = '👁';
             } else {
                 map.addLayer(markers);
-                toggleMarkersBtn.innerHTML = '&#128064;';
+                toggleMarkersBtn.textContent = '👁️‍🗨️';
             }
             markersVisible = !markersVisible;
         }
 
         function toggleNames() {
-            namesVisible = !namesVisible;
-            map.eachLayer(function (layer) {
-                if (layer.getPopup) {
-                    if (namesVisible) {
-                        layer.bindPopup(layer.feature.properties.name);
-                    } else {
-                        layer.unbindPopup();
+            if (namesVisible) {
+                markers.eachLayer(function(layer) {
+                    layer.unbindTooltip();
+                });
+                toggleNamesBtn.textContent = '🔍';
+            } else {
+                markers.eachLayer(function(layer) {
+                    if (layer.feature && layer.feature.properties && layer.feature.properties.name) {
+                        var name = layer.feature.properties.name;
+                        layer.bindTooltip(name, { permanent: true, direction: 'top' }).openTooltip();
                     }
-                }
-            });
-            toggleNamesBtn.innerHTML = namesVisible ? '&#128100;' : '&#128101;';
+                });
+                toggleNamesBtn.textContent = '🧾';
+            }
+            namesVisible = !namesVisible;
         }
 
         function resetView() {
@@ -366,10 +405,18 @@
                     var lat = position.coords.latitude;
                     var lon = position.coords.longitude;
                     map.setView([lat, lon], 13);
+                    L.marker([lat, lon]).addTo(map).bindPopup("Você está aqui.").openPopup();
+                }, function() {
+                    alert("Erro ao obter a localização.");
                 });
             } else {
-                alert('Geolocalização não é suportada pelo seu navegador.');
+                alert("Geolocalização não é suportada pelo seu navegador.");
             }
+        }
+
+        function toggleSidebar() {
+            var sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('active');
         }
     </script>
 </body>
