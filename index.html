@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualizador de Mapas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+        }
+
+        .sidebar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 300px;
+            max-width: 90%;
+            height: 100%;
+            background-color: #ffffff;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            overflow-y: auto;
+            transition: transform 0.3s ease-in-out;
+            transform: translateX(-100%);
+        }
+
+        .sidebar.active {
+            transform: translateX(0);
+        }
+
+        .map-container {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        .loader {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 2s linear infinite;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+            display: none;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .nav-buttons {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .nav-buttons button {
+            margin: 5px;
+            padding: 10px;
+            background-color: #fff;
+            border: none;
+            color: #333;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 50%;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+            opacity: 0.8;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+
+        .nav-buttons button:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        .search-bar {
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .search-bar input {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .search-bar button {
+            width: 100%;
+            padding: 10px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        .search-bar button:hover {
+            background-color: #2980b9;
+        }
+
+        .result {
+            margin-top: 10px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .result p {
+            margin: 5px 0;
+        }
+
+        .result a {
+            display: block;
+            padding: 10px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 14px;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+
+        .result a:hover {
+            background-color: #2980b9;
+        }
+
+        .footer {
+            margin-top: 10px;
+            text-align: center;
+            font-size: 12px;
+            color: gray;
+        }
+    </style>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.0/dist/MarkerCluster.Default.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.0/dist/MarkerCluster.css">
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar" id="sidebar">
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="Buscar por um ponto...">
+                <button onclick="searchPoint()">Buscar</button>
+            </div>
+            <input type="file" id="fileInput" accept=".geojson,.kml,.kmz">
+            <div class="loader" id="loader"></div>
+            <div id="fileList"></div>
+            <div class="result" id="result"></div>
+        </div>
+        <div class="map-container">
+            <div class="nav-buttons">
+                <button onclick="toggleSidebar()">&#128269;</button>
+                <button class="toggle-all-btn" id="toggleMarkersBtn" onclick="toggleMarkers()">&#128065;</button>
+                <button class="toggle-names-btn" id="toggleNamesBtn" onclick="toggleNames()">&#128100;</button>
+                <button onclick="resetView()">&#128260;</button>
+                <button onclick="goToCurrentLocation()">&#128205;</button>
+            </div>
+            <div id="map"></div>
+        </div>
+        <div class="footer">
+            Todos direitos reservados a Lucas Teixeira da Silva.
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/togeojson@0.16.0"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+    <script src="https://unpkg.com/leaflet-omnivore@0.3.4/leaflet-omnivore.min.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.0/dist/leaflet.markercluster.js"></script>
+    <script>
+        var map = L.map('map', { zoomControl: false }).setView([-22.907104, -47.063240], 13); // Coordenadas de Campinas
+
+        // Adicionando camadas de base do OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+        }).addTo(map);
+
+        var loader = document.getElementById('loader');
+        var fileInput = document.getElementById('fileInput');
+        var searchInput = document.getElementById('searchInput');
+        var result = document.getElementById('result');
+        var toggleMarkersBtn = document.getElementById('toggleMarkersBtn');
+        var toggleNamesBtn = document.getElementById('toggleNamesBtn');
+        var geojsonLayer;
+        var markers = L.markerClusterGroup({
+            maxClusterRadius: 80,
+            disableClusteringAtZoom: 19
+        });
+        var allData;
+        var searchResultsLayer;
+        var markersVisible = true;
+        var namesVisible = true;
+
+        fileInput.addEventListener('change', function(e) {
+            loader.style.display = 'block';
+
+            var file = e.target.files[0];
+            var reader = new FileReader();
+
+            reader.onload = function(event) {
+                var data = event.target.result;
+
+                if (file.name.endsWith('.kml')) {
+                    var geojson = toGeoJSON.kml(new DOMParser().parseFromString(data, 'text/xml'));
+                    allData = geojson;
+                    addDataToMap(geojson);
+                } else if (file.name.endsWith('.kmz')) {
+                    JSZip.loadAsync(data).then(function(zip) {
+                        zip.file(Object.keys(zip.files)[0]).async('string').then(function(fileData) {
+                            var geojson = toGeoJSON.kml(new DOMParser().parseFromString(fileData, 'text/xml'));
+                            allData = geojson;
+                            addDataToMap(geojson);
+                        });
+                    });
+                } else if (file.name.endsWith('.geojson')) {
+                    var geojsonData = JSON.parse(data);
+                    allData = geojsonData;
+                    addDataToMap(geojsonData);
+                } else {
+                    alert("Formato de arquivo não suportado. Por favor, selecione um arquivo GeoJSON, KML ou KMZ.");
+                    loader.style.display = 'none';
+                }
+            };
+
+            if (file.name.endsWith('.kmz')) {
+                reader.readAsArrayBuffer(file);
+            } else {
+                reader.readAsText(file);
+            }
+        });
+
+        function addDataToMap(data) {
+            markers.clearLayers();
+            if (geojsonLayer) {
+                map.removeLayer(geojsonLayer);
+            }
+
+            geojsonLayer = L.geoJSON(data, {
+                style: function(feature) {
+                    var color = getRandomColor();
+                    return {
+                        color: color
+                    };
+                },
+                onEachFeature: function(feature, layer) {
+                    if (feature.properties && feature.properties.name) {
+                        var name = feature.properties.name;
+                        layer.bindTooltip(name, { permanent: true, direction: 'top' }).openTooltip();
+                        var popupContent = '<p>';
+                        for (var prop in feature.properties) {
+                            popupContent += prop + ': ' + feature.properties[prop] + '<br>';
+                        }
+                        popupContent += '</p>';
+                        layer.bindPopup(popupContent);
+                    }
+                }
+            });
+
+            // Adicionar marcadores apenas a partir do zoom 16
+            map.on('zoomend', function() {
+                if (map.getZoom() >= 16) {
+                    markers.addLayer(geojsonLayer);
+                } else {
+                    markers.removeLayer(geojsonLayer);
+                }
+            });
+
+            map.addLayer(markers);
+            loader.style.display = 'none';
+            fileInput.value = ''; // Limpar a seleção do arquivo
+        }
+
+        function searchPoint() {
+            var searchTerm = searchInput.value.toLowerCase();
+            var found = false;
+
+            if (geojsonLayer) {
+                if (searchResultsLayer) {
+                    map.removeLayer(searchResultsLayer);
+                }
+
+                searchResultsLayer = L.geoJSON(allData, {
+                    filter: function(feature) {
+                        return feature.properties && feature.properties.name && feature.properties.name.toLowerCase().includes(searchTerm);
+                    },
+                    onEachFeature: function(feature, layer) {
+                        if (feature.properties && feature.properties.name) {
+                            var name = feature.properties.name;
+                            layer.bindTooltip(name, { permanent: true, direction: 'top' }).openTooltip();
+                            var popupContent = '<p>';
+                            for (var prop in feature.properties) {
+                                popupContent += prop + ': ' + feature.properties[prop] + '<br>';
+                            }
+                            popupContent += '</p>';
+                            layer.bindPopup(popupContent);
+                        }
+                    }
+                });
+
+                map.addLayer(searchResultsLayer);
+
+                searchResultsLayer.eachLayer(function(layer) {
+                    if (!found) {
+                        var latLng = layer.getLatLng();
+                        map.setView(latLng, 18);
+                        layer.openPopup();
+                        found = true;
+
+                        var googleMapsLink = 'https://www.google.com/maps?q=' + latLng.lat + ',' + latLng.lng;
+                        result.innerHTML = `
+                            <p>${layer.feature.properties.name}</p>
+                            <p>${latLng.lat}, ${latLng.lng}</p>
+                            <a href="${googleMapsLink}" target="_blank">Ver no Google Maps</a>
+                        `;
+                    }
+                });
+
+                if (!found) {
+                    result.innerHTML = "<p>Nenhum ponto correspondente encontrado.</p>";
+                }
+            } else {
+                result.innerHTML = "<p>Nenhum dado carregado para buscar.</p>";
+            }
+        }
+
+        function toggleMarkers() {
+            if (markersVisible) {
+                map.removeLayer(markers);
+                toggleMarkersBtn.textContent = '👁';
+            } else {
+                map.addLayer(markers);
+                toggleMarkersBtn.textContent = '👁️‍🗨️';
+            }
+            markersVisible = !markersVisible;
+        }
+
+        function toggleNames() {
+            if (namesVisible) {
+                markers.eachLayer(function(layer) {
+                    layer.unbindTooltip();
+                });
+                toggleNamesBtn.textContent = '🔍';
+            } else {
+                markers.eachLayer(function(layer) {
+                    if (layer.feature && layer.feature.properties && layer.feature.properties.name) {
+                        var name = layer.feature.properties.name;
+                        layer.bindTooltip(name, { permanent: true, direction: 'top' }).openTooltip();
+                    }
+                });
+                toggleNamesBtn.textContent = '🧾';
+            }
+            namesVisible = !namesVisible;
+        }
+
+        function resetView() {
+            map.setView([-22.907104, -47.063240], 13);
+        }
+
+        function goToCurrentLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    var lat = position.coords.latitude;
+                    var lon = position.coords.longitude;
+                    map.setView([lat, lon], 13);
+                    L.marker([lat, lon]).addTo(map).bindPopup("Você está aqui.").openPopup();
+                }, function() {
+                    alert("Erro ao obter a localização.");
+                });
+            } else {
+                alert("Geolocalização não é suportada pelo seu navegador.");
+            }
+        }
+
+        function toggleSidebar() {
+            var sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('active');
+        }
+
+        function getRandomColor() {
+            var letters = '0123456789ABCDEF';
+            var color = '#';
+            for (var i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+    </script>
+</body>
+</html>
