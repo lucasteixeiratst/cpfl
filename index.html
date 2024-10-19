@@ -1,422 +1,219 @@
+
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visualizador de Mapas</title>
+    <title>Simulador de Medidor de Energia</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            height: 100vh;
-            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
             display: flex;
-            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
         }
 
         .container {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
+            max-width: 400px;
             width: 100%;
+            text-align: center;
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+            margin-top: 20px;
         }
 
-        .sidebar {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 300px;
-            max-width: 90%;
-            height: 100%;
-            background-color: #ffffff;
-            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
-            z-index: 1000;
-            overflow-y: auto;
-            transition: transform 0.3s ease-in-out;
-            transform: translateX(-100%);
-        }
-
-        .sidebar.active {
-            transform: translateX(0);
-        }
-
-        .map-container {
-            flex: 1;
-            position: relative;
+        .disco-container {
             display: flex;
-            align-items: center;
             justify-content: center;
+            margin: 10px 0 20px 0;
         }
 
-        #map {
-            width: 100%;
-            height: 100%;
-        }
-
-        .loader {
-            border: 8px solid #f3f3f3;
-            border-top: 8px solid #3498db;
+        .disco {
+            width: 180px;
+            height: 180px;
             border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 2s linear infinite;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 9999;
-            display: none;
+            background: conic-gradient(#3498db, #9b59b6, #e74c3c, #f1c40f);
+            position: relative;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2), 
+                        0 0 30px rgba(0, 0, 0, 0.1) inset;
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .nav-buttons {
+        .ponteiro {
             position: absolute;
+            width: 4px;
+            height: 90px;
+            background-color: black;
             top: 10px;
-            right: 10px;
-            z-index: 999;
-            display: flex;
-            flex-direction: column;
+            left: 50%;
+            transform-origin: bottom;
+            transform: rotate(0deg);
+            border-radius: 2px;
         }
 
-        .nav-buttons button {
-            margin: 5px;
-            padding: 10px;
-            background-color: #fff;
-            border: none;
-            color: #333;
-            font-size: 16px;
-            cursor: pointer;
-            border-radius: 50%;
-            box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
-            opacity: 0.8;
-            transition: opacity 0.3s, transform 0.3s;
-        }
-
-        .nav-buttons button:hover {
-            opacity: 1;
-            transform: scale(1.1);
-        }
-
-        .search-bar {
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .search-bar input {
+        input, select, button {
+            margin: 8px 0;
             width: 100%;
             padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
             font-size: 16px;
-            margin-bottom: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
         }
 
-        .search-bar button {
-            width: 100%;
-            padding: 10px;
-            background-color: #3498db;
-            color: white;
-            border: none;
-            font-size: 16px;
+        button {
             cursor: pointer;
-            border-radius: 5px;
-            transition: background-color 0.3s;
+            transition: background-color 0.3s, transform 0.2s;
         }
 
-        .search-bar button:hover {
-            background-color: #2980b9;
+        button:active {
+            transform: scale(0.95);
         }
 
-        .result {
-            margin-top: 10px;
-            text-align: center;
-            font-size: 14px;
-        }
-
-        .result p {
-            margin: 5px 0;
-        }
-
-        .result a {
-            display: block;
-            padding: 10px;
-            background-color: #3498db;
+        .start {
+            background-color: #28a745;
             color: white;
-            border: none;
-            cursor: pointer;
-            border-radius: 5px;
-            font-size: 14px;
-            text-decoration: none;
-            transition: background-color 0.3s;
         }
 
-        .result a:hover {
-            background-color: #2980b9;
+        .start:hover {
+            background-color: #218838;
         }
 
-        .footer {
-            margin-top: 10px;
-            text-align: center;
-            font-size: 12px;
-            color: gray;
+        .stop {
+            background-color: #dc3545;
+            color: white;
         }
 
-        /* Estilo para tooltips com tamanho reduzido */
-        .leaflet-tooltip {
-            font-size: 8px;
+        .stop:hover {
+            background-color: #c82333;
+        }
+
+        #results h2 {
+            margin: 15px 0;
         }
     </style>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.0/dist/MarkerCluster.Default.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.0/dist/MarkerCluster.css">
 </head>
 <body>
+
     <div class="container">
-        <div class="sidebar" id="sidebar">
-            <div class="search-bar">
-                <input type="text" id="searchInput" placeholder="Buscar por um ponto...">
-                <button onclick="searchPoint()">Buscar</button>
+        <h1>Medidor de Energia</h1>
+
+        <div class="disco-container">
+            <div class="disco" id="disco">
+                <div class="ponteiro" id="ponteiro"></div>
             </div>
-            <input type="file" id="fileInput" accept=".geojson,.kml,.kmz">
-            <div class="loader" id="loader"></div>
-            <div id="fileList"></div>
-            <div class="result" id="result"></div>
         </div>
-        <div class="map-container">
-            <div class="nav-buttons">
-                <button onclick="toggleSidebar()">&#128269;</button>
-                <button class="toggle-all-btn" id="toggleMarkersBtn" onclick="toggleMarkers()">&#128065;</button>
-                <button class="toggle-names-btn" id="toggleNamesBtn" onclick="toggleNames()">&#128100;</button>
-                <button onclick="resetView()">&#128260;</button>
-                <button onclick="goToCurrentLocation()">&#128205;</button>
-            </div>
-            <div id="map"></div>
-        </div>
-        <div class="footer">
-            Todos direitos reservados a Lucas Teixeira da Silva.
+
+        <form id="calculation-form">
+            <select id="medidor" onchange="updateInputs()">
+                <option value="mono">Monofásico</option>
+                <option value="bifasico">Bifásico</option>
+                <option value="trifasico">Trifásico</option>
+            </select>
+
+            <input type="number" id="volts" placeholder="Tensão (V)" required>
+            <input type="number" id="current" placeholder="Corrente (I1)" required>
+            <div id="additional-currents"></div>
+
+            <input type="number" id="turns" placeholder="Nº Voltas" required>
+            <input type="number" step="0.01" id="kd" placeholder="Kd" required>
+            <input type="number" id="time" placeholder="Tempo (s)" required>
+
+            <button type="button" class="start" onclick="startStopTimer()">Temporizador</button>
+            <button type="button" class="start" onclick="startDisco()">Iniciar Disco</button>
+            <button type="button" class="stop" onclick="calculate()">Calcular</button>
+        </form>
+
+        <div id="results">
+            <h2>Resultados</h2>
+            <p><strong>VA:</strong> <span id="va-result"></span></p>
+            <p><strong>Watts:</strong> <span id="watt-result"></span></p>
+            <p><strong>Fator de Potência:</strong> <span id="pf-result"></span></p>
+            <p><strong>Erro:</strong> <span id="error-percentage-result"></span></p>
         </div>
     </div>
 
-    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/togeojson@0.16.0"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
-    <script src="https://unpkg.com/leaflet-omnivore@0.3.4/leaflet-omnivore.min.js"></script>
-    <script src="https://unpkg.com/leaflet.markercluster@1.5.0/dist/leaflet.markercluster.js"></script>
     <script>
-        var map = L.map('map', { zoomControl: false }).setView([-22.9349728746025, -47.0688472515621], 13); // Localização inicial alterada
+        let isRunning = false;
+        let startTime, timerInterval, animationFrame;
+        let tempoPorVolta, rotation = 0;
 
-        // Adicionando camadas de base do OpenStreetMap
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 22,
-        }).addTo(map);
+        const ponteiro = document.getElementById('ponteiro');
 
-        var loader = document.getElementById('loader');
-        var fileInput = document.getElementById('fileInput');
-        var searchInput = document.getElementById('searchInput');
-        var result = document.getElementById('result');
-        var toggleMarkersBtn = document.getElementById('toggleMarkersBtn');
-        var toggleNamesBtn = document.getElementById('toggleNamesBtn');
-        var geojsonLayer;
-        var markers = L.markerClusterGroup({
-            maxClusterRadius: 80,
-            disableClusteringAtZoom: 18
-        });
-        var allData;
-        var searchResultsLayer;
-        var markersVisible = true;
-        var namesVisible = true;
-
-        fileInput.addEventListener('change', function(e) {
-            loader.style.display = 'block';
-
-            var file = e.target.files[0];
-            var reader = new FileReader();
-
-            reader.onload = function(event) {
-                var data = event.target.result;
-
-                if (file.name.endsWith('.kml')) {
-                    var geojson = toGeoJSON.kml(new DOMParser().parseFromString(data, 'text/xml'));
-                    allData = geojson;
-                    addDataToMap(geojson);
-                } else if (file.name.endsWith('.kmz')) {
-                    JSZip.loadAsync(data).then(function(zip) {
-                        zip.file(Object.keys(zip.files)[0]).async('string').then(function(fileData) {
-                            var geojson = toGeoJSON.kml(new DOMParser().parseFromString(fileData, 'text/xml'));
-                            allData = geojson;
-                            addDataToMap(geojson);
-                        });
-                    });
-                } else if (file.name.endsWith('.geojson')) {
-                    var geojsonData = JSON.parse(data);
-                    allData = geojsonData;
-                    addDataToMap(geojsonData);
-                } else {
-                    alert("Formato de arquivo não suportado. Por favor, selecione um arquivo GeoJSON, KML ou KMZ.");
-                    loader.style.display = 'none';
-                }
-            };
-
-            if (file.name.endsWith('.kmz')) {
-                reader.readAsArrayBuffer(file);
+        function startStopTimer() {
+            const timeInput = document.getElementById('time');
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                const elapsed = Math.floor((new Date() - startTime) / 1000);
+                timeInput.value = elapsed;
+                timerInterval = null;
             } else {
-                reader.readAsText(file);
-            }
-        });
-
-        function addDataToMap(data) {
-            markers.clearLayers();
-            if (geojsonLayer) {
-                map.removeLayer(geojsonLayer);
-            }
-
-            geojsonLayer = L.geoJSON(data, {
-                style: function(feature) {
-                    var color = getRandomColor();
-                    return {
-                        color: color
-                    };
-                },
-                onEachFeature: function(feature, layer) {
-                    if (feature.properties && feature.properties.name) {
-                        var name = feature.properties.name;
-                        layer.bindTooltip(name, { permanent: true, direction: 'top' }).openTooltip();
-                        var popupContent = '<p>';
-                        for (var prop in feature.properties) {
-                            popupContent += prop + ': ' + feature.properties[prop] + '<br>';
-                        }
-                        popupContent += '</p>';
-                        layer.bindPopup(popupContent);
-                    }
-                }
-            });
-            markers.addLayer(geojsonLayer);
-            map.addLayer(markers);
-            loader.style.display = 'none';
-            fileInput.value = ''; // Limpar a seleção do arquivo
-        }
-
-        function searchPoint() {
-            var searchTerm = searchInput.value.toLowerCase();
-            var found = false;
-
-            if (geojsonLayer) {
-                if (searchResultsLayer) {
-                    map.removeLayer(searchResultsLayer);
-                }
-
-                searchResultsLayer = L.geoJSON(allData, {
-                    filter: function(feature) {
-                        return feature.properties && feature.properties.name && feature.properties.name.toLowerCase().includes(searchTerm);
-                    },
-                    onEachFeature: function(feature, layer) {
-                        if (feature.properties && feature.properties.name) {
-                            var name = feature.properties.name;
-                            layer.bindTooltip(name, { permanent: true, direction: 'top' }).openTooltip();
-                            var popupContent = '<p>';
-                            for (var prop in feature.properties) {
-                                popupContent += prop + ': ' + feature.properties[prop] + '<br>';
-                            }
-                            popupContent += '</p>';
-                            layer.bindPopup(popupContent);
-                        }
-                    }
-                });
-
-                map.addLayer(searchResultsLayer);
-
-                searchResultsLayer.eachLayer(function(layer) {
-                    if (!found) {
-                        var latLng = layer.getLatLng();
-                        map.setView(latLng, 18);
-                        layer.openPopup();
-                        found = true;
-
-                        var googleMapsLink = 'https://www.google.com/maps?q=' + latLng.lat + ',' + latLng.lng;
-                        result.innerHTML = `
-                            <p>${layer.feature.properties.name}</p>
-                            <p>${latLng.lat}, ${latLng.lng}</p>
-                            <a href="${googleMapsLink}" target="_blank">Ver no Google Maps</a>
-                        `;
-                    }
-                });
-
-                if (!found) {
-                    result.innerHTML = "<p>Nenhum ponto correspondente encontrado.</p>";
-                }
-            } else {
-                result.innerHTML = "<p>Nenhum dado carregado para buscar.</p>";
+                startTime = new Date();
+                timerInterval = setInterval(() => {
+                    const elapsed = Math.floor((new Date() - startTime) / 1000);
+                    timeInput.value = elapsed;
+                }, 1000);
             }
         }
 
-        function toggleMarkers() {
-            if (markersVisible) {
-                map.removeLayer(markers);
-                toggleMarkersBtn.textContent = '👁';
-            } else {
-                map.addLayer(markers);
-                toggleMarkersBtn.textContent = '👁️‍🗨️';
+        function calculate() {
+            const volts = parseFloat(document.getElementById('volts').value);
+            const current = parseFloat(document.getElementById('current').value);
+            const kd = parseFloat(document.getElementById('kd').value);
+            const turns = parseFloat(document.getElementById('turns').value);
+            const time = parseFloat(document.getElementById('time').value);
+            const va = volts * current;
+            const watts = (turns * kd) / (time / 3600);
+            const pf = watts / va;
+            const errorPercentage = ((Math.abs(va - watts) / va) * 100).toFixed(2);
+
+            document.getElementById('va-result').innerText = va.toFixed(0) + ' VA';
+            document.getElementById('watt-result').innerText = watts.toFixed(0) + ' W';
+            document.getElementById('pf-result').innerText = pf.toFixed(3);
+            document.getElementById('error-percentage-result').innerText = errorPercentage + '%';
+        }
+
+        function animateDisco() {
+            const elapsedTime = (Date.now() - startTime) / 1000;
+            rotation = (360 * (elapsedTime % tempoPorVolta)) / tempoPorVolta;
+            ponteiro.style.transform = `rotate(${rotation * 1000}deg)`; // Multiplicando a velocidade por 1000
+            animationFrame = requestAnimationFrame(animateDisco);
+        }
+
+        function startDisco() {
+            const kd = parseFloat(document.getElementById('kd').value);
+            const volts = parseFloat(document.getElementById('volts').value);
+            const current = parseFloat(document.getElementById('current').value);
+            const kw = (volts * current) / 1000;
+
+            if (isNaN(kd) || isNaN(volts) || isNaN(current) || kw === 0) {
+                alert("Insira todos os valores corretamente!");
+                return;
             }
-            markersVisible = !markersVisible;
+
+            tempoPorVolta = (3600 * kd) / kw; // Tempo por volta em segundos
+            startTime = Date.now();
+            animateDisco();
         }
 
-        function toggleNames() {
-            if (namesVisible) {
-                markers.eachLayer(function(layer) {
-                    layer.unbindTooltip();
-                });
-                toggleNamesBtn.textContent = '🔍';
-            } else {
-                markers.eachLayer(function(layer) {
-                    if (layer.feature && layer.feature.properties && layer.feature.properties.name) {
-                        var name = layer.feature.properties.name;
-                        layer.bindTooltip(name, { permanent: true, direction: 'top' }).openTooltip();
-                    }
-                });
-                toggleNamesBtn.textContent = '🧾';
+        function updateInputs() {
+            const medidor = document.getElementById('medidor').value;
+            const additionalCurrents = document.getElementById('additional-currents');
+            additionalCurrents.innerHTML = '';
+            if (medidor === 'bifasico') {
+                additionalCurrents.innerHTML = `<input type="number" id="current2" placeholder="Corrente (I2)" required>`;
+            } else if (medidor === 'trifasico') {
+                additionalCurrents.innerHTML = `
+                    <input type="number" id="current2" placeholder="Corrente (I2)" required>
+                    <input type="number" id="current3" placeholder="Corrente (I3)" required>`;
             }
-            namesVisible = !namesVisible;
-        }
-
-        function resetView() {
-            map.setView([-22.9349728746025, -47.0688472515621], 13); // Resetar para a nova localização inicial
-        }
-
-        function goToCurrentLocation() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(function(position) {
-                    var lat = position.coords.latitude;
-                    var lon = position.coords.longitude;
-                    map.setView([lat, lon], 13);
-                    L.marker([lat, lon]).addTo(map).bindPopup("Você está aqui.").openPopup();
-                }, function() {
-                    alert("Erro ao obter a localização.");
-                });
-            } else {
-                alert("Geolocalização não é suportada pelo seu navegador.");
-            }
-        }
-
-        function toggleSidebar() {
-            var sidebar = document.getElementById('sidebar');
-            sidebar.classList.toggle('active');
-        }
-
-        function getRandomColor() {
-            var letters = '0123456789ABCDEF';
-            var color = '#';
-            for (var i = 0; i < 6; i++) {
-                color += letters[Math.floor(Math.random() * 16)];
-            }
-            return color;
         }
     </script>
+
 </body>
 </html>
