@@ -1,219 +1,362 @@
-
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulador de Medidor de Energia</title>
+    <title>Visualizador de Mapas - Google Earth Style</title>
     <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #1e3c72, #2a5298);
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            min-height: 100vh;
+        body, html {
             margin: 0;
-            padding: 20px;
-            box-sizing: border-box;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
         }
 
-        .container {
-            max-width: 400px;
+        #map {
+            height: 100%;
             width: 100%;
-            text-align: center;
-            background-color: rgba(255, 255, 255, 0.95);
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
-            margin-top: 20px;
         }
 
-        .disco-container {
-            display: flex;
-            justify-content: center;
-            margin: 10px 0 20px 0;
-        }
-
-        .disco {
-            width: 180px;
-            height: 180px;
-            border-radius: 50%;
-            background: conic-gradient(#3498db, #9b59b6, #e74c3c, #f1c40f);
-            position: relative;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2), 
-                        0 0 30px rgba(0, 0, 0, 0.1) inset;
-        }
-
-        .ponteiro {
+        .menu {
             position: absolute;
-            width: 4px;
-            height: 90px;
-            background-color: black;
-            top: 10px;
-            left: 50%;
-            transform-origin: bottom;
-            transform: rotate(0deg);
-            border-radius: 2px;
+            top: 50%;
+            left: 20px;
+            transform: translateY(-50%);
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px 0;
         }
 
-        input, select, button {
-            margin: 8px 0;
-            width: 100%;
+        .menu button {
+            background-color: #ffffff;
+            border: none;
             padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-            font-size: 16px;
-        }
-
-        button {
+            margin: 5px 0;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
             cursor: pointer;
-            transition: background-color 0.3s, transform 0.2s;
+            transition: all 0.2s;
         }
 
-        button:active {
-            transform: scale(0.95);
+        .menu button:hover {
+            background-color: #f0f0f0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
 
-        .start {
-            background-color: #28a745;
+        .menu button img {
+            width: 20px;
+            height: 20px;
+        }
+
+        .search-bar {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 300px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            display: flex;
+            padding: 10px;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .search-bar input {
+            flex: 1;
+            border: none;
+            outline: none;
+            padding: 10px;
+            font-size: 14px;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-bar button {
+            background-color: #4285F4;
             color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
         }
 
-        .start:hover {
-            background-color: #218838;
-        }
-
-        .stop {
-            background-color: #dc3545;
-            color: white;
-        }
-
-        .stop:hover {
-            background-color: #c82333;
-        }
-
-        #results h2 {
-            margin: 15px 0;
+        .search-bar button:hover {
+            background-color: #357ae8;
         }
     </style>
+    <link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet" />
+    <script src="https://unpkg.com/maplibre-gl"></script>
+    <script src="https://unpkg.com/@tmcw/togeojson"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.6.0/jszip.min.js"></script>
 </head>
 <body>
+    <div id="map"></div>
 
-    <div class="container">
-        <h1>SIMULADOR DE MEDIDOR DE ENERGIA</h1>
+    <div class="menu">
+        <button onclick="uploadFile()">
+            <img src="https://img.icons8.com/ios-filled/50/000000/upload.png" alt="Upload">
+        </button>
+        <button onclick="toggleMarkers()">
+            <img src="https://img.icons8.com/material-outlined/24/000000/map-pin.png" alt="Marcadores">
+        </button>
+        <button onclick="toggleNames()">
+            <img src="https://img.icons8.com/material-outlined/24/000000/name.png" alt="Nomes">
+        </button>
+        <button onclick="toggleLines()">
+            <img src="https://img.icons8.com/material-outlined/24/000000/polyline.png" alt="Linhas">
+        </button>
+        <button onclick="resetView()">
+            <img src="https://img.icons8.com/material-outlined/24/000000/refresh.png" alt="Resetar">
+        </button>
+        <button onclick="goToCurrentLocation()">
+            <img src="https://img.icons8.com/material-outlined/24/000000/compass.png" alt="Localização Atual">
+        </button>
+    </div>
 
-        <div class="disco-container">
-            <div class="disco" id="disco">
-                <div class="ponteiro" id="ponteiro"></div>
-            </div>
-        </div>
-
-        <form id="calculation-form">
-            <select id="medidor" onchange="updateInputs()">
-                <option value="mono">Monofásico</option>
-                <option value="bifasico">Bifásico</option>
-                <option value="trifasico">Trifásico</option>
-            </select>
-
-            <input type="number" id="volts" placeholder="Tensão (V)" required>
-            <input type="number" id="current" placeholder="Corrente (I1)" required>
-            <div id="additional-currents"></div>
-
-            <input type="number" id="turns" placeholder="Nº Voltas" required>
-            <input type="number" step="0.01" id="kd" placeholder="Kd" required>
-            <input type="number" id="time" placeholder="Tempo (s)" required>
-
-            <button type="button" class="start" onclick="startStopTimer()">Temporizador</button>
-            <button type="button" class="start" onclick="startDisco()">Iniciar Disco</button>
-            <button type="button" class="stop" onclick="calculate()">Calcular</button>
-        </form>
-
-        <div id="results">
-            <h2>Resultados</h2>
-            <p><strong>VA:</strong> <span id="va-result"></span></p>
-            <p><strong>Watts:</strong> <span id="watt-result"></span></p>
-            <p><strong>Fator de Potência:</strong> <span id="pf-result"></span></p>
-            <p><strong>Erro:</strong> <span id="error-percentage-result"></span></p>
-        </div>
+    <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="Buscar no mapa..." />
+        <button onclick="searchFeatures()">Buscar</button>
     </div>
 
     <script>
-        let isRunning = false;
-        let startTime, timerInterval, animationFrame;
-        let tempoPorVolta, rotation = 0;
+        const map = new maplibregl.Map({
+            container: 'map',
+            style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+            center: [-47.068847, -22.934973],
+            zoom: 13
+        });
 
-        const ponteiro = document.getElementById('ponteiro');
+        let markersVisible = true;
+        let namesVisible = true;
+        let linesVisible = true;
 
-        function startStopTimer() {
-            const timeInput = document.getElementById('time');
-            if (timerInterval) {
-                clearInterval(timerInterval);
-                const elapsed = Math.floor((new Date() - startTime) / 1000);
-                timeInput.value = elapsed;
-                timerInterval = null;
+        const searchInput = document.getElementById('searchInput');
+
+        function uploadFile() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.kml,.kmz';
+            input.onchange = handleFile;
+            input.click();
+        }
+
+        function handleFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async () => {
+                try {
+                    const data = file.name.endsWith('.kmz')
+                        ? await parseKMZ(reader.result)
+                        : toGeoJSON.kml(new DOMParser().parseFromString(reader.result, 'text/xml'));
+                    addDataToMap(data);
+                } catch (error) {
+                    console.error('Erro ao processar o arquivo:', error);
+                    alert('Erro ao processar o arquivo KML/KMZ.');
+                }
+            };
+            if (file.name.endsWith('.kmz')) {
+                reader.readAsArrayBuffer(file);
             } else {
-                startTime = new Date();
-                timerInterval = setInterval(() => {
-                    const elapsed = Math.floor((new Date() - startTime) / 1000);
-                    timeInput.value = elapsed;
-                }, 1000);
+                reader.readAsText(file);
             }
         }
 
-        function calculate() {
-            const volts = parseFloat(document.getElementById('volts').value);
-            const current = parseFloat(document.getElementById('current').value);
-            const kd = parseFloat(document.getElementById('kd').value);
-            const turns = parseFloat(document.getElementById('turns').value);
-            const time = parseFloat(document.getElementById('time').value);
-            const va = volts * current;
-            const watts = (turns * kd) / (time / 3600);
-            const pf = watts / va;
-            const errorPercentage = ((Math.abs(va - watts) / va) * 100).toFixed(2);
-
-            document.getElementById('va-result').innerText = va.toFixed(0) + ' VA';
-            document.getElementById('watt-result').innerText = watts.toFixed(0) + ' W';
-            document.getElementById('pf-result').innerText = pf.toFixed(3);
-            document.getElementById('error-percentage-result').innerText = errorPercentage + '%';
+        async function parseKMZ(data) {
+            const zip = await JSZip.loadAsync(data);
+            const kmlFile = zip.file(/\.kml$/i)[0];
+            const kmlContent = await kmlFile.async('string');
+            return toGeoJSON.kml(new DOMParser().parseFromString(kmlContent, 'text/xml'));
         }
 
-        function animateDisco() {
-            const elapsedTime = (Date.now() - startTime) / 1000;
-            rotation = (360 * (elapsedTime % tempoPorVolta)) / tempoPorVolta;
-            ponteiro.style.transform = `rotate(${rotation * 1000}deg)`; // Multiplicando a velocidade por 1000
-            animationFrame = requestAnimationFrame(animateDisco);
-        }
+        function addDataToMap(geojson) {
+            clearLayers();
 
-        function startDisco() {
-            const kd = parseFloat(document.getElementById('kd').value);
-            const volts = parseFloat(document.getElementById('volts').value);
-            const current = parseFloat(document.getElementById('current').value);
-            const kw = (volts * current) / 1000;
-
-            if (isNaN(kd) || isNaN(volts) || isNaN(current) || kw === 0) {
-                alert("Insira todos os valores corretamente!");
-                return;
+            // Função para extrair geometrias de GeometryCollection
+            function extractGeometries(feature) {
+                const geometries = [];
+                if (feature.geometry.type === 'GeometryCollection') {
+                    feature.geometry.geometries.forEach(geom => {
+                        geometries.push({
+                            ...feature,
+                            geometry: geom
+                        });
+                    });
+                } else {
+                    geometries.push(feature);
+                }
+                return geometries;
             }
 
-            tempoPorVolta = (3600 * kd) / kw; // Tempo por volta em segundos
-            startTime = Date.now();
-            animateDisco();
+            const pointFeaturesArray = [];
+            const lineFeaturesArray = [];
+
+            geojson.features.forEach(feature => {
+                const features = extractGeometries(feature);
+                features.forEach(f => {
+                    if (f.geometry.type === 'Point') {
+                        pointFeaturesArray.push(f);
+                    } else if (['LineString', 'MultiLineString', 'Polygon', 'MultiPolygon'].includes(f.geometry.type)) {
+                        // Atribuir cor aleatória
+                        f.properties = f.properties || {};
+                        if (!f.properties.color) {
+                            const color = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+                            f.properties.color = color;
+                        }
+                        lineFeaturesArray.push(f);
+                    }
+                });
+            });
+
+            const pointFeatures = {
+                type: 'FeatureCollection',
+                features: pointFeaturesArray
+            };
+
+            const lineFeatures = {
+                type: 'FeatureCollection',
+                features: lineFeaturesArray
+            };
+
+            // Adicionar marcadores
+            if (pointFeatures.features.length > 0) {
+                map.addSource('markers', { type: 'geojson', data: pointFeatures });
+                map.addLayer({
+                    id: 'marker-circles',
+                    type: 'circle',
+                    source: 'markers',
+                    paint: {
+                        'circle-radius': 6,
+                        'circle-color': '#FF5722',
+                        'circle-stroke-width': 2,
+                        'circle-stroke-color': '#FFFFFF'
+                    }
+                });
+
+                // Adicionar labels dos marcadores
+                map.addLayer({
+                    id: 'marker-labels',
+                    type: 'symbol',
+                    source: 'markers',
+                    layout: {
+                        'text-field': ['get', 'name'],
+                        'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
+                        'text-size': 12,
+                        'text-offset': [0, 1.5]
+                    },
+                    paint: {
+                        'text-color': '#000000',
+                        'text-halo-color': '#FFFFFF',
+                        'text-halo-width': 1
+                    }
+                });
+            }
+
+            // Adicionar linhas com cores aleatórias ou predefinidas
+            if (lineFeatures.features.length > 0) {
+                map.addSource('lines', { type: 'geojson', data: lineFeatures });
+                map.addLayer({
+                    id: 'lines',
+                    type: 'line',
+                    source: 'lines',
+                    paint: {
+                        'line-color': ['get', 'color'],
+                        'line-width': 4
+                    }
+                });
+            }
         }
 
-        function updateInputs() {
-            const medidor = document.getElementById('medidor').value;
-            const additionalCurrents = document.getElementById('additional-currents');
-            additionalCurrents.innerHTML = '';
-            if (medidor === 'bifasico') {
-                additionalCurrents.innerHTML = `<input type="number" id="current2" placeholder="Corrente (I2)" required>`;
-            } else if (medidor === 'trifasico') {
-                additionalCurrents.innerHTML = `
-                    <input type="number" id="current2" placeholder="Corrente (I2)" required>
-                    <input type="number" id="current3" placeholder="Corrente (I3)" required>`;
+        function clearLayers() {
+            const layers = ['marker-circles', 'marker-labels', 'lines'];
+            layers.forEach((layer) => {
+                if (map.getLayer(layer)) {
+                    map.removeLayer(layer);
+                }
+            });
+
+            const sources = ['markers', 'lines'];
+            sources.forEach((source) => {
+                if (map.getSource(source)) {
+                    map.removeSource(source);
+                }
+            });
+        }
+
+        function toggleMarkers() {
+            markersVisible = !markersVisible;
+            const visibility = markersVisible ? 'visible' : 'none';
+            if (map.getLayer('marker-circles')) map.setLayoutProperty('marker-circles', 'visibility', visibility);
+        }
+
+        function toggleNames() {
+            namesVisible = !namesVisible;
+            const visibility = namesVisible ? 'visible' : 'none';
+            if (map.getLayer('marker-labels')) map.setLayoutProperty('marker-labels', 'visibility', visibility);
+        }
+
+        function toggleLines() {
+            linesVisible = !linesVisible;
+            const visibility = linesVisible ? 'visible' : 'none';
+            if (map.getLayer('lines')) map.setLayoutProperty('lines', 'visibility', visibility);
+        }
+
+        function resetView() {
+            map.easeTo({
+                center: [-47.068847, -22.934973],
+                zoom: 13
+            });
+        }
+
+        function goToCurrentLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition((position) => {
+                    map.flyTo({
+                        center: [position.coords.longitude, position.coords.latitude],
+                        zoom: 16
+                    });
+                }, () => {
+                    alert('Não foi possível obter sua localização.');
+                });
+            } else {
+                alert('Geolocalização não é suportada pelo seu navegador.');
             }
+        }
+
+        function searchFeatures() {
+            const term = searchInput.value.toLowerCase();
+            if (!term) return alert('Digite um termo para buscar.');
+
+            const features = map.querySourceFeatures('markers');
+
+            for (const feature of features) {
+                if (feature.properties && feature.properties.name && feature.properties.name.toLowerCase().includes(term)) {
+                    map.flyTo({
+                        center: feature.geometry.coordinates,
+                        zoom: 16
+                    });
+                    return;
+                }
+            }
+
+            alert('Nenhum resultado encontrado para a busca.');
         }
     </script>
-
 </body>
 </html>
