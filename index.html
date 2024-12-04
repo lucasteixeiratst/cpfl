@@ -98,6 +98,53 @@
         .search-bar button:hover {
             background-color: #357ae8;
         }
+
+        .search-results {
+            position: absolute;
+            top: 70px;
+            left: 20px;
+            width: 300px;
+            max-height: 200px;
+            overflow-y: auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+        }
+
+        .search-results ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .search-results li {
+            padding: 10px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .search-results li:hover {
+            background-color: #f0f0f0;
+        }
+
+        .search-results button {
+            margin-left: 10px;
+            background-color: #4285F4;
+            color: white;
+            border: none;
+            padding: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .search-results button:hover {
+            background-color: #357ae8;
+        }
     </style>
     <link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet" />
     <script src="https://unpkg.com/maplibre-gl"></script>
@@ -133,6 +180,8 @@
         <button onclick="searchFeatures()">Buscar</button>
     </div>
 
+    <div id="searchResults" class="search-results"></div>
+
     <script>
         const map = new maplibregl.Map({
             container: 'map',
@@ -144,6 +193,7 @@
         let markersVisible = true;
         let namesVisible = true;
         let linesVisible = true;
+        let userLocation = null;
 
         const searchInput = document.getElementById('searchInput');
 
@@ -324,13 +374,32 @@
             });
         }
 
+        let userLocationMarker;
+
         function goToCurrentLocation() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition((position) => {
+                    const userCoords = [position.coords.longitude, position.coords.latitude];
+
+                    // Armazenar a localização do usuário
+                    userLocation = userCoords;
+
+                    // Fly to the user's location
                     map.flyTo({
-                        center: [position.coords.longitude, position.coords.latitude],
+                        center: userCoords,
                         zoom: 16
                     });
+
+                    // If a marker already exists, remove it
+                    if (userLocationMarker) {
+                        userLocationMarker.remove();
+                    }
+
+                    // Add a marker at the user's location
+                    userLocationMarker = new maplibregl.Marker({ color: 'blue' })
+                        .setLngLat(userCoords)
+                        .addTo(map);
+
                 }, () => {
                     alert('Não foi possível obter sua localização.');
                 });
@@ -339,23 +408,141 @@
             }
         }
 
+        function getFeatureCenter(feature) {
+            let center;
+            if (feature.geometry.type === 'Point') {
+                center = feature.geometry.coordinates;
+            } else {
+                // For LineString, Polygon, MultiLineString, MultiPolygon
+                const coordinates = [];
+
+                function extractCoords(coords) {
+                    if (typeof coords[0] === 'number') {
+                        coordinates.push(coords);
+                    } else {
+                        coords.forEach(c => extractCoords(c));
+                    }
+                }
+
+                extractCoords(feature.geometry.coordinates);
+
+                const lons = coordinates.map(coord => coord[0]);
+                const lats = coordinates.map(coord => coord[1]);
+
+                const avgLon = lons.reduce((a, b) => a + b, 0) / lons.length;
+                const avgLat = lats.reduce((a, b) => a + b, 0) / lats.length;
+
+                center = [avgLon, avgLat];
+            }
+
+            return center;
+        }
+
+        function computeDistance(coord1, coord2) {
+            const toRad = (value) => value * Math.PI / 180;
+
+            const lat1 = coord1[1];
+            const lon1 = coord1[0];
+            const lat2 = coord2[1];
+            const lon2 = coord2[0];
+
+            const R = 6371e3; // Earth's radius in meters
+            const φ1 = toRad(lat1);
+            const φ2 = toRad(lat2);
+            const Δφ = toRad(lat2 - lat1);
+            const Δλ = toRad(lon2 - lon1);
+
+            const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                Math.cos(φ1) * Math.cos(φ2) *
+                Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+            const distance = R * c; // in meters
+
+            return distance;
+        }
+
         function searchFeatures() {
             const term = searchInput.value.toLowerCase();
             if (!term) return alert('Digite um termo para buscar.');
 
-            const features = map.querySourceFeatures('markers');
+            const markerFeatures = map.getSource('markers') ? map.getSource('markers')._data.features : [];
+            const lineFeatures = map.getSource('lines') ? map.getSource('lines')._data.features : [];
 
-            for (const feature of features) {
-                if (feature.properties && feature.properties.name && feature.properties.name.toLowerCase().includes(term)) {
+            const allFeatures = markerFeatures.concat(lineFeatures);
+
+            const matches = allFeatures.filter(feature => {
+                return feature.properties && feature.properties.name && feature.properties.name.toLowerCase().includes(term);
+            });
+
+            if (matches.length === 0) {
+                alert('Nenhum resultado encontrado para a busca.');
+                document.getElementById('searchResults').innerHTML = '';
+            } else {
+                // Determine the user's location or map center
+                let referencePoint;
+                if (userLocation) {
+                    referencePoint = userLocation;
+                } else {
+                    referencePoint = map.getCenter().toArray();
+                }
+
+                // Compute distances
+                matches.forEach(feature => {
+                    const center = getFeatureCenter(feature);
+                    feature.properties.distance = computeDistance(referencePoint, center);
+                });
+
+                // Sort by distance
+                matches.sort((a, b) => a.properties.distance - b.properties.distance);
+
+                // Get top 5 results
+                const topResults = matches.slice(0, 5);
+
+                // Display results
+                displaySearchResults(topResults);
+            }
+        }
+
+        function displaySearchResults(results) {
+            const searchResultsDiv = document.getElementById('searchResults');
+            searchResultsDiv.innerHTML = ''; // Limpar resultados anteriores
+
+            const ul = document.createElement('ul');
+
+            results.forEach(result => {
+                const li = document.createElement('li');
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = `${result.properties.name} (${(result.properties.distance / 1000).toFixed(2)} km)`;
+
+                const viewButton = document.createElement('button');
+                viewButton.textContent = 'Visualizar';
+                viewButton.onclick = () => {
+                    const center = getFeatureCenter(result);
                     map.flyTo({
-                        center: feature.geometry.coordinates,
+                        center: center,
                         zoom: 16
                     });
-                    return;
-                }
-            }
+                    // Limpar os resultados da busca
+                    searchResultsDiv.innerHTML = '';
+                };
 
-            alert('Nenhum resultado encontrado para a busca.');
+                const googleMapsButton = document.createElement('button');
+                googleMapsButton.textContent = 'Google Maps';
+                googleMapsButton.onclick = () => {
+                    const center = getFeatureCenter(result);
+                    const url = `https://www.google.com/maps?q=${center[1]},${center[0]}`;
+                    window.open(url, '_blank');
+                };
+
+                li.appendChild(nameSpan);
+                li.appendChild(viewButton);
+                li.appendChild(googleMapsButton);
+
+                ul.appendChild(li);
+            });
+
+            searchResultsDiv.appendChild(ul);
         }
     </script>
 </body>
