@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Visualizador de Mapas - Google Earth Style</title>
     <style>
         body, html {
@@ -197,12 +197,53 @@
 
         const searchInput = document.getElementById('searchInput');
 
+        const predefinedFiles = [
+            { name: 'CAMPINAS TREVO.kmz', url: 'CAMPINAS TREVO.kmz' },
+            { name: 'CAMPINAS CENTRO.kmz', url: 'CAMPINAS CENTRO.kmz' },
+            { name: 'CAMPINAS CAMPO GRANDE.kmz', url: 'CAMPINAS CAMPO GRANDE.kmz' },
+            { name: 'CAMPINAS SOUZAS.kmz', url: 'CAMPINAS SOUZAS.kmz' },
+            { name: 'CSMPINAS BARAO GERALDO.kmz', url: 'CSMPINAS BARAO GERALDO.kmz' },
+        ];
+
         function uploadFile() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.kml,.kmz';
-            input.onchange = handleFile;
-            input.click();
+            const choice = prompt(
+                "Escolha uma opção:\n" +
+                "1. CAMPINAS TREVO.kmz\n" +
+                "2. CAMPINAS CENTRO.kmz\n" +
+                "3. CAMPINAS CAMPO GRANDE.kmz\n" +
+                "4. CAMPINAS SOUZAS.kmz\n" +
+                "5. CSMPINAS BARAO GERALDO.kmz\n\n" +
+                "Clique em OK sem digitar nada para selecionar um arquivo do seu dispositivo."
+            );
+
+            if (choice === null) return; // Usuário cancelou
+
+            const index = parseInt(choice, 10);
+
+            // Se não digitou nada ou digitou algo inválido, abrir seletor de arquivo do dispositivo
+            if (!choice || isNaN(index) || index < 1 || index > 5) {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.kml,.kmz';
+                input.onchange = handleFile;
+                input.click();
+            } else {
+                // Carregar o arquivo KMZ a partir da URL definida
+                const fileObj = predefinedFiles[index - 1];
+                loadKMZFromURL(fileObj.url);
+            }
+        }
+
+        async function loadKMZFromURL(url) {
+            try {
+                const response = await fetch(url);
+                const arrayBuffer = await response.arrayBuffer();
+                const data = await parseKMZ(arrayBuffer);
+                addDataToMap(data);
+            } catch (error) {
+                console.error('Erro ao carregar o arquivo KMZ:', error);
+                alert('Erro ao carregar o arquivo KMZ.');
+            }
         }
 
         function handleFile(event) {
@@ -238,7 +279,6 @@
         function addDataToMap(geojson) {
             clearLayers();
 
-            // Função para extrair geometrias de GeometryCollection
             function extractGeometries(feature) {
                 const geometries = [];
                 if (feature.geometry.type === 'GeometryCollection') {
@@ -263,7 +303,6 @@
                     if (f.geometry.type === 'Point') {
                         pointFeaturesArray.push(f);
                     } else if (['LineString', 'MultiLineString', 'Polygon', 'MultiPolygon'].includes(f.geometry.type)) {
-                        // Atribuir cor aleatória
                         f.properties = f.properties || {};
                         if (!f.properties.color) {
                             const color = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
@@ -284,7 +323,6 @@
                 features: lineFeaturesArray
             };
 
-            // Adicionar marcadores
             if (pointFeatures.features.length > 0) {
                 map.addSource('markers', { type: 'geojson', data: pointFeatures });
                 map.addLayer({
@@ -299,7 +337,6 @@
                     }
                 });
 
-                // Adicionar labels dos marcadores
                 map.addLayer({
                     id: 'marker-labels',
                     type: 'symbol',
@@ -318,7 +355,6 @@
                 });
             }
 
-            // Adicionar linhas com cores aleatórias ou predefinidas
             if (lineFeatures.features.length > 0) {
                 map.addSource('lines', { type: 'geojson', data: lineFeatures });
                 map.addLayer({
@@ -380,26 +416,20 @@
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition((position) => {
                     const userCoords = [position.coords.longitude, position.coords.latitude];
-
-                    // Armazenar a localização do usuário
                     userLocation = userCoords;
 
-                    // Fly to the user's location
                     map.flyTo({
                         center: userCoords,
                         zoom: 16
                     });
 
-                    // If a marker already exists, remove it
                     if (userLocationMarker) {
                         userLocationMarker.remove();
                     }
 
-                    // Add a marker at the user's location
                     userLocationMarker = new maplibregl.Marker({ color: 'blue' })
                         .setLngLat(userCoords)
                         .addTo(map);
-
                 }, () => {
                     alert('Não foi possível obter sua localização.');
                 });
@@ -413,7 +443,6 @@
             if (feature.geometry.type === 'Point') {
                 center = feature.geometry.coordinates;
             } else {
-                // For LineString, Polygon, MultiLineString, MultiPolygon
                 const coordinates = [];
 
                 function extractCoords(coords) {
@@ -434,19 +463,17 @@
 
                 center = [avgLon, avgLat];
             }
-
             return center;
         }
 
         function computeDistance(coord1, coord2) {
             const toRad = (value) => value * Math.PI / 180;
-
             const lat1 = coord1[1];
             const lon1 = coord1[0];
             const lat2 = coord2[1];
             const lon2 = coord2[0];
 
-            const R = 6371e3; // Earth's radius in meters
+            const R = 6371e3;
             const φ1 = toRad(lat1);
             const φ2 = toRad(lat2);
             const Δφ = toRad(lat2 - lat1);
@@ -457,8 +484,7 @@
                 Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-            const distance = R * c; // in meters
-
+            const distance = R * c;
             return distance;
         }
 
@@ -479,7 +505,6 @@
                 alert('Nenhum resultado encontrado para a busca.');
                 document.getElementById('searchResults').innerHTML = '';
             } else {
-                // Determine the user's location or map center
                 let referencePoint;
                 if (userLocation) {
                     referencePoint = userLocation;
@@ -487,26 +512,21 @@
                     referencePoint = map.getCenter().toArray();
                 }
 
-                // Compute distances
                 matches.forEach(feature => {
                     const center = getFeatureCenter(feature);
                     feature.properties.distance = computeDistance(referencePoint, center);
                 });
 
-                // Sort by distance
                 matches.sort((a, b) => a.properties.distance - b.properties.distance);
 
-                // Get top 5 results
                 const topResults = matches.slice(0, 5);
-
-                // Display results
                 displaySearchResults(topResults);
             }
         }
 
         function displaySearchResults(results) {
             const searchResultsDiv = document.getElementById('searchResults');
-            searchResultsDiv.innerHTML = ''; // Limpar resultados anteriores
+            searchResultsDiv.innerHTML = '';
 
             const ul = document.createElement('ul');
 
@@ -523,7 +543,6 @@
                         center: center,
                         zoom: 16
                     });
-                    // Limpar os resultados da busca
                     searchResultsDiv.innerHTML = '';
                 };
 
@@ -538,7 +557,6 @@
                 li.appendChild(nameSpan);
                 li.appendChild(viewButton);
                 li.appendChild(googleMapsButton);
-
                 ul.appendChild(li);
             });
 
