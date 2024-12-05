@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Visualizador de Mapas</title>
+    <title>Visualizador de Mapas - Google Earth Style</title>
     <style>
         body, html {
             margin: 0;
@@ -11,7 +11,6 @@
             height: 100%;
             overflow: hidden;
             font-family: Arial, sans-serif;
-            position: relative;
         }
 
         #map {
@@ -146,47 +145,6 @@
         .search-results button:hover {
             background-color: #357ae8;
         }
-
-        .kmz-menu {
-            position: absolute;
-            top: 80px;
-            left: 80px;
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-            z-index: 2000;
-            padding: 10px;
-            display: none;
-        }
-
-        .kmz-menu ul {
-            list-style: none;
-            margin: 0;
-            padding: 0;
-        }
-
-        .kmz-menu li {
-            padding: 8px 10px;
-            cursor: pointer;
-            border-bottom: 1px solid #f0f0f0;
-        }
-
-        .kmz-menu li:hover {
-            background-color: #f0f0f0;
-        }
-
-        .kmz-menu li:last-child {
-            border-bottom: none;
-        }
-
-        footer {
-            position: absolute;
-            bottom: 5px;
-            width: 100%;
-            text-align: center;
-            font-size: 10px;
-            color: #555;
-        }
     </style>
     <link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet" />
     <script src="https://unpkg.com/maplibre-gl"></script>
@@ -197,7 +155,7 @@
     <div id="map"></div>
 
     <div class="menu">
-        <button onclick="toggleKMZMenu()">
+        <button onclick="uploadFile()">
             <img src="https://img.icons8.com/ios-filled/50/000000/upload.png" alt="Upload">
         </button>
         <button onclick="toggleMarkers()">
@@ -224,17 +182,6 @@
 
     <div id="searchResults" class="search-results"></div>
 
-    <div class="kmz-menu" id="kmzMenu">
-        <ul id="kmzList"></ul>
-        <ul>
-            <li onclick="selectFromDevice()">Selecionar do dispositivo...</li>
-        </ul>
-    </div>
-
-    <footer>
-        todos direitos reservado a Lucas Teixeira.
-    </footer>
-
     <script>
         const map = new maplibregl.Map({
             container: 'map',
@@ -258,34 +205,33 @@
             { name: 'CSMPINAS BARAO GERALDO.kmz', url: 'CSMPINAS BARAO GERALDO.kmz' },
         ];
 
-        const kmzMenu = document.getElementById('kmzMenu');
-        const kmzList = document.getElementById('kmzList');
+        function uploadFile() {
+            const choice = prompt(
+                "Escolha uma opção:\n" +
+                "1. CAMPINAS TREVO.kmz\n" +
+                "2. CAMPINAS CENTRO.kmz\n" +
+                "3. CAMPINAS CAMPO GRANDE.kmz\n" +
+                "4. CAMPINAS SOUZAS.kmz\n" +
+                "5. CSMPINAS BARAO GERALDO.kmz\n\n" +
+                "Clique em OK sem digitar nada para selecionar um arquivo do seu dispositivo."
+            );
 
-        predefinedFiles.forEach((file, index) => {
-            const li = document.createElement('li');
-            li.textContent = file.name;
-            li.onclick = () => {
-                loadKMZFromURL(file.url);
-                kmzMenu.style.display = 'none';
-            };
-            kmzList.appendChild(li);
-        });
+            if (choice === null) return; // Usuário cancelou
 
-        function toggleKMZMenu() {
-            if (kmzMenu.style.display === 'block') {
-                kmzMenu.style.display = 'none';
+            const index = parseInt(choice, 10);
+
+            // Se não digitou nada ou digitou algo inválido, abrir seletor de arquivo do dispositivo
+            if (!choice || isNaN(index) || index < 1 || index > 5) {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.kml,.kmz';
+                input.onchange = handleFile;
+                input.click();
             } else {
-                kmzMenu.style.display = 'block';
+                // Carregar o arquivo KMZ a partir da URL definida
+                const fileObj = predefinedFiles[index - 1];
+                loadKMZFromURL(fileObj.url);
             }
-        }
-
-        function selectFromDevice() {
-            kmzMenu.style.display = 'none';
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.kml,.kmz';
-            input.onchange = handleFile;
-            input.click();
         }
 
         async function loadKMZFromURL(url) {
@@ -594,4 +540,28 @@
                 viewButton.onclick = () => {
                     const center = getFeatureCenter(result);
                     map.flyTo({
-             
+                        center: center,
+                        zoom: 16
+                    });
+                    searchResultsDiv.innerHTML = '';
+                };
+
+                const googleMapsButton = document.createElement('button');
+                googleMapsButton.textContent = 'Google Maps';
+                googleMapsButton.onclick = () => {
+                    const center = getFeatureCenter(result);
+                    const url = `https://www.google.com/maps?q=${center[1]},${center[0]}`;
+                    window.open(url, '_blank');
+                };
+
+                li.appendChild(nameSpan);
+                li.appendChild(viewButton);
+                li.appendChild(googleMapsButton);
+                ul.appendChild(li);
+            });
+
+            searchResultsDiv.appendChild(ul);
+        }
+    </script>
+</body>
+</html>
