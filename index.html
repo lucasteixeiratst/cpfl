@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Visualizador de Mapas</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            position: relative;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+
+        .menu {
+            position: absolute;
+            top: 50%;
+            left: 20px;
+            transform: translateY(-50%);
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px 0;
+        }
+
+        .menu button {
+            background-color: #ffffff;
+            border: none;
+            padding: 10px;
+            margin: 5px 0;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .menu button:hover {
+            background-color: #f0f0f0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .menu button img {
+            width: 20px;
+            height: 20px;
+        }
+
+        .search-bar {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 300px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            display: flex;
+            padding: 10px;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .search-bar input {
+            flex: 1;
+            border: none;
+            outline: none;
+            padding: 10px;
+            font-size: 14px;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-bar button {
+            background-color: #4285F4;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .search-bar button:hover {
+            background-color: #357ae8;
+        }
+
+        .search-results {
+            position: absolute;
+            top: 70px;
+            left: 20px;
+            width: 300px;
+            max-height: 200px;
+            overflow-y: auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+        }
+
+        .search-results ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .search-results li {
+            padding: 10px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .search-results li:hover {
+            background-color: #f0f0f0;
+        }
+
+        .search-results button {
+            margin-left: 10px;
+            background-color: #4285F4;
+            color: white;
+            border: none;
+            padding: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .search-results button:hover {
+            background-color: #357ae8;
+        }
+
+        .kmz-menu {
+            position: absolute;
+            top: 80px;
+            left: 80px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            z-index: 2000;
+            padding: 10px;
+            display: none;
+        }
+
+        .kmz-menu ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .kmz-menu li {
+            padding: 8px 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .kmz-menu li:hover {
+            background-color: #f0f0f0;
+        }
+
+        .kmz-menu li:last-child {
+            border-bottom: none;
+        }
+
+        footer {
+            position: absolute;
+            bottom: 5px;
+            width: 100%;
+            text-align: center;
+            font-size: 10px;
+            color: #555;
+        }
+    </style>
+    <link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet" />
+    <script src="https://unpkg.com/maplibre-gl"></script>
+    <script src="https://unpkg.com/@tmcw/togeojson"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.6.0/jszip.min.js"></script>
+</head>
+<body>
+    <div id="map"></div>
+
+    <div class="menu">
+        <button onclick="toggleKMZMenu()">
+            <img src="https://img.icons8.com/ios-filled/50/000000/upload.png" alt="Upload">
+        </button>
+        <button onclick="toggleMarkers()">
+            <img src="https://img.icons8.com/material-outlined/24/000000/map-pin.png" alt="Marcadores">
+        </button>
+        <button onclick="toggleNames()">
+            <img src="https://img.icons8.com/material-outlined/24/000000/name.png" alt="Nomes">
+        </button>
+        <button onclick="toggleLines()">
+            <img src="https://img.icons8.com/material-outlined/24/000000/polyline.png" alt="Linhas">
+        </button>
+        <button onclick="resetView()">
+            <img src="https://img.icons8.com/material-outlined/24/000000/refresh.png" alt="Resetar">
+        </button>
+        <button onclick="goToCurrentLocation()">
+            <img src="https://img.icons8.com/material-outlined/24/000000/compass.png" alt="Localização Atual">
+        </button>
+    </div>
+
+    <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="Buscar no mapa..." />
+        <button onclick="searchFeatures()">Buscar</button>
+    </div>
+
+    <div id="searchResults" class="search-results"></div>
+
+    <div class="kmz-menu" id="kmzMenu">
+        <ul id="kmzList"></ul>
+        <ul>
+            <li onclick="selectFromDevice()">Selecionar do dispositivo...</li>
+        </ul>
+    </div>
+
+    <footer>
+        Todos direitos reservado a Lucas Teixeira.
+    </footer>
+
+    <script>
+        const map = new maplibregl.Map({
+            container: 'map',
+            style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+            center: [-47.068847, -22.934973],
+            zoom: 13
+        });
+
+        let markersVisible = true;
+        let namesVisible = true;
+        let linesVisible = true;
+        let userLocation = null;
+
+        const searchInput = document.getElementById('searchInput');
+
+        const predefinedFiles = [
+            { name: 'CAMPINAS TREVO.kmz', url: 'CAMPINAS TREVO.kmz' },
+            { name: 'CAMPINAS CENTRO.kmz', url: 'CAMPINAS CENTRO.kmz' },
+            { name: 'CAMPINAS CAMPO GRANDE.kmz', url: 'CAMPINAS CAMPO GRANDE.kmz' },
+            { name: 'CAMPINAS SOUZAS.kmz', url: 'CAMPINAS SOUZAS.kmz' },
+            { name: 'CSMPINAS BARAO GERALDO.kmz', url: 'CSMPINAS BARAO GERALDO.kmz' },
+        ];
+
+        const kmzMenu = document.getElementById('kmzMenu');
+        const kmzList = document.getElementById('kmzList');
+
+        predefinedFiles.forEach((file, index) => {
+            const li = document.createElement('li');
+            li.textContent = file.name;
+            li.onclick = () => {
+                loadKMZFromURL(file.url);
+                kmzMenu.style.display = 'none';
+            };
+            kmzList.appendChild(li);
+        });
+
+        function toggleKMZMenu() {
+            if (kmzMenu.style.display === 'block') {
+                kmzMenu.style.display = 'none';
+            } else {
+                kmzMenu.style.display = 'block';
+            }
+        }
+
+        function selectFromDevice() {
+            kmzMenu.style.display = 'none';
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.kml,.kmz';
+            input.onchange = handleFile;
+            input.click();
+        }
+
+        async function loadKMZFromURL(url) {
+            try {
+                const response = await fetch(url);
+                const arrayBuffer = await response.arrayBuffer();
+                const data = await parseKMZ(arrayBuffer);
+                addDataToMap(data);
+            } catch (error) {
+                console.error('Erro ao carregar o arquivo KMZ:', error);
+                alert('Erro ao carregar o arquivo KMZ.');
+            }
+        }
+
+        function handleFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async () => {
+                try {
+                    const data = file.name.endsWith('.kmz')
+                        ? await parseKMZ(reader.result)
+                        : toGeoJSON.kml(new DOMParser().parseFromString(reader.result, 'text/xml'));
+                    addDataToMap(data);
+                } catch (error) {
+                    console.error('Erro ao processar o arquivo:', error);
+                    alert('Erro ao processar o arquivo KML/KMZ.');
+                }
+            };
+            if (file.name.endsWith('.kmz')) {
+                reader.readAsArrayBuffer(file);
+            } else {
+                reader.readAsText(file);
+            }
+        }
+
+        async function parseKMZ(data) {
+            const zip = await JSZip.loadAsync(data);
+            const kmlFile = zip.file(/\.kml$/i)[0];
+            const kmlContent = await kmlFile.async('string');
+            return toGeoJSON.kml(new DOMParser().parseFromString(kmlContent, 'text/xml'));
+        }
+
+        function addDataToMap(geojson) {
+            clearLayers();
+
+            function extractGeometries(feature) {
+                const geometries = [];
+                if (feature.geometry.type === 'GeometryCollection') {
+                    feature.geometry.geometries.forEach(geom => {
+                        geometries.push({
+                            ...feature,
+                            geometry: geom
+                        });
+                    });
+                } else {
+                    geometries.push(feature);
+                }
+                return geometries;
+            }
+
+            const pointFeaturesArray = [];
+            const lineFeaturesArray = [];
+
+            geojson.features.forEach(feature => {
+                const features = extractGeometries(feature);
+                features.forEach(f => {
+                    if (f.geometry.type === 'Point') {
+                        pointFeaturesArray.push(f);
+                    } else if (['LineString', 'MultiLineString', 'Polygon', 'MultiPolygon'].includes(f.geometry.type)) {
+                        f.properties = f.properties || {};
+                        if (!f.properties.color) {
+                            const color = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+                            f.properties.color = color;
+                        }
+                        lineFeaturesArray.push(f);
+                    }
+                });
+            });
+
+            const pointFeatures = {
+                type: 'FeatureCollection',
+                features: pointFeaturesArray
+            };
+
+            const lineFeatures = {
+                type: 'FeatureCollection',
+                features: lineFeaturesArray
+            };
+
+            if (pointFeatures.features.length > 0) {
+                map.addSource('markers', { type: 'geojson', data: pointFeatures });
+                map.addLayer({
+                    id: 'marker-circles',
+                    type: 'circle',
+                    source: 'markers',
+                    paint: {
+                        'circle-radius': 6,
+                        'circle-color': '#FF5722',
+                        'circle-stroke-width': 2,
+                        'circle-stroke-color': '#FFFFFF'
+                    }
+                });
+
+                map.addLayer({
+                    id: 'marker-labels',
+                    type: 'symbol',
+                    source: 'markers',
+                    layout: {
+                        'text-field': ['get', 'name'],
+                        'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
+                        'text-size': 12,
+                        'text-offset': [0, 1.5]
+                    },
+                    paint: {
+                        'text-color': '#000000',
+                        'text-halo-color': '#FFFFFF',
+                        'text-halo-width': 1
+                    }
+                });
+            }
+
+            if (lineFeatures.features.length > 0) {
+                map.addSource('lines', { type: 'geojson', data: lineFeatures });
+                map.addLayer({
+                    id: 'lines',
+                    type: 'line',
+                    source: 'lines',
+                    paint: {
+                        'line-color': ['get', 'color'],
+                        'line-width': 4
+                    }
+                });
+            }
+        }
+
+        function clearLayers() {
+            const layers = ['marker-circles', 'marker-labels', 'lines'];
+            layers.forEach((layer) => {
+                if (map.getLayer(layer)) {
+                    map.removeLayer(layer);
+                }
+            });
+
+            const sources = ['markers', 'lines'];
+            sources.forEach((source) => {
+                if (map.getSource(source)) {
+                    map.removeSource(source);
+                }
+            });
+        }
+
+        function toggleMarkers() {
+            markersVisible = !markersVisible;
+            const visibility = markersVisible ? 'visible' : 'none';
+            if (map.getLayer('marker-circles')) map.setLayoutProperty('marker-circles', 'visibility', visibility);
+        }
+
+        function toggleNames() {
+            namesVisible = !namesVisible;
+            const visibility = namesVisible ? 'visible' : 'none';
+            if (map.getLayer('marker-labels')) map.setLayoutProperty('marker-labels', 'visibility', visibility);
+        }
+
+        function toggleLines() {
+            linesVisible = !linesVisible;
+            const visibility = linesVisible ? 'visible' : 'none';
+            if (map.getLayer('lines')) map.setLayoutProperty('lines', 'visibility', visibility);
+        }
+
+        function resetView() {
+            map.easeTo({
+                center: [-47.068847, -22.934973],
+                zoom: 13
+            });
+        }
+
+        let userLocationMarker;
+
+        function goToCurrentLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition((position) => {
+                    const userCoords = [position.coords.longitude, position.coords.latitude];
+                    userLocation = userCoords;
+
+                    map.flyTo({
+                        center: userCoords,
+                        zoom: 16
+                    });
+
+                    if (userLocationMarker) {
+                        userLocationMarker.remove();
+                    }
+
+                    userLocationMarker = new maplibregl.Marker({ color: 'blue' })
+                        .setLngLat(userCoords)
+                        .addTo(map);
+                }, () => {
+                    alert('Não foi possível obter sua localização.');
+                });
+            } else {
+                alert('Geolocalização não é suportada pelo seu navegador.');
+            }
+        }
+
+        function getFeatureCenter(feature) {
+            let center;
+            if (feature.geometry.type === 'Point') {
+                center = feature.geometry.coordinates;
+            } else {
+                const coordinates = [];
+
+                function extractCoords(coords) {
+                    if (typeof coords[0] === 'number') {
+                        coordinates.push(coords);
+                    } else {
+                        coords.forEach(c => extractCoords(c));
+                    }
+                }
+
+                extractCoords(feature.geometry.coordinates);
+
+                const lons = coordinates.map(coord => coord[0]);
+                const lats = coordinates.map(coord => coord[1]);
+
+                const avgLon = lons.reduce((a, b) => a + b, 0) / lons.length;
+                const avgLat = lats.reduce((a, b) => a + b, 0) / lats.length;
+
+                center = [avgLon, avgLat];
+            }
+            return center;
+        }
+
+        function computeDistance(coord1, coord2) {
+            const toRad = (value) => value * Math.PI / 180;
+            const lat1 = coord1[1];
+            const lon1 = coord1[0];
+            const lat2 = coord2[1];
+            const lon2 = coord2[0];
+
+            const R = 6371e3;
+            const φ1 = toRad(lat1);
+            const φ2 = toRad(lat2);
+            const Δφ = toRad(lat2 - lat1);
+            const Δλ = toRad(lon2 - lon1);
+
+            const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                Math.cos(φ1) * Math.cos(φ2) *
+                Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+            const distance = R * c;
+            return distance;
+        }
+
+        function searchFeatures() {
+            const term = searchInput.value.toLowerCase();
+            if (!term) return alert('Digite um termo para buscar.');
+
+            const markerFeatures = map.getSource('markers') ? map.getSource('markers')._data.features : [];
+            const lineFeatures = map.getSource('lines') ? map.getSource('lines')._data.features : [];
+
+            const allFeatures = markerFeatures.concat(lineFeatures);
+
+            const matches = allFeatures.filter(feature => {
+                return feature.properties && feature.properties.name && feature.properties.name.toLowerCase().includes(term);
+            });
+
+            if (matches.length === 0) {
+                alert('Nenhum resultado encontrado para a busca.');
+                document.getElementById('searchResults').innerHTML = '';
+            } else {
+                let referencePoint;
+                if (userLocation) {
+                    referencePoint = userLocation;
+                } else {
+                    referencePoint = map.getCenter().toArray();
+                }
+
+                matches.forEach(feature => {
+                    const center = getFeatureCenter(feature);
+                    feature.properties.distance = computeDistance(referencePoint, center);
+                });
+
+                matches.sort((a, b) => a.properties.distance - b.properties.distance);
+
+                const topResults = matches.slice(0, 5);
+                displaySearchResults(topResults);
+            }
+        }
+
+        function displaySearchResults(results) {
+            const searchResultsDiv = document.getElementById('searchResults');
+            searchResultsDiv.innerHTML = '';
+
+            const ul = document.createElement('ul');
+
+            results.forEach(result => {
+                const li = document.createElement('li');
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = `${result.properties.name} (${(result.properties.distance / 1000).toFixed(2)} km)`;
+
+                const viewButton = document.createElement('button');
+                viewButton.textContent = 'Visualizar';
+                viewButton.onclick = () => {
+                    const center = getFeatureCenter(result);
+                    map.flyTo({
+                        center: center,
+                        zoom: 16
+                    });
+                    searchResultsDiv.innerHTML = '';
+                };
+
+                const googleMapsButton = document.createElement('button');
+                googleMapsButton.textContent = 'Google Maps';
+                googleMapsButton.onclick = () => {
+                    const center = getFeatureCenter(result);
+                    const url = `https://www.google.com/maps?q=${center[1]},${center[0]}`;
+                    window.open(url, '_blank');
+                };
+
+                li.appendChild(nameSpan);
+                li.appendChild(viewButton);
+                li.appendChild(googleMapsButton);
+                ul.appendChild(li);
+            });
+
+            searchResultsDiv.appendChild(ul);
+        }
+    </script>
+</body>
+</html>
