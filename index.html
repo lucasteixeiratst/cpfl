@@ -179,6 +179,53 @@
             border-bottom: none;
         }
 
+        .line-menu {
+            position: absolute;
+            top: 80px;  
+            left: 100px; 
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            z-index: 2000;
+            padding: 10px;
+            display: none;
+        }
+
+        .line-menu ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            max-height: 200px; /* limite de altura */
+            overflow-y: auto;  /* ativa rolagem vertical */
+        }
+
+        .line-menu li {
+            padding: 8px 10px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .line-menu li:last-child {
+            border-bottom: none;
+        }
+
+        .line-menu li label {
+            cursor: pointer;
+        }
+
+        .line-menu button {
+            background-color: #4285F4;
+            color: #fff;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px 0;
+        }
+
+        .line-menu button:hover {
+            background-color: #357ae8;
+        }
+
         footer {
             position: absolute;
             bottom: 5px;
@@ -215,6 +262,9 @@
         <button onclick="goToCurrentLocation()">
             <img src="https://img.icons8.com/material-outlined/24/000000/compass.png" alt="Localização Atual">
         </button>
+        <button onclick="toggleLineGroupsMenu()">
+            <img src="https://img.icons8.com/material-outlined/24/000000/layers.png" alt="Grupos de Linhas">
+        </button>
     </div>
 
     <div class="search-bar">
@@ -229,6 +279,14 @@
         <ul>
             <li onclick="selectFromDevice()">Selecionar do dispositivo...</li>
         </ul>
+    </div>
+
+    <div class="line-menu" id="lineMenu">
+        <div style="display:flex; gap:10px; margin-bottom:10px;">
+            <button onclick="hideAllAlimentadores()">Ocultar Todas</button>
+            <button onclick="showAllAlimentadores()">Exibir Todas</button>
+        </div>
+        <ul id="lineGroupsList"></ul>
     </div>
 
     <footer>
@@ -248,6 +306,9 @@
         let linesVisible = true;
         let userLocation = null;
 
+        let alimentadoresList = [];
+        let selectedAlimentadores = new Set();
+
         const searchInput = document.getElementById('searchInput');
 
         const predefinedFiles = [
@@ -255,7 +316,7 @@
             { name: 'CAMPINAS CENTRO.kmz', url: 'CAMPINAS CENTRO.kmz' },
             { name: 'CAMPINAS CAMPO GRANDE.kmz', url: 'CAMPINAS CAMPO GRANDE.kmz' },
             { name: 'CAMPINAS SOUZAS.kmz', url: 'CAMPINAS SOUZAS.kmz' },
-            { name: 'CSMPINAS BARAO GERALDO.kmz', url: 'CSMPINAS BARAO GERALDO.kmz' },
+            { name: 'CAMPINAS BARAO GERALDO.kmz', url: 'CAMPINAS BARAO GERALDO.kmz' },
         ];
 
         const kmzMenu = document.getElementById('kmzMenu');
@@ -332,6 +393,8 @@
 
         function addDataToMap(geojson) {
             clearLayers();
+            alimentadoresList = [];
+            selectedAlimentadores.clear();
 
             function extractGeometries(feature) {
                 const geometries = [];
@@ -396,7 +459,7 @@
                     type: 'symbol',
                     source: 'markers',
                     layout: {
-                        'text-field': ['get', 'name'],
+                        'text-field': ['coalesce', ['get', 'name'], ['get', 'Alimentador']],
                         'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
                         'text-size': 12,
                         'text-offset': [0, 1.5]
@@ -420,7 +483,68 @@
                         'line-width': 4
                     }
                 });
+
+                const alimentadores = new Set();
+                lineFeatures.features.forEach(f => {
+                    if (f.properties && f.properties.Alimentador) {
+                        alimentadores.add(f.properties.Alimentador);
+                    }
+                });
+
+                alimentadoresList = Array.from(alimentadores);
+                const lineGroupsList = document.getElementById('lineGroupsList');
+                lineGroupsList.innerHTML = '';
+
+                alimentadoresList.forEach(al => {
+                    selectedAlimentadores.add(al);
+                    const li = document.createElement('li');
+                    const lbl = document.createElement('label');
+                    const chk = document.createElement('input');
+                    chk.type = 'checkbox';
+                    chk.value = al;
+                    chk.checked = true;
+                    chk.onchange = () => {
+                        if (chk.checked) {
+                            selectedAlimentadores.add(al);
+                        } else {
+                            selectedAlimentadores.delete(al);
+                        }
+                        applyAlimentadorFilter();
+                    };
+
+                    lbl.appendChild(chk);
+                    lbl.appendChild(document.createTextNode(' ' + al));
+                    li.appendChild(lbl);
+                    lineGroupsList.appendChild(li);
+                });
+
+                applyAlimentadorFilter();
             }
+        }
+
+        function applyAlimentadorFilter() {
+            if (selectedAlimentadores.size === 0) {
+                map.setFilter('lines', ["==", ["get", "Alimentador"], "___no_match___"]);
+            } else if (selectedAlimentadores.size === alimentadoresList.length) {
+                map.setFilter('lines', null);
+            } else {
+                const filtro = ["in", "Alimentador", ...selectedAlimentadores];
+                map.setFilter('lines', filtro);
+            }
+        }
+
+        function hideAllAlimentadores() {
+            selectedAlimentadores.clear();
+            const checkboxes = document.querySelectorAll('#lineGroupsList input[type=checkbox]');
+            checkboxes.forEach(chk => chk.checked = false);
+            applyAlimentadorFilter();
+        }
+
+        function showAllAlimentadores() {
+            selectedAlimentadores = new Set(alimentadoresList);
+            const checkboxes = document.querySelectorAll('#lineGroupsList input[type=checkbox]');
+            checkboxes.forEach(chk => chk.checked = true);
+            applyAlimentadorFilter();
         }
 
         function clearLayers() {
@@ -552,7 +676,8 @@
             const allFeatures = markerFeatures.concat(lineFeatures);
 
             const matches = allFeatures.filter(feature => {
-                return feature.properties && feature.properties.name && feature.properties.name.toLowerCase().includes(term);
+                return feature.properties && ((feature.properties.name && feature.properties.name.toLowerCase().includes(term)) 
+                || (feature.properties.Alimentador && feature.properties.Alimentador.toLowerCase().includes(term)));
             });
 
             if (matches.length === 0) {
@@ -587,7 +712,8 @@
             results.forEach(result => {
                 const li = document.createElement('li');
                 const nameSpan = document.createElement('span');
-                nameSpan.textContent = `${result.properties.name} (${(result.properties.distance / 1000).toFixed(2)} km)`;
+                const displayName = result.properties.name || result.properties.Alimentador || 'Sem nome';
+                nameSpan.textContent = `${displayName} (${(result.properties.distance / 1000).toFixed(2)} km)`;
 
                 const viewButton = document.createElement('button');
                 viewButton.textContent = 'Visualizar';
@@ -615,6 +741,15 @@
             });
 
             searchResultsDiv.appendChild(ul);
+        }
+
+        function toggleLineGroupsMenu() {
+            const lineMenu = document.getElementById('lineMenu');
+            if (lineMenu.style.display === 'block') {
+                lineMenu.style.display = 'none';
+            } else {
+                lineMenu.style.display = 'block';
+            }
         }
     </script>
 </body>
