@@ -35,6 +35,7 @@
         }
 
         .menu button {
+            position: relative;
             background-color: #ffffff;
             border: none;
             padding: 10px;
@@ -58,6 +59,20 @@
         .menu button img {
             width: 20px;
             height: 20px;
+        }
+
+        .button-legend {
+            position: absolute;
+            top: 50%;
+            left: 50px;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.9);
+            border-radius: 4px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            padding: 5px;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 2000;
         }
 
         .search-bar {
@@ -195,8 +210,8 @@
             list-style: none;
             margin: 0;
             padding: 0;
-            max-height: 200px; /* limite de altura */
-            overflow-y: auto;  /* ativa rolagem vertical */
+            max-height: 200px;
+            overflow-y: auto;
         }
 
         .line-menu li {
@@ -244,32 +259,39 @@
     <div id="map"></div>
 
     <div class="menu">
-        <button onclick="toggleKMZMenu()">
+        <button id="btnKMZ">
             <img src="https://img.icons8.com/ios-filled/50/000000/upload.png" alt="Upload">
+            <div class="button-legend">Carregar KMZ/KML</div>
         </button>
-        <button onclick="toggleMarkers()">
+        <button id="btnMarkers">
             <img src="https://img.icons8.com/material-outlined/24/000000/map-pin.png" alt="Marcadores">
+            <div class="button-legend">Exibir/Ocultar Marcadores</div>
         </button>
-        <button onclick="toggleNames()">
+        <button id="btnNames">
             <img src="https://img.icons8.com/material-outlined/24/000000/name.png" alt="Nomes">
+            <div class="button-legend">Exibir/Ocultar Nomes</div>
         </button>
-        <button onclick="toggleLines()">
+        <button id="btnLines">
             <img src="https://img.icons8.com/material-outlined/24/000000/polyline.png" alt="Linhas">
+            <div class="button-legend">Exibir/Ocultar Linhas</div>
         </button>
-        <button onclick="resetView()">
+        <button id="btnReset">
             <img src="https://img.icons8.com/material-outlined/24/000000/refresh.png" alt="Resetar">
+            <div class="button-legend">Resetar Visão</div>
         </button>
-        <button onclick="goToCurrentLocation()">
+        <button id="btnLocation">
             <img src="https://img.icons8.com/material-outlined/24/000000/compass.png" alt="Localização Atual">
+            <div class="button-legend">Minha Localização</div>
         </button>
-        <button onclick="toggleLineGroupsMenu()">
+        <button id="btnLineGroups">
             <img src="https://img.icons8.com/material-outlined/24/000000/layers.png" alt="Grupos de Linhas">
+            <div class="button-legend">Grupos de Linhas</div>
         </button>
     </div>
 
     <div class="search-bar">
         <input type="text" id="searchInput" placeholder="Buscar no mapa..." />
-        <button onclick="searchFeatures()">Buscar</button>
+        <button id="btnSearch">Buscar</button>
     </div>
 
     <div id="searchResults" class="search-results"></div>
@@ -277,14 +299,14 @@
     <div class="kmz-menu" id="kmzMenu">
         <ul id="kmzList"></ul>
         <ul>
-            <li onclick="selectFromDevice()">Selecionar do dispositivo...</li>
+            <li id="selectDevice">Selecionar do dispositivo...</li>
         </ul>
     </div>
 
     <div class="line-menu" id="lineMenu">
         <div style="display:flex; gap:10px; margin-bottom:10px;">
-            <button onclick="hideAllAlimentadores()">Ocultar Todas</button>
-            <button onclick="showAllAlimentadores()">Exibir Todas</button>
+            <button id="hideAll">Ocultar Todas</button>
+            <button id="showAll">Exibir Todas</button>
         </div>
         <ul id="lineGroupsList"></ul>
     </div>
@@ -294,6 +316,17 @@
     </footer>
 
     <script>
+        const state = {
+            markersVisible: true,
+            namesVisible: true,
+            linesVisible: true,
+            userLocation: null,
+            alimentadoresList: [],
+            selectedAlimentadores: new Set(),
+            hasAlimentador: false,
+            groupingProperty: null // Propriedade usada para agrupar (Alimentador, se existir, caso contrário name)
+        };
+
         const map = new maplibregl.Map({
             container: 'map',
             style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
@@ -301,15 +334,11 @@
             zoom: 13
         });
 
-        let markersVisible = true;
-        let namesVisible = true;
-        let linesVisible = true;
-        let userLocation = null;
-
-        let alimentadoresList = [];
-        let selectedAlimentadores = new Set();
-
         const searchInput = document.getElementById('searchInput');
+        const kmzMenu = document.getElementById('kmzMenu');
+        const kmzList = document.getElementById('kmzList');
+        const lineMenu = document.getElementById('lineMenu');
+        const lineGroupsList = document.getElementById('lineGroupsList');
 
         const predefinedFiles = [
             { name: 'CAMPINAS TREVO.kmz', url: 'CAMPINAS TREVO.kmz' },
@@ -319,25 +348,36 @@
             { name: 'CAMPINAS BARAO GERALDO.kmz', url: 'CAMPINAS BARAO GERALDO.kmz' },
         ];
 
-        const kmzMenu = document.getElementById('kmzMenu');
-        const kmzList = document.getElementById('kmzList');
-
-        predefinedFiles.forEach((file, index) => {
+        predefinedFiles.forEach((file) => {
             const li = document.createElement('li');
             li.textContent = file.name;
-            li.onclick = () => {
+            li.addEventListener('click', () => {
                 loadKMZFromURL(file.url);
                 kmzMenu.style.display = 'none';
-            };
+            });
             kmzList.appendChild(li);
         });
 
-        function toggleKMZMenu() {
-            if (kmzMenu.style.display === 'block') {
-                kmzMenu.style.display = 'none';
+        document.getElementById('btnKMZ').addEventListener('click', () => toggleVisibility(kmzMenu));
+        document.getElementById('btnMarkers').addEventListener('click', toggleMarkers);
+        document.getElementById('btnNames').addEventListener('click', toggleNames);
+        document.getElementById('btnLines').addEventListener('click', toggleLines);
+        document.getElementById('btnReset').addEventListener('click', resetView);
+        document.getElementById('btnLocation').addEventListener('click', goToCurrentLocation);
+        document.getElementById('btnLineGroups').addEventListener('click', () => {
+            if (state.alimentadoresList.length === 0) {
+                alert('Este arquivo não possui grupos de linhas para filtrar.');
             } else {
-                kmzMenu.style.display = 'block';
+                toggleVisibility(lineMenu);
             }
+        });
+        document.getElementById('btnSearch').addEventListener('click', searchFeatures);
+        document.getElementById('selectDevice').addEventListener('click', selectFromDevice);
+        document.getElementById('hideAll').addEventListener('click', hideAllAlimentadores);
+        document.getElementById('showAll').addEventListener('click', showAllAlimentadores);
+
+        function toggleVisibility(element) {
+            element.style.display = (element.style.display === 'block') ? 'none' : 'block';
         }
 
         function selectFromDevice() {
@@ -393,17 +433,16 @@
 
         function addDataToMap(geojson) {
             clearLayers();
-            alimentadoresList = [];
-            selectedAlimentadores.clear();
+            state.alimentadoresList = [];
+            state.selectedAlimentadores.clear();
+            state.hasAlimentador = false;
+            state.groupingProperty = null;
 
             function extractGeometries(feature) {
                 const geometries = [];
                 if (feature.geometry.type === 'GeometryCollection') {
                     feature.geometry.geometries.forEach(geom => {
-                        geometries.push({
-                            ...feature,
-                            geometry: geom
-                        });
+                        geometries.push({ ...feature, geometry: geom });
                     });
                 } else {
                     geometries.push(feature);
@@ -484,6 +523,7 @@
                     }
                 });
 
+                // Primeiro, tentar agrupar por Alimentador
                 const alimentadores = new Set();
                 lineFeatures.features.forEach(f => {
                     if (f.properties && f.properties.Alimentador) {
@@ -491,57 +531,97 @@
                     }
                 });
 
-                alimentadoresList = Array.from(alimentadores);
-                const lineGroupsList = document.getElementById('lineGroupsList');
+                if (alimentadores.size > 0) {
+                    // Temos alimentadores, usar esse grupo
+                    state.alimentadoresList = Array.from(alimentadores);
+                    state.groupingProperty = 'Alimentador';
+                } else {
+                    // Não há Alimentador, tentar agrupar por 'name' das linhas
+                    const gruposPorNome = new Set();
+                    lineFeatures.features.forEach(f => {
+                        if (f.properties && f.properties.name) {
+                            gruposPorNome.add(f.properties.name);
+                        }
+                    });
+                    if (gruposPorNome.size > 1) {
+                        // Temos mais de um grupo baseado em name
+                        state.alimentadoresList = Array.from(gruposPorNome);
+                        state.groupingProperty = 'name';
+                    } else if (gruposPorNome.size === 1) {
+                        // Apenas um grupo, mesmo assim criaremos a filtragem com um grupo único
+                        state.alimentadoresList = Array.from(gruposPorNome);
+                        state.groupingProperty = 'name';
+                    } else {
+                        // Nenhum alimentador e nem name para agrupar
+                        // Exibe todas as linhas sem filtragem de grupos
+                        state.alimentadoresList = [];
+                        state.groupingProperty = null;
+                    }
+                }
+
                 lineGroupsList.innerHTML = '';
 
-                alimentadoresList.forEach(al => {
-                    selectedAlimentadores.add(al);
-                    const li = document.createElement('li');
-                    const lbl = document.createElement('label');
-                    const chk = document.createElement('input');
-                    chk.type = 'checkbox';
-                    chk.value = al;
-                    chk.checked = true;
-                    chk.onchange = () => {
-                        if (chk.checked) {
-                            selectedAlimentadores.add(al);
-                        } else {
-                            selectedAlimentadores.delete(al);
-                        }
-                        applyAlimentadorFilter();
-                    };
+                if (state.alimentadoresList.length > 0 && state.groupingProperty) {
+                    // Criar checkboxes para cada grupo
+                    state.alimentadoresList.forEach(grp => {
+                        state.selectedAlimentadores.add(grp);
+                        const li = document.createElement('li');
+                        const lbl = document.createElement('label');
+                        const chk = document.createElement('input');
+                        chk.type = 'checkbox';
+                        chk.value = grp;
+                        chk.checked = true;
+                        chk.onchange = () => {
+                            if (chk.checked) {
+                                state.selectedAlimentadores.add(grp);
+                            } else {
+                                state.selectedAlimentadores.delete(grp);
+                            }
+                            applyAlimentadorFilter();
+                        };
 
-                    lbl.appendChild(chk);
-                    lbl.appendChild(document.createTextNode(' ' + al));
-                    li.appendChild(lbl);
-                    lineGroupsList.appendChild(li);
-                });
+                        lbl.appendChild(chk);
+                        lbl.appendChild(document.createTextNode(' ' + grp));
+                        li.appendChild(lbl);
+                        lineGroupsList.appendChild(li);
+                    });
 
-                applyAlimentadorFilter();
+                    applyAlimentadorFilter();
+                } else {
+                    // Sem grupos, nenhuma filtragem
+                    map.setFilter('lines', null);
+                }
             }
         }
 
         function applyAlimentadorFilter() {
-            if (selectedAlimentadores.size === 0) {
-                map.setFilter('lines', ["==", ["get", "Alimentador"], "___no_match___"]);
-            } else if (selectedAlimentadores.size === alimentadoresList.length) {
+            if (!state.groupingProperty || state.alimentadoresList.length === 0) {
+                // Sem propriedade de agrupamento ou sem grupos
+                map.setFilter('lines', null);
+                return;
+            }
+
+            if (state.selectedAlimentadores.size === 0) {
+                map.setFilter('lines', ["==", ["get", state.groupingProperty], "___no_match___"]);
+            } else if (state.selectedAlimentadores.size === state.alimentadoresList.length) {
                 map.setFilter('lines', null);
             } else {
-                const filtro = ["in", "Alimentador", ...selectedAlimentadores];
+                const filtro = ["in", state.groupingProperty, ...state.selectedAlimentadores];
                 map.setFilter('lines', filtro);
             }
         }
 
         function hideAllAlimentadores() {
-            selectedAlimentadores.clear();
+            if (state.alimentadoresList.length === 0) return; 
+            state.selectedAlimentadores.clear();
             const checkboxes = document.querySelectorAll('#lineGroupsList input[type=checkbox]');
             checkboxes.forEach(chk => chk.checked = false);
             applyAlimentadorFilter();
         }
 
         function showAllAlimentadores() {
-            selectedAlimentadores = new Set(alimentadoresList);
+            if (state.alimentadoresList.length === 0) return; 
+            state.selectedAlimentadores = new Set(state.alimentadoresList);
             const checkboxes = document.querySelectorAll('#lineGroupsList input[type=checkbox]');
             checkboxes.forEach(chk => chk.checked = true);
             applyAlimentadorFilter();
@@ -549,14 +629,14 @@
 
         function clearLayers() {
             const layers = ['marker-circles', 'marker-labels', 'lines'];
-            layers.forEach((layer) => {
+            layers.forEach(layer => {
                 if (map.getLayer(layer)) {
                     map.removeLayer(layer);
                 }
             });
 
             const sources = ['markers', 'lines'];
-            sources.forEach((source) => {
+            sources.forEach(source => {
                 if (map.getSource(source)) {
                     map.removeSource(source);
                 }
@@ -564,20 +644,20 @@
         }
 
         function toggleMarkers() {
-            markersVisible = !markersVisible;
-            const visibility = markersVisible ? 'visible' : 'none';
+            state.markersVisible = !state.markersVisible;
+            const visibility = state.markersVisible ? 'visible' : 'none';
             if (map.getLayer('marker-circles')) map.setLayoutProperty('marker-circles', 'visibility', visibility);
         }
 
         function toggleNames() {
-            namesVisible = !namesVisible;
-            const visibility = namesVisible ? 'visible' : 'none';
+            state.namesVisible = !state.namesVisible;
+            const visibility = state.namesVisible ? 'visible' : 'none';
             if (map.getLayer('marker-labels')) map.setLayoutProperty('marker-labels', 'visibility', visibility);
         }
 
         function toggleLines() {
-            linesVisible = !linesVisible;
-            const visibility = linesVisible ? 'visible' : 'none';
+            state.linesVisible = !state.linesVisible;
+            const visibility = state.linesVisible ? 'visible' : 'none';
             if (map.getLayer('lines')) map.setLayoutProperty('lines', 'visibility', visibility);
         }
 
@@ -594,7 +674,7 @@
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition((position) => {
                     const userCoords = [position.coords.longitude, position.coords.latitude];
-                    userLocation = userCoords;
+                    state.userLocation = userCoords;
 
                     map.flyTo({
                         center: userCoords,
@@ -676,17 +756,21 @@
             const allFeatures = markerFeatures.concat(lineFeatures);
 
             const matches = allFeatures.filter(feature => {
-                return feature.properties && ((feature.properties.name && feature.properties.name.toLowerCase().includes(term)) 
-                || (feature.properties.Alimentador && feature.properties.Alimentador.toLowerCase().includes(term)));
+                return feature.properties && (
+                    (feature.properties.name && feature.properties.name.toLowerCase().includes(term)) 
+                    || (feature.properties.Alimentador && feature.properties.Alimentador.toLowerCase().includes(term))
+                );
             });
+
+            const searchResultsDiv = document.getElementById('searchResults');
 
             if (matches.length === 0) {
                 alert('Nenhum resultado encontrado para a busca.');
-                document.getElementById('searchResults').innerHTML = '';
+                searchResultsDiv.innerHTML = '';
             } else {
                 let referencePoint;
-                if (userLocation) {
-                    referencePoint = userLocation;
+                if (state.userLocation) {
+                    referencePoint = state.userLocation;
                 } else {
                     referencePoint = map.getCenter().toArray();
                 }
@@ -743,14 +827,13 @@
             searchResultsDiv.appendChild(ul);
         }
 
-        function toggleLineGroupsMenu() {
-            const lineMenu = document.getElementById('lineMenu');
-            if (lineMenu.style.display === 'block') {
-                lineMenu.style.display = 'none';
-            } else {
-                lineMenu.style.display = 'block';
-            }
-        }
+        // Remover as legendas dos botões após 14 segundos
+        window.onload = function() {
+            setTimeout(function() {
+                const legends = document.querySelectorAll('.button-legend');
+                legends.forEach(legend => legend.remove());
+            }, 14000);
+        };
     </script>
 </body>
 </html>
