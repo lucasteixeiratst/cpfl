@@ -340,6 +340,7 @@
         const lineMenu = document.getElementById('lineMenu');
         const lineGroupsList = document.getElementById('lineGroupsList');
 
+        // Arquivos pré-definidos de exemplo:
         const predefinedFiles = [
             { name: 'CAMPINAS TREVO.kmz', url: 'CAMPINAS TREVO.kmz' },
             { name: 'CAMPINAS CENTRO.kmz', url: 'CAMPINAS CENTRO.kmz' },
@@ -348,6 +349,7 @@
             { name: 'CAMPINAS BARAO GERALDO.kmz', url: 'CAMPINAS BARAO GERALDO.kmz' },
         ];
 
+        // Cria a lista de KMZ pré-definidos
         predefinedFiles.forEach((file) => {
             const li = document.createElement('li');
             li.textContent = file.name;
@@ -358,6 +360,7 @@
             kmzList.appendChild(li);
         });
 
+        // Eventos dos botões
         document.getElementById('btnKMZ').addEventListener('click', () => toggleVisibility(kmzMenu));
         document.getElementById('btnMarkers').addEventListener('click', toggleMarkers);
         document.getElementById('btnNames').addEventListener('click', toggleNames);
@@ -389,6 +392,7 @@
             input.click();
         }
 
+        // Carrega KMZ de uma URL pré-definida
         async function loadKMZFromURL(url) {
             try {
                 const response = await fetch(url);
@@ -401,6 +405,7 @@
             }
         }
 
+        // Manipula upload manual do usuário
         function handleFile(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -424,6 +429,7 @@
             }
         }
 
+        // Descompacta e converte KMZ -> KML -> GeoJSON
         async function parseKMZ(data) {
             const zip = await JSZip.loadAsync(data);
             const kmlFile = zip.file(/\.kml$/i)[0];
@@ -431,6 +437,7 @@
             return toGeoJSON.kml(new DOMParser().parseFromString(kmlContent, 'text/xml'));
         }
 
+        // Função principal que adiciona o GeoJSON convertido ao mapa
         function addDataToMap(geojson) {
             clearLayers();
             state.alimentadoresList = [];
@@ -438,6 +445,7 @@
             state.hasAlimentador = false;
             state.groupingProperty = null;
 
+            // Função auxiliar: se for GeometryCollection, extrai cada geometria separadamente
             function extractGeometries(feature) {
                 const geometries = [];
                 if (feature.geometry.type === 'GeometryCollection') {
@@ -453,6 +461,7 @@
             const pointFeaturesArray = [];
             const lineFeaturesArray = [];
 
+            // Separa pontos e linhas/polígonos
             geojson.features.forEach(feature => {
                 const features = extractGeometries(feature);
                 features.forEach(f => {
@@ -460,6 +469,7 @@
                         pointFeaturesArray.push(f);
                     } else if (['LineString', 'MultiLineString', 'Polygon', 'MultiPolygon'].includes(f.geometry.type)) {
                         f.properties = f.properties || {};
+                        // Atribui cor aleatória se não tiver
                         if (!f.properties.color) {
                             const color = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
                             f.properties.color = color;
@@ -469,16 +479,19 @@
                 });
             });
 
+            // Monta FeatureCollection de pontos
             const pointFeatures = {
                 type: 'FeatureCollection',
                 features: pointFeaturesArray
             };
 
+            // Monta FeatureCollection de linhas/polígonos
             const lineFeatures = {
                 type: 'FeatureCollection',
                 features: lineFeaturesArray
             };
 
+            // Adiciona pontos (Markers) se houver
             if (pointFeatures.features.length > 0) {
                 map.addSource('markers', { type: 'geojson', data: pointFeatures });
                 map.addLayer({
@@ -511,6 +524,7 @@
                 });
             }
 
+            // Adiciona linhas/polígonos se houver
             if (lineFeatures.features.length > 0) {
                 map.addSource('lines', { type: 'geojson', data: lineFeatures });
                 map.addLayer({
@@ -523,7 +537,7 @@
                     }
                 });
 
-                // Primeiro, tentar agrupar por Alimentador
+                // Tenta agrupar primeiro por "Alimentador"
                 const alimentadores = new Set();
                 lineFeatures.features.forEach(f => {
                     if (f.properties && f.properties.Alimentador) {
@@ -532,11 +546,12 @@
                 });
 
                 if (alimentadores.size > 0) {
-                    // Temos alimentadores, usar esse grupo
-                    state.alimentadoresList = Array.from(alimentadores);
+                    // Temos alimentadores -> agrupar por Alimentador
+                    // ORDENA EM ORDEM ALFABÉTICA
+                    state.alimentadoresList = Array.from(alimentadores).sort((a, b) => a.localeCompare(b));
                     state.groupingProperty = 'Alimentador';
                 } else {
-                    // Não há Alimentador, tentar agrupar por 'name' das linhas
+                    // Se não há Alimentador, agrupa por "name"
                     const gruposPorNome = new Set();
                     lineFeatures.features.forEach(f => {
                         if (f.properties && f.properties.name) {
@@ -544,25 +559,23 @@
                         }
                     });
                     if (gruposPorNome.size > 1) {
-                        // Temos mais de um grupo baseado em name
-                        state.alimentadoresList = Array.from(gruposPorNome);
+                        // Mais de um grupo baseado em name
+                        state.alimentadoresList = Array.from(gruposPorNome).sort((a, b) => a.localeCompare(b));
                         state.groupingProperty = 'name';
                     } else if (gruposPorNome.size === 1) {
-                        // Apenas um grupo, mesmo assim criaremos a filtragem com um grupo único
+                        // Apenas um grupo
                         state.alimentadoresList = Array.from(gruposPorNome);
                         state.groupingProperty = 'name';
                     } else {
-                        // Nenhum alimentador e nem name para agrupar
-                        // Exibe todas as linhas sem filtragem de grupos
+                        // Sem alimentador e nem name -> sem filtro
                         state.alimentadoresList = [];
                         state.groupingProperty = null;
                     }
                 }
 
+                // Monta a lista de checkboxes de grupos
                 lineGroupsList.innerHTML = '';
-
                 if (state.alimentadoresList.length > 0 && state.groupingProperty) {
-                    // Criar checkboxes para cada grupo
                     state.alimentadoresList.forEach(grp => {
                         state.selectedAlimentadores.add(grp);
                         const li = document.createElement('li');
@@ -585,15 +598,15 @@
                         li.appendChild(lbl);
                         lineGroupsList.appendChild(li);
                     });
-
                     applyAlimentadorFilter();
                 } else {
-                    // Sem grupos, nenhuma filtragem
+                    // Se não há grupos, não faz filtragem
                     map.setFilter('lines', null);
                 }
             }
         }
 
+        // Aplica o filtro conforme os checkboxes marcados
         function applyAlimentadorFilter() {
             if (!state.groupingProperty || state.alimentadoresList.length === 0) {
                 // Sem propriedade de agrupamento ou sem grupos
@@ -602,31 +615,37 @@
             }
 
             if (state.selectedAlimentadores.size === 0) {
+                // Nenhuma selecionada -> não exibe nada
                 map.setFilter('lines', ["==", ["get", state.groupingProperty], "___no_match___"]);
             } else if (state.selectedAlimentadores.size === state.alimentadoresList.length) {
+                // Todas selecionadas -> sem filtro
                 map.setFilter('lines', null);
             } else {
+                // Filtro "in"
                 const filtro = ["in", state.groupingProperty, ...state.selectedAlimentadores];
                 map.setFilter('lines', filtro);
             }
         }
 
+        // Botão "Ocultar Todas"
         function hideAllAlimentadores() {
-            if (state.alimentadoresList.length === 0) return; 
+            if (state.alimentadoresList.length === 0) return;
             state.selectedAlimentadores.clear();
             const checkboxes = document.querySelectorAll('#lineGroupsList input[type=checkbox]');
             checkboxes.forEach(chk => chk.checked = false);
             applyAlimentadorFilter();
         }
 
+        // Botão "Exibir Todas"
         function showAllAlimentadores() {
-            if (state.alimentadoresList.length === 0) return; 
+            if (state.alimentadoresList.length === 0) return;
             state.selectedAlimentadores = new Set(state.alimentadoresList);
             const checkboxes = document.querySelectorAll('#lineGroupsList input[type=checkbox]');
             checkboxes.forEach(chk => chk.checked = true);
             applyAlimentadorFilter();
         }
 
+        // Remove layers e fontes antigas antes de adicionar novamente
         function clearLayers() {
             const layers = ['marker-circles', 'marker-labels', 'lines'];
             layers.forEach(layer => {
@@ -643,24 +662,34 @@
             });
         }
 
+        // Exibir/ocultar marcadores (círculos)
         function toggleMarkers() {
             state.markersVisible = !state.markersVisible;
             const visibility = state.markersVisible ? 'visible' : 'none';
-            if (map.getLayer('marker-circles')) map.setLayoutProperty('marker-circles', 'visibility', visibility);
+            if (map.getLayer('marker-circles')) {
+                map.setLayoutProperty('marker-circles', 'visibility', visibility);
+            }
         }
 
+        // Exibir/ocultar nomes dos marcadores
         function toggleNames() {
             state.namesVisible = !state.namesVisible;
             const visibility = state.namesVisible ? 'visible' : 'none';
-            if (map.getLayer('marker-labels')) map.setLayoutProperty('marker-labels', 'visibility', visibility);
+            if (map.getLayer('marker-labels')) {
+                map.setLayoutProperty('marker-labels', 'visibility', visibility);
+            }
         }
 
+        // Exibir/ocultar linhas
         function toggleLines() {
             state.linesVisible = !state.linesVisible;
             const visibility = state.linesVisible ? 'visible' : 'none';
-            if (map.getLayer('lines')) map.setLayoutProperty('lines', 'visibility', visibility);
+            if (map.getLayer('lines')) {
+                map.setLayoutProperty('lines', 'visibility', visibility);
+            }
         }
 
+        // Resetar visão para o centro inicial
         function resetView() {
             map.easeTo({
                 center: [-47.068847, -22.934973],
@@ -668,8 +697,8 @@
             });
         }
 
+        // Obter localização atual do usuário (se disponível) e ir até lá
         let userLocationMarker;
-
         function goToCurrentLocation() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition((position) => {
@@ -696,6 +725,7 @@
             }
         }
 
+        // Retorna o centro de uma feição (média das coordenadas ou ponto direto)
         function getFeatureCenter(feature) {
             let center;
             if (feature.geometry.type === 'Point') {
@@ -724,6 +754,7 @@
             return center;
         }
 
+        // Cálculo de distância (em metros) entre duas coordenadas [lon, lat]
         function computeDistance(coord1, coord2) {
             const toRad = (value) => value * Math.PI / 180;
             const lat1 = coord1[1];
@@ -731,7 +762,7 @@
             const lat2 = coord2[1];
             const lon2 = coord2[0];
 
-            const R = 6371e3;
+            const R = 6371e3; // Raio da Terra em metros
             const φ1 = toRad(lat1);
             const φ2 = toRad(lat2);
             const Δφ = toRad(lat2 - lat1);
@@ -746,6 +777,7 @@
             return distance;
         }
 
+        // Busca feições (points/lines) pelo texto digitado
         function searchFeatures() {
             const term = searchInput.value.toLowerCase();
             if (!term) return alert('Digite um termo para buscar.');
@@ -753,11 +785,13 @@
             const markerFeatures = map.getSource('markers') ? map.getSource('markers')._data.features : [];
             const lineFeatures = map.getSource('lines') ? map.getSource('lines')._data.features : [];
 
+            // Agrupa todas as feições
             const allFeatures = markerFeatures.concat(lineFeatures);
 
+            // Filtra por nome ou Alimentador que contenha o termo
             const matches = allFeatures.filter(feature => {
                 return feature.properties && (
-                    (feature.properties.name && feature.properties.name.toLowerCase().includes(term)) 
+                    (feature.properties.name && feature.properties.name.toLowerCase().includes(term))
                     || (feature.properties.Alimentador && feature.properties.Alimentador.toLowerCase().includes(term))
                 );
             });
@@ -768,6 +802,7 @@
                 alert('Nenhum resultado encontrado para a busca.');
                 searchResultsDiv.innerHTML = '';
             } else {
+                // Define ponto de referência para calcular distâncias
                 let referencePoint;
                 if (state.userLocation) {
                     referencePoint = state.userLocation;
@@ -780,13 +815,16 @@
                     feature.properties.distance = computeDistance(referencePoint, center);
                 });
 
+                // Ordena resultados pela distância do ponto de referência
                 matches.sort((a, b) => a.properties.distance - b.properties.distance);
 
+                // Mostra até 5 resultados mais próximos
                 const topResults = matches.slice(0, 5);
                 displaySearchResults(topResults);
             }
         }
 
+        // Exibe os resultados da busca na div 'searchResults'
         function displaySearchResults(results) {
             const searchResultsDiv = document.getElementById('searchResults');
             searchResultsDiv.innerHTML = '';
@@ -827,7 +865,7 @@
             searchResultsDiv.appendChild(ul);
         }
 
-        // Remover as legendas dos botões após 14 segundos
+        // Remove as legendas dos botões após 14 segundos
         window.onload = function() {
             setTimeout(function() {
                 const legends = document.querySelectorAll('.button-legend');
