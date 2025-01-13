@@ -312,7 +312,7 @@
     </div>
 
     <footer>
-        Todos direitos reservado a Lucas Teixeira.
+        Todos direitos reservados a Lucas Teixeira.
     </footer>
 
     <script>
@@ -347,9 +347,17 @@
             { name: 'CAMPINAS CAMPO GRANDE.kmz', url: 'CAMPINAS CAMPO GRANDE.kmz' },
             { name: 'CAMPINAS SOUZAS.kmz', url: 'CAMPINAS SOUZAS.kmz' },
             { name: 'CAMPINAS BARAO GERALDO.kmz', url: 'CAMPINAS BARAO GERALDO.kmz' },
+            // Novas entradas (kml)
+            { name: 'SE-SOZ.kml', url: 'SE-SOZ.kml' },
+            { name: 'SE-USG.kml', url: 'SE-USG.kml' },
+            { name: 'SE-SCN.kml', url: 'SE-SCN.kml' },
+            { name: 'SE-NDA.kml', url: 'SE-NDA.kml' },
+            { name: 'SE-FIG.kml', url: 'SE-FIG.kml' },
+            { name: 'SE-SAC.kml', url: 'SE-SAC.kml' },
+            { name: 'se-VAL.kml', url: 'se-VAL.kml' },
         ];
 
-        // Cria a lista de KMZ pré-definidos
+        // Cria a lista de KMZ/KML pré-definidos
         predefinedFiles.forEach((file) => {
             const li = document.createElement('li');
             li.textContent = file.name;
@@ -392,16 +400,28 @@
             input.click();
         }
 
-        // Carrega KMZ de uma URL pré-definida
+        // Carrega KMZ/KML de uma URL pré-definida
         async function loadKMZFromURL(url) {
             try {
                 const response = await fetch(url);
-                const arrayBuffer = await response.arrayBuffer();
-                const data = await parseKMZ(arrayBuffer);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const contentType = response.headers.get("content-type");
+                let data;
+                if (contentType.includes("application/vnd.google-earth.kmz")) {
+                    const arrayBuffer = await response.arrayBuffer();
+                    data = await parseKMZ(arrayBuffer);
+                } else if (contentType.includes("application/vnd.google-earth.kml+xml")) {
+                    const text = await response.text();
+                    data = toGeoJSON.kml(new DOMParser().parseFromString(text, 'text/xml'));
+                } else {
+                    throw new Error('Formato de arquivo não suportado.');
+                }
                 addDataToMap(data);
             } catch (error) {
-                console.error('Erro ao carregar o arquivo KMZ:', error);
-                alert('Erro ao carregar o arquivo KMZ.');
+                console.error('Erro ao carregar o arquivo KMZ/KML:', error);
+                alert('Erro ao carregar o arquivo KMZ/KML.');
             }
         }
 
@@ -433,6 +453,9 @@
         async function parseKMZ(data) {
             const zip = await JSZip.loadAsync(data);
             const kmlFile = zip.file(/\.kml$/i)[0];
+            if (!kmlFile) {
+                throw new Error('Arquivo KML não encontrado dentro do KMZ.');
+            }
             const kmlContent = await kmlFile.async('string');
             return toGeoJSON.kml(new DOMParser().parseFromString(kmlContent, 'text/xml'));
         }
@@ -622,7 +645,7 @@
                 map.setFilter('lines', null);
             } else {
                 // Filtro "in"
-                const filtro = ["in", state.groupingProperty, ...state.selectedAlimentadores];
+                const filtro = ["in", state.groupingProperty, ...Array.from(state.selectedAlimentadores)];
                 map.setFilter('lines', filtro);
             }
         }
@@ -782,8 +805,10 @@
             const term = searchInput.value.toLowerCase();
             if (!term) return alert('Digite um termo para buscar.');
 
-            const markerFeatures = map.getSource('markers') ? map.getSource('markers')._data.features : [];
-            const lineFeatures = map.getSource('lines') ? map.getSource('lines')._data.features : [];
+            const markerSource = map.getSource('markers');
+            const lineSource = map.getSource('lines');
+            const markerFeatures = markerSource ? markerSource._data.features : [];
+            const lineFeatures = lineSource ? lineSource._data.features : [];
 
             // Agrupa todas as feições
             const allFeatures = markerFeatures.concat(lineFeatures);
