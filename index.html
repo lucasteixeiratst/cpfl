@@ -241,6 +241,60 @@
             background-color: #357ae8;
         }
 
+        /* Estilos para o menu de arquivos carregados */
+        .loaded-files-menu {
+            position: absolute;
+            top: 80px;
+            left: 120px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            z-index: 2000;
+            padding: 10px;
+            display: none;
+            width: 220px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .loaded-files-menu h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            text-align: center;
+        }
+
+        .loaded-files-menu ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .loaded-files-menu li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .loaded-files-menu li:last-child {
+            border-bottom: none;
+        }
+
+        .loaded-files-menu li button {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 3px 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 10px;
+        }
+
+        .loaded-files-menu li button:hover {
+            background-color: #c0392b;
+        }
+
         footer {
             position: absolute;
             bottom: 5px;
@@ -287,6 +341,10 @@
             <img src="https://img.icons8.com/material-outlined/24/000000/layers.png" alt="Grupos de Linhas">
             <div class="button-legend">Grupos de Linhas</div>
         </button>
+        <button id="btnLoadedFiles">
+            <img src="https://img.icons8.com/material-outlined/24/000000/folder-invoices.png" alt="Arquivos Carregados">
+            <div class="button-legend">Arquivos Carregados</div>
+        </button>
     </div>
 
     <div class="search-bar">
@@ -311,6 +369,11 @@
         <ul id="lineGroupsList"></ul>
     </div>
 
+    <div class="loaded-files-menu" id="loadedFilesMenu">
+        <h3>Arquivos Carregados</h3>
+        <ul id="loadedFilesList"></ul>
+    </div>
+
     <footer>
         Todos direitos reservados a Lucas Teixeira.
     </footer>
@@ -321,17 +384,15 @@
             namesVisible: true,
             linesVisible: true,
             userLocation: null,
-            alimentadoresList: [],
-            selectedAlimentadores: new Set(),
-            hasAlimentador: false,
-            groupingProperty: null // Propriedade usada para agrupar (Alimentador, se existir, caso contrário name)
+            files: [], // Lista de arquivos carregados
+            selectedGroups: new Map(), // Map<sourceId, Set<groupNames>>
         };
 
         const map = new maplibregl.Map({
             container: 'map',
             style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
             center: [-47.068847, -22.934973],
-            zoom: 13
+            zoom: 11
         });
 
         const searchInput = document.getElementById('searchInput');
@@ -339,6 +400,9 @@
         const kmzList = document.getElementById('kmzList');
         const lineMenu = document.getElementById('lineMenu');
         const lineGroupsList = document.getElementById('lineGroupsList');
+        const loadedFilesMenu = document.getElementById('loadedFilesMenu');
+        const loadedFilesList = document.getElementById('loadedFilesList');
+        const btnLoadedFiles = document.getElementById('btnLoadedFiles');
 
         // Arquivos pré-definidos de exemplo:
         const predefinedFiles = [
@@ -362,7 +426,7 @@
             const li = document.createElement('li');
             li.textContent = file.name;
             li.addEventListener('click', () => {
-                loadKMZFromURL(file.url);
+                loadKMZFromURL(file.url, file.name);
                 kmzMenu.style.display = 'none';
             });
             kmzList.appendChild(li);
@@ -376,16 +440,17 @@
         document.getElementById('btnReset').addEventListener('click', resetView);
         document.getElementById('btnLocation').addEventListener('click', goToCurrentLocation);
         document.getElementById('btnLineGroups').addEventListener('click', () => {
-            if (state.alimentadoresList.length === 0) {
-                alert('Este arquivo não possui grupos de linhas para filtrar.');
+            if (state.selectedGroups.size === 0) {
+                alert('Não há grupos de linhas para filtrar.');
             } else {
                 toggleVisibility(lineMenu);
             }
         });
+        btnLoadedFiles.addEventListener('click', () => toggleVisibility(loadedFilesMenu));
         document.getElementById('btnSearch').addEventListener('click', searchFeatures);
         document.getElementById('selectDevice').addEventListener('click', selectFromDevice);
-        document.getElementById('hideAll').addEventListener('click', hideAllAlimentadores);
-        document.getElementById('showAll').addEventListener('click', showAllAlimentadores);
+        document.getElementById('hideAll').addEventListener('click', hideAllGroups);
+        document.getElementById('showAll').addEventListener('click', showAllGroups);
 
         function toggleVisibility(element) {
             element.style.display = (element.style.display === 'block') ? 'none' : 'block';
@@ -401,7 +466,7 @@
         }
 
         // Carrega KMZ/KML de uma URL pré-definida
-        async function loadKMZFromURL(url) {
+        async function loadKMZFromURL(url, fileName) {
             try {
                 const response = await fetch(url);
                 if (!response.ok) {
@@ -418,7 +483,7 @@
                 } else {
                     throw new Error('Formato de arquivo não suportado.');
                 }
-                addDataToMap(data);
+                addDataToMap(data, fileName);
             } catch (error) {
                 console.error('Erro ao carregar o arquivo KMZ/KML:', error);
                 alert('Erro ao carregar o arquivo KMZ/KML.');
@@ -436,7 +501,7 @@
                     const data = file.name.endsWith('.kmz')
                         ? await parseKMZ(reader.result)
                         : toGeoJSON.kml(new DOMParser().parseFromString(reader.result, 'text/xml'));
-                    addDataToMap(data);
+                    addDataToMap(data, file.name);
                 } catch (error) {
                     console.error('Erro ao processar o arquivo:', error);
                     alert('Erro ao processar o arquivo KML/KMZ.');
@@ -461,12 +526,23 @@
         }
 
         // Função principal que adiciona o GeoJSON convertido ao mapa
-        function addDataToMap(geojson) {
-            clearLayers();
-            state.alimentadoresList = [];
-            state.selectedAlimentadores.clear();
-            state.hasAlimentador = false;
-            state.groupingProperty = null;
+        function addDataToMap(geojson, fileName) {
+            // Cria identificadores únicos para cada arquivo
+            const sanitizedFileName = fileName.replace(/\s+/g, '_').replace(/[^\w\-]/g, '');
+            const sourceId = `source-${sanitizedFileName}`;
+            const markerLayerId = `marker-circles-${sourceId}`;
+            const labelLayerId = `marker-labels-${sourceId}`;
+            const lineLayerId = `lines-${sourceId}`;
+
+            // Evita adicionar fontes duplicadas
+            if (state.files.find(file => file.name === fileName)) {
+                alert(`O arquivo "${fileName}" já está carregado.`);
+                return;
+            }
+
+            // Separa pontos e linhas/polígonos
+            const pointFeaturesArray = [];
+            const lineFeaturesArray = [];
 
             // Função auxiliar: se for GeometryCollection, extrai cada geometria separadamente
             function extractGeometries(feature) {
@@ -481,10 +557,6 @@
                 return geometries;
             }
 
-            const pointFeaturesArray = [];
-            const lineFeaturesArray = [];
-
-            // Separa pontos e linhas/polígonos
             geojson.features.forEach(feature => {
                 const features = extractGeometries(feature);
                 features.forEach(f => {
@@ -514,30 +586,56 @@
                 features: lineFeaturesArray
             };
 
+            // Determina a propriedade de agrupamento
+            let groupingProperty = null;
+            const exampleLine = lineFeatures.features.find(f => f.properties && (f.properties.Alimentador || f.properties.name));
+            if (exampleLine) {
+                groupingProperty = exampleLine.properties.Alimentador ? 'Alimentador' : 'name';
+            }
+
+            // Coleta grupos únicos para este arquivo
+            const groupsSet = new Set();
+            if (lineFeatures.features.length > 0 && groupingProperty) {
+                lineFeatures.features.forEach(f => {
+                    if (f.properties && f.properties[groupingProperty]) {
+                        groupsSet.add(f.properties[groupingProperty]);
+                    }
+                });
+            }
+
+            // Adiciona os grupos ao estado.selectedGroups
+            if (groupingProperty && groupsSet.size > 0) {
+                state.selectedGroups.set(sourceId, new Set(groupsSet));
+            }
+
             // Adiciona pontos (Markers) se houver
             if (pointFeatures.features.length > 0) {
-                map.addSource('markers', { type: 'geojson', data: pointFeatures });
+                map.addSource(sourceId + '-markers', { type: 'geojson', data: pointFeatures });
                 map.addLayer({
-                    id: 'marker-circles',
+                    id: markerLayerId,
                     type: 'circle',
-                    source: 'markers',
+                    source: sourceId + '-markers',
                     paint: {
                         'circle-radius': 6,
                         'circle-color': '#FF5722',
                         'circle-stroke-width': 2,
                         'circle-stroke-color': '#FFFFFF'
+                    },
+                    layout: {
+                        'visibility': state.markersVisible ? 'visible' : 'none'
                     }
                 });
 
                 map.addLayer({
-                    id: 'marker-labels',
+                    id: labelLayerId,
                     type: 'symbol',
-                    source: 'markers',
+                    source: sourceId + '-markers',
                     layout: {
                         'text-field': ['coalesce', ['get', 'name'], ['get', 'Alimentador']],
                         'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
                         'text-size': 12,
-                        'text-offset': [0, 1.5]
+                        'text-offset': [0, 1.5],
+                        'visibility': state.namesVisible ? 'visible' : 'none' // Combina todas as propriedades de layout
                     },
                     paint: {
                         'text-color': '#000000',
@@ -549,71 +647,66 @@
 
             // Adiciona linhas/polígonos se houver
             if (lineFeatures.features.length > 0) {
-                map.addSource('lines', { type: 'geojson', data: lineFeatures });
+                map.addSource(sourceId + '-lines', { type: 'geojson', data: lineFeatures });
                 map.addLayer({
-                    id: 'lines',
+                    id: lineLayerId,
                     type: 'line',
-                    source: 'lines',
+                    source: sourceId + '-lines',
                     paint: {
                         'line-color': ['get', 'color'],
                         'line-width': 4
+                    },
+                    layout: {
+                        'visibility': state.linesVisible ? 'visible' : 'none'
                     }
                 });
+            }
 
-                // Tenta agrupar primeiro por "Alimentador"
-                const alimentadores = new Set();
-                lineFeatures.features.forEach(f => {
-                    if (f.properties && f.properties.Alimentador) {
-                        alimentadores.add(f.properties.Alimentador);
-                    }
-                });
+            // Armazena o arquivo carregado no estado
+            state.files.push({
+                name: fileName,
+                sourceId: sourceId,
+                hasMarkers: pointFeatures.features.length > 0,
+                hasLines: lineFeatures.features.length > 0,
+                groupingProperty: groupingProperty
+            });
 
-                if (alimentadores.size > 0) {
-                    // Temos alimentadores -> agrupar por Alimentador
-                    // ORDENA EM ORDEM ALFABÉTICA
-                    state.alimentadoresList = Array.from(alimentadores).sort((a, b) => a.localeCompare(b));
-                    state.groupingProperty = 'Alimentador';
-                } else {
-                    // Se não há Alimentador, agrupa por "name"
-                    const gruposPorNome = new Set();
-                    lineFeatures.features.forEach(f => {
-                        if (f.properties && f.properties.name) {
-                            gruposPorNome.add(f.properties.name);
-                        }
-                    });
-                    if (gruposPorNome.size > 1) {
-                        // Mais de um grupo baseado em name
-                        state.alimentadoresList = Array.from(gruposPorNome).sort((a, b) => a.localeCompare(b));
-                        state.groupingProperty = 'name';
-                    } else if (gruposPorNome.size === 1) {
-                        // Apenas um grupo
-                        state.alimentadoresList = Array.from(gruposPorNome);
-                        state.groupingProperty = 'name';
-                    } else {
-                        // Sem alimentador e nem name -> sem filtro
-                        state.alimentadoresList = [];
-                        state.groupingProperty = null;
-                    }
-                }
+            // Atualiza a interface de grupos
+            updateGroupMenu();
+            // Atualiza a lista de arquivos carregados
+            updateLoadedFilesList(fileName);
+        }
 
-                // Monta a lista de checkboxes de grupos
-                lineGroupsList.innerHTML = '';
-                if (state.alimentadoresList.length > 0 && state.groupingProperty) {
-                    state.alimentadoresList.forEach(grp => {
-                        state.selectedAlimentadores.add(grp);
+        // Atualiza o menu de grupos com todos os alimentadores por arquivo
+        function updateGroupMenu() {
+            lineGroupsList.innerHTML = '';
+
+            state.files.forEach(file => {
+                if (file.hasLines && file.groupingProperty && state.selectedGroups.has(file.sourceId)) {
+                    const groups = state.selectedGroups.get(file.sourceId);
+
+                    // Cria um cabeçalho para o arquivo
+                    const fileHeader = document.createElement('div');
+                    fileHeader.style.fontWeight = 'bold';
+                    fileHeader.style.marginTop = '10px';
+                    fileHeader.textContent = `Arquivo: "${file.name}"`;
+                    lineGroupsList.appendChild(fileHeader);
+
+                    groups.forEach(grp => {
                         const li = document.createElement('li');
                         const lbl = document.createElement('label');
                         const chk = document.createElement('input');
                         chk.type = 'checkbox';
                         chk.value = grp;
                         chk.checked = true;
+
                         chk.onchange = () => {
                             if (chk.checked) {
-                                state.selectedAlimentadores.add(grp);
+                                state.selectedGroups.get(file.sourceId).add(grp);
                             } else {
-                                state.selectedAlimentadores.delete(grp);
+                                state.selectedGroups.get(file.sourceId).delete(grp);
                             }
-                            applyAlimentadorFilter();
+                            applyGroupFilter();
                         };
 
                         lbl.appendChild(chk);
@@ -621,95 +714,180 @@
                         li.appendChild(lbl);
                         lineGroupsList.appendChild(li);
                     });
-                    applyAlimentadorFilter();
-                } else {
-                    // Se não há grupos, não faz filtragem
-                    map.setFilter('lines', null);
                 }
+            });
+        }
+
+        // Atualiza a lista de arquivos carregados na interface
+        function updateLoadedFilesList(fileName) {
+            const li = document.createElement('li');
+            li.textContent = fileName;
+
+            const removeBtn = document.createElement('button');
+            removeBtn.textContent = 'Remover';
+            removeBtn.addEventListener('click', () => {
+                removeFileFromMap(fileName);
+                li.remove();
+            });
+
+            li.appendChild(removeBtn);
+            loadedFilesList.appendChild(li);
+        }
+
+        // Remove um arquivo específico do mapa e do estado
+        function removeFileFromMap(fileName) {
+            const fileIndex = state.files.findIndex(file => file.name === fileName);
+            if (fileIndex === -1) return;
+
+            const file = state.files[fileIndex];
+            const sourceId = file.sourceId;
+
+            // Remove camadas de marcadores
+            if (file.hasMarkers) {
+                const markerLayerId = `marker-circles-${sourceId}`;
+                const labelLayerId = `marker-labels-${sourceId}`;
+                if (map.getLayer(markerLayerId)) map.removeLayer(markerLayerId);
+                if (map.getLayer(labelLayerId)) map.removeLayer(labelLayerId);
+                if (map.getSource(sourceId + '-markers')) map.removeSource(sourceId + '-markers');
             }
+
+            // Remove camadas de linhas
+            if (file.hasLines) {
+                const lineLayerId = `lines-${sourceId}`;
+                if (map.getLayer(lineLayerId)) map.removeLayer(lineLayerId);
+                if (map.getSource(sourceId + '-lines')) map.removeSource(sourceId + '-lines');
+            }
+
+            // Remove grupos associados ao arquivo
+            if (file.hasLines && file.groupingProperty && state.selectedGroups.has(sourceId)) {
+                state.selectedGroups.delete(sourceId);
+                updateGroupMenu();
+            }
+
+            // Remove o arquivo do estado
+            state.files.splice(fileIndex, 1);
         }
 
         // Aplica o filtro conforme os checkboxes marcados
-        function applyAlimentadorFilter() {
-            if (!state.groupingProperty || state.alimentadoresList.length === 0) {
-                // Sem propriedade de agrupamento ou sem grupos
-                map.setFilter('lines', null);
-                return;
-            }
+        function applyGroupFilter() {
+            state.files.forEach(file => {
+                if (!file.hasLines || !file.groupingProperty) return;
 
-            if (state.selectedAlimentadores.size === 0) {
-                // Nenhuma selecionada -> não exibe nada
-                map.setFilter('lines', ["==", ["get", state.groupingProperty], "___no_match___"]);
-            } else if (state.selectedAlimentadores.size === state.alimentadoresList.length) {
-                // Todas selecionadas -> sem filtro
-                map.setFilter('lines', null);
-            } else {
-                // Filtro "in"
-                const filtro = ["in", state.groupingProperty, ...Array.from(state.selectedAlimentadores)];
-                map.setFilter('lines', filtro);
+                const sourceId = file.sourceId;
+                const lineLayerId = `lines-${sourceId}`;
+                const groupingProperty = file.groupingProperty;
+                const selectedGroups = state.selectedGroups.get(sourceId);
+
+                if (!selectedGroups || selectedGroups.size === 0) {
+                    // Nenhuma selecionada -> não exibe nada
+                    map.setFilter(lineLayerId, ["==", ["get", groupingProperty], "___no_match___"]);
+                } else if (selectedGroups.size === getTotalGroups(sourceId, groupingProperty)) {
+                    // Todas selecionadas -> sem filtro
+                    map.setFilter(lineLayerId, null);
+                } else {
+                    // Filtro "in"
+                    map.setFilter(lineLayerId, ["in", groupingProperty, ...Array.from(selectedGroups)]);
+                }
+            });
+        }
+
+        // Função auxiliar para obter o total de grupos para um arquivo
+        function getTotalGroups(sourceId, groupingProperty) {
+            const lineSource = map.getSource(`${sourceId}-lines`);
+            if (lineSource && lineSource._data.features) {
+                const allGroups = new Set();
+                lineSource._data.features.forEach(feature => {
+                    if (feature.properties && feature.properties[groupingProperty]) {
+                        allGroups.add(feature.properties[groupingProperty]);
+                    }
+                });
+                return allGroups.size;
             }
+            return 0;
         }
 
         // Botão "Ocultar Todas"
-        function hideAllAlimentadores() {
-            if (state.alimentadoresList.length === 0) return;
-            state.selectedAlimentadores.clear();
+        function hideAllGroups() {
+            state.selectedGroups.forEach((groups, sourceId) => {
+                state.selectedGroups.set(sourceId, new Set());
+            });
             const checkboxes = document.querySelectorAll('#lineGroupsList input[type=checkbox]');
             checkboxes.forEach(chk => chk.checked = false);
-            applyAlimentadorFilter();
+            applyGroupFilter();
         }
 
         // Botão "Exibir Todas"
-        function showAllAlimentadores() {
-            if (state.alimentadoresList.length === 0) return;
-            state.selectedAlimentadores = new Set(state.alimentadoresList);
+        function showAllGroups() {
+            state.files.forEach(file => {
+                if (file.hasLines && file.groupingProperty && state.selectedGroups.has(file.sourceId)) {
+                    const sourceId = file.sourceId;
+                    const groupingProperty = file.groupingProperty;
+                    const lineSource = map.getSource(`${sourceId}-lines`);
+                    if (lineSource && lineSource._data.features) {
+                        const allGroups = new Set();
+                        lineSource._data.features.forEach(feature => {
+                            if (feature.properties && feature.properties[groupingProperty]) {
+                                allGroups.add(feature.properties[groupingProperty]);
+                            }
+                        });
+                        state.selectedGroups.set(sourceId, new Set(allGroups));
+                    }
+                }
+            });
             const checkboxes = document.querySelectorAll('#lineGroupsList input[type=checkbox]');
-            checkboxes.forEach(chk => chk.checked = true);
-            applyAlimentadorFilter();
-        }
-
-        // Remove layers e fontes antigas antes de adicionar novamente
-        function clearLayers() {
-            const layers = ['marker-circles', 'marker-labels', 'lines'];
-            layers.forEach(layer => {
-                if (map.getLayer(layer)) {
-                    map.removeLayer(layer);
+            checkboxes.forEach(chk => {
+                if (chk.parentElement.parentElement.previousSibling && chk.parentElement.parentElement.previousSibling.textContent.startsWith('Arquivo:')) {
+                    chk.checked = true;
                 }
             });
-
-            const sources = ['markers', 'lines'];
-            sources.forEach(source => {
-                if (map.getSource(source)) {
-                    map.removeSource(source);
-                }
-            });
+            applyGroupFilter();
+            updateGroupMenu();
         }
 
         // Exibir/ocultar marcadores (círculos)
         function toggleMarkers() {
             state.markersVisible = !state.markersVisible;
             const visibility = state.markersVisible ? 'visible' : 'none';
-            if (map.getLayer('marker-circles')) {
-                map.setLayoutProperty('marker-circles', 'visibility', visibility);
-            }
+            state.files.forEach(file => {
+                if (file.hasMarkers) {
+                    const markerLayerId = `marker-circles-${file.sourceId}`;
+                    const labelLayerId = `marker-labels-${file.sourceId}`;
+                    if (map.getLayer(markerLayerId)) {
+                        map.setLayoutProperty(markerLayerId, 'visibility', visibility);
+                    }
+                    if (map.getLayer(labelLayerId)) {
+                        map.setLayoutProperty(labelLayerId, 'visibility', visibility);
+                    }
+                }
+            });
         }
 
         // Exibir/ocultar nomes dos marcadores
         function toggleNames() {
             state.namesVisible = !state.namesVisible;
             const visibility = state.namesVisible ? 'visible' : 'none';
-            if (map.getLayer('marker-labels')) {
-                map.setLayoutProperty('marker-labels', 'visibility', visibility);
-            }
+            state.files.forEach(file => {
+                if (file.hasMarkers) {
+                    const labelLayerId = `marker-labels-${file.sourceId}`;
+                    if (map.getLayer(labelLayerId)) {
+                        map.setLayoutProperty(labelLayerId, 'visibility', visibility);
+                    }
+                }
+            });
         }
 
         // Exibir/ocultar linhas
         function toggleLines() {
             state.linesVisible = !state.linesVisible;
             const visibility = state.linesVisible ? 'visible' : 'none';
-            if (map.getLayer('lines')) {
-                map.setLayoutProperty('lines', 'visibility', visibility);
-            }
+            state.files.forEach(file => {
+                if (file.hasLines) {
+                    const lineLayerId = `lines-${file.sourceId}`;
+                    if (map.getLayer(lineLayerId)) {
+                        map.setLayoutProperty(lineLayerId, 'visibility', visibility);
+                    }
+                }
+            });
         }
 
         // Resetar visão para o centro inicial
@@ -805,20 +983,38 @@
             const term = searchInput.value.toLowerCase();
             if (!term) return alert('Digite um termo para buscar.');
 
-            const markerSource = map.getSource('markers');
-            const lineSource = map.getSource('lines');
-            const markerFeatures = markerSource ? markerSource._data.features : [];
-            const lineFeatures = lineSource ? lineSource._data.features : [];
+            const matches = [];
 
-            // Agrupa todas as feições
-            const allFeatures = markerFeatures.concat(lineFeatures);
+            state.files.forEach(file => {
+                if (file.hasMarkers) {
+                    const markerSource = map.getSource(`${file.sourceId}-markers`);
+                    if (markerSource && markerSource._data.features) {
+                        const markerFeatures = markerSource._data.features;
+                        markerFeatures.forEach(feature => {
+                            if (feature.properties && (
+                                (feature.properties.name && feature.properties.name.toLowerCase().includes(term)) ||
+                                (feature.properties.Alimentador && feature.properties.Alimentador.toLowerCase().includes(term))
+                            )) {
+                                matches.push(feature);
+                            }
+                        });
+                    }
+                }
 
-            // Filtra por nome ou Alimentador que contenha o termo
-            const matches = allFeatures.filter(feature => {
-                return feature.properties && (
-                    (feature.properties.name && feature.properties.name.toLowerCase().includes(term))
-                    || (feature.properties.Alimentador && feature.properties.Alimentador.toLowerCase().includes(term))
-                );
+                if (file.hasLines) {
+                    const lineSource = map.getSource(`${file.sourceId}-lines`);
+                    if (lineSource && lineSource._data.features) {
+                        const lineFeatures = lineSource._data.features;
+                        lineFeatures.forEach(feature => {
+                            if (feature.properties && (
+                                (feature.properties.name && feature.properties.name.toLowerCase().includes(term)) ||
+                                (feature.properties.Alimentador && feature.properties.Alimentador.toLowerCase().includes(term))
+                            )) {
+                                matches.push(feature);
+                            }
+                        });
+                    }
+                }
             });
 
             const searchResultsDiv = document.getElementById('searchResults');
@@ -895,7 +1091,7 @@
             setTimeout(function() {
                 const legends = document.querySelectorAll('.button-legend');
                 legends.forEach(legend => legend.remove());
-            }, 14000);
+            }, 10000);
         };
     </script>
 </body>
