@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Visualizador de Rede</title>
+    <title>Visualizador de Mapas</title>
     <style>
         body, html {
             margin: 0;
@@ -677,7 +677,7 @@
             updateLoadedFilesList(fileName);
         }
 
-        // Atualiza o menu de grupos com todos os alimentadores por arquivo
+        // Atualiza o menu de grupos com todos os alimentadores por arquivo, ordenados alfabeticamente
         function updateGroupMenu() {
             lineGroupsList.innerHTML = '';
 
@@ -692,7 +692,10 @@
                     fileHeader.textContent = `Arquivo: "${file.name}"`;
                     lineGroupsList.appendChild(fileHeader);
 
-                    groups.forEach(grp => {
+                    // Converte o Set de grupos para um array, ordena alfabeticamente e itera
+                    const sortedGroups = Array.from(groups).sort((a, b) => a.localeCompare(b));
+
+                    sortedGroups.forEach(grp => {
                         const li = document.createElement('li');
                         const lbl = document.createElement('label');
                         const chk = document.createElement('input');
