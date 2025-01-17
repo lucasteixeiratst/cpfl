@@ -57,7 +57,7 @@ jobs:
     needs: build
     environment:
       name: 'Production'
-    
+
     steps:
       # 1. Baixar os artefatos do job de build
       - name: Download artifact from build job
