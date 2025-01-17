@@ -1,76 +1,88 @@
-# Docs para a ação Azure Web Apps Deploy: https://github.com/Azure/webapps-deploy
-# Mais GitHub Actions para Azure: https://github.com/Azure/actions
+# Documentação para a ação Azure Web Apps Deploy:
+# https://github.com/Azure/webapps-deploy
+# Mais GitHub Actions para Azure:
+# https://github.com/Azure/actions
 
 name: Build and Deploy ASP.Net Core App to Azure Web App - leitorcpfl
 
 on:
   push:
     branches:
-      - main
-  workflow_dispatch:
+      - main  # Executa o workflow em pushes para a branch main
+  workflow_dispatch:  # Permite execução manual do workflow
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: windows-latest  # Ambiente de execução
 
     steps:
       # 1. Checkout do código fonte
-      - name: Checkout GitHub Action
+      - name: Checkout código fonte
         uses: actions/checkout@v4
 
       # 2. Cache de pacotes NuGet (opcional, mas recomendado para otimizar o tempo de build)
-      - name: Cache NuGet packages
+      - name: Cache de pacotes NuGet
         uses: actions/cache@v3
         with:
-          path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          path: ~/.nuget/packages  # Diretório a ser cacheado
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}  # Chave única baseada no sistema operacional e hash dos arquivos .csproj
           restore-keys: |
-            ${{ runner.os }}-nuget-
+            ${{ runner.os }}-nuget-  # Chaves de restauração secundárias
 
       # 3. Configurar o .NET Core SDK
-      - name: Set up .NET Core SDK
+      - name: Configurar .NET Core SDK
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '6.0.x'
+          dotnet-version: '6.0.x'  # Versão do .NET Core
 
       # 4. Restaurar dependências
-      - name: Restore dependencies
+      - name: Restaurar dependências
         run: dotnet restore
 
       # 5. Compilar a aplicação
-      - name: Build with dotnet
+      - name: Compilar aplicação
         run: dotnet build --configuration Release --no-restore
 
       # 6. Publicar a aplicação
-      - name: Publish with dotnet
+      - name: Publicar aplicação
         run: dotnet publish --configuration Release --output ./publish
 
       # 7. Fazer upload dos artefatos para o job de deploy
-      - name: Upload artifact for deployment job
+      - name: Upload dos artefatos para deploy
         uses: actions/upload-artifact@v4
         with:
-          name: dotnet-app
-          path: ./publish
+          name: dotnet-app  # Nome do artefato
+          path: ./publish  # Caminho para os artefatos publicados
 
   deploy:
-    runs-on: windows-latest
-    needs: build
+    runs-on: windows-latest  # Ambiente de execução
+    needs: build  # Depende do job de build
     environment:
-      name: 'Production'
+      name: 'Production'  # Ambiente de deploy
 
     steps:
       # 1. Baixar os artefatos do job de build
-      - name: Download artifact from build job
+      - name: Baixar artefatos do build
         uses: actions/download-artifact@v4
         with:
-          name: dotnet-app
-          path: ./publish
+          name: dotnet-app  # Nome do artefato a ser baixado
+          path: ./publish  # Caminho onde os artefatos serão baixados
 
       # 2. Implantar no Azure Web App
-      - name: Deploy to Azure Web App
+      - name: Deploy para Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'leitorcpfl'  # Nome do seu Azure Web App
           package: ./publish        # Caminho para os artefatos publicados
-          publish-profile: ${{ secrets.AzureAppService_PublishProfile_5cedd9be7e1a468bb0fe866a83253b77 }}  # Segredo contendo o perfil de publicação
+          publish-profile: ${{ secrets.AzureAppService_PublishProfile }}  # Segredo contendo o perfil de publicação
+
+      # 3. (Opcional) Verificar URL após o deploy
+      - name: Verificar implantação
+        run: |
+          if curl --output /dev/null --silent --head --fail "https://leitorcpfl.azurewebsites.net"; then
+            echo "Implantação bem-sucedida!"
+          else
+            echo "Falha na implantação."
+            exit 1
+          fi
