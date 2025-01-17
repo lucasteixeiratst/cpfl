@@ -1,7 +1,7 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
+# Docs para a ação Azure Web Apps Deploy: https://github.com/Azure/webapps-deploy
+# Mais GitHub Actions para Azure: https://github.com/Azure/actions
 
-name: Build and deploy ASP.Net Core app to Azure Web App - leitorcpfl
+name: Build and Deploy ASP.Net Core App to Azure Web App - leitorcpfl
 
 on:
   push:
@@ -14,43 +14,63 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v4
+      # 1. Checkout do código fonte
+      - name: Checkout GitHub Action
+        uses: actions/checkout@v4
 
-      - name: Set up .NET Core
+      # 2. Cache de pacotes NuGet (opcional, mas recomendado para otimizar o tempo de build)
+      - name: Cache NuGet packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      # 3. Configurar o .NET Core SDK
+      - name: Set up .NET Core SDK
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '6.0.x'
 
+      # 4. Restaurar dependências
+      - name: Restore dependencies
+        run: dotnet restore
+
+      # 5. Compilar a aplicação
       - name: Build with dotnet
-        run: dotnet build --configuration Release
+        run: dotnet build --configuration Release --no-restore
 
-      - name: dotnet publish
-        run: dotnet publish -c Release -o "${{env.DOTNET_ROOT}}/myapp"
+      # 6. Publicar a aplicação
+      - name: Publish with dotnet
+        run: dotnet publish --configuration Release --output ./publish
 
+      # 7. Fazer upload dos artefatos para o job de deploy
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
-          name: .net-app
-          path: ${{env.DOTNET_ROOT}}/myapp
+          name: dotnet-app
+          path: ./publish
 
   deploy:
     runs-on: windows-latest
     needs: build
     environment:
       name: 'Production'
-      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     
     steps:
+      # 1. Baixar os artefatos do job de build
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
-          name: .net-app
-      
+          name: dotnet-app
+          path: ./publish
+
+      # 2. Implantar no Azure Web App
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'leitorcpfl'
-          slot-name: 'Production'
-          package: .
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_1A29C957984D4D1C932FEDE8395B20D6 }}
+          app-name: 'leitorcpfl'  # Nome do seu Azure Web App
+          package: ./publish        # Caminho para os artefatos publicados
+          publish-profile: ${{ secrets.AzureAppService_PublishProfile_5cedd9be7e1a468bb0fe866a83253b77 }}  # Segredo contendo o perfil de publicação
