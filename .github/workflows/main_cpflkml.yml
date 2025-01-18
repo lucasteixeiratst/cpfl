@@ -1,62 +1,51 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-
-name: Build and deploy Node.js app to Azure Web App - cpflkml
+name: Azure Static Web Apps CI/CD
 
 on:
   push:
     branches:
       - main
-  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    branches:
+      - main
 
 jobs:
-  build:
+  build_and_deploy_job:
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
     runs-on: ubuntu-latest
-
+    name: Build and Deploy Job
+    permissions:
+      id-token: write
+      contents: read
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Node.js version
-        uses: actions/setup-node@v3
+      - name: Checkout Repository
+        uses: actions/checkout@v3
         with:
-          node-version: '20.x'
+          submodules: true
+          lfs: false
 
-      - name: npm install, build, and test
-        run: |
-          npm install
-          npm run build --if-present
-          npm run test --if-present
+      # Removido: Instalação do OIDC Client e obtenção do ID Token
+      # Esses passos não são necessários para deploys estáticos simples.
 
-      - name: Zip artifact for deployment
-        run: zip release.zip ./* -r
-
-      - name: Upload artifact for deployment job
-        uses: actions/upload-artifact@v4
+      - name: Build And Deploy
+        id: builddeploy
+        uses: Azure/static-web-apps-deploy@v1
         with:
-          name: node-app
-          path: release.zip
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_JOLLY_WATER_09FA29210 }}
+          action: "upload"
+          ###### Configurações de Repositório/Build ######
+          app_location: "/"          # Caminho do código fonte da aplicação (raiz)
+          api_location: ""           # Caminho do código fonte da API - opcional
+          output_location: "."        # Diretório de conteúdo da aplicação construída
+          ###### Fim das Configurações ######
 
-  deploy:
+  close_pull_request_job:
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
     runs-on: ubuntu-latest
-    needs: build
-    environment:
-      name: 'Production'
-      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
-    
+    name: Close Pull Request Job
     steps:
-      - name: Download artifact from build job
-        uses: actions/download-artifact@v4
+      - name: Close Pull Request
+        id: closepullrequest
+        uses: Azure/static-web-apps-deploy@v1
         with:
-          name: node-app
-
-      - name: Unzip artifact for deployment
-        run: unzip release.zip
-      
-      - name: 'Deploy to Azure Web App'
-        id: deploy-to-webapp
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: 'cpflkml'
-          slot-name: 'Production'
-          package: .
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_C8A728A867394C7F804F7B63858929DB }}
+          action: "close"
