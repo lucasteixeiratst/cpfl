@@ -1,9 +1,10 @@
+```html
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Consolidador de KMZ</title>
+    <title>Consolidador de Marcadores KMZ</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -92,12 +93,12 @@
 </head>
 <body>
     <div class="container">
-        <h1>Consolidador de Arquivos KMZ</h1>
+        <h1>Consolidador de Marcadores KMZ</h1>
         
         <div class="controls">
             <button id="loadBtn">Carregar Arquivos KMZ</button>
-            <button id="consolidateBtn" disabled>Consolidar Dados</button>
-            <button id="downloadBtn">Download GeoJSON</button>
+            <button id="consolidateBtn" disabled>Consolidar Marcadores</button>
+            <button id="downloadBtn">Download Marker Index</button>
         </div>
         
         <div id="progress" style="display: none;">
@@ -116,7 +117,7 @@
         // Estado da aplicação
         const state = {
             kmzFiles: [],
-            consolidatedData: null
+            markerIndex: []
         };
 
         // Elementos do DOM
@@ -128,12 +129,124 @@
         const fileListDiv = document.getElementById('fileList');
         const statusDiv = document.getElementById('status');
 
-        // Lista de arquivos KMZ (substitua pelos seus caminhos locais)
+        // Lista completa dos 116 arquivos KMZ
         const kmzFiles = [
-            { name: 'AGUAS DE LINDOIA.kmz', url: 'AGUAS DE LINDOIA.kmz' },
-            { name: 'AGUDOS.kmz', url: 'AGUDOS.kmz' },
-            // Adicione todos os 116 arquivos aqui...
-            { name: 'VIRADOURO.kmz', url: 'VIRADOURO.kmz' }
+            { name: 'AGUAS DE LINDOIA.kmz', url: './AGUAS DE LINDOIA.kmz' },
+            { name: 'AGUDOS.kmz', url: './AGUDOS.kmz' },
+            { name: 'ALTINOPOLIS.kmz', url: './ALTINOPOLIS.kmz' },
+            { name: 'AMERICANA.kmz', url: './AMERICANA.kmz' },
+            { name: 'AMPARO.kmz', url: './AMPARO.kmz' },
+            { name: 'ARACATUBA.kmz', url: './ARACATUBA.kmz' },
+            { name: 'ARARAQUARA.kmz', url: './ARARAQUARA.kmz' },
+            { name: 'BARIRI.kmz', url: './BARIRI.kmz' },
+            { name: 'BARRA BONITA.kmz', url: './BARRA BONITA.kmz' },
+            { name: 'BARRETOS.kmz', url: './BARRETOS.kmz' },
+            { name: 'BATATAIS.kmz', url: './BATATAIS.kmz' },
+            { name: 'BAURU.kmz', url: './BAURU.kmz' },
+            { name: 'BEBEDOURO.kmz', url: './BEBEDOURO.kmz' },
+            { name: 'BIRIGUI.kmz', url: './BIRIGUI.kmz' },
+            { name: 'BOA ESPERANCA DO SUL.kmz', url: './BOA ESPERANCA DO SUL.kmz' },
+            { name: 'BOTUCATU.kmz', url: './BOTUCATU.kmz' },
+            { name: 'BRAUNA.kmz', url: './BRAUNA.kmz' },
+            { name: 'BROTAS.kmz', url: './BROTAS.kmz' },
+            { name: 'CAFELANDIA.kmz', url: './CAFELANDIA.kmz' },
+            { name: 'CAJOBI.kmz', url: './CAJOBI.kmz' },
+            { name: 'CAJURU.kmz', url: './CAJURU.kmz' },
+            { name: 'CAMPINAS BARAO GERALDO-1.kmz', url: './CAMPINAS BARAO GERALDO-1.kmz' },
+            { name: 'CAMPINAS CAMPO GRANDE-1.kmz', url: './CAMPINAS CAMPO GRANDE-1.kmz' },
+            { name: 'CAMPINAS CENTRO-1.kmz', url: './CAMPINAS CENTRO-1.kmz' },
+            { name: 'CAMPINAS SOUZAS-1.kmz', url: './CAMPINAS SOUZAS-1.kmz' },
+            { name: 'CAMPINAS TREVO-1.kmz', url: './CAMPINAS TREVO-1.kmz' },
+            { name: 'CAPIVARI.kmz', url: './CAPIVARI.kmz' },
+            { name: 'CONGONHAS.kmz', url: './CONGONHAS.kmz' },
+            { name: 'COSMOPOLIS.kmz', url: './COSMOPOLIS.kmz' },
+            { name: 'CRAVINHOS.kmz', url: './CRAVINHOS.kmz' },
+            { name: 'DESCALVADO.kmz', url: './DESCALVADO.kmz' },
+            { name: 'DOIS CORREGOS.kmz', url: './DOIS CORREGOS.kmz' },
+            { name: 'DOURADO.kmz', url: './DOURADO.kmz' },
+            { name: 'DUARTINA.kmz', url: './DUARTINA.kmz' },
+            { name: 'ESPIRITO SANTO DO PINHAL.kmz', url: './ESPIRITO SANTO DO PINHAL.kmz' },
+            { name: 'FRANCA.kmz', url: './FRANCA.kmz' },
+            { name: 'GARCA.kmz', url: './GARCA.kmz' },
+            { name: 'GAVIAO PEIXOTO.kmz', url: './GAVIAO PEIXOTO.kmz' },
+            { name: 'GETULINA.kmz', url: './GETULINA.kmz' },
+            { name: 'GUAIRA.kmz', url: './GUAIRA.kmz' },
+            { name: 'GUANABARA.kmz', url: './GUANABARA.kmz' },
+            { name: 'GUARARAPES.kmz', url: './GUARARAPES.kmz' },
+            { name: 'GUARIBA.kmz', url: './GUARIBA.kmz' },
+            { name: 'HIPODROMO.kmz', url: './HIPODROMO.kmz' },
+            { name: 'HORTOLANDIA.kmz', url: './HORTOLANDIA.kmz' },
+            { name: 'IACANGA.kmz', url: './IACANGA.kmz' },
+            { name: 'IBIRA.kmz', url: './IBIRA.kmz' },
+            { name: 'IBITINGA.kmz', url: './IBITINGA.kmz' },
+            { name: 'IGARAPAVA.kmz', url: './IGARAPAVA.kmz' },
+            { name: 'IPUA.kmz', url: './IPUA.kmz' },
+            { name: 'ITAPIRA.kmz', url: './ITAPIRA.kmz' },
+            { name: 'ITAPOLIS.kmz', url: './ITAPOLIS.kmz' },
+            { name: 'ITATIBA.kmz', url: './ITATIBA.kmz' },
+            { name: 'ITATINGA.kmz', url: './ITATINGA.kmz' },
+            { name: 'ITUVERAVA.kmz', url: './ITUVERAVA.kmz' },
+            { name: 'JABOTICABAL.kmz', url: './JABOTICABAL.kmz' },
+            { name: 'JARDINOPOLIS.kmz', url: './JARDINOPOLIS.kmz' },
+            { name: 'JAU.kmz', url: './JAU.kmz' },
+            { name: 'JOSE BONIFACIO.kmz', url: './JOSE BONIFACIO.kmz' },
+            { name: 'LENCOIS PAULISTA.kmz', url: './LENCOIS PAULISTA.kmz' },
+            { name: 'LINS.kmz', url: './LINS.kmz' },
+            { name: 'MARILIA.kmz', url: './MARILIA.kmz' },
+            { name: 'MATAO.kmz', url: './MATAO.kmz' },
+            { name: 'METROPOLITANA.kmz', url: './METROPOLITANA.kmz' },
+            { name: 'MIGUELOPOLIS.kmz', url: './MIGUELOPOLIS.kmz' },
+            { name: 'MIRASSOL.kmz', url: './MIRASSOL.kmz' },
+            { name: 'MONTE ALTO.kmz', url: './MONTE ALTO.kmz' },
+            { name: 'MONTE APRAZIVEL.kmz', url: './MONTE APRAZIVEL.kmz' },
+            { name: 'MONTE MOR.kmz', url: './MONTE MOR.kmz' },
+            { name: 'MORRO AGUDO.kmz', url: './MORRO AGUDO.kmz' },
+            { name: 'MORRO DO CIPO.kmz', url: './MORRO DO CIPO.kmz' },
+            { name: 'NOVA GRANADA.kmz', url: './NOVA GRANADA.kmz' },
+            { name: 'OCAUCU.kmz', url: './OCAUCU.kmz' },
+            { name: 'OLIMPIA.kmz', url: './OLIMPIA.kmz' },
+            { name: 'ORLANDIA.kmz', url: './ORLANDIA.kmz' },
+            { name: 'PARAISO.kmz', url: './PARAISO.kmz' },
+            { name: 'PARDINHO.kmz', url: './PARDINHO.kmz' },
+            { name: 'PAULINIA.kmz', url: './PAULINIA.kmz' },
+            { name: 'PEDERNEIRAS.kmz', url: './PEDERNEIRAS.kmz' },
+            { name: 'PEDREGULHO.kmz', url: './PEDREGULHO.kmz' },
+            { name: 'PENAPOLIS.kmz', url: './PENAPOLIS.kmz' },
+            { name: 'PIACATU.kmz', url: './PIACATU.kmz' },
+            { name: 'PIRACICABA SANTA CECILIA.kmz', url: './PIRACICABA SANTA CECILIA.kmz' },
+            { name: 'PIRACICABA SANTA TEREZINHA.kmz', url: './PIRACICABA SANTA TEREZINHA.kmz' },
+            { name: 'PIRACICABA.kmz', url: './PIRACICABA.kmz' },
+            { name: 'PIRAJUI - EA.kmz', url: './PIRAJUI - EA.kmz' },
+            { name: 'PIRANGI.kmz', url: './PIRANGI.kmz' },
+            { name: 'PITANGUEIRAS.kmz', url: './PITANGUEIRAS.kmz' },
+            { name: 'POMPEIA.kmz', url: './POMPEIA.kmz' },
+            { name: 'PRESIDENTE ALVES.kmz', url: './PRESIDENTE ALVES.kmz' },
+            { name: 'PROMISSAO.kmz', url: './PROMISSAO.kmz' },
+            { name: 'RESTINGA.kmz', url: './RESTINGA.kmz' },
+            { name: 'RIBEIRAO PRETO NORTE.kmz', url: './RIBEIRAO PRETO NORTE.kmz' },
+            { name: 'RIBEIRAO PRETO SUL.kmz', url: './RIBEIRAO PRETO SUL.kmz' },
+            { name: 'RINCAO.kmz', url: './RINCAO.kmz' },
+            { name: 'SANTA ADELIA.kmz', url: './SANTA ADELIA.kmz' },
+            { name: 'SANTA BARBARA DOESTE.kmz', url: './SANTA BARBARA DOESTE.kmz' },
+            { name: 'SANTA ROSA DE VITERBO.kmz', url: './SANTA ROSA DE VITERBO.kmz' },
+            { name: 'SANTO ANTONIO ARACANGUA.kmz', url: './SANTO ANTONIO ARACANGUA.kmz' },
+            { name: 'SAO CARLOS.kmz', url: './SAO CARLOS.kmz' },
+            { name: 'SAO JOAQUIM DA BARRA.kmz', url: './SAO JOAQUIM DA BARRA.kmz' },
+            { name: 'SAO JOSE RIO PRETO.kmz', url: './SAO JOSE RIO PRETO.kmz' },
+            { name: 'SAO MANUEL.kmz', url: './SAO MANUEL.kmz' },
+            { name: 'SAO PEDRO.kmz', url: './SAO PEDRO.kmz' },
+            { name: 'SAO SIMAO.kmz', url: './SAO SIMAO.kmz' },
+            { name: 'SERRA NEGRA.kmz', url: './SERRA NEGRA.kmz' },
+            { name: 'SERRANA.kmz', url: './SERRANA.kmz' },
+            { name: 'SERTAOZINHO.kmz', url: './SERTAOZINHO.kmz' },
+            { name: 'SOCORRO.kmz', url: './SOCORRO.kmz' },
+            { name: 'SUMARE.kmz', url: './SUMARE.kmz' },
+            { name: 'TANABI.kmz', url: './TANABI.kmz' },
+            { name: 'TAQUARITINGA.kmz', url: './TAQUARITINGA.kmz' },
+            { name: 'UIRAPURU.kmz', url: './UIRAPURU.kmz' },
+            { name: 'VALINHOS.kmz', url: './VALINHOS.kmz' },
+            { name: 'VALPARAISO.kmz', url: './VALPARAISO.kmz' },
+            { name: 'VIRADOURO.kmz', url: './VIRADOURO.kmz' }
         ];
 
         // Carrega a lista de arquivos KMZ
@@ -141,39 +254,58 @@
             state.kmzFiles = [...kmzFiles];
             updateFileList();
             consolidateBtn.disabled = false;
-            showStatus('Lista de arquivos KMZ carregada com sucesso!', 'success');
+            showStatus('Lista de 116 arquivos KMZ carregada com sucesso!', 'success');
         });
 
-        // Consolida os dados de todos os arquivos KMZ
+        // Consolida os marcadores de todos os arquivos KMZ
         consolidateBtn.addEventListener('click', async () => {
+            // Verifica o localStorage
+            const cached = localStorage.getItem('marker_index');
+            if (cached) {
+                const { data, timestamp } = JSON.parse(cached);
+                const cacheAgeHours = (Date.now() - timestamp) / (1000 * 60 * 60);
+                if (cacheAgeHours < 12) {
+                    state.markerIndex = data;
+                    showStatus(`Carregados ${data.length} marcadores do cache local!`, 'success');
+                    downloadBtn.style.display = 'block';
+                    return;
+                }
+            }
+
             try {
                 progressDiv.style.display = 'block';
                 progressBar.innerHTML = 'Preparando...';
                 
-                const result = await processAllKMZFiles();
-                state.consolidatedData = result;
+                const markers = await processAllKMZFiles();
+                state.markerIndex = markers;
                 
-                showStatus('Dados consolidados com sucesso!', 'success');
+                // Salva no localStorage
+                localStorage.setItem('marker_index', JSON.stringify({
+                    data: markers,
+                    timestamp: Date.now()
+                }));
+                
+                showStatus(`Extraídos ${markers.length} marcadores dos 116 arquivos!`, 'success');
                 downloadBtn.style.display = 'block';
             } catch (error) {
-                console.error('Erro ao consolidar dados:', error);
-                showStatus(`Erro ao consolidar dados: ${error.message}`, 'error');
+                console.error('Erro ao consolidar marcadores:', error);
+                showStatus(`Erro ao consolidar marcadores: ${error.message}`, 'error');
             } finally {
                 progressDiv.style.display = 'none';
             }
         });
 
-        // Download do GeoJSON consolidado
+        // Download do marker_index.json
         downloadBtn.addEventListener('click', () => {
-            if (!state.consolidatedData) return;
+            if (!state.markerIndex) return;
             
-            const dataStr = JSON.stringify(state.consolidatedData, null, 2);
+            const dataStr = JSON.stringify(state.markerIndex, null, 2);
             const blob = new Blob([dataStr], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'dados_consolidados.geojson';
+            a.download = 'marker_index.json';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -197,17 +329,14 @@
             statusDiv.className = type;
         }
 
-        // Processa todos os arquivos KMZ
+        // Processa todos os arquivos KMZ e extrai marcadores
         async function processAllKMZFiles() {
-            const consolidatedGeoJSON = {
-                type: 'FeatureCollection',
-                features: []
-            };
+            const markers = [];
             
             for (let i = 0; i < state.kmzFiles.length; i++) {
                 const file = state.kmzFiles[i];
                 const progress = Math.floor((i / state.kmzFiles.length) * 100);
-                progressBar.innerHTML = `Processando ${file.name}... (${i+1}/${state.kmzFiles.length}, ${progress}%)`;
+                progressBar.innerHTML = `Processando ${i+1}/116: ${file.name}... (${progress}%)`;
                 
                 try {
                     const response = await fetch(file.url);
@@ -215,30 +344,54 @@
                         throw new Error(`Falha ao carregar ${file.name}: ${response.status}`);
                     }
                     
-                    let geoJSON;
                     if (file.name.endsWith('.kmz')) {
                         const arrayBuffer = await response.arrayBuffer();
-                        geoJSON = await parseKMZ(arrayBuffer);
-                    } else {
-                        const text = await response.text();
-                        const kml = new DOMParser().parseFromString(text, 'text/xml');
-                        geoJSON = toGeoJSON.kml(kml);
+                        const geoJSON = await parseKMZ(arrayBuffer);
+                        const fileMarkers = extractMarkers(geoJSON, file.name);
+                        markers.push(...fileMarkers);
                     }
-                    
-                    // Adiciona metadados do arquivo de origem
-                    geoJSON.features.forEach(feature => {
-                        feature.properties = feature.properties || {};
-                        feature.properties.sourceFile = file.name;
-                        consolidatedGeoJSON.features.push(feature);
-                    });
                     
                 } catch (error) {
                     console.error(`Erro ao processar ${file.name}:`, error);
-                    // Continua para o próximo arquivo mesmo se um falhar
+                    // Continua para o próximo arquivo
                 }
+                
+                // Pequeno delay para não sobrecarregar o navegador
+                await new Promise(resolve => setTimeout(resolve, 100));
             }
             
-            return consolidatedGeoJSON;
+            return markers;
+        }
+
+        // Extrai marcadores do GeoJSON
+        function extractMarkers(geojson, fileName) {
+            const markers = [];
+            if (!geojson || !geojson.features) return markers;
+
+            geojson.features.forEach(feature => {
+                if (feature.geometry.type === 'Point') {
+                    const name = feature.properties.name || feature.properties.Alimentador || 'Sem nome';
+                    markers.push({
+                        name: name,
+                        coordinates: feature.geometry.coordinates,
+                        alimentador: feature.properties.Alimentador || null,
+                        fileName: fileName
+                    });
+                } else if (feature.geometry.type === 'GeometryCollection') {
+                    feature.geometry.geometries.forEach(geom => {
+                        if (geom.type === 'Point') {
+                            const name = feature.properties.name || feature.properties.Alimentador || 'Sem nome';
+                            markers.push({
+                                name: name,
+                                coordinates: geom.coordinates,
+                                alimentador: feature.properties.Alimentador || null,
+                                fileName: fileName
+                            });
+                        }
+                    });
+                }
+            });
+            return markers;
         }
 
         // Converte KMZ para GeoJSON
@@ -255,3 +408,4 @@
     </script>
 </body>
 </html>
+```
