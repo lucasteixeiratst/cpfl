@@ -89,6 +89,14 @@
         #downloadBtn:hover {
             background-color: #0b5a29;
         }
+        #log {
+            margin-top: 20px;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
     </style>
 </head>
 <body>
@@ -109,6 +117,7 @@
         <div id="fileList"></div>
         
         <div id="status"></div>
+        <div id="log"></div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -128,6 +137,7 @@
         const progressBar = document.getElementById('progressBar');
         const fileListDiv = document.getElementById('fileList');
         const statusDiv = document.getElementById('status');
+        const logDiv = document.getElementById('log');
 
         // Lista completa dos 116 arquivos KMZ
         const kmzFiles = [
@@ -218,7 +228,7 @@
             { name: 'PIRACICABA.kmz', url: './PIRACICABA.kmz' },
             { name: 'PIRAJUI - EA.kmz', url: './PIRAJUI - EA.kmz' },
             { name: 'PIRANGI.kmz', url: './PIRANGI.kmz' },
-            { name: 'PITANGUEIRAS.kmz', url: './PITANGUEIRAS.kmz' },
+            { name: 'PITANGUEIRAS.kmz', url: './PIRANGI.kmz' },
             { name: 'POMPEIA.kmz', url: './POMPEIA.kmz' },
             { name: 'PRESIDENTE ALVES.kmz', url: './PRESIDENTE ALVES.kmz' },
             { name: 'PROMISSAO.kmz', url: './PROMISSAO.kmz' },
@@ -267,6 +277,7 @@
                 if (cacheAgeHours < 12) {
                     state.markerIndex = data;
                     showStatus(`Carregados ${data.length} marcadores do cache local!`, 'success');
+                    logMessage(`Índice carregado do localStorage com ${data.length} marcadores.`);
                     downloadBtn.style.display = 'block';
                     return;
                 }
@@ -275,21 +286,24 @@
             try {
                 progressDiv.style.display = 'block';
                 progressBar.innerHTML = 'Preparando...';
-                
+                logDiv.innerHTML = '';
+
                 const markers = await processAllKMZFiles();
                 state.markerIndex = markers;
-                
+
                 // Salva no localStorage
                 localStorage.setItem('marker_index', JSON.stringify({
                     data: markers,
                     timestamp: Date.now()
                 }));
-                
+
                 showStatus(`Extraídos ${markers.length} marcadores dos 116 arquivos!`, 'success');
+                logMessage(`Processamento concluído: ${markers.length} marcadores extraídos.`);
                 downloadBtn.style.display = 'block';
             } catch (error) {
                 console.error('Erro ao consolidar marcadores:', error);
                 showStatus(`Erro ao consolidar marcadores: ${error.message}`, 'error');
+                logMessage(`Erro geral: ${error.message}`);
             } finally {
                 progressDiv.style.display = 'none';
             }
@@ -298,11 +312,11 @@
         // Download do marker_index.json
         downloadBtn.addEventListener('click', () => {
             if (!state.markerIndex) return;
-            
+
             const dataStr = JSON.stringify(state.markerIndex, null, 2);
             const blob = new Blob([dataStr], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
-            
+
             const a = document.createElement('a');
             a.href = url;
             a.download = 'marker_index.json';
@@ -329,62 +343,78 @@
             statusDiv.className = type;
         }
 
+        // Registra mensagens no log
+        function logMessage(message) {
+            const div = document.createElement('div');
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.appendChild(div);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
         // Processa todos os arquivos KMZ e extrai marcadores
         async function processAllKMZFiles() {
             const markers = [];
-            
+
             for (let i = 0; i < state.kmzFiles.length; i++) {
                 const file = state.kmzFiles[i];
                 const progress = Math.floor((i / state.kmzFiles.length) * 100);
                 progressBar.innerHTML = `Processando ${i+1}/116: ${file.name}... (${progress}%)`;
-                
+
                 try {
                     const response = await fetch(file.url);
                     if (!response.ok) {
                         throw new Error(`Falha ao carregar ${file.name}: ${response.status}`);
                     }
-                    
+
                     if (file.name.endsWith('.kmz')) {
                         const arrayBuffer = await response.arrayBuffer();
                         const geoJSON = await parseKMZ(arrayBuffer);
                         const fileMarkers = extractMarkers(geoJSON, file.name);
                         markers.push(...fileMarkers);
+                        logMessage(`Processado ${file.name}: ${fileMarkers.length} marcadores encontrados.`);
+                        console.log(`GeoJSON de ${file.name}:`, geoJSON);
                     }
-                    
+
                 } catch (error) {
                     console.error(`Erro ao processar ${file.name}:`, error);
-                    // Continua para o próximo arquivo
+                    logMessage(`Erro em ${file.name}: ${error.message}`);
                 }
-                
+
                 // Pequeno delay para não sobrecarregar o navegador
                 await new Promise(resolve => setTimeout(resolve, 100));
             }
-            
+
             return markers;
         }
 
         // Extrai marcadores do GeoJSON
         function extractMarkers(geojson, fileName) {
             const markers = [];
-            if (!geojson || !geojson.features) return markers;
+            if (!geojson || !geojson.features) {
+                console.warn(`GeoJSON inválido para ${fileName}`);
+                return markers;
+            }
 
-            geojson.features.forEach(feature => {
-                if (feature.geometry.type === 'Point') {
-                    const name = feature.properties.name || feature.properties.Alimentador || 'Sem nome';
+            geojson.features.forEach((feature, index) => {
+                console.log(`Feição ${index} em ${fileName}:`, feature);
+                if (feature.geometry && feature.geometry.type === 'Point') {
+                    const props = feature.properties || {};
+                    const name = props.name || props.Alimentador || props.description || `Marcador_${index}`;
                     markers.push({
                         name: name,
                         coordinates: feature.geometry.coordinates,
-                        alimentador: feature.properties.Alimentador || null,
+                        alimentador: props.Alimentador || null,
                         fileName: fileName
                     });
-                } else if (feature.geometry.type === 'GeometryCollection') {
-                    feature.geometry.geometries.forEach(geom => {
+                } else if (feature.geometry && feature.geometry.type === 'GeometryCollection') {
+                    feature.geometry.geometries.forEach((geom, geomIndex) => {
                         if (geom.type === 'Point') {
-                            const name = feature.properties.name || feature.properties.Alimentador || 'Sem nome';
+                            const props = feature.properties || {};
+                            const name = props.name || props.Alimentador || props.description || `Marcador_${index}_${geomIndex}`;
                             markers.push({
                                 name: name,
                                 coordinates: geom.coordinates,
-                                alimentador: feature.properties.Alimentador || null,
+                                alimentador: props.Alimentador || null,
                                 fileName: fileName
                             });
                         }
