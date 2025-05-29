@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerador de Índice de Marcadores KMZ</title>
+    <title>Gerador de Índice KMZ Minimalista</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -11,16 +11,18 @@
             margin: 0 auto;
             padding: 20px;
             line-height: 1.6;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         h1 {
             color: #2c3e50;
             text-align: center;
-        }
-        .container {
-            background-color: #f9f9f9;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
         }
         .progress-container {
             margin: 20px 0;
@@ -33,12 +35,7 @@
         .status {
             margin-top: 10px;
             font-weight: bold;
-        }
-        .file-info {
-            margin-top: 20px;
-            padding: 10px;
-            background-color: #e8f4f8;
-            border-radius: 4px;
+            min-height: 20px;
         }
         button {
             background-color: #4285F4;
@@ -49,6 +46,7 @@
             cursor: pointer;
             font-size: 16px;
             margin-top: 10px;
+            transition: background-color 0.3s;
         }
         button:hover {
             background-color: #3367d6;
@@ -57,229 +55,116 @@
             background-color: #cccccc;
             cursor: not-allowed;
         }
-        .hidden {
-            display: none;
-        }
-        .results {
-            margin-top: 20px;
-            max-height: 300px;
-            overflow-y: auto;
-            border: 1px solid #ddd;
-            padding: 10px;
-            border-radius: 4px;
-        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Gerador de Índice de Marcadores KMZ</h1>
-        
-        <p>Este aplicativo processará todos os 116 arquivos KMZ diretamente no seu navegador e gerará um índice pesquisável de todos os marcadores.</p>
+        <h1>Índice Minimalista de KMZ</h1>
+        <p>Gera um índice otimizado contendo apenas coordenadas e arquivo de origem.</p>
         
         <div class="progress-container">
             <progress id="loadingProgress" value="0" max="100"></progress>
-            <div class="status" id="statusText">Aguardando início do processamento...</div>
+            <div class="status" id="statusText">Aguardando início</div>
         </div>
         
-        <div class="file-info" id="fileInfo"></div>
-        
         <button id="btnStart">Iniciar Processamento</button>
-        <button id="btnDownload" disabled>Baixar Índice Completo</button>
-        
-        <div id="resultsContainer" class="results hidden"></div>
+        <button id="btnDownload" disabled>Baixar Índice (.gz)</button>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xmldom/0.6.0/xmldom.min.js"></script>
     <script src="https://unpkg.com/@tmcw/togeojson/dist/togeojson.umd.js"></script>
 
     <script>
-        // Lista dos 116 arquivos KMZ
         const KMZ_FILES = [
-            'AGUAS DE LINDOIA.kmz', 'AGUDOS.kmz', 'ALTINOPOLIS.kmz', 'AMERICANA.kmz', 'AMPARO.kmz',
-            'ARACATUBA.kmz', 'ARARAQUARA.kmz', 'BARIRI.kmz', 'BARRA BONITA.kmz', 'BARRETOS.kmz',
-            'BATATAIS.kmz', 'BAURU.kmz', 'BEBEDOURO.kmz', 'BIRIGUI.kmz', 'BOA ESPERANCA DO SUL.kmz',
-            'BOTUCATU.kmz', 'BRAUNA.kmz', 'BROTAS.kmz', 'CAFELANDIA.kmz', 'CAJOBI.kmz', 'CAJURU.kmz',
-            'CAMPINAS BARAO GERALDO-1.kmz', 'CAMPINAS CAMPO GRANDE-1.kmz', 'CAMPINAS CENTRO-1.kmz',
-            'CAMPINAS SOUZAS-1.kmz', 'CAMPINAS TREVO-1.kmz', 'CAPIVARI.kmz', 'CONGONHAS.kmz',
-            'COSMOPOLIS.kmz', 'CRAVINHOS.kmz', 'DESCALVADO.kmz', 'DOIS CORREGOS.kmz', 'DOURADO.kmz',
-            'DUARTINA.kmz', 'ESPIRITO SANTO DO PINHAL.kmz', 'FRANCA.kmz', 'GARCA.kmz', 'GAVIAO PEIXOTO.kmz',
-            'GETULINA.kmz', 'GUAIRA.kmz', 'GUANABARA.kmz', 'GUARARAPES.kmz', 'GUARIBA.kmz', 'HIPODROMO.kmz',
-            'HORTOLANDIA.kmz', 'IACANGA.kmz', 'IBIRA.kmz', 'IBITINGA.kmz', 'IGARAPAVA.kmz', 'IPUA.kmz',
-            'ITAPIRA.kmz', 'ITAPOLIS.kmz', 'ITATIBA.kmz', 'ITATINGA.kmz', 'ITUVERAVA.kmz', 'JABOTICABAL.kmz',
-            'JARDINOPOLIS.kmz', 'JAU.kmz', 'JOSE BONIFACIO.kmz', 'LENCOIS PAULISTA.kmz', 'LINS.kmz',
-            'MARILIA.kmz', 'MATAO.kmz', 'METROPOLITANA.kmz', 'MIGUELOPOLIS.kmz', 'MIRASSOL.kmz',
-            'MONTE ALTO.kmz', 'MONTE APRAZIVEL.kmz', 'MONTE MOR.kmz', 'MORRO AGUDO.kmz', 'MORRO DO CIPO.kmz',
-            'NOVA GRANDA.kmz', 'OCAUCU.kmz', 'OLIMPIA.kmz', 'ORLANDIA.kmz', 'PARAISO.kmz', 'PARDINHO.kmz',
-            'PAULINIA.kmz', 'PEDERNEIRAS.kmz', 'PEDREGULHO.kmz', 'PENAPOLIS.kmz', 'PIACATU.kmz',
-            'PIRACICABA SANTA CECILIA.kmz', 'PIRACICABA SANTA TEREZINHA.kmz', 'PIRACICABA.kmz',
-            'PIRAJUI - EA.kmz', 'PIRANGI.kmz', 'PITANGUEIRAS.kmz', 'POMPEIA.kmz', 'PRESIDENTE ALVES.kmz',
-            'PROMISSAO.kmz', 'RESTINGA.kmz', 'RIBEIRAO PRETO NORTE.kmz', 'RIBEIRAO PRETO SUL.kmz',
-            'RINCAO.kmz', 'SANTA ADELIA.kmz', 'SANTA BARBARA DOESTE.kmz', 'SANTA ROSA DE VITERBO.kmz',
-            'SANTO ANTONIO ARACANGUA.kmz', 'SAO CARLOS.kmz', 'SAO JOAQUIM DA BARRA.kmz',
-            'SAO JOSE RIO PRETO.kmz', 'SAO MANUEL.kmz', 'SAO PEDRO.kmz', 'SAO SIMAO.kmz', 'SERRA NEGRA.kmz',
-            'SERRANA.kmz', 'SERTAOZINHO.kmz', 'SOCORRO.kmz', 'SUMARE.kmz', 'TANABI.kmz', 'TAQUARITINGA.kmz',
-            'UIRAPURU.kmz', 'VALINHOS.kmz', 'VALPARAISO.kmz', 'VIRADOURO.kmz'
+            // Sua lista de 116 arquivos aqui
+            'ARARAQUARA.kmz', 'BAURU.kmz', /* ... */, 'VIRADOURO.kmz'
         ];
 
-        // Estado da aplicação
         const state = {
-            markerIndex: [],
-            processedCount: 0,
-            isProcessing: false
+            index: [], // Formato: [filenameIndex, lat, lng][]
+            filenames: [],
+            processed: 0
         };
 
-        // Elementos da UI
+        // Elementos UI
         const btnStart = document.getElementById('btnStart');
         const btnDownload = document.getElementById('btnDownload');
-        const loadingProgress = document.getElementById('loadingProgress');
-        const statusText = document.getElementById('statusText');
-        const fileInfo = document.getElementById('fileInfo');
-        const resultsContainer = document.getElementById('resultsContainer');
+        const progress = document.getElementById('loadingProgress');
+        const status = document.getElementById('statusText');
 
-        // Event listeners
-        btnStart.addEventListener('click', startProcessing);
-        btnDownload.addEventListener('click', downloadMarkerIndex);
+        btnStart.addEventListener('click', processFiles);
+        btnDownload.addEventListener('click', downloadIndex);
 
-        // Inicia o processamento dos arquivos KMZ
-        async function startProcessing() {
-            if (state.isProcessing) return;
-            
-            state.isProcessing = true;
+        async function processFiles() {
             btnStart.disabled = true;
-            btnDownload.disabled = true;
-            state.markerIndex = [];
-            state.processedCount = 0;
+            state.index = [];
+            state.filenames = KMZ_FILES.map(f => f.replace('.kmz', ''));
+            state.processed = 0;
             
-            statusText.textContent = 'Iniciando processamento...';
-            loadingProgress.value = 0;
-            fileInfo.textContent = '';
-            resultsContainer.innerHTML = '';
-            resultsContainer.classList.add('hidden');
-            
-            try {
-                // Processa cada arquivo KMZ
-                for (const fileName of KMZ_FILES) {
-                    if (!state.isProcessing) break; // Permite cancelar
-                    
-                    statusText.textContent = `Processando ${fileName} (${state.processedCount+1}/${KMZ_FILES.length})...`;
-                    
-                    try {
-                        const response = await fetch(`./${fileName}`);
-                        if (!response.ok) {
-                            throw new Error(`HTTP error! status: ${response.status}`);
-                        }
-                        
-                        const arrayBuffer = await response.arrayBuffer();
-                        const markers = await extractMarkersFromKMZ(arrayBuffer, fileName);
-                        
-                        state.markerIndex.push(...markers);
-                        state.processedCount++;
-                        
-                        // Atualiza progresso
-                        loadingProgress.value = (state.processedCount / KMZ_FILES.length) * 100;
-                        
-                        // Mostra alguns resultados à medida que são processados
-                        if (state.processedCount % 10 === 0 || state.processedCount === KMZ_FILES.length) {
-                            updateResultsPreview();
-                        }
-                        
-                    } catch (error) {
-                        console.error(`Erro processando ${fileName}:`, error);
-                        state.processedCount++; // Continua mesmo com erro
-                    }
+            for (let i = 0; i < KMZ_FILES.length; i++) {
+                const file = KMZ_FILES[i];
+                status.textContent = `Processando ${i+1}/${KMZ_FILES.length}: ${file}`;
+                progress.value = (i / KMZ_FILES.length) * 100;
+                
+                try {
+                    const markers = await extractMarkers(file);
+                    markers.forEach(marker => {
+                        // Armazena como [índice_arquivo, lat, lng]
+                        state.index.push([i, marker[1], marker[0]]);
+                    });
+                    state.processed++;
+                } catch (error) {
+                    console.error(`Erro em ${file}:`, error);
                 }
                 
-                if (state.isProcessing) {
-                    statusText.textContent = 'Processamento concluído com sucesso!';
-                    fileInfo.textContent = `Índice gerado com ${state.markerIndex.length} marcadores de ${KMZ_FILES.length} arquivos.`;
-                    btnDownload.disabled = false;
-                    resultsContainer.classList.remove('hidden');
-                }
-                
-            } catch (error) {
-                console.error('Erro durante o processamento:', error);
-                statusText.textContent = 'Ocorreu um erro durante o processamento.';
-            } finally {
-                state.isProcessing = false;
-                btnStart.disabled = false;
+                // Pausa para não bloquear a UI
+                await new Promise(resolve => setTimeout(resolve, 0));
             }
+            
+            status.textContent = `Pronto! ${state.index.length} marcadores de ${state.processed} arquivos`;
+            progress.value = 100;
+            btnDownload.disabled = false;
         }
 
-        // Extrai marcadores de um arquivo KMZ
-        async function extractMarkersFromKMZ(kmzData, fileName) {
-            const zip = await JSZip.loadAsync(kmzData);
+        async function extractMarkers(filename) {
+            const response = await fetch(filename);
+            const buffer = await response.arrayBuffer();
+            const zip = await JSZip.loadAsync(buffer);
             const kmlFile = zip.file(/\.kml$/i)[0];
-            if (!kmlFile) throw new Error('Nenhum arquivo KML encontrado no KMZ');
-
-            const kmlContent = await kmlFile.async('string');
-            const kmlDoc = new DOMParser().parseFromString(kmlContent, 'text/xml');
+            const kmlText = await kmlFile.async('text');
+            const kmlDoc = new DOMParser().parseFromString(kmlText, 'text/xml');
             const geojson = toGeoJSON.kml(kmlDoc);
-
+            
             return geojson.features
-                .filter(f => f.geometry.type === 'Point')
-                .map(f => ({
-                    id: `marker_${Math.random().toString(36).substr(2, 9)}`,
-                    name: f.properties.name || null,
-                    alimentador: f.properties.Alimentador || null,
-                    coordinates: f.geometry.coordinates,
-                    file: fileName,
-                    properties: Object.keys(f.properties)
-                        .filter(k => !['name', 'Alimentador'].includes(k))
-                        .reduce((obj, key) => ({ ...obj, [key]: f.properties[key] }), {})
-                }));
+                .filter(f => f.geometry?.type === 'Point')
+                .map(f => f.geometry.coordinates); // [lng, lat]
         }
 
-        // Atualiza a visualização dos resultados
-        function updateResultsPreview() {
-            const sampleMarkers = state.markerIndex.slice(-5); // Mostra os últimos 5 marcadores processados
-            resultsContainer.innerHTML = '<h3>Últimos marcadores processados:</h3>';
-            
-            sampleMarkers.forEach(marker => {
-                const div = document.createElement('div');
-                div.innerHTML = `
-                    <p><strong>${marker.name || marker.alimentador || 'Sem nome'}</strong> 
-                    (Arquivo: ${marker.file})</p>
-                    <small>Coordenadas: ${marker.coordinates[1].toFixed(4)}, ${marker.coordinates[0].toFixed(4)}</small>
-                    <hr>
-                `;
-                resultsContainer.appendChild(div);
-            });
-        }
-
-        // Baixa o índice completo como arquivo JSON
-        function downloadMarkerIndex() {
-            if (state.markerIndex.length === 0) {
-                alert('Nenhum marcador foi processado ainda.');
-                return;
-            }
-            
-            // Cria a estrutura do índice para download
-            const indexData = {
-                version: "1.0",
-                generatedAt: new Date().toISOString(),
-                totalFiles: KMZ_FILES.length,
-                processedFiles: state.processedCount,
-                totalMarkers: state.markerIndex.length,
-                markers: state.markerIndex
+        function downloadIndex() {
+            const data = {
+                v: 2, // Versão do formato
+                f: state.filenames, // Lista de nomes de arquivos
+                i: state.index // Índice de coordenadas
             };
             
-            // Cria o blob e o link de download
-            const blob = new Blob([JSON.stringify(indexData, null, 2)], { type: 'application/json' });
+            // Converte para JSON e compacta
+            const json = JSON.stringify(data);
+            const compressed = pako.gzip(json);
+            
+            // Cria download
+            const blob = new Blob([compressed], {type: 'application/gzip'});
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `indice_marcadores_${new Date().toISOString().split('T')[0]}.json`;
+            a.download = `indice_kmz_${new Date().toISOString().slice(0,10)}.gz`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             
-            // Feedback para o usuário
-            statusText.textContent = 'Download do índice iniciado!';
-            setTimeout(() => {
-                statusText.textContent = 'Processamento concluído com sucesso!';
-            }, 3000);
+            status.textContent = `Download gerado (${Math.round(compressed.length/1024)} KB)`;
         }
     </script>
 </body>
