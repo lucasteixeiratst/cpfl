@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Visualizador de Mapas</title>
     <style>
+        /* Estilos mantidos inalterados */
         body, html {
             margin: 0;
             padding: 0;
@@ -406,7 +407,7 @@
         const loadedFilesList = document.getElementById('loadedFilesList');
         const btnLoadedFiles = document.getElementById('btnLoadedFiles');
 
-        // Arquivos pré-definidos
+        // Arquivos pré-definidos (apenas os 116 KMZ mais recentes)
         const predefinedFiles = [
             { name: 'AGUAS DE LINDOIA.kmz', url: './AGUAS DE LINDOIA.kmz' },
             { name: 'AGUDOS.kmz', url: './AGUDOS.kmz' },
@@ -430,15 +431,10 @@
             { name: 'CAJOBI.kmz', url: './CAJOBI.kmz' },
             { name: 'CAJURU.kmz', url: './CAJURU.kmz' },
             { name: 'CAMPINAS BARAO GERALDO-1.kmz', url: './CAMPINAS BARAO GERALDO-1.kmz' },
-            { name: 'CAMPINAS BARAO GERALDO.kmz', url: './CAMPINAS BARAO GERALDO.kmz' },
             { name: 'CAMPINAS CAMPO GRANDE-1.kmz', url: './CAMPINAS CAMPO GRANDE-1.kmz' },
-            { name: 'CAMPINAS CAMPO GRANDE.kmz', url: './CAMPINAS CAMPO GRANDE.kmz' },
             { name: 'CAMPINAS CENTRO-1.kmz', url: './CAMPINAS CENTRO-1.kmz' },
-            { name: 'CAMPINAS CENTRO.kmz', url: './CAMPINAS CENTRO.kmz' },
             { name: 'CAMPINAS SOUZAS-1.kmz', url: './CAMPINAS SOUZAS-1.kmz' },
-            { name: 'CAMPINAS SOUZAS.kmz', url: './CAMPINAS SOUZAS.kmz' },
             { name: 'CAMPINAS TREVO-1.kmz', url: './CAMPINAS TREVO-1.kmz' },
-            { name: 'CAMPINAS TREVO.kmz', url: './CAMPINAS TREVO.kmz' },
             { name: 'CAPIVARI.kmz', url: './CAPIVARI.kmz' },
             { name: 'CONGONHAS.kmz', url: './CONGONHAS.kmz' },
             { name: 'COSMOPOLIS.kmz', url: './COSMOPOLIS.kmz' },
@@ -518,13 +514,6 @@
             { name: 'SAO MANUEL.kmz', url: './SAO MANUEL.kmz' },
             { name: 'SAO PEDRO.kmz', url: './SAO PEDRO.kmz' },
             { name: 'SAO SIMAO.kmz', url: './SAO SIMAO.kmz' },
-            { name: 'SE-FIG.kml', url: './SE-FIG.kml' },
-            { name: 'SE-NDA.kml', url: './SE-NDA.kml' },
-            { name: 'SE-SAC.kml', url: './SE-SAC.kml' },
-            { name: 'SE-SCN.kml', url: './SE-SCN.kml' },
-            { name: 'SE-SOZ.kml', url: './SE-SOZ.kml' },
-            { name: 'SE-USG.kml', url: './SE-USG.kml' },
-            { name: 'se-VAL.kml', url: './se-VAL.kml' },
             { name: 'SERRA NEGRA.kmz', url: './SERRA NEGRA.kmz' },
             { name: 'SERRANA.kmz', url: './SERRANA.kmz' },
             { name: 'SERTAOZINHO.kmz', url: './SERTAOZINHO.kmz' },
@@ -863,7 +852,7 @@
                     fileHeader.textContent = `Arquivo: "${file.name}"`;
                     lineGroupsList.appendChild(fileHeader);
 
-                    // Converte o Set de grupos para um array, ordena alfabeticamente e itera
+                    // Converte o Set de grupos para umbrella array, ordena alfabeticamente e itera
                     const sortedGroups = Array.from(groups).sort((a, b) => a.localeCompare(b));
 
                     sortedGroups.forEach(grp => {
