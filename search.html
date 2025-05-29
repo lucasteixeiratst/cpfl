@@ -1,48 +1,9 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Localizar Marcador</title>
+    <title>Localizar Marcador (Banco de Dados)</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -171,7 +132,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.6.0/jszip.min.js"></script>
 </head>
 <body>
-    <h1>Localizar Marcador</h1>
+    <h1>Localizar Marcador (Banco de Dados)</h1>
 
     <div class="search-container">
         <input type="text" id="searchInput" placeholder="Digite o nome do marcador..." />
@@ -322,9 +283,35 @@
             { name: 'VIRADOURO.kmz', url: './VIRADOURO.kmz' }
         ];
 
-        // Configurações de cache
-        const CACHE_KEY = 'marker_cache';
+        // Configurações do IndexedDB
+        const DB_NAME = 'MarkerDatabase';
+        const DB_VERSION = 1;
+        const STORE_NAME = 'markers';
         const CACHE_EXPIRATION_MS = 12 * 60 * 60 * 1000; // 12 horas
+
+        // Inicializa o IndexedDB
+        function openDatabase() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        const store = db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+                        store.createIndex('name', 'name', { unique: false });
+                        store.createIndex('fileName', 'fileName', { unique: false });
+                    }
+                };
+
+                request.onsuccess = (event) => {
+                    resolve(event.target.result);
+                };
+
+                request.onerror = (event) => {
+                    reject(event.target.error);
+                };
+            });
+        }
 
         // Função para carregar e processar um arquivo KMZ
         async function loadAndParseFile(file) {
@@ -359,7 +346,7 @@
             return toGeoJSON.kml(new DOMParser().parseFromString(kmlContent, 'text/xml'));
         }
 
-        // Função para obter marcadores de um arquivo
+        // Extrai marcadores de um arquivo GeoJSON
         function extractMarkers(geojson, fileName) {
             const markers = [];
             if (!geojson || !geojson.features) return markers;
@@ -388,50 +375,67 @@
             return markers;
         }
 
-        // Função para obter ou atualizar o cache de marcadores
-        async function getCachedMarkers() {
-            const cached = localStorage.getItem(CACHE_KEY);
-            if (cached) {
-                const cacheData = JSON.parse(cached);
-                if (Date.now() - cacheData.timestamp < CACHE_EXPIRATION_MS) {
-                    return cacheData.markers;
-                }
-            }
+        // Atualiza o banco de dados com marcadores
+        async function updateDatabase() {
+            const db = await openDatabase();
+            const transaction = db.transaction([STORE_NAME], 'readwrite');
+            const store = transaction.objectStore(STORE_NAME);
 
-            const markers = [];
-            const concurrencyLimit = 5; // Limite de arquivos processados simultaneamente
-            const queue = files.slice();
+            // Verifica se o banco de dados precisa ser atualizado
+            return new Promise((resolve, reject) => {
+                const getTimestamp = store.get(1);
+                getTimestamp.onsuccess = async () => {
+                    const now = Date.now();
+                    if (getTimestamp.result && now - getTimestamp.result.timestamp < CACHE_EXPIRATION_MS) {
+                        resolve();
+                        return;
+                    }
 
-            document.getElementById('loading').style.display = 'block';
+                    // Limpa o banco de dados
+                    store.clear();
 
-            async function processBatch() {
-                while (queue.length > 0) {
-                    const batch = queue.splice(0, concurrencyLimit);
-                    const results = await Promise.all(batch.map(async file => {
-                        const geojson = await loadAndParseFile(file);
-                        return extractMarkers(geojson, file.name);
-                    }));
-                    results.flat().forEach(marker => markers.push(marker));
-                }
-            }
+                    const markers = [];
+                    const concurrencyLimit = 5;
+                    const queue = files.slice();
 
-            try {
-                await processBatch();
-                const cacheData = {
-                    markers: markers,
-                    timestamp: Date.now()
+                    document.getElementById('loading').style.display = 'block';
+
+                    async function processBatch() {
+                        while (queue.length > 0) {
+                            const batch = queue.splice(0, concurrencyLimit);
+                            const results = await Promise.all(batch.map(async file => {
+                                const geojson = await loadAndParseFile(file);
+                                return extractMarkers(geojson, file.name);
+                            }));
+                            results.flat().forEach(marker => markers.push(marker));
+                        }
+                    }
+
+                    try {
+                        await processBatch();
+
+                        // Adiciona marcadores ao banco de dados
+                        markers.forEach(marker => {
+                            store.add(marker);
+                        });
+
+                        // Atualiza o timestamp
+                        store.put({ id: 1, timestamp: now });
+
+                        document.getElementById('loading').style.display = 'none';
+                        resolve();
+                    } catch (error) {
+                        console.error('Erro ao atualizar o banco de dados:', error);
+                        document.getElementById('loading').style.display = 'none';
+                        reject(error);
+                    }
                 };
-                localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
-                document.getElementById('loading').style.display = 'none';
-                return markers;
-            } catch (error) {
-                console.error('Erro ao atualizar o cache:', error);
-                document.getElementById('loading').style.display = 'none';
-                return [];
-            }
+
+                getTimestamp.onerror = () => reject(getTimestamp.error);
+            });
         }
 
-        // Função para buscar marcadores
+        // Busca marcadores no banco de dados
         async function searchMarkers() {
             const term = document.getElementById('searchInput').value.toLowerCase();
             if (!term) {
@@ -443,16 +447,40 @@
             document.getElementById('resultsTable').style.display = 'none';
             document.getElementById('noResults').style.display = 'none';
 
-            const markers = await getCachedMarkers();
-            const matches = markers.filter(marker =>
-                marker.name.toLowerCase().includes(term)
-            );
+            try {
+                await updateDatabase();
+                const db = await openDatabase();
+                const transaction = db.transaction([STORE_NAME], 'readonly');
+                const store = transaction.objectStore(STORE_NAME);
+                const index = store.index('name');
+                const matches = [];
 
-            document.getElementById('loading').style.display = 'none';
-            displayResults(matches);
+                // Busca por nome (case-insensitive)
+                return new Promise((resolve, reject) => {
+                    const request = index.openCursor();
+                    request.onsuccess = (event) => {
+                        const cursor = event.target.result;
+                        if (cursor) {
+                            if (cursor.value.name.toLowerCase().includes(term)) {
+                                matches.push(cursor.value);
+                            }
+                            cursor.continue();
+                        } else {
+                            document.getElementById('loading').style.display = 'none';
+                            displayResults(matches);
+                            resolve();
+                        }
+                    };
+                    request.onerror = () => reject(request.error);
+                });
+            } catch (error) {
+                console.error('Erro ao buscar marcadores:', error);
+                document.getElementById('loading').style.display = 'none';
+                alert('Erro ao realizar a busca.');
+            }
         }
 
-        // Função para exibir resultados
+        // Exibe resultados da busca
         function displayResults(matches) {
             const tableBody = document.getElementById('resultsTableBody');
             const resultsTable = document.getElementById('resultsTable');
@@ -494,6 +522,12 @@
             if (e.key === 'Enter') {
                 searchMarkers();
             }
+        });
+
+        // Inicializa o banco de dados ao carregar a página
+        updateDatabase().catch(error => {
+            console.error('Erro ao inicializar o banco de dados:', error);
+            alert('Erro ao inicializar o banco de dados.');
         });
     </script>
 </body>
