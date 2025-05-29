@@ -1,1151 +1,286 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Visualizador de Mapas</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Índice de Marcadores KMZ</title>
     <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            overflow: hidden;
+        body {
             font-family: Arial, sans-serif;
-            position: relative;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
         }
-
-        #map {
-            height: 100%;
-            width: 100%;
+        h1 {
+            color: #2c3e50;
+            text-align: center;
         }
-
-        .menu {
-            position: absolute;
-            top: 50%;
-            left: 20px;
-            transform: translateY(-50%);
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 10px 0;
-        }
-
-        .menu button {
-            position: relative;
-            background-color: #ffffff;
-            border: none;
-            padding: 10px;
-            margin: 5px 0;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .menu button:hover {
-            background-color: #f0f0f0;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-        }
-
-        .menu button img {
-            width: 20px;
-            height: 20px;
-        }
-
-        .button-legend {
-            position: absolute;
-            top: 50%;
-            left: 50px;
-            transform: translateY(-50%);
-            background: rgba(255,255,255,0.9);
-            border-radius: 4px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-            padding: 5px;
-            font-size: 12px;
-            white-space: nowrap;
-            z-index: 2000;
-        }
-
-        .search-bar {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            width: 300px;
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-            z-index: 1000;
-            display: flex;
-            padding: 10px;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .search-bar input {
-            flex: 1;
-            border: none;
-            outline: none;
-            padding: 10px;
-            font-size: 14px;
-            border-radius: 8px;
+        .container {
             background-color: #f9f9f9;
-            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-
-        .search-bar button {
+        .progress-container {
+            margin: 20px 0;
+        }
+        progress {
+            width: 100%;
+            height: 20px;
+            border-radius: 4px;
+        }
+        .status {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        .file-info {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #e8f4f8;
+            border-radius: 4px;
+        }
+        button {
             background-color: #4285F4;
             color: white;
             border: none;
-            padding: 10px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-
-        .search-bar button:hover {
-            background-color: #357ae8;
-        }
-
-        .search-results {
-            position: absolute;
-            top: 70px;
-            left: 20px;
-            width: 300px;
-            max-height: 200px;
-            overflow-y: auto;
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-            z-index: 1000;
-        }
-
-        .search-results ul {
-            list-style: none;
-            margin: 0;
-            padding: 0;
-        }
-
-        .search-results li {
-            padding: 10px;
-            border-bottom: 1px solid #f0f0f0;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .search-results li:hover {
-            background-color: #f0f0f0;
-        }
-
-        .search-results button {
-            margin-left: 10px;
-            background-color: #4285F4;
-            color: white;
-            border: none;
-            padding: 5px;
+            padding: 10px 15px;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 16px;
+            margin-top: 10px;
         }
-
-        .search-results button:hover {
-            background-color: #357ae8;
+        button:hover {
+            background-color: #3367d6;
         }
-
-        .kmz-menu {
-            position: absolute;
-            top: 80px;
-            left: 80px;
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-            z-index: 2000;
-            padding: 10px;
-            display: none;
-            width: 300px;
-            max-height: 400px;
-            overflow-y: auto;
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
         }
-
-        .kmz-menu ul {
-            list-style: none;
-            margin: 0;
-            padding: 0;
-        }
-
-        .kmz-menu li {
-            padding: 8px 10px;
-            cursor: pointer;
-            border-bottom: 1px solid #f0f0f0;
-        }
-
-        .kmz-menu li:hover {
-            background-color: #f0f0f0;
-        }
-
-        .kmz-menu li:last-child {
-            border-bottom: none;
-        }
-
-        .line-menu {
-            position: absolute;
-            top: 80px;
-            left: 100px;
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-            z-index: 2000;
-            padding: 10px;
+        .hidden {
             display: none;
         }
-
-        .line-menu ul {
-            list-style: none;
-            margin: 0;
-            padding: 0;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-
-        .line-menu li {
-            padding: 8px 10px;
-            border-bottom: 1px solid #f0f0f0;
-        }
-
-        .line-menu li:last-child {
-            border-bottom: none;
-        }
-
-        .line-menu li label {
-            cursor: pointer;
-        }
-
-        .line-menu button {
-            background-color: #4285F4;
-            color: #fff;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 5px;
-            cursor: pointer;
-            margin: 5px 0;
-        }
-
-        .line-menu button:hover {
-            background-color: #357ae8;
-        }
-
-        .loaded-files-menu {
-            position: absolute;
-            top: 80px;
-            left: 120px;
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-            z-index: 2000;
-            padding: 10px;
-            display: none;
-            width: 220px;
+        .results {
+            margin-top: 20px;
             max-height: 300px;
             overflow-y: auto;
-        }
-
-        .loaded-files-menu h3 {
-            margin: 0 0 10px 0;
-            font-size: 16px;
-            text-align: center;
-        }
-
-        .loaded-files-menu ul {
-            list-style: none;
-            margin: 0;
-            padding: 0;
-        }
-
-        .loaded-files-menu li {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 5px 0;
-            border-bottom: 1px solid #f0f0f0;
-        }
-
-        .loaded-files-menu li:last-child {
-            border-bottom: none;
-        }
-
-        .loaded-files-menu li button {
-            background-color: #e74c3c;
-            color: white;
-            border: none;
-            padding: 3px 6px;
+            border: 1px solid #ddd;
+            padding: 10px;
             border-radius: 4px;
-            cursor: pointer;
-            font-size: 10px;
-        }
-
-        .loaded-files-menu li button:hover {
-            background-color: #c0392b;
-        }
-
-        footer {
-            position: absolute;
-            bottom: 5px;
-            width: 100%;
-            text-align: center;
-            font-size: 10px;
-            color: #555;
-        }
-
-        #loading {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(255, 255, 255, 0.8);
-            padding: 20px;
-            border-radius: 8px;
-            z-index: 2000;
-            display: none;
         }
     </style>
-    <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
-    <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-    <script src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.0/jszip.min.js"></script>
 </head>
 <body>
-    <div id="map"></div>
-
-    <div class="menu">
-        <button id="btnKMZ">
-            <img src="https://img.icons8.com/ios-filled/50/000000/upload.png" alt="Upload">
-            <div class="button-legend">Carregar KMZ/KML</div>
-        </button>
-        <button id="btnMarkers">
-            <img src="https://img.icons8.com/material-outlined/24/000000/map-pin.png" alt="Marcadores">
-            <div class="button-legend">Exibir/Ocultar Marcadores</div>
-        </button>
-        <button id="btnNames">
-            <img src="https://img.icons8.com/material-outlined/24/000000/name.png" alt="Nomes">
-            <div class="button-legend">Exibir/Ocultar Nomes</div>
-        </button>
-        <button id="btnLines">
-            <img src="https://img.icons8.com/material-outlined/24/000000/polyline.png" alt="Linhas">
-            <div class="button-legend">Exibir/Ocultar Linhas</div>
-        </button>
-        <button id="btnReset">
-            <img src="https://img.icons8.com/material-outlined/24/000000/refresh.png" alt="Resetar">
-            <div class="button-legend">Resetar Visão</div>
-        </button>
-        <button id="btnLocation">
-            <img src="https://img.icons8.com/material-outlined/24/000000/compass.png" alt="Localização Atual">
-            <div class="button-legend">Minha Localização</div>
-        </button>
-        <button id="btnLineGroups">
-            <img src="https://img.icons8.com/material-outlined/24/000000/layers.png" alt="Grupos de Linhas">
-            <div class="button-legend">Grupos de Linhas</div>
-        </button>
-        <button id="btnLoadedFiles">
-            <img src="https://img.icons8.com/material-outlined/24/000000/folder-invoices.png" alt="Arquivos Carregados">
-            <div class="button-legend">Arquivos Carregados</div>
-        </button>
-        <button id="btnGenerateGeoJSON">
-            <img src="https://img.icons8.com/material-outlined/24/000000/database.png" alt="Gerar GeoJSON">
-            <div class="button-legend">Gerar GeoJSON</div>
-        </button>
-    </div>
-
-    <div class="search-bar">
-        <input type="text" id="searchInput" placeholder="Buscar no mapa..." />
-        <button id="btnSearch">Buscar</button>
-    </div>
-
-    <div id="searchResults" class="search-results"></div>
-
-    <div class="kmz-menu" id="kmzMenu">
-        <ul id="kmzList"></ul>
-        <ul>
-            <li id="selectDevice">Selecionar do dispositivo...</li>
-        </ul>
-    </div>
-
-    <div class="line-menu" id="lineMenu">
-        <div style="display:flex; gap:10px; margin-bottom:10px;">
-            <button id="hideAll">Ocultar Todas</button>
-            <button id="showAll">Exibir Todas</button>
+    <div class="container">
+        <h1>Gerador de Índice de Marcadores KMZ</h1>
+        
+        <p>Este aplicativo processará todos os 116 arquivos KMZ diretamente no seu navegador e gerará um índice pesquisável de todos os marcadores.</p>
+        
+        <div class="progress-container">
+            <progress id="loadingProgress" value="0" max="100"></progress>
+            <div class="status" id="statusText">Aguardando início do processamento...</div>
         </div>
-        <ul id="lineGroupsList"></ul>
+        
+        <div class="file-info" id="fileInfo"></div>
+        
+        <button id="btnStart">Iniciar Processamento</button>
+        <button id="btnDownload" disabled>Baixar Índice Completo</button>
+        
+        <div id="resultsContainer" class="results hidden"></div>
     </div>
 
-    <div class="loaded-files-menu" id="loadedFilesMenu">
-        <h3>Arquivos Carregados</h3>
-        <ul id="loadedFilesList"></ul>
-    </div>
-
-    <div id="loading">Carregando dados...</div>
-
-    <footer>
-        Todos os direitos reservados a Lucas.
-    </footer>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xmldom/0.6.0/xmldom.min.js"></script>
+    <script src="https://unpkg.com/@tmcw/togeojson/dist/togeojson.umd.js"></script>
 
     <script>
-        const state = {
-            markersVisible: true,
-            namesVisible: true,
-            linesVisible: true,
-            userLocation: null,
-            files: [],
-            selectedGroups: new Map(),
-            allFeatures: null
-        };
-
-        const map = new maplibregl.Map({
-            container: 'map',
-            style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
-            center: [-47.068847, -22.934973],
-            zoom: 11
-        });
-
-        const searchInput = document.getElementById('searchInput');
-        const kmzMenu = document.getElementById('kmzMenu');
-        const kmzList = document.getElementById('kmzList');
-        const lineMenu = document.getElementById('lineMenu');
-        const lineGroupsList = document.getElementById('lineGroupsList');
-        const loadedFilesMenu = document.getElementById('loadedFilesMenu');
-        const loadedFilesList = document.getElementById('loadedFilesList');
-        const btnGenerateGeoJSON = document.getElementById('btnGenerateGeoJSON');
-        const loadingDiv = document.getElementById('loading');
-
-        const predefinedFiles = [
-            { name: 'AGUAS DE LINDOIA.kmz', url: './kmz/AGUAS DE LINDOIA.kmz' },
-            { name: 'AGUDOS.kmz', url: './kmz/AGUDOS.kmz' },
-            { name: 'ALTINOPOLIS.kmz', url: './kmz/ALTINOPOLIS.kmz' },
-            { name: 'AMERICANA.kmz', url: './kmz/AMERICANA.kmz' },
-            { name: 'AMPARO.kmz', url: './kmz/AMPARO.kmz' },
-            { name: 'ARACATUBA.kmz', url: './kmz/ARACATUBA.kmz' },
-            { name: 'ARARAQUARA.kmz', url: './kmz/ARARAQUARA.kmz' },
-            { name: 'BARIRI.kmz', url: './kmz/BARIRI.kmz' },
-            { name: 'BARRA BONITA.kmz', url: './kmz/BARRA BONITA.kmz', },
-            { name: 'BARRETOS.kmz', url: './kmz/BARRETOS.kmz' },
-            { name: 'BATATAIS.kmz', url: './kmz/BATATAIS.kmz' },
-            { name: 'BAURU.kmz', url: './kmz/BAURU.kmz' },
-            { name: 'BEBEDOURO.kmz', url: './kmz/BEBEDOURO.kmz' },
-            { name: 'BIRIGUI.kmz', url: './kmz/BIRIGUI.kmz' },
-            { name: 'BOA ESPERANCA DO SUL.kmz', url: './kmz/BOA ESPERANCA DO SUL.kmz' },
-            { name: 'BOTUCATU.kmz', url: './kmz/BOTUCATU.kmz' },
-            { name: 'BRAUNA.kmz', url: './kmz/BRAUNA.kmz' },
-            { name: 'BROTAS.kmz', url: './kmz/BROTAS.kmz' },
-            { name: 'CAFELANDIA.kmz', url: './kmz/CAFELANDIA.kmz' },
-            { name: 'CAJOBI.kmz', url: './kmz/CAJOBI.kmz' },
-            { name: 'CAJURU.kmz', url: './kmz/CAJURU.kmz' },
-            { name: 'CAMPINAS BARAO GERALDO-1.kmz', url: './kmz/CAMPINAS BARAO GERALDO-1.kmz' },
-            { name: 'CAMPINAS CAMPO GRANDE-1.kmz', url: './kmz/CAMPINAS CAMPO GRANDE-1.kmz' },
-            { name: 'CAMPINASENTRO-1.kmz', url: './kmz/CAMPINAS CENTRO-1.kmz' },
-            { name: 'CAMPINAS SOUZAS-1.kmz', url: './kmz/CAMPINAS SOUZAS-1.kmz', },
-            { name: 'CAMPINAS TREVO-1.kmz', url: './kmz/CAMPINAS TREVO-1.kmz', },
-            { name: 'CAPIVARI.kmz', url: './kmz/CAPIVARI.kmz' },
-            { name: 'CONGONHAS.kmz', url: './kmz/CONGONHAS.kmz', },
-            { name: 'COSMOPOLIS.kmz', url: './kmz/COSMOPOLIS.kmz', },
-            { name: 'CRAVINHOS.kmz', url: './kmz/CRAVINHOS.kmz', },
-            { name: 'DESCALVADO.kmz', url: './kmz/DESCALVADO.kmz', },
-            { name: 'DOIS CORREGOS.kmz', url: './kmz/DOIS CORREGOS.kmz', },
-            { name: 'DOURADO.kmz', url: './kmz/DOURADO.kmz' },
-            { name: 'DUARTINA.kmz', url: './kmz/DUARTINA.kmz', },
-            { name: 'ESPIRITO SANTO DO PINHAL.kmz', url: './kmz/ESPIRITO SANTO DO PINHAL.kmz', },
-            { name: 'FRANCA.kmz', url: './kmz/FRANCA.kmz', },
-            { name: 'GARCA.kmz', url: './kmz/GARCA.kmz', },
-            { name: 'GAVIAO PEIXOTO.kmz', url: './kmz/GAVIAO PEIXOTO.kmz', },
-            { name: 'GETULINA.kmz', url: './kmz/GETULINA.kmz', },
-            { name: 'GUAIRA.kmz', url: './kmz/GUAIRA.kmz' },
-            { name: 'GUANABARA.kmz', url: './kmz/GUANABARA.kmz', },
-            { name: 'GUARARAPES.kmz', url: './kmz/GUARARAPES.kmz', },
-            { name: 'GUARIBA.kmz', url: './kmz/GUARIBA.kmz' },
-            { name: 'HIPODROMO.kmz', url: './kmz/HIPODROMO.kmz', },
-            { name: 'HORTOLANDIA.kmz', url: './kmz/HORTOLANDIA.kmz', },
-            { name: 'IACANGA.kmz', url: './kmz/IACANGA.kmz' },
-            { name: 'IBIRA.kmz', url: './kmz/IBIRA.kmz' },
-            { name: 'IBITINGA.kmz', url: './kmz/IBITINGA.kmz' },
-            { name: 'IGARAPAVA.kmz', url: './kmz/IGARAPAVA.kmz', },
-            { name: 'IPUA.kmz', url: './kmz/IPUA.kmz', },
-            { name: 'ITAPIRA.kmz', url: './kmz/ITAPIRA.kmz', },
-            { name: 'ITAPOLIS.kmz', url: './kmz/ITAPOLIS.kmz', },
-            { name: 'ITATIBA.kmz', url: './kmz/ITATIBA.kmz', },
-            { name: 'ITATINGA.kmz', url: './kmz/ITATINGA.kmz', },
-            { name: 'ITUVERAVA.kmz', url: './kmz/ITUVERAVA.kmz', },
-            { name: 'JABOTICABAL.kmz', url: './kmz/JABOTICABAL.kmz', },
-            { name: 'JARDINOPOLIS.kmz', url: './kmz/JARDINOPOLIS.kmz', },
-            { name: 'JAU.kmz', url: './kmz/JAU.kmz' },
-            { name: 'JOSE BONIFACIO.kmz', url: './kmz/JOSE BONIFACIO.kmz', },
-            { name: 'LENCOIS PAULISTA.kmz', url: './kmz/LENCOIS PAULISTA.kmz', },
-            { name: 'LINS.kmz', url: './kmz/LINS.kmz', },
-            { name: 'MARILIA.kmz', url: './kmz/MARILIA.kmz', },
-            { name: 'MATAO.kmz', url: './kmz/MATAO.kmz', },
-            { name: 'METROPOLITANA.kmz', url: './kmz/METROPOLITANA.kmz', },
-            { name: 'MIGUELOPOLIS.kmz', url: './kmz/MIGUELOPOLIS.kmz', },
-            { name: 'MIRASSOL.kmz', url: './kmz/MIRASSOL.kmz', },
-            { name: 'MONTE ALTO.kmz', url: './kmz/MONTE ALTO.kmz', },
-            { name: 'MONTE APRAZIVEL.kmz', url: './kmz/MONTE APRAZIVEL.kmz', },
-            { name: 'MONTE MOR.kmz', url: './kmz/MONTE MOR.kmz', },
-            { name: 'MORRO AGUDO.kmz', url: './kmz/MORRO AGUDO.kmz', },
-            { name: 'MORRO DO CIPO.kmz', url: './kmz/MORRO DO CIPO.kmz', },
-            { name: 'NOVA GRANADA.kmz', url: './kmz/NOVA GRANADA.kmz', },
-            { name: 'OCAUCU.kmz', url: './kmz/OCAUCU.kmz', },
-            { name: 'OLIMPIA.kmz', url: './kmz/OLIMPIA.kmz', },
-            { name: 'ORLANDIA.kmz', url: './kmz/ORLANDIA.kmz', },
-            { name: 'PARAISO.kmz', url: './kmz/PARAISO.kmz', },
-            { name: 'PARDINHO.kmz', url: './kmz/PARDINHO.kmz', },
-            { name: 'PAULINIA.kmz', url: './kmz/PAULINIA.kmz', },
-            { name: 'PEDERNEIRAS.kmz', url: './kmz/PEDERNEIRAS.kmz', },
-            { name: 'PEDREGULHO.kmz', url: './kmz/PEDREGULHO.kmz', },
-            { name: 'PENAPOLIS.kmz', url: './kmz/PENAPOLIS.kmz', },
-            { name: 'PIACATU.kmz', url: './kmz/PIACATU.kmz', },
-            { name: 'PIRACICABA SANTA CECILIA.kmz', url: './kmz/PIRACICABA SANTA CECILIA.kmz', },
-            { name: 'PIRACICABA SANTA TEREZINHA.kmz', url: './kmz/PIRACICABA SANTA TEREZINHA.kmz', },
-            { name: 'PIRACICABA.kmz', url: './kmz/PIRACICABA.kmz', },
-            { name: 'PIRAJUI - EA.kmz', url: './kmz/PIRAJUI - EA.kmz', },
-            { name: 'PIRANGI.kmz', url: './kmz/PIRANGI.kmz', },
-            { name: 'PITANGUEIRAS.kmz', url: './kmz/PITANGUEIRAS.kmz', },
-            { name: 'POMPEIA.kmz', url: './kmz/POMPEIA.kmz', },
-            { name: 'PRESIDENTE ALVES.kmz', url: './kmz/PRESIDENTE ALVES.kmz', },
-            { name: 'PROMISSAO.kmz', url: './kmz/PROMISSAO.kmz', },
-            { name: 'RESTINGA.kmz', url: './kmz/RESTINGA.kmz', },
-            { name: 'RIBEIRAO PRETO NORTE.kmz', url: './kmz/RIBEIRAO PRETO NORTE.kmz', },
-            { name: 'RIBEIRAO PRETO SUL.kmz', url: './kmz/RIBEIRAO PRETO SUL.kmz', },
-            { name: 'RINCAO.kmz', url: './kmz/RINCAO.kmz', },
-            { name: 'SANTA ADELIA.kmz', url: './kmz/SANTA ADELIA.kmz', },
-            { name: 'SANTA BARBARA DOESTE.kmz', url: './kmz/SANTA BARBARA DOESTE.kmz', },
-            { name: 'SANTA ROSA DE VITERBO.kmz', url: './kmz/SANTA ROSA DE VITERBO.kmz', },
-            { name: 'SANTO ANTONIO ARACANGUA.kmz', url: './kmz/SANTO ANTONIO ARACANGUA.kmz', },
-            { name: 'SAO CARLOS.kmz', url: './kmz/SAO CARLOS.kmz', },
-            { name: 'SAO JOAQUIM DA BARRA.kmz', url: './kmz/SAO JOAQUIM DA BARRA.mz', },
-            { name: 'SAO JOSE RIO PRETO.kmz', url: './kmz/SAO JOSE RIO PRETO.mz', },
-            { name: 'SAO MANUEL.kmz', url: './kmz/SAO/MANUEL.kmz', },
-            { name: 'SAO PEDRO.kmz', url: './kmz/SAO/PEDRO.kmz', },
-            { name: 'SAO SIMAO.kmz', url: './kmz/SAO/SIMAO.kmz', },
-            { name: 'SERRA NEGRA.kmz', url: './kmz/SERRA/NEGRA k.mz', },
-            { name: 'SERRANA.kmz', url: './kmz/SERRANA.kmz', },
-            { name: 'SERTAOZINHO.kmz', url: './kmz/SERTAOZINHO.kmz', },
-            { name: 'SOCORRO.kmz', url: './kmz/SOCORRO.kmz', },
-            { name: 'SUMARE.kmz', url: './kmz/SUMARE.kmz', },
-            { name: 'TANABI.kmz', url: './kmz/TANABI.kmz', },
-            { name: 'TAQUARITINGA.kmz', url: './kmz/TAQUARITINGA.kmz', },
-            { name: 'UIRAPURU.kmz', url: './kmz/UIRAPURU.kmz', },
-            { name: 'VALINHOS.kmz', url: './kmz/VALINHOS.tmz', },
-            { name: 'VALPARAISO.kmz', url: './kmz/VALPARAISO.kmz', },
-            { name: 'VIRADOURO.kmz', url: './kmz/VIRADOURO.kmz', },
+        // Lista dos 116 arquivos KMZ
+        const KMZ_FILES = [
+            'AGUAS DE LINDOIA.kmz', 'AGUDOS.kmz', 'ALTINOPOLIS.kmz', 'AMERICANA.kmz', 'AMPARO.kmz',
+            'ARACATUBA.kmz', 'ARARAQUARA.kmz', 'BARIRI.kmz', 'BARRA BONITA.kmz', 'BARRETOS.kmz',
+            'BATATAIS.kmz', 'BAURU.kmz', 'BEBEDOURO.kmz', 'BIRIGUI.kmz', 'BOA ESPERANCA DO SUL.kmz',
+            'BOTUCATU.kmz', 'BRAUNA.kmz', 'BROTAS.kmz', 'CAFELANDIA.kmz', 'CAJOBI.kmz', 'CAJURU.kmz',
+            'CAMPINAS BARAO GERALDO-1.kmz', 'CAMPINAS CAMPO GRANDE-1.kmz', 'CAMPINAS CENTRO-1.kmz',
+            'CAMPINAS SOUZAS-1.kmz', 'CAMPINAS TREVO-1.kmz', 'CAPIVARI.kmz', 'CONGONHAS.kmz',
+            'COSMOPOLIS.kmz', 'CRAVINHOS.kmz', 'DESCALVADO.kmz', 'DOIS CORREGOS.kmz', 'DOURADO.kmz',
+            'DUARTINA.kmz', 'ESPIRITO SANTO DO PINHAL.kmz', 'FRANCA.kmz', 'GARCA.kmz', 'GAVIAO PEIXOTO.kmz',
+            'GETULINA.kmz', 'GUAIRA.kmz', 'GUANABARA.kmz', 'GUARARAPES.kmz', 'GUARIBA.kmz', 'HIPODROMO.kmz',
+            'HORTOLANDIA.kmz', 'IACANGA.kmz', 'IBIRA.kmz', 'IBITINGA.kmz', 'IGARAPAVA.kmz', 'IPUA.kmz',
+            'ITAPIRA.kmz', 'ITAPOLIS.kmz', 'ITATIBA.kmz', 'ITATINGA.kmz', 'ITUVERAVA.kmz', 'JABOTICABAL.kmz',
+            'JARDINOPOLIS.kmz', 'JAU.kmz', 'JOSE BONIFACIO.kmz', 'LENCOIS PAULISTA.kmz', 'LINS.kmz',
+            'MARILIA.kmz', 'MATAO.kmz', 'METROPOLITANA.kmz', 'MIGUELOPOLIS.kmz', 'MIRASSOL.kmz',
+            'MONTE ALTO.kmz', 'MONTE APRAZIVEL.kmz', 'MONTE MOR.kmz', 'MORRO AGUDO.kmz', 'MORRO DO CIPO.kmz',
+            'NOVA GRANDA.kmz', 'OCAUCU.kmz', 'OLIMPIA.kmz', 'ORLANDIA.kmz', 'PARAISO.kmz', 'PARDINHO.kmz',
+            'PAULINIA.kmz', 'PEDERNEIRAS.kmz', 'PEDREGULHO.kmz', 'PENAPOLIS.kmz', 'PIACATU.kmz',
+            'PIRACICABA SANTA CECILIA.kmz', 'PIRACICABA SANTA TEREZINHA.kmz', 'PIRACICABA.kmz',
+            'PIRAJUI - EA.kmz', 'PIRANGI.kmz', 'PITANGUEIRAS.kmz', 'POMPEIA.kmz', 'PRESIDENTE ALVES.kmz',
+            'PROMISSAO.kmz', 'RESTINGA.kmz', 'RIBEIRAO PRETO NORTE.kmz', 'RIBEIRAO PRETO SUL.kmz',
+            'RINCAO.kmz', 'SANTA ADELIA.kmz', 'SANTA BARBARA DOESTE.kmz', 'SANTA ROSA DE VITERBO.kmz',
+            'SANTO ANTONIO ARACANGUA.kmz', 'SAO CARLOS.kmz', 'SAO JOAQUIM DA BARRA.kmz',
+            'SAO JOSE RIO PRETO.kmz', 'SAO MANUEL.kmz', 'SAO PEDRO.kmz', 'SAO SIMAO.kmz', 'SERRA NEGRA.kmz',
+            'SERRANA.kmz', 'SERTAOZINHO.kmz', 'SOCORRO.kmz', 'SUMARE.kmz', 'TANABI.kmz', 'TAQUARITINGA.kmz',
+            'UIRAPURU.kmz', 'VALINHOS.kmz', 'VALPARAISO.kmz', 'VIRADOURO.kmz'
         ];
 
-        // Carregar GeoJSON estático
-        async function loadGeoJSON() {
-            try {
-                const response = await fetch('./data/all_features.geojson');
-                if (!response.ok) throw new Error('Não foi possível carregar o GeoJSON');
-                state.allFeatures = await response.json();
-                console.log('GeoJSON carregado:', state.allFeatures);
-            } catch (error) {
-                console.error('Erro ao carregar GeoJSON:', error);
-                alert('Erro ao carregar a base de dados. Verifique-se de que o all_features.geojson está na pasta data/');
-            }
-        });
+        // Estado da aplicação
+        const state = {
+            markerIndex: [],
+            processedCount: 0,
+            isProcessing: false
+        };
 
-        // Função para processar KMZ/KML e gerar GeoJSON
-        async function generateGeoJSON() {
-            loadingDiv.style.display = 'block';
-            const geojson = {
-                type: 'FeatureCollection',
-                features: []
-            };
-
-            try {
-                for (const file of predefinedFiles[) {
-                    console.log(`Processando ${file.name}...`);
-                    try {
-                        let data;
-                        if (file.name.endsWith('.kmz')) {
-                            const response = await fetch(file.url);
-                            if (!response.ok) {
-                                console.warn(`Erro ao carregar file.name}:`, ${response.statusText}`);
-                                continue;
-                            }
-                            const arrayBuffer = await response.arrayBuffer();
-                            const zip = await JSZip.loadAsync(arrayBuffer);
-                            const kmlFile = zip.file(/\.kml$/i)[0];
-                            if (!kmlFile) {
-                                console.warn(`Nenhum KML encontrado em ${file.name}`);
-                                continue;
-                            }
-                            const kmlContent = await kmlFile.async('string');
-                            const kmlDom = new DOMParser().parseFromString(kmlContent, 'text/xml');
-                            data = toGeoJSON.kml(kmlDom);
-                            } else if (file.name.endsWith('.kml')) {
-                                const response = await fetch(file.url);
-                                if (!response.ok) {
-                                    console.warn(`Erro ao carregar ${file.name}: ${response.statusText}`);
-                                    continue;
-                                }
-                                const kmlContent = await response.text();
-                                const kmlDom = new DOMParser().parseFromString(kmlContent, 'text/xml');
-                                data = toGeoJSON.kml(kmlDom);
-                            } else {
-                                console.warn(`Formato não suportado para ${file.name}`);
-                                continue;
-                            }
-
-                            data.features.forEach(feature => {
-                                feature.properties = feature.properties || {};
-                                feature.properties.sourceKMZ = file.name;
-                                feature.properties.searchName = (feature.properties.name || feature.properties.Alimentador || '').toLowerCase();
-                                geojson.features.push(feature);
-                            }
-                            );
-                        } catch (error) {
-                            console.error(`Erro ao processar file.name}:`, error);
-                        }
-                    });
-
-                    // Gerar arquivo para download
-                    const geojsonString = JSON.stringify(geojson, null, 2);
-                    const blob = new Blob([geojsonString], { type: 'application/json' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'all_features.geojson';
-                    a.click();
-                    URL.revokeObjectURL(url);
-
-                    console.log('GeoJSON gerado e baixado');
-                } catch (error) {
-                    console.error('Erro ao gerar GeoJSON:', error);
-                    alert('Erro ao gerar o arquivo GeoJSON');
-                } finally {
-                loadingDiv.style.display = 'none';
-            }
-        });
-
-        // Função para calcular a distância (em km)
-        function calculateDistance(lat1, lng1, lat2, lng2) {
-            const R = 6371; // Raio da Terra em km
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLng = lng2 - lng1) * Math.PI / 180;
-            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                      Math.sin(dLng / 2) * Math.sin(dLng / 2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            return R * c;
-        }
-
-        // Função de busca
-        function searchFeatures() {
-            const query = searchInput.value.toLowerCase().trim();
-            const resultsDiv = document.getElementById('searchResults');
-            resultsDiv.innerHTML = '';
-            resultsDiv.style.display = 'none';
-
-            if (!query || !state.allFeatures) return;
-
-            const results = state.allFeatures.features
-                .filter(feature => feature.properties.searchName.includes(query))
-                .map(feature => {
-                    let distance = 'N/A';
-                    if (state.userLocation && feature.geometry.type === 'Point') {
-                        const [lng, lat] = feature.geometry.coordinates;
-                        distance = calculateDistance(
-                            state.userLocation.lat, state.userLocation.lng,
-                            lat, lng
-                        ).toFixed(2) + ' km';
-                    }
-                    return { feature, distance };
-                })
-                .sort((a, b) => {
-                    if (a.distance === 'N/A' && b.distance === 'N/A') return 0;
-                    if (a.distance === 'N/A') return 1;
-                    if (b.distance === 'N/A') return -1;
-                    return parseFloat(a.distance) - parseFloat(b.distance);
-                })
-                .slice(0, 10);
-
-            if (results.length === 0) {
-                resultsDiv.innerHTML = '<ul><li>Nenhum resultado encontrado.</li></ul>';
-                resultsDiv.style.display = 'block';
-                return;
-            }
-
-            const ul = document.createElement('ul');
-            results.forEach(({ feature, distance }) => {
-                const li = document.createElement('li');
-                const name = feature.properties.name || feature.properties.Alimentador || 'Sem nome';
-                li.innerHTML = `${name} (${distance}) - ${feature.properties.sourceKMZ}`;
-                li.addEventListener('click', () => {
-                    if (feature.geometry.type === 'Point') {
-                        const [lng, lat] = feature.geometry.coordinates;
-                        map.flyTo({ center: [lng, lat], zoom: 15 });
-                    }
-                    resultsDiv.style.display = 'none';
-                });
-                const loadBtn = document.createElement('button');
-                loadBtn.textContent = 'Carregar KMZ';
-                loadBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const file = predefinedFiles.find(f => f.name === feature.properties.sourceKMZ);
-                    if (file) {
-                        loadKMZFromURL(file.url, file.name);
-                        updateRecentFiles(file.name);
-                        displayFileList();
-                    }
-                    resultsDiv.style.display = 'none';
-                });
-                li.appendChild(loadBtn);
-                ul.appendChild(li);
-            });
-            resultsDiv.appendChild(ul);
-            resultsDiv.style.display = 'block';
-        }
-
-        // Função para atualizar a lista de arquivos recentes
-        function updateRecentFiles(fileName) {
-            let recentFiles = JSON.parse(localStorage.getItem('recentFiles') || '[]');
-            recentFiles = recentFiles.filter(f => f !== fileName);
-            recentFiles.unshift(fileName);
-            recentFiles = recentFiles.slice(0, 5);
-            localStorage.setItem('recentFiles', JSON.stringify(recentFiles));
-        }
-
-        // Função para exibir a lista de arquivos
-        function displayFileList() {
-            kmzList.innerHTML = '';
-            const recentFiles = JSON.parse(localStorage.getItem('recentFiles') || '[]');
-            const recentFileSet = new Set(recentFiles);
-
-            const recent = predefinedFiles.filter(file => recentFileSet.has(file.name));
-            const others = predefinedFiles.filter(file => !recentFileSet.has(file.name));
-
-            const sortedRecent = recent.sort((a, b) => recentFiles.indexOf(a.name) - recentFiles.indexOf(b.name));
-            const sortedOthers = others.sort((a, b) => a.name.localeCompare(b.name));
-            const sortedFiles = [...sortedRecent, ...sortedOthers];
-
-            sortedFiles.forEach(file => {
-                const li = document.createElement('li');
-                li.textContent = file.name;
-                li.addEventListener('click', () => {
-                    loadKMZFromURL(file.url, file.name);
-                    localStorage.setItem('lastSelectedFile', file.name);
-                    updateRecentFiles(file.name);
-                    displayFileList();
-                    kmzMenu.style.display = 'none';
-                });
-                kmzList.appendChild(li);
-            });
-        }
-
-        // Função para carregar KMZ/KML
-        async function loadKMZFromURL(url, fileName) {
-            try {
-                const response = await fetch(url);
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                let data;
-                if (fileName.endsWith('.kmz')) {
-                    const arrayBuffer = await response.arrayBuffer();
-                    data = await parseKMZ(arrayBuffer);
-                } else {
-                    const text = await response.text();
-                    data = toGeoJSON.kml(new DOMParser().parseFromString(text, 'text/xml'));
-                }
-                addDataToMap(data, fileName);
-            } catch (error) {
-                console.error('Erro ao carregar arquivo:', error);
-                alert('Erro ao carregar o arquivo KMZ/KML.');
-            }
-        }
-
-        // Função para parsear KMZ
-        async function parseKMZ(data) {
-            const zip = await JSZip.loadAsync(data);
-            const kmlFile = zip.file(/\.kml$/i)[0];
-            if (!kmlFile) throw new Error('Arquivo KML não encontrado dentro do KMZ.');
-            const kmlContent = await kmlFile.async('string');
-            return toGeoJSON.kml(new DOMParser().parseFromString(kmlContent, 'text/xml'));
-        }
-
-        // Função para adicionar dados ao mapa
-        function addDataToMap(geojson, fileName) {
-            const sanitizedFileName = fileName.replace(/\s+/g, '_').replace(/[^\w\-]/g, '');
-            const sourceId = `source-${sanitizedFileName}`;
-            const markerLayerId = `marker-circles-${sourceId}`;
-            const labelLayerId = `marker-labels-${sourceId}`;
-            const lineLayerId = `lines-${sourceId}`;
-
-            if (state.files.find(file => file.name === fileName)) {
-                alert(`O arquivo "${fileName}" já está carregado.`);
-                return;
-            }
-
-            const pointFeaturesArray = [];
-            const lineFeaturesArray = [];
-
-            function extractGeometries(feature) {
-                const geometries = [];
-                if (feature.geometry && feature.geometry.type === 'GeometryCollection') {
-                    feature.geometry.geometries.forEach(geom => {
-                        geometries.push({ ...feature, geometry: geom });
-                    });
-                } else {
-                    geometries.push(feature);
-                }
-                return geometries;
-            }
-
-            geojson.features.forEach(feature => {
-                const features = extractGeometries(feature);
-                features.forEach(f => {
-                    if (f.geometry && f.geometry.type === 'Point') {
-                        pointFeaturesArray.push(f);
-                    } else if (f.geometry && ['LineString', 'MultiLineString', 'Polygon', 'MultiPolygon'].includes(f.geometry.type)) {
-                        f.properties = f.properties || {};
-                        if (!f.properties.color) {
-                            const color = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
-                            f.properties.color = color;
-                        }
-                        lineFeaturesArray.push(f);
-                    }
-                });
-            });
-
-            const pointFeatures = { type: 'FeatureCollection', features: pointFeaturesArray };
-            const lineFeatures = { type: 'FeatureCollection', features: lineFeaturesArray };
-
-            let groupingProperty = null;
-            const exampleLine = lineFeatures.features.find(f => f.properties && (f.properties.Alimentador || f.properties.name));
-            if (exampleLine) {
-                groupingProperty = exampleLine.properties.Alimentador ? 'Alimentador' : 'name';
-            }
-
-            const groupsSet = new Set();
-            if (lineFeatures.features.length > 0 && groupingProperty) {
-                lineFeatures.features.forEach(f => {
-                    if (f.properties && f.properties[groupingProperty]) {
-                        groupsSet.add(f.properties[groupingProperty]);
-                    }
-                });
-            }
-
-            if (groupingProperty && groupsSet.size > 0) {
-                state.selectedGroups.set(sourceId, new Set(groupsSet));
-            }
-
-            if (pointFeatures.features.length > 0) {
-                map.addSource(sourceId + '-markers', { type: 'geojson', data: pointFeatures });
-                map.addLayer({
-                    id: markerLayerId,
-                    type: 'circle',
-                    source: sourceId + '-markers',
-                    paint: {
-                        'circle-radius': 6,
-                        'circle-color': '#FF5722',
-                        'circle-stroke-width': 2,
-                        'circle-stroke-color': '#FFFFFF'
-                    },
-                    layout: { 'visibility': state.markersVisible ? 'visible' : 'none' }
-                });
-
-                map.addLayer({
-                    id: labelLayerId,
-                    type: 'symbol',
-                    source: sourceId + '-markers',
-                    layout: {
-                        'text-field': ['coalesce', ['get', 'name'], ['get', 'Alimentador']],
-                        'text-size': 12,
-                        'text-anchor': 'top',
-                        'text-offset': [0, 1],
-                        'visibility': state.namesVisible ? 'visible' : 'none'
-                    },
-                    paint: { 'text-color': '#333333' }
-                });
-            }
-
-            if (lineFeatures.features.length > 0) {
-                map.addSource(sourceId + '-lines', { type: 'geojson', data: lineFeatures });
-                map.addLayer({
-                    id: lineLayerId,
-                    type: 'line',
-                    source: sourceId + '-lines',
-                    paint: {
-                        'line-color': ['get', 'color'],
-                        'line-width': 2
-                    },
-                    layout: { 'visibility': state.linesVisible ? 'visible' : 'none' },
-                    filter: groupingProperty
-                        ? ['in', ['get', groupingProperty], ['literal', Array.from(groupsSet)]]
-                        : null
-                });
-            }
-
-            state.files.push({ name: fileName, sourceId });
-            updateLoadedFilesMenu();
-        }
-
-        // Função para atualizar o menu de arquivos carregados
-        function updateLoadedFilesMenu() {
-            loadedFilesList.innerHTML = '';
-            state.files.forEach(file => {
-                const li = document.createElement('li');
-                li.textContent = file.name;
-                const removeBtn = document.createElement('button');
-                removeBtn.textContent = 'Remover';
-                removeBtn.addEventListener('click', () => {
-                    const sourceId = file.sourceId;
-                    if (map.getLayer(`marker-circles-${sourceId}`)) {
-                        map.removeLayer(`marker-circles-${sourceId}`);
-                    }
-                    if (map.getLayer(`marker-labels-${sourceId}`)) {
-                        map.removeLayer(`marker-labels-${sourceId}`);
-                    }
-                    if (map.getLayer(`lines-${sourceId}`)) {
-                        map.removeLayer(`lines-${sourceId}`);
-                    }
-                    if (map.getSource(`${sourceId}-markers`)) {
-                        map.removeSource(`${sourceId}-markers`);
-                    }
-                    if (map.getSource(`${sourceId}-lines`)) {
-                        map.removeSource(`${sourceId}-lines`);
-                    }
-                    state.files = state.files.filter(f => f.name !== file.name);
-                    state.selectedGroups.delete(sourceId);
-                    updateLoadedFilesMenu();
-                    updateLineGroups();
-                });
-                li.appendChild(removeBtn);
-                loadedFilesList.appendChild(li);
-            });
-        }
-
-        // Função para toggle de visibilidade
-        function toggleVisibility(element) {
-            element.style.display = element.style.display === 'none' ? 'block' : 'none';
-        }
-
-        // Função para toggle de marcadores
-        function toggleMarkers() {
-            state.markersVisible = !state.markersVisible;
-            state.files.forEach(file => {
-                const layerId = `marker-circles-${file.sourceId}`;
-                if (map.getLayer(layerId)) {
-                    map.setLayoutProperty(layerId, 'visibility', state.markersVisible ? 'visible' : 'none');
-                }
-            });
-        }
-
-        // Função para toggle de nomes
-        function toggleNames() {
-            state.namesVisible = !state.namesVisible;
-            state.files.forEach(file => {
-                const layerId = `marker-labels-${file.sourceId}`;
-                if (map.getLayer(layerId)) {
-                    map.setLayoutProperty(layerId, 'visibility', state.namesVisible ? 'visible' : 'none');
-                }
-            });
-        }
-
-        // Função para toggle de linhas
-        function toggleLines() {
-            state.linesVisible = !state.linesVisible;
-            state.files.forEach(file => {
-                const layerId = `lines-${file.sourceId}`;
-                if (map.getLayer(layerId)) {
-                    map.setLayoutProperty(layerId, 'visibility', state.linesVisible ? 'visible' : 'none');
-                }
-            });
-        }
-
-        // Função para resetar a visão
-        function resetView() {
-            map.flyTo({ center: [-47.068847, -22.934973], zoom: 11 });
-        }
-
-        // Função para ir à localização atual
-        function goToCurrentLocation() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(position => {
-                    const { longitude: lng, latitude: lat } = position.coords;
-                    state.userLocation = { lng, lat };
-                    map.flyTo({ center: [ lng, lat ], zoom: 15 });
-                    if (!map.getSource('user-location')) {
-                        map.addSource('user-location', {
-                            type: 'geojson',
-                            data: {
-                                type: 'Feature',
-                                geometry: {
-                                    type: 'Point',
-                                    coordinates: [ lng, lat ]
-                                }
-                            }
-                        });
-                        map.addLayer({
-                            id: 'user-location',
-                            type: 'circle',
-                            source: 'user-location',
-                            paint: {
-                                'circle-radius': 10,
-                                'circle-color': '#4285F4',
-                                'circle-opacity': 0.5
-                            }
-                        });
-                    } else {
-                        map.getSource('userLocation').setData({
-                            type: 'Feature',
-                            geometry: {
-                                type: 'Point',
-                                coordinates: [ lng, lat ]
-                            }
-                        });
-                    }
-                }, () => {
-                    alert('Não foi possível obter a localização atual.');
-                });
-            } else {
-                alert('Geolocalização não é suportada por este navegador.');
-            }
-        }
-
-        // Função para atualizar grupos de linhas
-        function updateLineGroups() {
-            lineGroupsList.innerHTML = '';
-            state.selectedGroups.forEach((groups, sourceId) => {
-                groups.forEach(group => {
-                    const li = document.createElement('li');
-                    const checkbox = document.createElement('input');
-                    checkbox.type = 'checkbox';
-                    checkbox.checked = true;
-                    checkbox.addEventListener('change', () => {
-                        const groupSet = state.selectedGroups.get(sourceId);
-                        if (checkbox.checked) {
-                            groupSet.add(group);
-                        } else {
-                            groupSet.delete(group);
-                        }
-                        const layerId = `lines-${sourceId}`;
-                        if (map.getLayer(layerId)) {
-                            map.setFilter(layerId, [
-                                'in',
-                                ['get', groupSet.size > 0 ? ['get', 'Alimentador'] : ['get', []],
-                                ['literal', Array.from(groupSet)]
-                            ]);
-                        }
-                    });
-                    const label = document.createElement('label');
-                    label.textContent = group;
-                    li.appendChild(checkbox);
-                    li.appendChild(label);
-                    lineGroupsList.appendChild(li);
-                });
-            });
-        }
-
-        // Função para ocultar todos os grupos
-        function hideAllGroups() {
-            state.selectedGroups.forEach((groups, sourceId) => {
-                groups.clear();
-                const layerId = `lines-${sourceId}`;
-                if (map.getLayer(layerId)) {
-                    map.setFilter(layerId, ['in', [], []]);
-                }
-            });
-            updateLineGroups();
-        }
-
-        // Função para exibir todos os grupos
-        function showAllGroups() {
-            state.selectedGroups.forEach((groups, sourceId) => {
-                const layer = map.getLayer(`lines-${sourceId}`);
-                if (layer) {
-                    const originalGroups = new Set();
-                    map.getSource(`${sourceId}-lines`)._data.features.forEach(f => {
-                        if (f.properties && (f.properties.Alimentador || f.properties.name)) {
-                            originalGroups.add(f.properties.Alimentador || f.properties.name);
-                        }
-                    });
-                    groups.clear();
-                    originalGroups.forEach(g => groups.add(g));
-                    map.setFilter(layer.id, [
-                        'in',
-                        ['get', originalGroups.size > 0 ? 'Alimentador' : 'name'],
-                        ['literal', Array.from(groups)]
-                    ]);
-                }
-            });
-            updateLineGroups();
-        }
-
-        // Função para selecionar arquivo do dispositivo
-        function selectFromDevice() {
-            kmzMenu.style.display = 'none';
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.kml,.kmz';
-            input.onchange = async (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                try {
-                    let data;
-                    if (file.name.endsWith('.kmz')) {
-                        const arrayBuffer = await file.arrayBuffer();
-                        data = await parseKMZ(arrayBuffer);
-                    } else {
-                        const text = await file.text();
-                        data = toGeoJSON.kml(new DOMParser().parseFromString(text, 'text/xml'));
-                    }
-                    addDataToMap(data, file.name);
-                    updateRecentFiles(file.name);
-                    displayFileList();
-                } catch (error) {
-                    console.error('Erro ao processar arquivo:', error);
-                    alert('Erro ao processar o arquivo KML/KMZ.');
-                }
-            };
-            input.click();
-        }
-
-        // Inicializar
-        map.on('load', () => {
-            loadGeoJSON();
-            displayFileList();
-            const lastFile = localStorage.getItem('lastSelectedFile');
-            if (lastFile) {
-                const file = predefinedFiles.find(f => f.name === lastFile);
-                if (file) loadKMZFromURL(file.url, file.name);
-            }
-        });
+        // Elementos da UI
+        const btnStart = document.getElementById('btnStart');
+        const btnDownload = document.getElementById('btnDownload');
+        const loadingProgress = document.getElementById('loadingProgress');
+        const statusText = document.getElementById('statusText');
+        const fileInfo = document.getElementById('fileInfo');
+        const resultsContainer = document.getElementById('resultsContainer');
 
         // Event listeners
-        document.getElementById('btnKMZ').addEventListener('click', () => toggleVisibility(kmzMenu));
-        document.getElementById('btnMarkers').addEventListener('click', toggleMarkers);
-        document.getElementById('btnNames').addEventListener('click', toggleNames);
-        document.getElementById('btnLines').addEventListener('click', toggleLines);
-        document.getElementById('btnReset').addEventListener('click', resetView);
-        document.getElementById('btnLocation').addEventListener('click', goToCurrentLocation);
-        document.getElementById('btnLineGroups').addEventListener('click', () => {
-            if (state.selectedGroups.size === 0) {
-                alert('Não há grupos de linhas para filtrar.');
-            } else {
-                toggleVisibility(lineMenu);
-                updateLineGroups();
+        btnStart.addEventListener('click', startProcessing);
+        btnDownload.addEventListener('click', downloadMarkerIndex);
+
+        // Inicia o processamento dos arquivos KMZ
+        async function startProcessing() {
+            if (state.isProcessing) return;
+            
+            state.isProcessing = true;
+            btnStart.disabled = true;
+            btnDownload.disabled = true;
+            state.markerIndex = [];
+            state.processedCount = 0;
+            
+            statusText.textContent = 'Iniciando processamento...';
+            loadingProgress.value = 0;
+            fileInfo.textContent = '';
+            resultsContainer.innerHTML = '';
+            resultsContainer.classList.add('hidden');
+            
+            try {
+                // Processa cada arquivo KMZ
+                for (const fileName of KMZ_FILES) {
+                    if (!state.isProcessing) break; // Permite cancelar
+                    
+                    statusText.textContent = `Processando ${fileName} (${state.processedCount+1}/${KMZ_FILES.length})...`;
+                    
+                    try {
+                        const response = await fetch(`./${fileName}`);
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        
+                        const arrayBuffer = await response.arrayBuffer();
+                        const markers = await extractMarkersFromKMZ(arrayBuffer, fileName);
+                        
+                        state.markerIndex.push(...markers);
+                        state.processedCount++;
+                        
+                        // Atualiza progresso
+                        loadingProgress.value = (state.processedCount / KMZ_FILES.length) * 100;
+                        
+                        // Mostra alguns resultados à medida que são processados
+                        if (state.processedCount % 10 === 0 || state.processedCount === KMZ_FILES.length) {
+                            updateResultsPreview();
+                        }
+                        
+                    } catch (error) {
+                        console.error(`Erro processando ${fileName}:`, error);
+                        state.processedCount++; // Continua mesmo com erro
+                    }
+                }
+                
+                if (state.isProcessing) {
+                    statusText.textContent = 'Processamento concluído com sucesso!';
+                    fileInfo.textContent = `Índice gerado com ${state.markerIndex.length} marcadores de ${KMZ_FILES.length} arquivos.`;
+                    btnDownload.disabled = false;
+                    resultsContainer.classList.remove('hidden');
+                }
+                
+            } catch (error) {
+                console.error('Erro durante o processamento:', error);
+                statusText.textContent = 'Ocorreu um erro durante o processamento.';
+            } finally {
+                state.isProcessing = false;
+                btnStart.disabled = false;
             }
-        });
-        document.getElementById('btnLoadedFiles').addEventListener('click', () => toggleVisibility(loadedFilesMenu));
-        document.getElementById('btnSearch').addEventListener('click', searchFeatures);
-        document.getElementById('selectDevice').addEventListener('click', selectFromDevice);
-        document.getElementById('hideAll').addEventListener('click', hideAllGroups);
-        document.getElementById('showAll').addEventListener('click', showAllGroups);
-        btnGenerateGeoJSON.addEventListener('click', generateGeoJSON);
+        }
+
+        // Extrai marcadores de um arquivo KMZ
+        async function extractMarkersFromKMZ(kmzData, fileName) {
+            const zip = await JSZip.loadAsync(kmzData);
+            const kmlFile = zip.file(/\.kml$/i)[0];
+            if (!kmlFile) throw new Error('Nenhum arquivo KML encontrado no KMZ');
+
+            const kmlContent = await kmlFile.async('string');
+            const kmlDoc = new DOMParser().parseFromString(kmlContent, 'text/xml');
+            const geojson = toGeoJSON.kml(kmlDoc);
+
+            return geojson.features
+                .filter(f => f.geometry.type === 'Point')
+                .map(f => ({
+                    id: `marker_${Math.random().toString(36).substr(2, 9)}`,
+                    name: f.properties.name || null,
+                    alimentador: f.properties.Alimentador || null,
+                    coordinates: f.geometry.coordinates,
+                    file: fileName,
+                    properties: Object.keys(f.properties)
+                        .filter(k => !['name', 'Alimentador'].includes(k))
+                        .reduce((obj, key) => ({ ...obj, [key]: f.properties[key] }), {})
+                }));
+        }
+
+        // Atualiza a visualização dos resultados
+        function updateResultsPreview() {
+            const sampleMarkers = state.markerIndex.slice(-5); // Mostra os últimos 5 marcadores processados
+            resultsContainer.innerHTML = '<h3>Últimos marcadores processados:</h3>';
+            
+            sampleMarkers.forEach(marker => {
+                const div = document.createElement('div');
+                div.innerHTML = `
+                    <p><strong>${marker.name || marker.alimentador || 'Sem nome'}</strong> 
+                    (Arquivo: ${marker.file})</p>
+                    <small>Coordenadas: ${marker.coordinates[1].toFixed(4)}, ${marker.coordinates[0].toFixed(4)}</small>
+                    <hr>
+                `;
+                resultsContainer.appendChild(div);
+            });
+        }
+
+        // Baixa o índice completo como arquivo JSON
+        function downloadMarkerIndex() {
+            if (state.markerIndex.length === 0) {
+                alert('Nenhum marcador foi processado ainda.');
+                return;
+            }
+            
+            // Cria a estrutura do índice para download
+            const indexData = {
+                version: "1.0",
+                generatedAt: new Date().toISOString(),
+                totalFiles: KMZ_FILES.length,
+                processedFiles: state.processedCount,
+                totalMarkers: state.markerIndex.length,
+                markers: state.markerIndex
+            };
+            
+            // Cria o blob e o link de download
+            const blob = new Blob([JSON.stringify(indexData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `indice_marcadores_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            // Feedback para o usuário
+            statusText.textContent = 'Download do índice iniciado!';
+            setTimeout(() => {
+                statusText.textContent = 'Processamento concluído com sucesso!';
+            }, 3000);
+        }
     </script>
 </body>
 </html>
