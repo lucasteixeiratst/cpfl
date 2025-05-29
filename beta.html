@@ -172,8 +172,6 @@
             z-index: 2000;
             padding: 10px;
             display: none;
-            max-height: 400px;
-            overflow-y: auto;
         }
 
         .kmz-menu ul {
@@ -194,14 +192,6 @@
 
         .kmz-menu li:last-child {
             border-bottom: none;
-        }
-
-        .kmz-menu li.recent-header,
-        .kmz-menu li.all-files-header {
-            font-weight: bold;
-            border-bottom: 1px solid #ccc;
-            padding: 8px 10px;
-            cursor: default;
         }
 
         .line-menu {
@@ -251,6 +241,7 @@
             background-color: #357ae8;
         }
 
+        /* Estilos para o menu de arquivos carregados */
         .loaded-files-menu {
             position: absolute;
             top: 80px;
@@ -393,8 +384,8 @@
             namesVisible: true,
             linesVisible: true,
             userLocation: null,
-            files: [],
-            selectedGroups: new Map(),
+            files: [], // Lista de arquivos carregados
+            selectedGroups: new Map(), // Map<sourceId, Set<groupNames>>
         };
 
         const map = new maplibregl.Map({
@@ -413,258 +404,150 @@
         const loadedFilesList = document.getElementById('loadedFilesList');
         const btnLoadedFiles = document.getElementById('btnLoadedFiles');
 
-        // Corrected list of 116 KML/KMZ files
-        const predefinedFiles = [
-            { name: 'AGUAS DE LINDOIA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/AGUAS DE LINDOIA.kmz' },
-            { name: 'AGUDOS.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/AGUDOS.kmz' },
-            { name: 'ALTINOPOLIS.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/ALTINOPOLIS.kmz' },
-            { name: 'AMERICANA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/AMERICANA.kmz' },
-            { name: 'AMPARO.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/AMPARO.kmz' },
-            { name: 'ARACATUBA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/ARACATUBA.kmz' },
-            { name: 'ARARAQUARA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/ARARAQUARA.kmz' },
-            { name: 'BARIRI.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/BARIRI.kmz' },
-            { name: 'BARRA BONITA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/BARRA BONITA.kmz' },
-            { name: 'BARRETOS.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/BARRETOS.kmz' },
-            { name: 'BATATAIS.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/BATATAIS.kmz' },
-            { name: 'BAURU.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/BAURU.kmz' },
-            { name: 'BEBEDOURO.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/BEBEDOURO.kmz' },
-            { name: 'BIRIGUI.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/BIRIGUI.kmz' },
-            { name: 'BOA ESPERANCA DO SUL.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/BOA ESPERANCA DO SUL.kmz' },
-            { name: 'BOTUCATU.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/BOTUCATU.kmz' },
-            { name: 'BRAUNA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/BRAUNA.kmz' },
-            { name: 'BROTAS.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/BROTAS.kmz' },
-            { name: 'CAFELANDIA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/CAFELANDIA.kmz' },
-            { name: 'CAJOBI.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/CAJOBI.kmz' },
-            { name: 'CAJURU.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/CAJURU.kmz' },
-            { name: 'CAMPINAS BARAO GERALDO-1.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/CAMPINAS BARAO GERALDO-1.kmz' },
-            { name: 'CAMPINAS BARAO GERALDO.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/CAMPINAS BARAO GERALDO.kmz' },
-            { name: 'CAMPINAS CAMPO GRANDE-1.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/CAMPINAS CAMPO GRANDE-1.kmz' },
-            { name: 'CAMPINAS CAMPO GRANDE.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/CAMPINAS CAMPO GRANDE.kmz' },
-            { name: 'CAMPINAS CENTRO-1.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/CAMPINAS CENTRO-1.kmz' },
-            { name: 'CAMPINAS CENTRO.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/CAMPINAS CENTRO.kmz' },
-            { name: 'CAMPINAS SOUZAS-1.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/CAMPINAS SOUZAS-1.kmz' },
-            { name: 'CAMPINAS SOUZAS.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/CAMPINAS SOUZAS.kmz' },
-            { name: 'CAMPINAS TREVO-1.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/CAMPINAS TREVO-1.kmz' },
-            { name: 'CAMPINAS TREVO.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/CAMPINAS TREVO.kmz' },
-            { name: 'CAPIVARI.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/CAPIVARI.kmz' },
-            { name: 'CONGONHAS.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/CONGONHAS.kmz' },
-            { name: 'COSMOPOLIS.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/COSMOPOLIS.kmz' },
-            { name: 'CRAVINHOS.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/CRAVINHOS.kmz' },
-            { name: 'DESCALVADO.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/DESCALVADO.kmz' },
-            { name: 'DOIS CORREGOS.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/DOIS CORREGOS.kmz' },
-            { name: 'DOURADO.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/DOURADO.kmz' },
-            { name: 'DUARTINA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/DUARTINA.kmz' },
-            { name: 'ESPIRITO SANTO DO PINHAL.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/ESPIRITO SANTO DO PINHAL.kmz' },
-            { name: 'FRANCA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/FRANCA.kmz' },
-            { name: 'GARCA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/GARCA.kmz' },
-            { name: 'GAVIAO PEIXOTO.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/GAVIAO PEIXOTO.kmz' },
-            { name: 'GETULINA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/GETULINA.kmz' },
-            { name: 'GUAIRA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/GUAIRA.kmz' },
-            { name: 'GUANABARA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/GUANABARA.kmz' },
-            { name: 'GUARARAPES.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/GUARARAPES.kmz' },
-            { name: 'GUARIBA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/GUARIBA.kmz' },
-            { name: 'HIPODROMO.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/HIPODROMO.kmz' },
-            { name: 'HORTOLANDIA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/HORTOLANDIA.kmz' },
-            { name: 'IACANGA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/IACANGA.kmz' },
-            { name: 'IBIRA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/IBIRA.kmz' },
-            { name: 'IBITINGA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/IBITINGA.kmz' },
-            { name: 'IGARAPAVA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/IGARAPAVA.kmz' },
-            { name: 'IPUA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/IPUA.kmz' },
-            { name: 'ITAPIRA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/ITAPIRA.kmz' },
-            { name: 'ITAPOLIS.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/ITAPOLIS.kmz' },
-            { name: 'ITATIBA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/ITATIBA.kmz' },
-            { name: 'ITATINGA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/ITATINGA.kmz' },
-            { name: 'ITUVERAVA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/ITUVERAVA.kmz' },
-            { name: 'JABOTICABAL.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/JABOTICABAL.kmz' },
-            { name: 'JARDINOPOLIS.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/JARDINOPOLIS.kmz' },
-            { name: 'JAU.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/JAU.kmz' },
-            { name: 'JOSE BONIFACIO.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/JOSE BONIFACIO.kmz' },
-            { name: 'LENCOIS PAULISTA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/LENCOIS PAULISTA.kmz' },
-            { name: 'LINS.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/LINS.kmz' },
-            { name: 'MARILIA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/MARILIA.kmz' },
-            { name: 'MATAO.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/MATAO.kmz' },
-            { name: 'METROPOLITANA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/METROPOLITANA.kmz' },
-            { name: 'MIGUELOPOLIS.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/MIGUELOPOLIS.kmz' },
-            { name: 'MIRASSOL.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/MIRASSOL.kmz' },
-            { name: 'MONTE ALTO.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/MONTE ALTO.kmz' },
-            { name: 'MONTE APRAZIVEL.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/MONTE APRAZIVEL.kmz' },
-            { name: 'MONTE MOR.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/MONTE MOR.kmz' },
-            { name: 'MORRO AGUDO.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/MORRO AGUDO.kmz' },
-            { name: 'MORRO DO CIPO.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/MORRO DO CIPO.kmz' },
-            { name: 'NOVA GRANADA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/NOVA GRANADA.kmz' },
-            { name: 'OCAUCU.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/OCAUCU.kmz' },
-            { name: 'OLIMPIA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/OLIMPIA.kmz' },
-            { name: 'ORLANDIA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/ORLANDIA.kmz' },
-            { name: 'PARAISO.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/PARAISO.kmz' },
-            { name: 'PARDINHO.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/PARDINHO.kmz' },
-            { name: 'PAULINIA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/PAULINIA.kmz' },
-            { name: 'PEDERNEIRAS.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/PEDERNEIRAS.kmz' },
-            { name: 'PEDREGULHO.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/PEDREGULHO.kmz' },
-            { name: 'PENAPOLIS.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/PENAPOLIS.kmz' },
-            { name: 'PIACATU.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/PIACATU.kmz' },
-            { name: 'PIRACICABA SANTA CECILIA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/PIRACICABA SANTA CECILIA.kmz' },
-            { name: 'PIRACICABA SANTA TEREZINHA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/PIRACICABA SANTA TEREZINHA.kmz' },
-            { name: 'PIRACICABA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/PIRACICABA.kmz' },
-            { name: 'PIRAJUI - EA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/PIRAJUI - EA.kmz' },
-            { name: 'PIRANGI.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/PIRANGI.kmz' },
-            { name: 'PITANGUEIRAS.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/PITANGUEIRAS.kmz' },
-            { name: 'POMPEIA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/POMPEIA.kmz' },
-            { name: 'PRESIDENTE ALVES.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/PRESIDENTE ALVES.kmz' },
-            { name: 'PROMISSAO.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/PROMISSAO.kmz' },
-            { name: 'RESTINGA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/RESTINGA.kmz' },
-            { name: 'RIBEIRAO PRETO NORTE.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/RIBEIRAO PRETO NORTE.kmz' },
-            { name: 'RIBEIRAO PRETO SUL.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/RIBEIRAO PRETO SUL.kmz' },
-            { name: 'RINCAO.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/RINCAO.kmz' },
-            { name: 'SANTA ADELIA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/SANTA ADELIA.kmz' },
-            { name: 'SANTA BARBARA DOESTE.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/SANTA BARBARA DOESTE.kmz' },
-            { name: 'SANTA ROSA DE VITERBO.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/SANTA ROSA DE VITERBO.kmz' },
-            { name: 'SANTO ANTONIO ARACANGUA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/SANTO ANTONIO ARACANGUA.kmz' },
-            { name: 'SAO CARLOS.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/SAO CARLOS.kmz' },
-            { name: 'SAO JOAQUIM DA BARRA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/SAO JOAQUIM DA BARRA.kmz' },
-            { name: 'SAO JOSE RIO PRETO.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/SAO JOSE RIO PRETO.kmz' },
-            { name: 'SAO MANUEL.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/SAO MANUEL.kmz' },
-            { name: 'SAO PEDRO.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/SAO PEDRO.kmz' },
-            { name: 'SAO SIMAO.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/SAO SIMAO.kmz' },
-            { name: 'SE-FIG.kml', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/SE-FIG.kml' },
-            { name: 'SE-NDA.kml', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/SE-NDA.kml' },
-            { name: 'SE-SAC.kml', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/SE-SAC.kml' },
-            { name: 'SE-SCN.kml', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/SE-SCN.kml' },
-            { name: 'SE-SOZ.kml', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/SE-SOZ.kml' },
-            { name: 'SE-USG.kml', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/SE-USG.kml' },
-            { name: 'SERRA NEGRA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/SERRA NEGRA.kmz' },
-            { name: 'SERRANA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/SERRANA.kmz' },
-            { name: 'SERTAOZINHO.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/SERTAOZINHO.kmz' },
-            { name: 'SOCORRO.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/SOCORRO.kmz' },
-            { name: 'SUMARE.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/SUMARE.kmz' },
-            { name: 'TANABI.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/TANABI.kmz' },
-            { name: 'TAQUARITINGA.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/TAQUARITINGA.kmz' },
-            { name: 'UIRAPURU.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/UIRAPURU.kmz' },
-            { name: 'VALINHOS.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/VALINHOS.kmz' },
-            { name: 'VALPARAISO.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/VALPARAISO.kmz' },
-            { name: 'VIRADOURO.kmz', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/VIRADOURO.kmz' },
-            { name: 'se-VAL.kml', url: 'https://raw.githubusercontent.com/lucasteixeiratst/cpfl/main/se-VAL.kml' }
-        ];
-
-        // Cache management
-        function getCachedFiles() {
-            const cached = localStorage.getItem('recentFiles');
-            return cached ? JSON.parse(cached) : [];
-        }
-
-        function updateCachedFiles(fileName, fileUrl) {
-            let recentFiles = getCachedFiles();
-            recentFiles = recentFiles.filter(file => file.name !== fileName);
-            recentFiles.unshift({ name: fileName, url: fileUrl });
-            recentFiles = recentFiles.slice(0, 5);
-            localStorage.setItem('recentFiles', JSON.stringify(recentFiles));
-            updateKmzMenu();
-        }
-
-        // Update KMZ menu with recent files at the top
-        function updateKmzMenu() {
-            kmzList.innerHTML = '';
-            const recentFiles = getCachedFiles();
-            if (recentFiles.length > 0) {
-                const recentHeader = document.createElement('li');
-                recentHeader.textContent = 'Arquivos Recentes';
-                recentHeader.className = 'recent-header';
-                kmzList.appendChild(recentHeader);
-                recentFiles.forEach(file => {
-                    const li = document.createElement('li');
-                    li.textContent = file.name;
-                    li.addEventListener('click', () => {
-                        loadKMZFromURL(file.url, file.name);
-                        updateCachedFiles(file.name, file.url);
-                        kmzMenu.style.display = 'none';
-                    });
-                    kmzList.appendChild(li);
-                });
-            }
-
-            const allFilesHeader = document.createElement('li');
-            allFilesHeader.textContent = 'Todos os Arquivos';
-            allFilesHeader.className = 'all-files-header';
-            kmzList.appendChild(allFilesHeader);
-
-            const recentFileNames = new Set(recentFiles.map(file => file.name));
-            predefinedFiles
-                .filter(file => !recentFileNames.has(file.name))
-                .forEach(file => {
-                    const li = document.createElement('li');
-                    li.textContent = file.name;
-                    li.addEventListener('click', () => {
-                        loadKMZFromURL(file.url, file.name);
-                        updateCachedFiles(file.name, file.url);
-                        kmzMenu.style.display = 'none';
-                    });
-                    kmzList.appendChild(li);
-                });
-        }
-
-        // Initialize KMZ menu on load
-        updateKmzMenu();
-
-        // Auto-load the last accessed file
-        map.on('load', () => {
-            const recentFiles = getCachedFiles();
-            if (recentFiles.length > 0) {
-                const lastFile = recentFiles[0];
-                loadKMZFromURL(lastFile.url, lastFile.name);
-            }
+        // Arquivos pré-definidos de exemplo:
+        // Arquivos pré-definidos:
+const predefinedFiles = [
+    { name: 'AGUAS DE LINDOIA.kmz', url: 'AGUAS DE LINDOIA.kmz' },
+    { name: 'AGUDOS.kmz', url: 'AGUDOS.kmz' },
+    { name: 'ALTINOPOLIS.kmz', url: 'ALTINOPOLIS.kmz' },
+    { name: 'AMERICANA.kmz', url: 'AMERICANA.kmz' },
+    { name: 'AMPARO.kmz', url: 'AMPARO.kmz' },
+    { name: 'ARACATUBA.kmz', url: 'ARACATUBA.kmz' },
+    { name: 'ARARAQUARA.kmz', url: 'ARARAQUARA.kmz' },
+    { name: 'BARIRI.kmz', url: 'BARIRI.kmz' },
+    { name: 'BARRA BONITA.kmz', url: 'BARRA BONITA.kmz' },
+    { name: 'BARRETOS.kmz', url: 'BARRETOS.kmz' },
+    { name: 'BATATAIS.kmz', url: 'BATATAIS.kmz' },
+    { name: 'BAURU.kmz', url: 'BAURU.kmz' },
+    { name: 'BEBEDOURO.kmz', url: 'BEBEDOURO.kmz' },
+    { name: 'BIRIGUI.kmz', url: 'BIRIGUI.kmz' },
+    { name: 'BOA ESPERANCA DO SUL.kmz', url: 'BOA ESPERANCA DO SUL.kmz' },
+    { name: 'BOTUCATU.kmz', url: 'BOTUCATU.kmz' },
+    { name: 'BRAUNA.kmz', url: 'BRAUNA.kmz' },
+    { name: 'BROTAS.kmz', url: 'BROTAS.kmz' },
+    { name: 'CAFELANDIA.kmz', url: 'CAFELANDIA.kmz' },
+    { name: 'CAJOBI.kmz', url: 'CAJOBI.kmz' },
+    { name: 'CAJURU.kmz', url: 'CAJURU.kmz' },
+    { name: 'CAMPINAS BARAO GERALDO-1.kmz', url: 'CAMPINAS BARAO GERALDO-1.kmz' },
+    { name: 'CAMPINAS BARAO GERALDO.kmz', url: 'CAMPINAS BARAO GERALDO.kmz' },
+    { name: 'CAMPINAS CAMPO GRANDE-1.kmz', url: 'CAMPINAS CAMPO GRANDE-1.kmz' },
+    { name: 'CAMPINAS CAMPO GRANDE.kmz', url: 'CAMPINAS CAMPO GRANDE.kmz' },
+    { name: 'CAMPINAS CENTRO-1.kmz', url: 'CAMPINAS CENTRO-1.kmz' },
+    { name: 'CAMPINAS CENTRO.kmz', url: 'CAMPINAS CENTRO.kmz' },
+    { name: 'CAMPINAS SOUZAS-1.kmz', url: 'CAMPINAS SOUZAS-1.kmz' },
+    { name: 'CAMPINAS SOUZAS.kmz', url: 'CAMPINAS SOUZAS.kmz' },
+    { name: 'CAMPINAS TREVO-1.kmz', url: 'CAMPINAS TREVO-1.kmz' },
+    { name: 'CAMPINAS TREVO.kmz', url: 'CAMPINAS TREVO.kmz' },
+    { name: 'CAPIVARI.kmz', url: 'CAPIVARI.kmz' },
+    { name: 'CONGONHAS.kmz', url: 'CONGONHAS.kmz' },
+    { name: 'COSMOPOLIS.kmz', url: 'COSMOPOLIS.kmz' },
+    { name: 'CRAVINHOS.kmz', url: 'CRAVINHOS.kmz' },
+    { name: 'DESCALVADO.kmz', url: 'DESCALVADO.kmz' },
+    { name: 'DOIS CORREGOS.kmz', url: 'DOIS CORREGOS.kmz' },
+    { name: 'DOURADO.kmz', url: 'DOURADO.kmz' },
+    { name: 'DUARTINA.kmz', url: 'DUARTINA.kmz' },
+    { name: 'ESPIRITO SANTO DO PINHAL.kmz', url: 'ESPIRITO SANTO DO PINHAL.kmz' },
+    { name: 'FRANCA.kmz', url: 'FRANCA.kmz' },
+    { name: 'GARCA.kmz', url: 'GARCA.kmz' },
+    { name: 'GAVIAO PEIXOTO.kmz', url: 'GAVIAO PEIXOTO.kmz' },
+    { name: 'GETULINA.kmz', url: 'GETULINA.kmz' },
+    { name: 'GUAIRA.kmz', url: 'GUAIRA.kmz' },
+    { name: 'GUANABARA.kmz', url: 'GUANABARA.kmz' },
+    { name: 'GUARARAPES.kmz', url: 'GUARARAPES.kmz' },
+    { name: 'GUARIBA.kmz', url: 'GUARIBA.kmz' },
+    { name: 'HIPODROMO.kmz', url: 'HIPODROMO.kmz' },
+    { name: 'HORTOLANDIA.kmz', url: 'HORTOLANDIA.kmz' },
+    { name: 'IACANGA.kmz', url: 'IACANGA.kmz' },
+    { name: 'IBIRA.kmz', url: 'IBIRA.kmz' },
+    { name: 'IBITINGA.kmz', url: 'IBITINGA.kmz' },
+    { name: 'IGARAPAVA.kmz', url: 'IGARAPAVA.kmz' },
+    { name: 'IPUA.kmz', url: 'IPUA.kmz' },
+    { name: 'ITAPIRA.kmz', url: 'ITAPIRA.kmz' },
+    { name: 'ITAPOLIS.kmz', url: 'ITAPOLIS.kmz' },
+    { name: 'ITATIBA.kmz', url: 'ITATIBA.kmz' },
+    { name: 'ITATINGA.kmz', url: 'ITATINGA.kmz' },
+    { name: 'ITUVERAVA.kmz', url: 'ITUVERAVA.kmz' },
+    { name: 'JABOTICABAL.kmz', url: 'JABOTICABAL.kmz' },
+    { name: 'JARDINOPOLIS.kmz', url: 'JARDINOPOLIS.kmz' },
+    { name: 'JAU.kmz', url: 'JAU.kmz' },
+    { name: 'JOSE BONIFACIO.kmz', url: 'JOSE BONIFACIO.kmz' },
+    { name: 'LENCOIS PAULISTA.kmz', url: 'LENCOIS PAULISTA.kmz' },
+    { name: 'LINS.kmz', url: 'LINS.kmz' },
+    { name: 'MARILIA.kmz', url: 'MARILIA.kmz' },
+    { name: 'MATAO.kmz', url: 'MATAO.kmz' },
+    { name: 'METROPOLITANA.kmz', url: 'METROPOLITANA.kmz' },
+    { name: 'MIGUELOPOLIS.kmz', url: 'MIGUELOPOLIS.kmz' },
+    { name: 'MIRASSOL.kmz', url: 'MIRASSOL.kmz' },
+    { name: 'MONTE ALTO.kmz', url: 'MONTE ALTO.kmz' },
+    { name: 'MONTE APRAZIVEL.kmz', url: 'MONTE APRAZIVEL.kmz' },
+    { name: 'MONTE MOR.kmz', url: 'MONTE MOR.kmz' },
+    { name: 'MORRO AGUDO.kmz', url: 'MORRO AGUDO.kmz' },
+    { name: 'MORRO DO CIPO.kmz', url: 'MORRO DO CIPO.kmz' },
+    { name: 'NOVA GRANDA.kmz', url: 'NOVA GRANDA.kmz' },
+    { name: 'OCAUCU.kmz', url: 'OCAUCU.kmz' },
+    { name: 'OLIMPIA.kmz', url: 'OLIMPIA.kmz' },
+    { name: 'ORLANDIA.kmz', url: 'ORLANDIA.kmz' },
+    { name: 'PARAISO.kmz', url: 'PARAISO.kmz' },
+    { name: 'PARDINHO.kmz', url: 'PARDINHO.kmz' },
+    { name: 'PAULINIA.kmz', url: 'PAULINIA.kmz' },
+    { name: 'PEDERNEIRAS.kmz', url: 'PEDERNEIRAS.kmz' },
+    { name: 'PEDREGULHO.kmz', url: 'PEDREGULHO.kmz' },
+    { name: 'PENAPOLIS.kmz', url: 'PENAPOLIS.kmz' },
+    { name: 'PIACATU.kmz', url: 'PIACATU.kmz' },
+    { name: 'PIRACICABA SANTA CECILIA.kmz', url: 'PIRACICABA SANTA CECILIA.kmz' },
+    { name: 'PIRACICABA SANTA TEREZINHA.kmz', url: 'PIRACICABA SANTA TEREZINHA.kmz' },
+    { name: 'PIRACICABA.kmz', url: 'PIRACICABA.kmz' },
+    { name: 'PIRAJUI - EA.kmz', url: 'PIRAJUI - EA.kmz' },
+    { name: 'PIRANGI.kmz', url: 'PIRANGI.kmz' },
+    { name: 'PITANGUEIRAS.kmz', url: 'PITANGUEIRAS.kmz' },
+    { name: 'POMPEIA.kmz', url: 'POMPEIA.kmz' },
+    { name: 'PRESIDENTE ALVES.kmz', url: 'PRESIDENTE ALVES.kmz' },
+    { name: 'PROMISSAO.kmz', url: 'PROMISSAO.kmz' },
+    { name: 'RESTINGA.kmz', url: 'RESTINGA.kmz' },
+    { name: 'RIBEIRAO PRETO NORTE.kmz', url: 'RIBEIRAO PRETO NORTE.kmz' },
+    { name: 'RIBEIRAO PRETO SUL.kmz', url: 'RIBEIRAO PRETO SUL.kmz' },
+    { name: 'RINCAO.kmz', url: 'RINCAO.kmz' },
+    { name: 'SANTA ADELIA.kmz', url: 'SANTA ADELIA.kmz' },
+    { name: 'SANTA BARBARA DOESTE.kmz', url: 'SANTA BARBARA DOESTE.kmz' },
+    { name: 'SANTA ROSA DE VITERBO.kmz', url: 'SANTA ROSA DE VITERBO.kmz' },
+    { name: 'SANTO ANTONIO ARACANGUA.kmz', url: 'SANTO ANTONIO ARACANGUA.kmz' },
+    { name: 'SAO CARLOS.kmz', url: 'SAO CARLOS.kmz' },
+    { name: 'SAO JOAQUIM DA BARRA.kmz', url: 'SAO JOAQUIM DA BARRA.kmz' },
+    { name: 'SAO JOSE RIO PRETO.kmz', url: 'SAO JOSE RIO PRETO.kmz' },
+    { name: 'SAO MANUEL.kmz', url: 'SAO MANUEL.kmz' },
+    { name: 'SAO PEDRO.kmz', url: 'SAO PEDRO.kmz' },
+    { name: 'SAO SIMAO.kmz', url: 'SAO SIMAO.kmz' },
+    { name: 'SE-FIG.kml', url: 'SE-FIG.kml' },
+    { name: 'SE-NDA.kml', url: 'SE-NDA.kml' },
+    { name: 'SE-SAC.kml', url: 'SE-SAC.kml' },
+    { name: 'SE-SCN.kml', url: 'SE-SCN.kml' },
+    { name: 'SE-SOZ.kml', url: 'SE-SOZ.kml' },
+    { name: 'SE-USG.kml', url: 'SE-USG.kml' },
+    { name: 'SERRA NEGRA.kmz', url: 'SERRA NEGRA.kmz' },
+    { name: 'SERRANA.kmz', url: 'SERRANA.kmz' },
+    { name: 'SERTAOZINHO.kmz', url: 'SERTAOZINHO.kmz' },
+    { name: 'SOCORRO.kmz', url: 'SOCORRO.kmz' },
+    { name: 'SUMARE.kmz', url: 'SUMARE.kmz' },
+    { name: 'TANABI.kmz', url: 'TANABI.kmz' },
+    { name: 'TAQUARITINGA.kmz', url: 'TAQUARITINGA.kmz' },
+    { name: 'UIRAPURU.kmz', url: 'UIRAPURU.kmz' },
+    { name: 'VALINHOS.kmz', url: 'VALINHOS.kmz' },
+    { name: 'VALPARAISO.kmz', url: 'VALPARAISO.kmz' },
+    { name: 'VIRADOURO.kmz', url: 'VIRADOURO.kmz' },
+    { name: 'se-VAL.kml', url: 'se-VAL.kml' }
+];
+        // Cria a lista de KMZ/KML pré-definidos
+        predefinedFiles.forEach((file) => {
+            const li = document.createElement('li');
+            li.textContent = file.name;
+            li.addEventListener('click', () => {
+                loadKMZFromURL(file.url, file.name);
+                kmzMenu.style.display = 'none';
+            });
+            kmzList.appendChild(li);
         });
 
-        // Modified loadKMZFromURL to update cache
-        async function loadKMZFromURL(url, fileName) {
-            try {
-                const response = await fetch(url);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const contentType = response.headers.get("content-type");
-                let data;
-                if (contentType && contentType.includes("application/vnd.google-earth.kmz")) {
-                    const arrayBuffer = await response.arrayBuffer();
-                    data = await parseKMZ(arrayBuffer);
-                } else if (contentType && contentType.includes("application/vnd.google-earth.kml+xml")) {
-                    const text = await response.text();
-                    data = toGeoJSON.kml(new DOMParser().parseFromString(text, 'text/xml'));
-                } else {
-                    throw new Error('Formato de arquivo não suportado.');
-                }
-                addDataToMap(data, fileName);
-                updateCachedFiles(fileName, url);
-            } catch (error) {
-                console.error('Erro ao carregar o arquivo KMZ/KML:', error);
-                alert('Erro ao carregar o arquivo KMZ/KML.');
-            }
-        }
-
-        // Modified handleFile to update cache
-        function handleFile(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = async () => {
-                try {
-                    const data = file.name.endsWith('.kmz')
-                        ? await parseKMZ(reader.result)
-                        : toGeoJSON.kml(new DOMParser().parseFromString(reader.result, 'text/xml'));
-                    addDataToMap(data, file.name);
-                    updateCachedFiles(file.name, file.name);
-                } catch (error) {
-                    console.error('Erro ao processar o arquivo:', error);
-                    alert('Erro ao processar o arquivo KML/KMZ.');
-                }
-            };
-            if (file.name.endsWith('.kmz')) {
-                reader.readAsArrayBuffer(file);
-            } else {
-                reader.readAsText(file);
-            }
-        }
-
-        // Event listeners
+        // Eventos dos botões
         document.getElementById('btnKMZ').addEventListener('click', () => toggleVisibility(kmzMenu));
         document.getElementById('btnMarkers').addEventListener('click', toggleMarkers);
         document.getElementById('btnNames').addEventListener('click', toggleNames);
@@ -684,7 +567,6 @@
         document.getElementById('hideAll').addEventListener('click', hideAllGroups);
         document.getElementById('showAll').addEventListener('click', showAllGroups);
 
-        // Remaining functions unchanged
         function toggleVisibility(element) {
             element.style.display = (element.style.display === 'block') ? 'none' : 'block';
         }
@@ -698,6 +580,56 @@
             input.click();
         }
 
+        // Carrega KMZ/KML de uma URL pré-definida
+        async function loadKMZFromURL(url, fileName) {
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const contentType = response.headers.get("content-type");
+                let data;
+                if (contentType.includes("application/vnd.google-earth.kmz")) {
+                    const arrayBuffer = await response.arrayBuffer();
+                    data = await parseKMZ(arrayBuffer);
+                } else if (contentType.includes("application/vnd.google-earth.kml+xml")) {
+                    const text = await response.text();
+                    data = toGeoJSON.kml(new DOMParser().parseFromString(text, 'text/xml'));
+                } else {
+                    throw new Error('Formato de arquivo não suportado.');
+                }
+                addDataToMap(data, fileName);
+            } catch (error) {
+                console.error('Erro ao carregar o arquivo KMZ/KML:', error);
+                alert('Erro ao carregar o arquivo KMZ/KML.');
+            }
+        }
+
+        // Manipula upload manual do usuário
+        function handleFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async () => {
+                try {
+                    const data = file.name.endsWith('.kmz')
+                        ? await parseKMZ(reader.result)
+                        : toGeoJSON.kml(new DOMParser().parseFromString(reader.result, 'text/xml'));
+                    addDataToMap(data, file.name);
+                } catch (error) {
+                    console.error('Erro ao processar o arquivo:', error);
+                    alert('Erro ao processar o arquivo KML/KMZ.');
+                }
+            };
+            if (file.name.endsWith('.kmz')) {
+                reader.readAsArrayBuffer(file);
+            } else {
+                reader.readAsText(file);
+            }
+        }
+
+        // Descompacta e converte KMZ -> KML -> GeoJSON
         async function parseKMZ(data) {
             const zip = await JSZip.loadAsync(data);
             const kmlFile = zip.file(/\.kml$/i)[0];
@@ -708,21 +640,26 @@
             return toGeoJSON.kml(new DOMParser().parseFromString(kmlContent, 'text/xml'));
         }
 
+        // Função principal que adiciona o GeoJSON convertido ao mapa
         function addDataToMap(geojson, fileName) {
+            // Cria identificadores únicos para cada arquivo
             const sanitizedFileName = fileName.replace(/\s+/g, '_').replace(/[^\w\-]/g, '');
             const sourceId = `source-${sanitizedFileName}`;
             const markerLayerId = `marker-circles-${sourceId}`;
             const labelLayerId = `marker-labels-${sourceId}`;
             const lineLayerId = `lines-${sourceId}`;
 
+            // Evita adicionar fontes duplicadas
             if (state.files.find(file => file.name === fileName)) {
                 alert(`O arquivo "${fileName}" já está carregado.`);
                 return;
             }
 
+            // Separa pontos e linhas/polígonos
             const pointFeaturesArray = [];
             const lineFeaturesArray = [];
 
+            // Função auxiliar: se for GeometryCollection, extrai cada geometria separadamente
             function extractGeometries(feature) {
                 const geometries = [];
                 if (feature.geometry.type === 'GeometryCollection') {
@@ -742,6 +679,7 @@
                         pointFeaturesArray.push(f);
                     } else if (['LineString', 'MultiLineString', 'Polygon', 'MultiPolygon'].includes(f.geometry.type)) {
                         f.properties = f.properties || {};
+                        // Atribui cor aleatória se não tiver
                         if (!f.properties.color) {
                             const color = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
                             f.properties.color = color;
@@ -751,22 +689,26 @@
                 });
             });
 
+            // Monta FeatureCollection de pontos
             const pointFeatures = {
                 type: 'FeatureCollection',
                 features: pointFeaturesArray
             };
 
+            // Monta FeatureCollection de linhas/polígonos
             const lineFeatures = {
                 type: 'FeatureCollection',
                 features: lineFeaturesArray
             };
 
+            // Determina a propriedade de agrupamento
             let groupingProperty = null;
             const exampleLine = lineFeatures.features.find(f => f.properties && (f.properties.Alimentador || f.properties.name));
             if (exampleLine) {
                 groupingProperty = exampleLine.properties.Alimentador ? 'Alimentador' : 'name';
             }
 
+            // Coleta grupos únicos para este arquivo
             const groupsSet = new Set();
             if (lineFeatures.features.length > 0 && groupingProperty) {
                 lineFeatures.features.forEach(f => {
@@ -776,10 +718,12 @@
                 });
             }
 
+            // Adiciona os grupos ao estado.selectedGroups
             if (groupingProperty && groupsSet.size > 0) {
                 state.selectedGroups.set(sourceId, new Set(groupsSet));
             }
 
+            // Adiciona pontos (Markers) se houver
             if (pointFeatures.features.length > 0) {
                 map.addSource(sourceId + '-markers', { type: 'geojson', data: pointFeatures });
                 map.addLayer({
@@ -806,7 +750,7 @@
                         'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
                         'text-size': 12,
                         'text-offset': [0, 1.5],
-                        'visibility': state.namesVisible ? 'visible' : 'none'
+                        'visibility': state.namesVisible ? 'visible' : 'none' // Combina todas as propriedades de layout
                     },
                     paint: {
                         'text-color': '#000000',
@@ -816,6 +760,7 @@
                 });
             }
 
+            // Adiciona linhas/polígonos se houver
             if (lineFeatures.features.length > 0) {
                 map.addSource(sourceId + '-lines', { type: 'geojson', data: lineFeatures });
                 map.addLayer({
@@ -832,6 +777,7 @@
                 });
             }
 
+            // Armazena o arquivo carregado no estado
             state.files.push({
                 name: fileName,
                 sourceId: sourceId,
@@ -840,22 +786,28 @@
                 groupingProperty: groupingProperty
             });
 
+            // Atualiza a interface de grupos
             updateGroupMenu();
+            // Atualiza a lista de arquivos carregados
             updateLoadedFilesList(fileName);
         }
 
+        // Atualiza o menu de grupos com todos os alimentadores por arquivo, ordenados alfabeticamente
         function updateGroupMenu() {
             lineGroupsList.innerHTML = '';
 
             state.files.forEach(file => {
                 if (file.hasLines && file.groupingProperty && state.selectedGroups.has(file.sourceId)) {
                     const groups = state.selectedGroups.get(file.sourceId);
+
+                    // Cria um cabeçalho para o arquivo
                     const fileHeader = document.createElement('div');
                     fileHeader.style.fontWeight = 'bold';
                     fileHeader.style.marginTop = '10px';
                     fileHeader.textContent = `Arquivo: "${file.name}"`;
                     lineGroupsList.appendChild(fileHeader);
 
+                    // Converte o Set de grupos para um array, ordena alfabeticamente e itera
                     const sortedGroups = Array.from(groups).sort((a, b) => a.localeCompare(b));
 
                     sortedGroups.forEach(grp => {
@@ -884,50 +836,57 @@
             });
         }
 
+        // Atualiza a lista de arquivos carregados na interface
         function updateLoadedFilesList(fileName) {
             const li = document.createElement('li');
             li.textContent = fileName;
 
             const removeBtn = document.createElement('button');
             removeBtn.textContent = 'Remover';
-            li.appendChild(removeBtn);
             removeBtn.addEventListener('click', () => {
                 removeFileFromMap(fileName);
                 li.remove();
             });
 
+            li.appendChild(removeBtn);
             loadedFilesList.appendChild(li);
         }
 
+        // Remove um arquivo específico do mapa e do estado
         function removeFileFromMap(fileName) {
             const fileIndex = state.files.findIndex(file => file.name === fileName);
-            if (fileIndex === -1) {
-                const file = state.files[fileIndex];
-                const sourceId = file.sourceId;
+            if (fileIndex === -1) return;
 
-                if (file.hasMarkers) {
-                    const markerLayerId = `marker-circles-${sourceId}`;
-                    const labelLayerId = `marker-labels-${sourceId}`;
-                    if (map.getLayer(markerLayerId)) map.removeLayer(markerLayerId);
-                    if (map.getLayer(labelLayerId)) map.removeLayer(labelLayerId);
-                    if (map.getSource(sourceId)) map.removeSource(sourceId + '-markers');
-                }
+            const file = state.files[fileIndex];
+            const sourceId = file.sourceId;
 
-                if (file.hasLines) {
-                    const lineLayerId = `lines-${sourceId}`;
-                    if (map.getLayer(lineLayerId)) map.removeLayer(lineLayerId);
-                    if (map.getSource(sourceId)) map.removeSource(sourceId + '-lines');
-                }
-
-                if (file.hasLines && file.groupingProperty && state.selectedGroups.has(sourceId)) {
-                    state.selectedGroups.delete(sourceId);
-                    updateGroupMenu();
-                }
-
-                state.files.splice(fileIndex, 1);
+            // Remove camadas de marcadores
+            if (file.hasMarkers) {
+                const markerLayerId = `marker-circles-${sourceId}`;
+                const labelLayerId = `marker-labels-${sourceId}`;
+                if (map.getLayer(markerLayerId)) map.removeLayer(markerLayerId);
+                if (map.getLayer(labelLayerId)) map.removeLayer(labelLayerId);
+                if (map.getSource(sourceId + '-markers')) map.removeSource(sourceId + '-markers');
             }
+
+            // Remove camadas de linhas
+            if (file.hasLines) {
+                const lineLayerId = `lines-${sourceId}`;
+                if (map.getLayer(lineLayerId)) map.removeLayer(lineLayerId);
+                if (map.getSource(sourceId + '-lines')) map.removeSource(sourceId + '-lines');
+            }
+
+            // Remove grupos associados ao arquivo
+            if (file.hasLines && file.groupingProperty && state.selectedGroups.has(sourceId)) {
+                state.selectedGroups.delete(sourceId);
+                updateGroupMenu();
+            }
+
+            // Remove o arquivo do estado
+            state.files.splice(fileIndex, 1);
         }
 
+        // Aplica o filtro conforme os checkboxes marcados
         function applyGroupFilter() {
             state.files.forEach(file => {
                 if (!file.hasLines || !file.groupingProperty) return;
@@ -938,15 +897,19 @@
                 const selectedGroups = state.selectedGroups.get(sourceId);
 
                 if (!selectedGroups || selectedGroups.size === 0) {
+                    // Nenhuma selecionada -> não exibe nada
                     map.setFilter(lineLayerId, ["==", ["get", groupingProperty], "___no_match___"]);
                 } else if (selectedGroups.size === getTotalGroups(sourceId, groupingProperty)) {
+                    // Todas selecionadas -> sem filtro
                     map.setFilter(lineLayerId, null);
                 } else {
+                    // Filtro "in"
                     map.setFilter(lineLayerId, ["in", groupingProperty, ...Array.from(selectedGroups)]);
                 }
             });
         }
 
+        // Função auxiliar para obter o total de grupos para um arquivo
         function getTotalGroups(sourceId, groupingProperty) {
             const lineSource = map.getSource(`${sourceId}-lines`);
             if (lineSource && lineSource._data.features) {
@@ -961,6 +924,7 @@
             return 0;
         }
 
+        // Botão "Ocultar Todas"
         function hideAllGroups() {
             state.selectedGroups.forEach((groups, sourceId) => {
                 state.selectedGroups.set(sourceId, new Set());
@@ -970,6 +934,7 @@
             applyGroupFilter();
         }
 
+        // Botão "Exibir Todas"
         function showAllGroups() {
             state.files.forEach(file => {
                 if (file.hasLines && file.groupingProperty && state.selectedGroups.has(file.sourceId)) {
@@ -997,6 +962,7 @@
             updateGroupMenu();
         }
 
+        // Exibir/ocultar marcadores (círculos)
         function toggleMarkers() {
             state.markersVisible = !state.markersVisible;
             const visibility = state.markersVisible ? 'visible' : 'none';
@@ -1014,6 +980,7 @@
             });
         }
 
+        // Exibir/ocultar nomes dos marcadores
         function toggleNames() {
             state.namesVisible = !state.namesVisible;
             const visibility = state.namesVisible ? 'visible' : 'none';
@@ -1027,6 +994,7 @@
             });
         }
 
+        // Exibir/ocultar linhas
         function toggleLines() {
             state.linesVisible = !state.linesVisible;
             const visibility = state.linesVisible ? 'visible' : 'none';
@@ -1040,6 +1008,7 @@
             });
         }
 
+        // Resetar visão para o centro inicial
         function resetView() {
             map.easeTo({
                 center: [-47.068847, -22.934973],
@@ -1047,6 +1016,7 @@
             });
         }
 
+        // Obter localização atual do usuário (se disponível) e ir até lá
         let userLocationMarker;
         function goToCurrentLocation() {
             if (navigator.geolocation) {
@@ -1074,6 +1044,7 @@
             }
         }
 
+        // Retorna o centro de uma feição (média das coordenadas ou ponto direto)
         function getFeatureCenter(feature) {
             let center;
             if (feature.geometry.type === 'Point') {
@@ -1102,6 +1073,7 @@
             return center;
         }
 
+        // Cálculo de distância (em metros) entre duas coordenadas [lon, lat]
         function computeDistance(coord1, coord2) {
             const toRad = (value) => value * Math.PI / 180;
             const lat1 = coord1[1];
@@ -1109,7 +1081,7 @@
             const lat2 = coord2[1];
             const lon2 = coord2[0];
 
-            const R = 6371e3;
+            const R = 6371e3; // Raio da Terra em metros
             const φ1 = toRad(lat1);
             const φ2 = toRad(lat2);
             const Δφ = toRad(lat2 - lat1);
@@ -1124,6 +1096,7 @@
             return distance;
         }
 
+        // Busca feições (points/lines) pelo texto digitado
         function searchFeatures() {
             const term = searchInput.value.toLowerCase();
             if (!term) return alert('Digite um termo para buscar.');
@@ -1168,6 +1141,7 @@
                 alert('Nenhum resultado encontrado para a busca.');
                 searchResultsDiv.innerHTML = '';
             } else {
+                // Define ponto de referência para calcular distâncias
                 let referencePoint;
                 if (state.userLocation) {
                     referencePoint = state.userLocation;
@@ -1180,13 +1154,16 @@
                     feature.properties.distance = computeDistance(referencePoint, center);
                 });
 
+                // Ordena resultados pela distância do ponto de referência
                 matches.sort((a, b) => a.properties.distance - b.properties.distance);
 
+                // Mostra até 5 resultados mais próximos
                 const topResults = matches.slice(0, 5);
                 displaySearchResults(topResults);
             }
         }
 
+        // Exibe os resultados da busca na div 'searchResults'
         function displaySearchResults(results) {
             const searchResultsDiv = document.getElementById('searchResults');
             searchResultsDiv.innerHTML = '';
@@ -1227,6 +1204,7 @@
             searchResultsDiv.appendChild(ul);
         }
 
+        // Remove as legendas dos botões após 14 segundos
         window.onload = function() {
             setTimeout(function() {
                 const legends = document.querySelectorAll('.button-legend');
