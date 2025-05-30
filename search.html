@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Visualizador de Mapas Avançado</title>
+    <title>Visualizador de Mapas</title>
     <style>
         body, html {
             margin: 0;
@@ -125,7 +125,7 @@
             top: 70px;
             left: 20px;
             width: 300px;
-            max-height: 300px;
+            max-height: 200px;
             overflow-y: auto;
             background-color: white;
             border-radius: 8px;
@@ -155,11 +155,6 @@
 
         .search-results .result-info {
             flex: 1;
-        }
-
-        .search-results .result-actions {
-            display: flex;
-            gap: 5px;
         }
 
         .search-results button {
@@ -213,8 +208,8 @@
 
         .line-menu {
             position: absolute;
-            top: 80px;  
-            left: 100px; 
+            top: 80px;
+            left: 100px;
             background: #fff;
             border-radius: 8px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.2);
@@ -311,7 +306,7 @@
             background-color: #c0392b;
         }
 
-        .footer {
+        footer {
             position: absolute;
             bottom: 5px;
             width: 100%;
@@ -412,7 +407,7 @@
     </div>
 
     <div class="search-bar">
-        <input type="text" id="searchInput" placeholder="Buscar marcador..." />
+        <input type="text" id="searchInput" placeholder="Buscar no mapa..." />
         <button id="btnSearch">Buscar</button>
     </div>
 
@@ -438,9 +433,9 @@
         <ul id="loadedFilesList"></ul>
     </div>
 
-    <div class="footer">
+    <footer>
         Todos direitos reservados a Lucas Teixeira.
-    </div>
+    </footer>
 
     <script>
         // Estado da aplicação
@@ -474,13 +469,126 @@
         const lineGroupsList = document.getElementById('lineGroupsList');
         const loadedFilesMenu = document.getElementById('loadedFilesMenu');
         const loadedFilesList = document.getElementById('loadedFilesList');
+        const btnLoadedFiles = document.getElementById('btnLoadedFiles');
 
         // Arquivos pré-definidos
         const predefinedFiles = [
             { name: 'AGUAS DE LINDOIA.kmz', url: './AGUAS DE LINDOIA.kmz' },
             { name: 'AGUDOS.kmz', url: './AGUDOS.kmz' },
+            { name: 'ALTINOPOLIS.kmz', url: './ALTINOPOLIS.kmz' },
+            { name: 'AMERICANA.kmz', url: './AMERICANA.kmz' },
+            { name: 'AMPARO.kmz', url: './AMPARO.kmz' },
+            { name: 'ARACATUBA.kmz', url: './ARACATUBA.kmz' },
+            { name: 'ARARAQUARA.kmz', url: './ARARAQUARA.kmz' },
+            { name: 'BARIRI.kmz', url: './BARIRI.kmz' },
+            { name: 'BARRA BONITA.kmz', url: './BARRA BONITA.kmz' },
+            { name: 'BARRETOS.kmz', url: './BARRETOS.kmz' },
+            { name: 'BATATAIS.kmz', url: './BATATAIS.kmz' },
+            { name: 'BAURU.kmz', url: './BAURU.kmz' },
+            { name: 'BEBEDOURO.kmz', url: './BEBEDOURO.kmz' },
+            { name: 'BIRIGUI.kmz', url: './BIRIGUI.kmz' },
+            { name: 'BOA ESPERANCA DO SUL.kmz', url: './BOA ESPERANCA DO SUL.kmz' },
+            { name: 'BOTUCATU.kmz', url: './BOTUCATU.kmz' },
+            { name: 'BRAUNA.kmz', url: './BRAUNA.kmz' },
+            { name: 'BROTAS.kmz', url: './BROTAS.kmz' },
+            { name: 'CAFELANDIA.kmz', url: './CAFELANDIA.kmz' },
+            { name: 'CAJOBI.kmz', url: './CAJOBI.kmz' },
+            { name: 'CAJURU.kmz', url: './CAJURU.kmz' },
+            { name: 'CAMPINAS BARAO GERALDO-1.kmz', url: './CAMPINAS BARAO GERALDO-1.kmz' },
+            { name: 'CAMPINAS CAMPO GRANDE-1.kmz', url: './CAMPINAS CAMPO GRANDE-1.kmz' },
+            { name: 'CAMPINAS CENTRO-1.kmz', url: './CAMPINAS CENTRO-1.kmz' },
+            { name: 'CAMPINAS SOUZAS-1.kmz', url: './CAMPINAS SOUZAS-1.kmz' },
+            { name: 'CAMPINAS TREVO-1.kmz', url: './CAMPINAS TREVO-1.kmz' },
+            { name: 'CAPIVARI.kmz', url: './CAPIVARI.kmz' },
+            { name: 'CONGONHAS.kmz', url: './CONGONHAS.kmz' },
+            { name: 'COSMOPOLIS.kmz', url: './COSMOPOLIS.kmz' },
+            { name: 'CRAVINHOS.kmz', url: './CRAVINHOS.kmz' },
+            { name: 'DESCALVADO.kmz', url: './DESCALVADO.kmz' },
+            { name: 'DOIS CORREGOS.kmz', url: './DOIS CORREGOS.kmz' },
+            { name: 'DOURADO.kmz', url: './DOURADO.kmz' },
+            { name: 'DUARTINA.kmz', url: './DUARTINA.kmz' },
+            { name: 'ESPIRITO SANTO DO PINHAL.kmz', url: './ESPIRITO SANTO DO PINHAL.kmz' },
+            { name: 'FRANCA.kmz', url: './FRANCA.kmz' },
+            { name: 'GARCA.kmz', url: './GARCA.kmz' },
+            { name: 'GAVIAO PEIXOTO.kmz', url: './GAVIAO PEIXOTO.kmz' },
+            { name: 'GETULINA.kmz', url: './GETULINA.kmz' },
+            { name: 'GUAIRA.kmz', url: './GUAIRA.kmz' },
+            { name: 'GUANABARA.kmz', url: './GUANABARA.kmz' },
+            { name: 'GUARARAPES.kmz', url: './GUARARAPES.kmz' },
+            { name: 'GUARIBA.kmz', url: './GUARIBA.kmz' },
+            { name: 'HIPODROMO.kmz', url: './HIPODROMO.kmz' },
+            { name: 'HORTOLANDIA.kmz', url: './HORTOLANDIA.kmz' },
+            { name: 'IACANGA.kmz', url: './IACANGA.kmz' },
+            { name: 'IBIRA.kmz', url: './IBIRA.kmz' },
+            { name: 'IBITINGA.kmz', url: './IBITINGA.kmz' },
+            { name: 'IGARAPAVA.kmz', url: './IGARAPAVA.kmz' },
+            { name: 'IPUA.kmz', url: './IPUA.kmz' },
+            { name: 'ITAPIRA.kmz', url: './ITAPIRA.kmz' },
+            { name: 'ITAPOLIS.kmz', url: './ITAPOLIS.kmz' },
+            { name: 'ITATIBA.kmz', url: './ITATIBA.kmz' },
+            { name: 'ITATINGA.kmz', url: './ITATINGA.kmz' },
+            { name: 'ITUVERAVA.kmz', url: './ITUVERAVA.kmz' },
+            { name: 'JABOTICABAL.kmz', url: './JABOTICABAL.kmz' },
+            { name: 'JARDINOPOLIS.kmz', url: './JARDINOPOLIS.kmz' },
+            { name: 'JAU.kmz', url: './JAU.kmz' },
+            { name: 'JOSE BONIFACIO.kmz', url: './JOSE BONIFACIO.kmz' },
+            { name: 'LENCOIS PAULISTA.kmz', url: './LENCOIS PAULISTA.kmz' },
+            { name: 'LINS.kmz', url: './LINS.kmz' },
+            { name: 'MARILIA.kmz', url: './MARILIA.kmz' },
+            { name: 'MATAO.kmz', url: './MATAO.kmz' },
+            { name: 'METROPOLITANA.kmz', url: './METROPOLITANA.kmz' },
+            { name: 'MIGUELOPOLIS.kmz', url: './MIGUELOPOLIS.kmz' },
+            { name: 'MIRASSOL.kmz', url: './MIRASSOL.kmz' },
+            { name: 'MONTE ALTO.kmz', url: './MONTE ALTO.kmz' },
+            { name: 'MONTE APRAZIVEL.kmz', url: './MONTE APRAZIVEL.kmz' },
+            { name: 'MONTE MOR.kmz', url: './MONTE MOR.kmz' },
+            { name: 'MORRO AGUDO.kmz', url: './MORRO AGUDO.kmz' },
+            { name: 'MORRO DO CIPO.kmz', url: './MORRO DO CIPO.kmz' },
+            { name: 'NOVA GRANADA.kmz', url: './NOVA GRANADA.kmz' },
+            { name: 'OCAUCU.kmz', url: './OCAUCU.kmz' },
+            { name: 'OLIMPIA.kmz', url: './OLIMPIA.kmz' },
+            { name: 'ORLANDIA.kmz', url: './ORLANDIA.kmz' },
+            { name: 'PARAISO.kmz', url: './PARAISO.kmz' },
+            { name: 'PARDINHO.kmz', url: './PARDINHO.kmz' },
+            { name: 'PAULINIA.kmz', url: './PAULINIA.kmz' },
+            { name: 'PEDERNEIRAS.kmz', url: './PEDERNEIRAS.kmz' },
+            { name: 'PEDREGULHO.kmz', url: './PEDREGULHO.kmz' },
+            { name: 'PENAPOLIS.kmz', url: './PENAPOLIS.kmz' },
+            { name: 'PIACATU.kmz', url: './PIACATU.kmz' },
+            { name: 'PIRACICABA SANTA CECILIA.kmz', url: './PIRACICABA SANTA CECILIA.kmz' },
+            { name: 'PIRACICABA SANTA TEREZINHA.kmz', url: './PIRACICABA SANTA TEREZINHA.kmz' },
+            { name: 'PIRACICABA.kmz', url: './PIRACICABA.kmz' },
+            { name: 'PIRAJUI - EA.kmz', url: './PIRAJUI - EA.kmz' },
+            { name: 'PIRANGI.kmz', url: './PIRANGI.kmz' },
+            { name: 'PITANGUEIRAS.kmz', url: './PITANGUEIRAS.kmz' },
+            { name: 'POMPEIA.kmz', url: './POMPEIA.kmz' },
+            { name: 'PRESIDENTE ALVES.kmz', url: './PRESIDENTE ALVES.kmz' },
+            { name: 'PROMISSAO.kmz', url: './PROMISSAO.kmz' },
+            { name: 'RESTINGA.kmz', url: './RESTINGA.kmz' },
+            { name: 'RIBEIRAO PRETO NORTE.kmz', url: './RIBEIRAO PRETO NORTE.kmz' },
+            { name: 'RIBEIRAO PRETO SUL.kmz', url: './RIBEIRAO PRETO SUL.kmz' },
+            { name: 'RINCAO.kmz', url: './RINCAO.kmz' },
+            { name: 'SANTA ADELIA.kmz', url: './SANTA ADELIA.kmz' },
+            { name: 'SANTA BARBARA DOESTE.kmz', url: './SANTA BARBARA DOESTE.kmz' },
+            { name: 'SANTA ROSA DE VITERBO.kmz', url: './SANTA ROSA DE VITERBO.kmz' },
+            { name: 'SANTO ANTONIO ARACANGUA.kmz', url: './SANTO ANTONIO ARACANGUA.kmz' },
+            { name: 'SAO CARLOS.kmz', url: './SAO CARLOS.kmz' },
+            { name: 'SAO JOAQUIM DA BARRA.kmz', url: './SAO JOAQUIM DA BARRA.kmz' },
+            { name: 'SAO JOSE RIO PRETO.kmz', url: './SAO JOSE RIO PRETO.kmz' },
+            { name: 'SAO MANUEL.kmz', url: './SAO MANUEL.kmz' },
+            { name: 'SAO PEDRO.kmz', url: './SAO PEDRO.kmz' },
+            { name: 'SAO SIMAO.kmz', url: './SAO SIMAO.kmz' },
+            { name: 'SERRA NEGRA.kmz', url: './SERRA NEGRA.kmz' },
+            { name: 'SERRANA.kmz', url: './SERRANA.kmz' },
+            { name: 'SERTAOZINHO.kmz', url: './SERTAOZINHO.kmz' },
+            { name: 'SOCORRO.kmz', url: './SOCORRO.kmz' },
+            { name: 'SUMARE.kmz', url: './SUMARE.kmz' },
+            { name: 'TANABI.kmz', url: './TANABI.kmz' },
+            { name: 'TAQUARITINGA.kmz', url: './TAQUARITINGA.kmz' },
+            { name: 'UIRAPURU.kmz', url: './UIRAPURU.kmz' },
+            { name: 'VALINHOS.kmz', url: './VALINHOS.kmz' },
+            { name: 'VALPARAISO.kmz', url: './VALPARAISO.kmz' },
             { name: 'VIRADOURO.kmz', url: './VIRADOURO.kmz' }
-            // Adicione mais arquivos conforme necessário
         ];
 
         // Mostrar/ocultar overlay de carregamento
@@ -509,6 +617,31 @@
             const sizes = ['Bytes', 'KB', 'MB', 'GB'];
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Função para calcular a distância de Levenshtein (similaridade entre strings)
+        function levenshtein(a, b) {
+            const matrix = [];
+            for (let i = 0; i <= b.length; i++) {
+                matrix[i] = [i];
+            }
+            for (let j = 0; j <= a.length; j++) {
+                matrix[0][j] = j;
+            }
+            for (let i = 1; i <= b.length; i++) {
+                for (let j = 1; j <= a.length; j++) {
+                    if (b.charAt(i - 1) === a.charAt(j - 1)) {
+                        matrix[i][j] = matrix[i - 1][j - 1];
+                    } else {
+                        matrix[i][j] = Math.min(
+                            matrix[i - 1][j - 1] + 1,
+                            matrix[i][j - 1] + 1,
+                            matrix[i - 1][j] + 1
+                        );
+                    }
+                }
+            }
+            return matrix[b.length][a.length];
         }
 
         // Sistema de Cache do Índice
@@ -594,7 +727,7 @@
         }
 
         // Sistema de Pesquisa
-        function searchMarkers() {
+        function searchFeatures() {
             const term = searchInput.value.trim().toLowerCase();
             if (!term) {
                 searchResults.style.display = 'none';
@@ -612,18 +745,20 @@
             for (const marker of state.markerIndex.i) {
                 const fileName = fileNames[marker[0]];
                 const markerName = marker[3] || fileName.replace('.kmz', '');
-                if (markerName.toLowerCase().includes(term)) {
-                    results.push({
-                        type: 'file',
-                        fileName: fileName,
-                        lat: marker[1],
-                        lng: marker[2],
-                        name: markerName
-                    });
-                }
+                const distance = levenshtein(term, markerName.toLowerCase());
+                results.push({
+                    type: 'file',
+                    fileName: fileName,
+                    lat: marker[1],
+                    lng: marker[2],
+                    name: markerName,
+                    distance: distance
+                });
             }
             
-            displaySearchResults(results.slice(0, 10));
+            // Ordenar por similaridade (menor distância de Levenshtein) e limitar a 5 resultados
+            results.sort((a, b) => a.distance - b.distance);
+            displaySearchResults(results.slice(0, 5));
         }
 
         function displaySearchResults(results) {
@@ -655,17 +790,12 @@
                 infoDiv.appendChild(nameSpan);
                 infoDiv.appendChild(coordsSpan);
                 
-                const actionsDiv = document.createElement('div');
-                actionsDiv.className = 'result-actions';
-                
                 const viewButton = document.createElement('button');
                 viewButton.textContent = 'Ver';
                 viewButton.onclick = () => gotoMarker(result);
                 
-                actionsDiv.appendChild(viewButton);
-                
                 li.appendChild(infoDiv);
-                li.appendChild(actionsDiv);
+                li.appendChild(viewButton);
                 ul.appendChild(li);
             });
             
@@ -685,7 +815,9 @@
             const isLoaded = state.files.some(file => file.name === marker.fileName);
             
             if (!isLoaded) {
-                showLoading(`Carregando ${marker.fileName}...`);
+                showournée
+
+System: showLoading(`Carregando ${marker.fileName}...`);
                 try {
                     const file = predefinedFiles.find(f => f.name === marker.fileName);
                     if (file) {
@@ -705,34 +837,27 @@
                 .addTo(map);
         }
 
-        // Funções do Mapa
+        // Função para carregar KMZ/KML de uma URL
         async function loadKMZFromURL(url, fileName) {
             try {
                 showLoading(`Carregando ${fileName}...`);
                 const response = await fetch(url);
                 if (!response.ok) throw new Error(`Falha ao carregar ${fileName}`);
-                const buffer = await response.arrayBuffer();
-                const zip = await JSZip.loadAsync(buffer);
-                const kmlFile = Object.keys(zip.files).find(name => /\.kml$/i.test(name));
-                
-                if (!kmlFile) throw new Error(`Nenhum arquivo KML encontrado em ${fileName}`);
-                
-                const kmlText = await zip.file(kmlFile).async('text');
-                const kmlDoc = new DOMParser().parseFromString(kmlText, 'text/xml');
-                const geojson = toGeoJSON.kml(kmlDoc);
-                
-                const sourceId = `source-${fileName.replace('.kmz', '')}-${Date.now()}`;
-                
-                state.files.push({
-                    name: fileName,
-                    sourceId: sourceId,
-                    geojson: geojson
-                });
-                
-                addDataToMap(geojson, sourceId, fileName);
-                updateLoadedFilesMenu();
-                localStorage.setItem('lastSelectedFile', fileName);
-                
+                const contentType = response.headers.get("content-type");
+                let geojson;
+                if (contentType.includes("application/vnd.google-earth.kmz")) {
+                    const buffer = await response.arrayBuffer();
+                    geojson = await parseKMZ(buffer);
+                } else if (contentType.includes("application/vnd.google-earth.kml+xml")) {
+                    const text = await response.text();
+                    geojson = toGeoJSON.kml(new DOMParser().parseFromString(text, 'text/xml'));
+                } else {
+                    throw new Error('Formato de arquivo não suportado.');
+                }
+                addDataToMap(geojson, fileName);
+                updateRecentFiles(fileName);
+                displayFileList();
+                updateLoadedFilesList(fileName);
             } catch (error) {
                 console.error(`Erro ao carregar ${fileName}:`, error);
                 alert(`Erro ao carregar ${fileName}`);
@@ -741,213 +866,413 @@
             }
         }
 
-        function addDataToMap(geojson, sourceId, fileName) {
-            if (!map.getSource(sourceId)) {
-                map.addSource(sourceId, {
-                    type: 'geojson',
-                    data: geojson
+        // Função para descompactar e converter KMZ para GeoJSON
+        async function parseKMZ(data) {
+            const zip = await JSZip.loadAsync(data);
+            const kmlFile = Object.keys(zip.files).find(name => /\.kml$/i.test(name));
+            if (!kmlFile) throw new Error('Nenhum arquivo KML encontrado dentro do KMZ.');
+            const kmlContent = await zip.file(kmlFile).async('string');
+            return toGeoJSON.kml(new DOMParser().parseFromString(kmlContent, 'text/xml'));
+        }
+
+        // Função para adicionar dados GeoJSON ao mapa
+        function addDataToMap(geojson, fileName) {
+            const sanitizedFileName = fileName.replace(/\s+/g, '_').replace(/[^\w\-]/g, '');
+            const sourceId = `source-${sanitizedFileName}-${Date.now()}`;
+            
+            if (state.files.find(file => file.name === fileName)) {
+                alert(`O arquivo "${fileName}" já está carregado.`);
+                return;
+            }
+            
+            const pointFeatures = {
+                type: 'FeatureCollection',
+                features: geojson.features.filter(f => f.geometry?.type === 'Point')
+            };
+            
+            const lineFeatures = {
+                type: 'FeatureCollection',
+                features: geojson.features.filter(f => ['LineString', 'MultiLineString', 'Polygon', 'MultiPolygon'].includes(f.geometry?.type))
+            };
+            
+            let groupingProperty = null;
+            const exampleLine = lineFeatures.features.find(f => f.properties && (f.properties.Alimentador || f.properties.name));
+            if (exampleLine) {
+                groupingProperty = exampleLine.properties.Alimentador ? 'Alimentador' : 'name';
+            }
+            
+            const groupsSet = new Set();
+            if (lineFeatures.features.length > 0 && groupingProperty) {
+                lineFeatures.features.forEach(f => {
+                    if (f.properties && f.properties[groupingProperty]) {
+                        groupsSet.add(f.properties[groupingProperty]);
+                    }
+                });
+            }
+            
+            if (pointFeatures.features.length > 0) {
+                map.addSource(`${sourceId}-markers`, { type: 'geojson', data: pointFeatures });
+                map.addLayer({
+                    id: `marker-circles-${sourceId}`,
+                    type: 'circle',
+                    source: `${sourceId}-markers`,
+                    paint: {
+                        'circle-radius': 6,
+                        'circle-color': '#FF5722',
+                        'circle-stroke-width': 2,
+                        'circle-stroke-color': '#FFFFFF'
+                    },
+                    layout: {
+                        'visibility': state.markersVisible ? 'visible' : 'none'
+                    }
                 });
                 
                 map.addLayer({
-                    id: `${sourceId}-points`,
-                    type: 'circle',
-                    source: sourceId,
-                    filter: ['==', '$type', 'Point'],
-                    paint: {
-                        'circle-radius': 6,
-                        'circle-color': '#B42222',
-                        'circle-stroke-width': 1,
-                        'circle-stroke-color': '#FFFFFF'
-                    }
-                });
-
-                map.addLayer({
-                    id: `${sourceId}-labels`,
+                    id: `marker-labels-${sourceId}`,
                     type: 'symbol',
-                    source: sourceId,
-                    filter: ['==', '$type', 'Point'],
+                    source: `${sourceId}-markers`,
                     layout: {
-                        'text-field': ['get', 'name'],
-                        'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
+                        'text-field': ['coalesce', ['get', 'name'], ['get', 'Alimentador']],
+                        'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
                         'text-size': 12,
                         'text-offset': [0, 1.5],
-                        'text-anchor': 'top'
-                    }
-                });
-
-                map.addLayer({
-                    id: `${sourceId}-lines`,
-                    type: 'line',
-                    source: sourceId,
-                    filter: ['==', '$type', 'LineString'],
-                    paint: {
-                        'line-color': '#888',
-                        'line-width': 2
-                    }
-                });
-
-                // Adicionar grupos de linhas ao state
-                const groups = new Set();
-                geojson.features
-                    .filter(f => f.geometry.type === 'LineString')
-                    .forEach(f => {
-                        if (f.properties?.name) {
-                            groups.add(f.properties.name);
-                        }
-                    });
-                state.selectedGroups.set(sourceId, groups);
-                updateLineGroupsMenu();
-            }
-        }
-
-        function toggleMarkers() {
-            state.markersVisible = !state.markersVisible;
-            state.files.forEach(file => {
-                map.setLayoutProperty(
-                    `${file.sourceId}-points`,
-                    'visibility',
-                    state.markersVisible ? 'visible' : 'none'
-                );
-            });
-        }
-
-        function toggleNames() {
-            state.namesVisible = !state.namesVisible;
-            state.files.forEach(file => {
-                map.setLayoutProperty(
-                    `${file.sourceId}-labels`,
-                    'visibility',
-                    state.namesVisible ? 'visible' : 'none'
-                );
-            });
-        }
-
-        function toggleLines() {
-            state.linesVisible = !state.linesVisible;
-            state.files.forEach(file => {
-                map.setLayoutProperty(
-                    `${file.sourceId}-lines`,
-                    'visibility',
-                    state.linesVisible ? 'visible' : 'none'
-                );
-            });
-        }
-
-        function resetView() {
-            map.flyTo({
-                center: [-47.068847, -22.934973],
-                zoom: 11,
-                essential: true
-            });
-        }
-
-        function showUserLocation() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    position => {
-                        const { latitude, longitude } = position.coords;
-                        state.userLocation = [longitude, latitude];
-                        map.flyTo({
-                            center: state.userLocation,
-                            zoom: 15,
-                            essential: true
-                        });
-                        new maplibregl.Marker({ color: '#00F' })
-                            .setLngLat(state.userLocation)
-                            .addTo(map);
+                        'visibility': state.namesVisible ? 'visible' : 'none'
                     },
-                    error => {
-                        console.error('Erro ao obter localização:', error);
-                        alert('Não foi possível obter sua localização');
+                    paint: {
+                        'text-color': '#000000',
+                        'text-halo-color': '#FFFFFF',
+                        'text-halo-width': 1
                     }
-                );
-            } else {
-                alert('Geolocalização não é suportada pelo navegador');
+                });
             }
+            
+            if (lineFeatures.features.length > 0) {
+                map.addSource(`${sourceId}-lines`, { type: 'geojson', data: lineFeatures });
+                map.addLayer({
+                    id: `lines-${sourceId}`,
+                    type: 'line',
+                    source: `${sourceId}-lines`,
+                    paint: {
+                        'line-color': ['coalesce', ['get', 'color'], '#888'],
+                        'line-width': 4
+                    },
+                    layout: {
+                        'visibility': state.linesVisible ? 'visible' : 'none'
+                    }
+                });
+            }
+            
+            state.files.push({
+                name: fileName,
+                sourceId: sourceId,
+                hasMarkers: pointFeatures.features.length > 0,
+                hasLines: lineFeatures.features.length > 0,
+                groupingProperty: groupingProperty
+            });
+            
+            if (groupingProperty && groupsSet.size > 0) {
+                state.selectedGroups.set(sourceId, new Set(groupsSet));
+            }
+            
+            updateGroupMenu();
         }
 
-        function updateKmzMenu() {
+        // Função para atualizar a lista de arquivos recentes
+        function updateRecentFiles(fileName) {
+            let recentFiles = JSON.parse(localStorage.getItem('recentFiles') || '[]');
+            recentFiles = recentFiles.filter(f => f !== fileName);
+            recentFiles.unshift(fileName);
+            recentFiles = recentFiles.slice(0, 5);
+            localStorage.setItem('recentFiles', JSON.stringify(recentFiles));
+        }
+
+        // Função para exibir a lista de arquivos
+        function displayFileList() {
             kmzList.innerHTML = '';
-            predefinedFiles.forEach(file => {
+            const recentFiles = JSON.parse(localStorage.getItem('recentFiles') || '[]');
+            const recentFileSet = new Set(recentFiles);
+            
+            const recent = predefinedFiles.filter(file => recentFileSet.has(file.name));
+            const others = predefinedFiles.filter(file => !recentFileSet.has(file.name));
+            
+            const sortedRecent = recent.sort((a, b) => recentFiles.indexOf(a.name) - recentFiles.indexOf(b.name));
+            const sortedOthers = others.sort((a, b) => a.name.localeCompare(b.name));
+            const sortedFiles = [...sortedRecent, ...sortedOthers];
+            
+            sortedFiles.forEach(file => {
                 const li = document.createElement('li');
                 li.textContent = file.name;
                 li.onclick = () => {
                     loadKMZFromURL(file.url, file.name);
+                    localStorage.setItem('lastSelectedFile', file.name);
+                    updateRecentFiles(file.name);
+                    displayFileList();
                     kmzMenu.style.display = 'none';
                 };
                 kmzList.appendChild(li);
             });
         }
 
-        function updateLineGroupsMenu() {
+        // Função para atualizar a lista de arquivos carregados
+        function updateLoadedFilesList(fileName) {
+            const li = document.createElement('li');
+            li.textContent = fileName;
+            
+            const removeBtn = document.createElement('button');
+            removeBtn.textContent = 'Remover';
+            removeBtn.onclick = () => {
+                removeFileFromMap(fileName);
+                li.remove();
+            };
+            
+            li.appendChild(removeBtn);
+            loadedFilesList.appendChild(li);
+        }
+
+        // Função para remover arquivo do mapa
+        function removeFileFromMap(fileName) {
+            const fileIndex = state.files.findIndex(file => file.name === fileName);
+            if (fileIndex === -1) return;
+            
+            const file = state.files[fileIndex];
+            const sourceId = file.sourceId;
+            
+            if (file.hasMarkers) {
+                if (map.getLayer(`marker-circles-${sourceId}`)) map.removeLayer(`marker-circles-${sourceId}`);
+                if (map.getLayer(`marker-labels-${sourceId}`)) map.removeLayer(`marker-labels-${sourceId}`);
+                if (map.getSource(`${sourceId}-markers`)) map.removeSource(`${sourceId}-markers`);
+            }
+            
+            if (file.hasLines) {
+                if (map.getLayer(`lines-${sourceId}`)) map.removeLayer(`lines-${sourceId}`);
+                if (map.getSource(`${sourceId}-lines`)) map.removeSource(`${sourceId}-lines`);
+            }
+            
+            state.selectedGroups.delete(sourceId);
+            state.files.splice(fileIndex, 1);
+            updateGroupMenu();
+        }
+
+        // Função para atualizar o menu de grupos
+        function updateGroupMenu() {
             lineGroupsList.innerHTML = '';
+            
             state.files.forEach(file => {
-                const groups = state.selectedGroups.get(file.sourceId);
-                if (groups) {
-                    groups.forEach(group => {
+                if (file.hasLines && file.groupingProperty && state.selectedGroups.has(file.sourceId)) {
+                    const groups = state.selectedGroups.get(file.sourceId);
+                    const fileHeader = document.createElement('div');
+                    fileHeader.style.fontWeight = 'bold';
+                    fileHeader.style.marginTop = '10px';
+                    fileHeader.textContent = `Arquivo: "${file.name}"`;
+                    lineGroupsList.appendChild(fileHeader);
+                    
+                    const sortedGroups = Array.from(groups).sort((a, b) => a.localeCompare(b));
+                    
+                    sortedGroups.forEach(grp => {
                         const li = document.createElement('li');
-                        const checkbox = document.createElement('input');
-                        checkbox.type = 'checkbox';
-                        checkbox.checked = true;
-                        checkbox.onchange = () => {
-                            const filter = map.getFilter(`${file.sourceId}-lines`);
-                            if (checkbox.checked) {
-                                map.setFilter(`${file.sourceId}-lines`, ['all', filter, ['==', ['get', 'name'], group]]);
+                        const lbl = document.createElement('label');
+                        const chk = document.createElement('input');
+                        chk.type = 'checkbox';
+                        chk.value = grp;
+                        chk.checked = true;
+                        
+                        chk.onchange = () => {
+                            if (chk.checked) {
+                                state.selectedGroups.get(file.sourceId).add(grp);
                             } else {
-                                map.setFilter(`${file.sourceId}-lines`, ['all', filter, ['!=', ['get', 'name'], group]]);
+                                state.selectedGroups.get(file.sourceId).delete(grp);
                             }
+                            applyGroupFilter();
                         };
-                        const label = document.createElement('label');
-                        label.textContent = group;
-                        li.appendChild(checkbox);
-                        li.appendChild(label);
+                        
+                        lbl.appendChild(chk);
+                        lbl.appendChild(document.createTextNode(' ' + grp));
+                        li.appendChild(lbl);
                         lineGroupsList.appendChild(li);
                     });
                 }
             });
         }
 
-        function updateLoadedFilesMenu() {
-            loadedFilesList.innerHTML = '';
+        // Função para aplicar filtro de grupos
+        function applyGroupFilter() {
             state.files.forEach(file => {
-                const li = document.createElement('li');
-                const span = document.createElement('span');
-                span.textContent = file.name;
-                const removeButton = document.createElement('button');
-                removeButton.textContent = 'Remover';
-                removeButton.onclick = () => {
-                    map.removeLayer(`${file.sourceId}-points`);
-                    map.removeLayer(`${file.sourceId}-labels`);
-                    map.removeLayer(`${file.sourceId}-lines`);
-                    map.removeSource(file.sourceId);
-                    state.files = state.files.filter(f => f.sourceId !== file.sourceId);
-                    state.selectedGroups.delete(file.sourceId);
-                    updateLoadedFilesMenu();
-                    updateLineGroupsMenu();
-                };
-                li.appendChild(span);
-                li.appendChild(removeButton);
-                loadedFilesList.appendChild(li);
+                if (!file.hasLines || !file.groupingProperty) return;
+                
+                const sourceId = file.sourceId;
+                const lineLayerId = `lines-${sourceId}`;
+                const groupingProperty = file.groupingProperty;
+                const selectedGroups = state.selectedGroups.get(sourceId);
+                
+                if (!selectedGroups || selectedGroups.size === 0) {
+                    map.setFilter(lineLayerId, ["==", ["get", groupingProperty], "___no_match___"]);
+                } else if (selectedGroups.size === getTotalGroups(sourceId, groupingProperty)) {
+                    map.setFilter(lineLayerId, null);
+                } else {
+                    map.setFilter(lineLayerId, ["in", groupingProperty, ...Array.from(selectedGroups)]);
+                }
             });
         }
 
-        // Inicialização do mapa
-        map.on('load', async () => {
-            await loadOrGenerateIndex();
-            updateKmzMenu();
-            
-            const lastFile = localStorage.getItem('lastSelectedFile');
-            if (lastFile) {
-                const file = predefinedFiles.find(f => f.name === lastFile);
-                if (file) {
-                    await loadKMZFromURL(file.url, file.name);
-                }
+        // Função auxiliar para obter o total de grupos
+        function getTotalGroups(sourceId, groupingProperty) {
+            const lineSource = map.getSource(`${sourceId}-lines`);
+            if (lineSource && lineSource._data.features) {
+                const allGroups = new Set();
+                lineSource._data.features.forEach(feature => {
+                    if (feature.properties && feature.properties[groupingProperty]) {
+                        allGroups.add(feature.properties[groupingProperty]);
+                    }
+                });
+                return allGroups.size;
             }
-        });
+            return 0;
+        }
+
+        // Funções para exibir/ocultar marcadores, nomes e linhas
+        function toggleMarkers() {
+            state.markersVisible = !state.markersVisible;
+            const visibility = state.markersVisible ? 'visible' : 'none';
+            state.files.forEach(file => {
+                if (file.hasMarkers) {
+                    if (map.getLayer(`marker-circles-${file.sourceId}`)) {
+                        map.setLayoutProperty(`marker-circles-${file.sourceId}`, 'visibility', visibility);
+                    }
+                }
+            });
+        }
+
+        function toggleNames() {
+            state.namesVisible = !state.namesVisible;
+            const visibility = state.namesVisible ? 'visible' : 'none';
+            state.files.forEach(file => {
+                if (file.hasMarkers) {
+                    if (map.getLayer(`marker-labels-${file.sourceId}`)) {
+                        map.setLayoutProperty(`marker-labels-${file.sourceId}`, 'visibility', visibility);
+                    }
+                }
+            });
+        }
+
+        function toggleLines() {
+            state.linesVisible = !state.linesVisible;
+            const visibility = state.linesVisible ? 'visible' : 'none';
+            state.files.forEach(file => {
+                if (file.hasLines) {
+                    if (map.getLayer(`lines-${file.sourceId}`)) {
+                        map.setLayoutProperty(`lines-${file.sourceId}`, 'visibility', visibility);
+                    }
+                }
+            });
+        }
+
+        // Função para resetar a visão do mapa
+        function resetView() {
+            map.easeTo({
+                center: [-47.068847, -22.934973],
+                zoom: 11
+            });
+        }
+
+        // Função para ir até a localização atual do usuário
+        let userLocationMarker;
+        function goToCurrentLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    position => {
+                        const userCoords = [position.coords.longitude, position.coords.latitude];
+                        state.userLocation = userCoords;
+                        map.flyTo({
+                            center: userCoords,
+                            zoom: 16
+                        });
+                        if (userLocationMarker) {
+                            userLocationMarker.remove();
+                        }
+                        userLocationMarker = new maplibregl.Marker({ color: 'blue' })
+                            .setLngLat(userCoords)
+                            .addTo(map);
+                    },
+                    () => {
+                        alert('Não foi possível obter sua localização.');
+                    }
+                );
+            } else {
+                alert('Geolocalização não é suportada pelo seu navegador.');
+            }
+        }
+
+        // Função para carregar arquivo do dispositivo
+        function selectFromDevice() {
+            kmzMenu.style.display = 'none';
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.kml,.kmz';
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                showLoading(`Carregando ${file.name}...`);
+                try {
+                    let geojson;
+                    if (file.name.endsWith('.kmz')) {
+                        const buffer = await file.arrayBuffer();
+                        geojson = await parseKMZ(buffer);
+                    } else {
+                        const text = await file.text();
+                        geojson = toGeoJSON.kml(new DOMParser().parseFromString(text, 'text/xml'));
+                    }
+                    addDataToMap(geojson, file.name);
+                    updateRecentFiles(file.name);
+                    displayFileList();
+                    updateLoadedFilesList(file.name);
+                } catch (error) {
+                    console.error('Erro ao processar o arquivo:', error);
+                    alert('Erro ao processar o arquivo KML/KMZ.');
+                } finally {
+                    hideLoading();
+                }
+            };
+            input.click();
+        }
+
+        // Funções para ocultar/exibir todas as linhas
+        function hideAllGroups() {
+            state.selectedGroups.forEach((groups, sourceId) => {
+                state.selectedGroups.set(sourceId, new Set());
+            });
+            lineGroupsList.querySelectorAll('input[type=checkbox]').forEach(chk => {
+                chk.checked = false;
+            });
+            applyGroupFilter();
+        }
+
+        function showAllGroups() {
+            state.files.forEach(file => {
+                if (file.hasLines && file.groupingProperty && state.selectedGroups.has(file.sourceId)) {
+                    const sourceId = file.sourceId;
+                    const groupingProperty = file.groupingProperty;
+                    const lineSource = map.getSource(`${sourceId}-lines`);
+                    if (lineSource && lineSource._data.features) {
+                        const allGroups = new Set();
+                        lineSource._data.features.forEach(feature => {
+                            if (feature.properties && feature.properties[groupingProperty]) {
+                                allGroups.add(feature.properties[groupingProperty]);
+                            }
+                        });
+                        state.selectedGroups.set(sourceId, new Set(allGroups));
+                    }
+                }
+            });
+            lineGroupsList.querySelectorAll('input[type=checkbox]').forEach(chk => {
+                chk.checked = true;
+            });
+            applyGroupFilter();
+        }
 
         // Configurar eventos
-        document.getElementById('btnSearch').addEventListener('click', searchMarkers);
-        searchInput.addEventListener('input', searchMarkers);
+        document.getElementById('btnSearch').addEventListener('click', searchFeatures);
+        searchInput.addEventListener('input', searchFeatures);
         document.addEventListener('click', (e) => {
             if (!searchResults.contains(e.target) && e.target !== searchInput) {
                 searchResults.style.display = 'none';
@@ -958,80 +1283,57 @@
             if (!lineMenu.contains(e.target) && e.target !== document.getElementById('btnLineGroups')) {
                 lineMenu.style.display = 'none';
             }
-            if (!loadedFilesMenu.contains(e.target) && e.target !== document.getElementById('btnLoadedFiles')) {
+            if (!loadedFilesMenu.contains(e.target) && e.target !== btnLoadedFiles) {
                 loadedFilesMenu.style.display = 'none';
             }
         });
 
         document.getElementById('btnKMZ').addEventListener('click', () => {
-            kmzMenu.style.display = kmzMenu.style.display === 'block' ? 'none' : 'block';
+            toggleVisibility(kmzMenu);
         });
-
-        document.getElementById('selectDevice').addEventListener('click', () => {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.kmz,.kml';
-            input.onchange = async (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                    showLoading(`Carregando ${file.name}...`);
-                    try {
-                        const buffer = await file.arrayBuffer();
-                        const zip = await JSZip.loadAsync(buffer);
-                        const kmlFile = Object.keys(zip.files).find(name => /\.kml$/i.test(name));
-                        if (!kmlFile) throw new Error('Nenhum arquivo KML encontrado');
-                        const kmlText = await zip.file(kmlFile).async('text');
-                        const kmlDoc = new DOMParser().parseFromString(kmlText, 'text/xml');
-                        const geojson = toGeoJSON.kml(kmlDoc);
-                        const sourceId = `source-${file.name.replace('.kmz', '')}-${Date.now()}`;
-                        state.files.push({
-                            name: file.name,
-                            sourceId: sourceId,
-                            geojson: geojson
-                        });
-                        addDataToMap(geojson, sourceId, file.name);
-                        updateLoadedFilesMenu();
-                    } catch (error) {
-                        console.error('Erro ao carregar arquivo do dispositivo:', error);
-                        alert('Erro ao carregar o arquivo');
-                    } finally {
-                        hideLoading();
-                    }
-                }
-            };
-            input.click();
-        });
-
         document.getElementById('btnMarkers').addEventListener('click', toggleMarkers);
         document.getElementById('btnNames').addEventListener('click', toggleNames);
         document.getElementById('btnLines').addEventListener('click', toggleLines);
         document.getElementById('btnReset').addEventListener('click', resetView);
-        document.getElementById('btnLocation').addEventListener('click', showUserLocation);
+        document.getElementById('btnLocation').addEventListener('click', goToCurrentLocation);
         document.getElementById('btnLineGroups').addEventListener('click', () => {
-            lineMenu.style.display = lineMenu.style.display === 'block' ? 'none' : 'block';
+            if (state.selectedGroups.size === 0) {
+                alert('Não há grupos de linhas para filtrar.');
+            } else {
+                toggleVisibility(lineMenu);
+            }
         });
-        document.getElementById('btnLoadedFiles').addEventListener('click', () => {
-            loadedFilesMenu.style.display = loadedFilesMenu.style.display === 'block' ? 'none' : 'block';
+        btnLoadedFiles.addEventListener('click', () => {
+            toggleVisibility(loadedFilesMenu);
         });
+        document.getElementById('hideAll').addEventListener('click', hideAllGroups);
+        document.getElementById('showAll').addEventListener('click', showAllGroups);
+        document.getElementById('selectDevice').addEventListener('click', selectFromDevice);
 
-        document.getElementById('hideAll').addEventListener('click', () => {
-            state.files.forEach(file => {
-                map.setLayoutProperty(`${file.sourceId}-lines`, 'visibility', 'none');
-            });
-            lineGroupsList.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
-        });
+        function toggleVisibility(element) {
+            element.style.display = element.style.display === 'block' ? 'none' : 'block';
+        }
 
-        document.getElementById('showAll').addEventListener('click', () => {
-            state.files.forEach(file => {
-                map.setLayoutProperty(`${file.sourceId}-lines`, 'visibility', 'visible');
-            });
-            lineGroupsList.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
+        // Inicialização do mapa
+        map.on('load', async () => {
+            await loadOrGenerateIndex();
+            displayFileList();
+            
+            const lastFile = localStorage.getItem('lastSelectedFile');
+            if (lastFile) {
+                const file = predefinedFiles.find(f => f.name === lastFile);
+                if (file) {
+                    await loadKMZFromURL(file.url, file.name);
+                }
+            }
         });
 
         // Remover legendas dos botões após 10 segundos
-        setTimeout(() => {
-            document.querySelectorAll('.button-legend').forEach(el => el.remove());
-        }, 10000);
+        window.onload = function() {
+            setTimeout(() => {
+                document.querySelectorAll('.button-legend').forEach(legend => legend.remove());
+            }, 10000);
+        };
     </script>
 </body>
 </html>
