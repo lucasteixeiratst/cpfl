@@ -6,139 +6,188 @@
   <title>Cadastro de Serviços</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    .status-hidden { display: none; }
     .fade-in { animation: fadeIn 0.5s; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     select[multiple] { scrollbar-width: thin; }
     select[multiple]::-webkit-scrollbar { width: 6px; }
     select[multiple]::-webkit-scrollbar-thumb { background: #007bff; border-radius: 4px; }
+    .table-container { max-height: 500px; overflow-y: auto; }
+    th { position: sticky; top: 0; z-index: 10; }
   </style>
 </head>
-<body class="bg-gray-100 font-sans min-h-screen flex items-center justify-center p-4">
-  <div class="container max-w-5xl mx-auto bg-white rounded-xl shadow-lg p-6 md:p-8">
-    <h2 class="text-2xl md:text-3xl font-bold text-center text-gray-800 mb-6">Cadastro de Serviços</h2>
+<body class="bg-gray-50 font-sans min-h-screen flex flex-col">
+  <div class="container max-w-6xl mx-auto p-4 flex-grow">
+    <div class="bg-white rounded-xl shadow-lg p-6 md:p-8">
+      <h2 class="text-3xl font-bold text-center text-gray-800 mb-6">Cadastro de Serviços</h2>
 
-    <!-- Seção de Testes -->
-    <div class="mb-8 p-4 bg-gray-50 rounded-lg shadow-inner">
-      <h3 class="text-lg font-semibold text-gray-700 mb-4">Testes de Conexão</h3>
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <button onclick="testarBackend()" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition-all duration-200 flex items-center justify-center">
-          <span>🔗 Testar Backend</span>
-        </button>
-        <button onclick="testarBanco()" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition-all duration-200 flex items-center justify-center">
-          <span>🗄️ Testar Banco</span>
-        </button>
-        <button onclick="testarServicos()" class="bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition-all duration-200 flex items-center justify-center">
-          <span>📋 Testar Serviços</span>
+      <!-- Botão de Preencher Endereço Automático -->
+      <div class="mb-6 text-center">
+        <button onclick="pegarEndereco()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg shadow transition-all duration-200 flex items-center justify-center mx-auto">
+          <span>🏠 Preencher Endereço Automático</span>
         </button>
       </div>
-      <div id="statusTestes" class="mt-4 p-3 rounded-lg text-white status-hidden" aria-live="assertive"></div>
-    </div>
 
-    <!-- Formulário -->
-    <div id="formulario" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6"></div>
+      <!-- Formulário -->
+      <form id="formulario" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        <div class="flex flex-col">
+          <label for="endereco" class="text-gray-700 font-semibold mb-1">Endereço</label>
+          <input type="text" id="endereco" class="p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Endereço" required>
+        </div>
+        <div class="flex flex-col">
+          <label for="numero" class="text-gray-700 font-semibold mb-1">Número</label>
+          <input type="text" id="numero" class="p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Número">
+        </div>
+        <div class="flex flex-col">
+          <label for="bairro" class="text-gray-700 font-semibold mb-1">Bairro</label>
+          <input type="text" id="bairro" class="p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Bairro" readonly>
+        </div>
+        <div class="flex flex-col">
+          <label for="cidade" class="text-gray-700 font-semibold mb-1">Cidade</label>
+          <input type="text" id="cidade" class="p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Cidade" readonly>
+        </div>
+        <div class="flex flex-col">
+          <label for="tronco" class="text-gray-700 font-semibold mb-1">Tronco</label>
+          <input type="text" id="tronco" class="p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Tronco">
+        </div>
+        <div class="flex flex-col">
+          <label for="chave" class="text-gray-700 font-semibold mb-1">Chave</label>
+          <input type="text" id="chave" class="p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Chave">
+        </div>
+        <div class="flex flex-col">
+          <label for="qtd" class="text-gray-700 font-semibold mb-1">Quantidade</label>
+          <input type="number" id="qtd" class="p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Quantidade" min="0" step="1">
+        </div>
+        <div class="flex flex-col">
+          <label for="alimentador" class="text-gray-700 font-semibold mb-1">Alimentador</label>
+          <input type="text" id="alimentador" class="p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Alimentador">
+        </div>
+        <div class="flex flex-col col-span-1 sm:col-span-2 lg:col-span-3">
+          <label for="obs" class="text-gray-700 font-semibold mb-1">Observação</label>
+          <textarea id="obs" class="p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-24" aria-label="Observação"></textarea>
+        </div>
+        <div class="flex flex-col">
+          <label for="data" class="text-gray-700 font-semibold mb-1">Data</label>
+          <input type="date" id="data" class="p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Data">
+        </div>
+        <div class="flex flex-col">
+          <label for="equipe" class="text-gray-700 font-semibold mb-1">Equipe</label>
+          <input type="text" id="equipe" class="p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Equipe">
+        </div>
+        <div class="flex flex-col">
+          <label for="matricula" class="text-gray-700 font-semibold mb-1">Matrícula</label>
+          <input type="text" id="matricula" class="p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Matrícula">
+        </div>
+        <div class="flex flex-col">
+          <label for="ea" class="text-gray-700 font-semibold mb-1">EA</label>
+          <input type="text" id="ea" class="p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="EA">
+        </div>
+        <div class="flex flex-col col-span-1 sm:col-span-2 lg:col-span-3">
+          <label for="servico" class="text-gray-700 font-semibold mb-1">Serviço (Selecione um ou mais)</label>
+          <select id="servico" multiple size="6" class="p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full" aria-label="Seleção de serviços" required>
+            <option value="PC">Poda primária completa - PC</option>
+            <option value="PS">Poda secundária completa - PS</option>
+            <option value="PP">Poda primária parcial - PP</option>
+            <option value="SP">Poda secundária parcial - SP</option>
+            <option value="U">Cruzeta urgente troca em 15 dias - U</option>
+            <option value="CV">Corte de cerca viva - CV</option>
+            <option value="A">Cruzeta alta para 90 dias - A</option>
+          </select>
+        </div>
+        <div class="flex flex-col">
+          <label for="latitude" class="text-gray-700 font-semibold mb-1">Latitude</label>
+          <input type="text" id="latitude" class="p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" readonly aria-label="Latitude">
+        </div>
+        <div class="flex flex-col">
+          <label for="longitude" class="text-gray-700 font-semibold mb-1">Longitude</label>
+          <input type="text" id="longitude" class="p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" readonly aria-label="Longitude">
+        </div>
+      </form>
 
-    <!-- Botões do Formulário -->
-    <div class="flex flex-wrap gap-3 mb-6">
-      <button onclick="pegarLatLon()" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition-all duration-200 flex items-center">
-        <span>📍 Localizar</span>
-      </button>
-      <button onclick="pegarEndereco()" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition-all duration-200 flex items-center">
-        <span>🏠 Buscar Endereço</span>
-      </button>
-      <button id="salvarBtn" onclick="salvar()" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition-all duration-200 flex items-center">
-        <span>💾 Salvar</span>
-      </button>
-      <button onclick="limparFormulario()" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition-all duration-200 flex items-center">
-        <span>🧹 Limpar</span>
-      </button>
-    </div>
+      <!-- Botões do Formulário -->
+      <div class="flex flex-wrap gap-3 mb-6 justify-center">
+        <button onclick="pegarLatLon()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg shadow transition-all duration-200 flex items-center">
+          <span>📍 Localizar</span>
+        </button>
+        <button id="salvarBtn" onclick="salvar(event)" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-6 rounded-lg shadow transition-all duration-200 flex items-center">
+          <span>💾 Salvar</span>
+        </button>
+        <button onclick="limparFormulario()" class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-6 rounded-lg shadow transition-all duration-200 flex items-center">
+          <span>🧹 Limpar</span>
+        </button>
+      </div>
 
-    <!-- Mensagem de Status -->
-    <div id="status" class="mb-6 p-3 rounded-lg text-white status-hidden" aria-live="assertive"></div>
+      <!-- Mensagem de Status -->
+      <div id="status" class="mb-6 p-3 rounded-lg text-white hidden" aria-live="assertive"></div>
 
-    <!-- Tabela -->
-    <div class="overflow-x-auto">
-      <table id="tabela" class="w-full border-collapse bg-white shadow-md rounded-lg">
-        <thead>
-          <tr class="bg-blue-500 text-white">
-            <th class="p-3 text-left">Endereço</th>
-            <th class="p-3 text-left">Número</th>
-            <th class="p-3 text-left">Bairro</th>
-            <th class="p-3 text-left">Tronco</th>
-            <th class="p-3 text-left">Chave</th>
-            <th class="p-3 text-left">Qtd</th>
-            <th class="p-3 text-left">Alimentador</th>
-            <th class="p-3 text-left">Obs</th>
-            <th class="p-3 text-left">Data</th>
-            <th class="p-3 text-left">Equipe</th>
-            <th class="p-3 text-left">Matrícula</th>
-            <th class="p-3 text-left">EA</th>
-            <th class="p-3 text-left">Serviço</th>
-            <th class="p-3 text-left">Lat</th>
-            <th class="p-3 text-left">Lon</th>
-            <th class="p-3 text-left">Ações</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+      <!-- Filtros -->
+      <div class="mb-6 p-4 bg-gray-50 rounded-lg shadow-inner">
+        <h3 class="text-lg font-semibold text-gray-700 mb-4">Filtros de Consulta</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="flex flex-col">
+            <label for="filtroEndereco" class="text-gray-700 font-semibold mb-1">Endereço</label>
+            <input type="text" id="filtroEndereco" class="p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Digite o endereço">
+          </div>
+          <div class="flex flex-col">
+            <label for="filtroBairro" class="text-gray-700 font-semibold mb-1">Bairro</label>
+            <input type="text" id="filtroBairro" class="p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Digite o bairro">
+          </div>
+          <div class="flex flex-col">
+            <label for="filtroData" class="text-gray-700 font-semibold mb-1">Data</label>
+            <input type="date" id="filtroData" class="p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+        </div>
+        <div class="mt-4 flex justify-end gap-2">
+          <button onclick="aplicarFiltros()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow transition-all duration-200">
+            Filtrar
+          </button>
+          <button onclick="limparFiltros()" class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg shadow transition-all duration-200">
+            Limpar
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabela com Paginação -->
+      <div class="table-container">
+        <table id="tabela" class="w-full border-collapse bg-white shadow-md rounded-lg">
+          <thead>
+            <tr class="bg-blue-600 text-white">
+              <th class="p-3 text-left font-semibold">Endereço</th>
+              <th class="p-3 text-left font-semibold">Número</th>
+              <th class="p-3 text-left font-semibold">Bairro</th>
+              <th class="p-3 text-left font-semibold">Tronco</th>
+              <th class="p-3 text-left font-semibold">Chave</th>
+              <th class="p-3 text-left font-semibold">Qtd</th>
+              <th class="p-3 text-left font-semibold">Alimentador</th>
+              <th class="p-3 text-left font-semibold">Obs</th>
+              <th class="p-3 text-left font-semibold">Data</th>
+              <th class="p-3 text-left font-semibold">Equipe</th>
+              <th class="p-3 text-left font-semibold">Matrícula</th>
+              <th class="p-3 text-left font-semibold">EA</th>
+              <th class="p-3 text-left font-semibold">Serviços</th>
+              <th class="p-3 text-left font-semibold">Lat</th>
+              <th class="p-3 text-left font-semibold">Lon</th>
+              <th class="p-3 text-left font-semibold">Ações</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200"></tbody>
+        </table>
+      </div>
+      <div class="flex justify-between items-center mt-4">
+        <button id="prevPage" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow transition-all duration-200 disabled:bg-gray-400" disabled>Anterior</button>
+        <span id="pageInfo" class="text-gray-700">Página 1 de 1</span>
+        <button id="nextPage" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow transition-all duration-200 disabled:bg-gray-400" disabled>Próxima</button>
+      </div>
     </div>
   </div>
 
   <script>
     const BASE_URL = 'https://fonseca.onrender.com';
     let editId = null;
-
-    const campos = [
-      ['Endereço', 'endereco'],
-      ['Número', 'numero'],
-      ['Bairro', 'bairro'],
-      ['Tronco', 'tronco'],
-      ['Chave', 'chave'],
-      ['Quantidade', 'qtd', 'number'],
-      ['Alimentador', 'alimentador'],
-      ['Observação', 'obs', 'textarea'],
-      ['Data', 'data', 'date'],
-      ['Equipe', 'equipe'],
-      ['Matrícula', 'matricula'],
-      ['EA', 'ea'],
-      ['Latitude', 'latitude', 'text', true],
-      ['Longitude', 'longitude', 'text', true]
-    ];
-
-    const formulario = document.getElementById('formulario');
-    campos.forEach(([label, id, tipo = 'text', readonly = false]) => {
-      const div = document.createElement('div');
-      div.className = 'flex flex-col';
-      div.innerHTML = `
-        <label for="${id}" class="text-gray-700 font-semibold mb-1">${label}</label>
-        ${tipo === 'textarea'
-          ? `<textarea id="${id}" ${readonly ? 'readonly' : ''} class="p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="${label}"></textarea>`
-          : `<input type="${tipo}" id="${id}" ${readonly ? 'readonly' : ''} class="p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="${label}" />`
-        }
-      `;
-      formulario.appendChild(div);
-    });
-
-    // Serviço (select)
-    const divServico = document.createElement('div');
-    divServico.className = 'flex flex-col';
-    divServico.innerHTML = `
-      <label for="servico" class="text-gray-700 font-semibold mb-1">Serviço (Selecione um ou mais)</label>
-      <select id="servico" multiple size="6" class="p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Seleção de serviços">
-        <option value="PC">Poda primária completa - PC</option>
-        <option value="PS">Poda secundária completa - PS</option>
-        <option value="PP">Poda primária parcial - PP</option>
-        <option value="SP">Poda secundária parcial - SP</option>
-        <option value="U">Cruzeta urgente troca em 15 dias - U</option>
-        <option value="CV">Corte de cerca viva - CV</option>
-        <option value="A">Cruzeta alta para 90 dias - A</option>
-      </select>
-    `;
-    formulario.appendChild(divServico);
-
     let lastGeolocationCall = 0;
     const debounceDelay = 1000;
+    let dadosCompletos = [];
+    let currentPage = 1;
+    const itemsPerPage = 10;
 
     function sanitizeInput(input) {
       const div = document.createElement('div');
@@ -150,48 +199,11 @@
       const status = document.getElementById(target);
       status.textContent = message;
       status.className = `p-3 rounded-lg text-white fade-in ${type === 'success' ? 'bg-green-500' : 'bg-red-500'}`;
-      status.classList.remove('status-hidden');
-      setTimeout(() => status.classList.add('status-hidden'), 5000);
+      status.classList.remove('hidden');
+      setTimeout(() => status.classList.add('hidden'), 5000);
     }
 
-    // Funções de Teste
-    async function testarBackend() {
-      try {
-        const response = await fetch(BASE_URL);
-        if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
-        const data = await response.json();
-        showStatus('Backend conectado com sucesso! Mensagem: ' + data.message, 'success', 'statusTestes');
-      } catch (err) {
-        showStatus('Erro ao conectar ao backend: ' + err.message, 'error', 'statusTestes');
-      }
-    }
-
-    async function testarBanco() {
-      try {
-        const response = await fetch(`${BASE_URL}/test-db`);
-        if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
-        const data = await response.json();
-        if (data.success) {
-          showStatus('Conexão com o banco de dados bem-sucedida! Horário: ' + data.time, 'success', 'statusTestes');
-        } else {
-          throw new Error(data.error);
-        }
-      } catch (err) {
-        showStatus('Erro ao conectar ao banco: ' + err.message, 'error', 'statusTestes');
-      }
-    }
-
-    async function testarServicos() {
-      try {
-        const response = await fetch(`${BASE_URL}/servicos`);
-        if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
-        const data = await response.json();
-        showStatus(`Endpoint /servicos funcionando! ${data.length} registros encontrados.`, 'success', 'statusTestes');
-      } catch (err) {
-        showStatus('Erro ao acessar /servicos: ' + err.message, 'error', 'statusTestes');
-      }
-    }
-
+    // Geolocalização
     function pegarLatLon() {
       if (Date.now() - lastGeolocationCall < debounceDelay) {
         showStatus('Aguarde antes de tentar novamente.', 'error');
@@ -200,7 +212,7 @@
       lastGeolocationCall = Date.now();
 
       if (!navigator.geolocation) {
-        showStatus('Geolocalização não suportada pelo seu navegador.', 'error');
+        showStatus('Geolocalização não suportada.', 'error');
         return;
       }
       navigator.geolocation.getCurrentPosition(
@@ -209,12 +221,11 @@
           document.getElementById('longitude').value = pos.coords.longitude.toFixed(6);
           showStatus('Coordenadas obtidas com sucesso!', 'success');
         },
-        err => {
-          showStatus('Erro ao obter localização: ' + err.message, 'error');
-        }
+        err => showStatus('Erro ao obter localização: ' + err.message, 'error')
       );
     }
 
+    // Preencher Endereço Automático
     function pegarEndereco() {
       if (Date.now() - lastGeolocationCall < debounceDelay) {
         showStatus('Aguarde antes de tentar novamente.', 'error');
@@ -223,13 +234,11 @@
       lastGeolocationCall = Date.now();
 
       if (!navigator.onLine) {
-        showStatus('Sem conexão com a internet. Insira o endereço manualmente.', 'error');
-        document.getElementById('endereco').focus();
+        showStatus('Sem conexão. Insira manualmente.', 'error');
         return;
       }
       if (!navigator.geolocation) {
-        showStatus('Geolocalização não suportada. Insira o endereço manualmente.', 'error');
-        document.getElementById('endereco').focus();
+        showStatus('Geolocalização não suportada. Insira manualmente.', 'error');
         return;
       }
 
@@ -241,9 +250,7 @@
           const lon = pos.coords.longitude;
           const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`;
 
-          fetch(url, {
-            headers: { 'User-Agent': 'CadastroServicos/1.0 (lucas.teixeira.tst@hotmail.com)' }
-          })
+          fetch(url, { headers: { 'User-Agent': 'CadastroServicos/1.0 (lucas.teixeira.tst@hotmail.com)' } })
             .then(res => {
               if (!res.ok) throw new Error(`Erro HTTP: ${res.status}`);
               return res.json();
@@ -255,14 +262,14 @@
               const bairro = sanitizeInput(address.suburb || address.neighbourhood || '');
               const cidade = sanitizeInput(address.city || address.town || address.village || '');
 
-              document.getElementById('endereco').value = rua ? `${rua}${cidade ? ', ' + cidade : ''}` : '';
+              document.getElementById('endereco').value = rua ? `${rua}` : '';
               document.getElementById('numero').value = numero;
               document.getElementById('bairro').value = bairro;
+              document.getElementById('cidade').value = cidade;
               document.getElementById('latitude').value = lat.toFixed(6);
               document.getElementById('longitude').value = lon.toFixed(6);
 
               showStatus('Endereço obtido com sucesso!', 'success');
-              document.getElementById('endereco').focus();
             })
             .catch(err => {
               showStatus(`Erro ao buscar endereço: ${err.message}. Insira manualmente.`, 'error');
@@ -276,7 +283,9 @@
       );
     }
 
-    async function salvar() {
+    // Salvar
+    async function salvar(event) {
+      event.preventDefault();
       const endereco = document.getElementById('endereco').value.trim();
       const qtd = document.getElementById('qtd').value.trim();
       const data = document.getElementById('data').value;
@@ -301,7 +310,23 @@
 
       const item = {
         id: editId || Date.now(),
-        ...Object.fromEntries(campos.map(([, id]) => [id, sanitizeInput(document.getElementById(id).value.trim())])),
+        ...Object.fromEntries([
+          ['endereco', sanitizeInput(endereco)],
+          ['numero', sanitizeInput(document.getElementById('numero').value.trim())],
+          ['bairro', sanitizeInput(document.getElementById('bairro').value.trim())],
+          ['cidade', sanitizeInput(document.getElementById('cidade').value.trim())],
+          ['tronco', sanitizeInput(document.getElementById('tronco').value.trim())],
+          ['chave', sanitizeInput(document.getElementById('chave').value.trim())],
+          ['qtd', qtd || null],
+          ['alimentador', sanitizeInput(document.getElementById('alimentador').value.trim())],
+          ['obs', sanitizeInput(document.getElementById('obs').value.trim())],
+          ['data', data || null],
+          ['equipe', sanitizeInput(document.getElementById('equipe').value.trim())],
+          ['matricula', sanitizeInput(document.getElementById('matricula').value.trim())],
+          ['ea', sanitizeInput(document.getElementById('ea').value.trim())],
+          ['latitude', sanitizeInput(document.getElementById('latitude').value.trim())],
+          ['longitude', sanitizeInput(document.getElementById('longitude').value.trim())]
+        ]),
         servicos: servicosSelecionados
       };
 
@@ -319,113 +344,166 @@
         }
         await atualizarTabela();
         limparFormulario();
-        showStatus(editId ? 'Registro atualizado com sucesso!' : 'Registro salvo com sucesso!', 'success');
+        showStatus(editId ? 'Registro atualizado!' : 'Registro salvo!', 'success');
         editId = null;
         document.getElementById('salvarBtn').innerHTML = '<span>💾 Salvar</span>';
       } catch (err) {
         console.error('Erro na requisição:', err);
-        showStatus(`Erro ao ${editId ? 'atualizar' : 'salvar'}: ${err.message}. Verifique o servidor em ${BASE_URL}.`, 'error');
+        showStatus(`Erro ao ${editId ? 'atualizar' : 'salvar'}: ${err.message}.`, 'error');
       }
     }
 
+    // Limpar
     function limparFormulario() {
-      campos.forEach(([, id]) => document.getElementById(id).value = '');
-      document.getElementById('servico').selectedIndex = -1;
+      document.getElementById('formulario').reset();
       editId = null;
       document.getElementById('salvarBtn').innerHTML = '<span>💾 Salvar</span>';
       document.getElementById('endereco').focus();
     }
 
+    // Atualizar Tabela
     async function atualizarTabela() {
       try {
         const response = await fetch(`${BASE_URL}/servicos`);
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.error || `Erro HTTP: ${response.status} (${response.statusText})`);
+          throw new Error(errorData.error || `Erro HTTP: ${response.status}`);
         }
-        const dados = await response.json();
-
-        const tbody = document.querySelector('#tabela tbody');
-        tbody.innerHTML = '';
-        dados.forEach(item => {
-          const tr = document.createElement('tr');
-          tr.className = 'border-t hover:bg-gray-50';
-          const cells = [
-            item.endereco,
-            item.numero,
-            item.bairro,
-            item.tronco,
-            item.chave,
-            item.qtd,
-            item.alimentador,
-            item.obs,
-            item.data,
-            item.equipe,
-            item.matricula,
-            item.ea,
-            item.servicos,
-            item.latitude,
-            item.longitude
-          ];
-
-          cells.forEach(cell => {
-            const td = document.createElement('td');
-            td.className = 'p-3 text-gray-700';
-            td.textContent = cell || '';
-            tr.appendChild(td);
-          });
-
-          const actionTd = document.createElement('td');
-          actionTd.className = 'p-3 flex gap-2';
-          const editButton = document.createElement('button');
-          editButton.innerHTML = '✏️';
-          editButton.className = 'text-blue-500 hover:text-blue-700';
-          editButton.setAttribute('aria-label', 'Editar este registro');
-          editButton.onclick = () => {
-            editId = item.id;
-            campos.forEach(([, id]) => document.getElementById(id).value = item[id] || '');
-            const select = document.getElementById('servico');
-            Array.from(select.options).forEach(opt => opt.selected = item.servicos.split(', ').includes(opt.text));
-            document.getElementById('salvarBtn').innerHTML = '<span>💾 Atualizar</span>';
-            document.getElementById('endereco').focus();
-          };
-          actionTd.appendChild(editButton);
-
-          const deleteButton = document.createElement('button');
-          deleteButton.innerHTML = '🗑️';
-          deleteButton.className = 'text-red-500 hover:text-red-700';
-          deleteButton.setAttribute('aria-label', 'Excluir este registro');
-          deleteButton.onclick = () => excluir(item.id);
-          actionTd.appendChild(deleteButton);
-
-          tr.appendChild(actionTd);
-          tbody.appendChild(tr);
-        });
+        dadosCompletos = await response.json();
+        currentPage = 1;
+        aplicarFiltros();
       } catch (err) {
         console.error('Erro ao carregar tabela:', err);
-        showStatus(`Erro ao carregar dados: ${err.message}. Verifique o servidor em ${BASE_URL}.`, 'error');
+        showStatus(`Erro ao carregar dados: ${err.message}.`, 'error');
       }
     }
 
+    // Filtrar e Paginar
+    function aplicarFiltros() {
+      const filtroEndereco = document.getElementById('filtroEndereco').value.toLowerCase();
+      const filtroBairro = document.getElementById('filtroBairro').value.toLowerCase();
+      const filtroData = document.getElementById('filtroData').value;
+
+      const dadosFiltrados = dadosCompletos.filter(item => {
+        const matchEndereco = !filtroEndereco || (item.endereco || '').toLowerCase().includes(filtroEndereco);
+        const matchBairro = !filtroBairro || (item.bairro || '').toLowerCase().includes(filtroBairro);
+        const matchData = !filtroData || (item.data || '') === filtroData;
+        return matchEndereco && matchBairro && matchData;
+      });
+
+      const totalPages = Math.ceil(dadosFiltrados.length / itemsPerPage);
+      currentPage = Math.min(currentPage, Math.max(1, totalPages));
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      const dadosPaginados = dadosFiltrados.slice(startIndex, endIndex);
+
+      const tbody = document.querySelector('#tabela tbody');
+      tbody.innerHTML = '';
+      dadosPaginados.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.className = 'border-t hover:bg-gray-100 transition-colors';
+        const cells = [
+          item.endereco || '',
+          item.numero || '',
+          item.bairro || '',
+          item.tronco || '',
+          item.chave || '',
+          item.qtd || '',
+          item.alimentador || '',
+          item.obs || '',
+          item.data || '',
+          item.equipe || '',
+          item.matricula || '',
+          item.ea || '',
+          item.servicos || '',
+          item.latitude || '',
+          item.longitude || ''
+        ];
+
+        cells.forEach(cell => {
+          const td = document.createElement('td');
+          td.className = 'p-3 text-gray-700 break-words';
+          td.textContent = cell;
+          tr.appendChild(td);
+        });
+
+        const actionTd = document.createElement('td');
+        actionTd.className = 'p-3 flex gap-2';
+        const editButton = document.createElement('button');
+        editButton.innerHTML = '✏️';
+        editButton.className = 'text-blue-600 hover:text-blue-800';
+        editButton.setAttribute('aria-label', 'Editar');
+        editButton.onclick = () => {
+          editId = item.id;
+          document.querySelectorAll('#formulario input, #formulario textarea, #formulario select').forEach(el => {
+            const id = el.id;
+            if (id === 'servico') {
+              Array.from(el.options).forEach(opt => opt.selected = (item.servicos || '').split(', ').includes(opt.text));
+            } else {
+              el.value = item[id] || '';
+            }
+          });
+          document.getElementById('salvarBtn').innerHTML = '<span>💾 Atualizar</span>';
+          document.getElementById('endereco').focus();
+        };
+        actionTd.appendChild(editButton);
+
+        const deleteButton = document.createElement('button');
+        deleteButton.innerHTML = '🗑️';
+        deleteButton.className = 'text-red-600 hover:text-red-800';
+        deleteButton.setAttribute('aria-label', 'Excluir');
+        deleteButton.onclick = () => excluir(item.id);
+        actionTd.appendChild(deleteButton);
+
+        tr.appendChild(actionTd);
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('pageInfo').textContent = `Página ${currentPage} de ${totalPages}`;
+      document.getElementById('prevPage').disabled = currentPage === 1;
+      document.getElementById('nextPage').disabled = currentPage === totalPages;
+    }
+
+    function limparFiltros() {
+      document.getElementById('filtroEndereco').value = '';
+      document.getElementById('filtroBairro').value = '';
+      document.getElementById('filtroData').value = '';
+      aplicarFiltros();
+    }
+
+    document.getElementById('prevPage').onclick = () => {
+      if (currentPage > 1) {
+        currentPage--;
+        aplicarFiltros();
+      }
+    };
+
+    document.getElementById('nextPage').onclick = () => {
+      const totalPages = Math.ceil(dadosCompletos.length / itemsPerPage);
+      if (currentPage < totalPages) {
+        currentPage++;
+        aplicarFiltros();
+      }
+    };
+
+    // Excluir
     async function excluir(id) {
       if (!confirm('Deseja realmente excluir?')) return;
       try {
-        const response = await fetch(`${BASE_URL}/servicos/${id}`, {
-          method: 'DELETE'
-        });
+        const response = await fetch(`${BASE_URL}/servicos/${id}`, { method: 'DELETE' });
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.error || `Erro HTTP: ${response.status} (${response.statusText})`);
+          throw new Error(errorData.error || `Erro HTTP: ${response.status}`);
         }
         await atualizarTabela();
-        showStatus('Registro excluído com sucesso!', 'success');
+        showStatus('Registro excluído!', 'success');
       } catch (err) {
         console.error('Erro ao excluir:', err);
-        showStatus(`Erro ao excluir: ${err.message}. Verifique o servidor em ${BASE_URL}.`, 'error');
+        showStatus(`Erro ao excluir: ${err.message}.`, 'error');
       }
     }
 
-    // Inicializar a tabela
+    // Inicializar
     atualizarTabela();
   </script>
 </body>
