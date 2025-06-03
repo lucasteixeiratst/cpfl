@@ -112,7 +112,11 @@
         </div>
         <div class="flex flex-col">
           <label for="tronco" class="ms-form-label">Tronco</label>
-          <input type="text" id="tronco" class="ms-form-input">
+          <select id="tronco" class="ms-form-input">
+            <option value="">Selecione...</option>
+            <option value="TRONCO">TRONCO</option>
+            <option value="RAMAL">RAMAL</option>
+          </select>
         </div>
         <div class="flex flex-col">
           <label for="chave" class="ms-form-label">Chave</label>
@@ -216,7 +220,6 @@
   </footer>
 
   <script>
-    // Padrão de módulos similar ao estilo Microsoft
     const app = {
       BASE_URL: 'https://fonseca.onrender.com',
       
@@ -244,6 +247,9 @@
             servicos: servicosSelecionados
           };
           
+          // Salva campos no cache
+          app.cache.saveFields();
+          
           app.api.saveService(item);
         },
         
@@ -252,10 +258,13 @@
           this.editId = null;
           document.getElementById('btnSalvar').innerHTML = '<span class="mr-2">💾</span> Salvar';
           document.getElementById('endereco').focus();
+          
+          // Restaura campos do cache
+          app.cache.loadFields();
         },
         
         edit: function(id) {
-          const item = app.data.find(i => i.id === id);
+          const item = app.data.services.find(i => i.id === id);
           if (!item) return;
           
           this.editId = id;
@@ -274,6 +283,29 @@
           
           document.getElementById('btnSalvar').innerHTML = '<span class="mr-2">🔄</span> Atualizar';
           document.getElementById('endereco').focus();
+        }
+      },
+      
+      // Módulo de cache
+      cache: {
+        fields: ['equipe', 'matricula', 'ea'],
+        
+        saveFields: function() {
+          this.fields.forEach(field => {
+            const value = document.getElementById(field).value.trim();
+            if (value) {
+              localStorage.setItem(field, value);
+            }
+          });
+        },
+        
+        loadFields: function() {
+          this.fields.forEach(field => {
+            const savedValue = localStorage.getItem(field);
+            if (savedValue) {
+              document.getElementById(field).value = savedValue;
+            }
+          });
         }
       },
       
@@ -333,12 +365,21 @@
                 .then(res => res.json())
                 .then(data => {
                   const address = data.address || {};
+                  
+                  // Mapeamento melhorado para bairro
+                  const bairro = address.suburb || 
+                                address.neighbourhood || 
+                                address.quarter || 
+                                address.city_district || 
+                                '';
+                  
                   document.getElementById('endereco').value = address.road || address.street || '';
                   document.getElementById('numero').value = address.housenumber || '';
-                  document.getElementById('bairro').value = address.suburb || address.neighbourhood || '';
-                  document.getElementById('cidade').value = address.city || address.town || '';
+                  document.getElementById('bairro').value = bairro;
+                  document.getElementById('cidade').value = address.city || address.town || address.village || '';
                   document.getElementById('latitude').value = lat.toFixed(6);
                   document.getElementById('longitude').value = lon.toFixed(6);
+                  
                   app.utils.showStatus('Endereço obtido com sucesso!', 'success');
                 })
                 .catch(err => {
@@ -402,7 +443,10 @@
               body: JSON.stringify(item)
             });
             
-            if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
+            if (!response.ok) {
+              const errorData = await response.json().catch(() => ({}));
+              throw new Error(errorData.error || `Erro HTTP: ${response.status}`);
+            }
             
             await app.data.load();
             app.form.clear();
@@ -417,7 +461,10 @@
           if (!confirm('Deseja realmente excluir?')) return;
           try {
             const response = await fetch(`${app.BASE_URL}/servicos/${id}`, { method: 'DELETE' });
-            if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
+            if (!response.ok) {
+              const errorData = await response.json().catch(() => ({}));
+              throw new Error(errorData.error || `Erro HTTP: ${response.status}`);
+            }
             await app.data.load();
             app.utils.showStatus('Registro excluído!', 'success');
           } catch (err) {
@@ -447,7 +494,10 @@
         async load() {
           try {
             const response = await fetch(`${app.BASE_URL}/servicos`);
-            if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
+            if (!response.ok) {
+              const errorData = await response.json().catch(() => ({}));
+              throw new Error(errorData.error || `Erro HTTP: ${response.status}`);
+            }
             this.services = await response.json();
             this.renderTable();
           } catch (err) {
@@ -488,6 +538,7 @@
       // Utilitários
       utils: {
         sanitizeInput(input) {
+          if (typeof input !== 'string') return input;
           return input.replace(/</g, "&lt;").replace(/>/g, "&gt;");
         },
         
@@ -500,7 +551,8 @@
           
           const result = {};
           fields.forEach(field => {
-            const value = document.getElementById(field).value.trim();
+            const element = document.getElementById(field);
+            const value = element ? element.value.trim() : '';
             result[field] = this.sanitizeInput(value);
           });
           return result;
@@ -523,6 +575,9 @@
         this.data.load();
         this.api.autoTestConnection();
         setInterval(() => this.api.autoTestConnection(), 60000);
+        
+        // Carregar cache ao iniciar
+        app.cache.loadFields();
       }
     };
 
