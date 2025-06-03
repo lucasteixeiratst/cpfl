@@ -258,7 +258,7 @@
       );
     }
 
-    // Preencher Endereço Automático (Melhorado)
+    // Preencher Endereço Automático
     function pegarEndereco() {
       if (Date.now() - lastGeolocationCall < debounceDelay) {
         showStatus('Aguarde antes de tentar novamente.', 'error');
@@ -289,7 +289,7 @@
               return res.json();
             })
             .then(data => {
-              console.log('Dados retornados pela API Nominatim:', data); // Para depuração
+              console.log('Dados da API Nominatim:', data); // Para depuração
               const address = data.address || {};
               const rua = sanitizeInput(address.road || address.street || address.highway || '');
               const numero = sanitizeInput(address.housenumber || '');
@@ -297,7 +297,7 @@
               const cidade = sanitizeInput(address.city || address.town || address.village || address.municipality || address.county || '');
 
               document.getElementById('endereco').value = rua ? `${rua}` : '';
-              document.getElementById('numero').value = numero;
+              document.getElementById('numero').value = numero || '';
               document.getElementById('bairro').value = bairro || '';
               document.getElementById('cidade').value = cidade || '';
               document.getElementById('latitude').value = lat.toFixed(6);
@@ -348,23 +348,21 @@
 
       const item = {
         id: editId || Date.now(),
-        ...Object.fromEntries([
-          ['endereco', sanitizeInput(endereco)],
-          ['numero', sanitizeInput(document.getElementById('numero').value.trim())],
-          ['bairro', sanitizeInput(document.getElementById('bairro').value.trim())],
-          ['cidade', sanitizeInput(document.getElementById('cidade').value.trim())],
-          ['tronco', sanitizeInput(document.getElementById('tronco').value.trim())],
-          ['chave', sanitizeInput(document.getElementById('chave').value.trim())],
-          ['qtd', qtd || null],
-          ['alimentador', sanitizeInput(document.getElementById('alimentador').value.trim())],
-          ['obs', sanitizeInput(document.getElementById('obs').value.trim())],
-          ['data', data || null],
-          ['equipe', sanitizeInput(document.getElementById('equipe').value.trim())],
-          ['matricula', sanitizeInput(document.getElementById('matricula').value.trim())],
-          ['ea', sanitizeInput(document.getElementById('ea').value.trim())],
-          ['latitude', sanitizeInput(document.getElementById('latitude').value.trim())],
-          ['longitude', sanitizeInput(document.getElementById('longitude').value.trim())]
-        ]),
+        endereco: sanitizeInput(endereco),
+        numero: sanitizeInput(document.getElementById('numero').value.trim()),
+        bairro: sanitizeInput(document.getElementById('bairro').value.trim()),
+        cidade: sanitizeInput(document.getElementById('cidade').value.trim()),
+        tronco: sanitizeInput(document.getElementById('tronco').value.trim()),
+        chave: sanitizeInput(document.getElementById('chave').value.trim()),
+        qtd: qtd || null,
+        alimentador: sanitizeInput(document.getElementById('alimentador').value.trim()),
+        obs: sanitizeInput(document.getElementById('obs').value.trim()),
+        data: data || null,
+        equipe: sanitizeInput(document.getElementById('equipe').value.trim()),
+        matricula: sanitizeInput(document.getElementById('matricula').value.trim()),
+        ea: sanitizeInput(document.getElementById('ea').value.trim()),
+        latitude: sanitizeInput(document.getElementById('latitude').value.trim()),
+        longitude: sanitizeInput(document.getElementById('longitude').value.trim()),
         servicos: servicosSelecionados
       };
 
@@ -396,13 +394,13 @@
       document.getElementById('formulario').reset();
       editId = null;
       document.getElementById('salvarBtn').innerHTML = '<span>💾 Salvar</span>';
-      document.getElementByIdendereco').focus();
+      document.getElementById('endereco').focus();
     }
 
     // Atualizar Tabela
     async function atualizarTabela() {
       try {
-        const response = await fetch(BASE_URL + '/servicos');
+        const response = await fetch(`${BASE_URL}/servicos`);
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
           throw new Error(errorData.error || `Erro HTTP: ${response.status}`);
@@ -423,10 +421,10 @@
       const filtroData = document.getElementById('filtroData').value;
 
       const dadosFiltrados = dadosCompletos.filter(item => {
-        const matchEndereco = !filtroEndereco || (item.endereco || '').toLowerCase().includes(filtroEndereço);
-        const matchBairro = !filtroBairro || (item.bairro || '').toLowerCase().includes(filtroBairrro);
-        const matchData = !filtroData || (item.data || '') === filtroData);
-        return matchEndereço && matchBairro && matchData;
+        const matchEndereco = !filtroEndereco || (item.endereco || '').toLowerCase().includes(filtroEndereco);
+        const matchBairro = !filtroBairro || (item.bairro || '').toLowerCase().includes(filtroBairro);
+        const matchData = !filtroData || (item.data || '') === filtroData;
+        return matchEndereco && matchBairro && matchData;
       });
 
       const totalPages = Math.ceil(dadosFiltrados.length / itemsPerPage);
@@ -453,7 +451,7 @@
           item.equipe || '',
           item.matricula || '',
           item.ea || '',
-          item.servicos || '',
+          item.servicos.join(', ') || '',
           item.latitude || '',
           item.longitude || ''
         ];
@@ -476,36 +474,35 @@
           document.querySelectorAll('#formulario input, #formulario textarea, #formulario select').forEach(el => {
             const id = el.id;
             if (id === 'servico') {
-              Array.from(el.options).forEach(opt => opt.selected = (item.servicos || '').split(', ').includes(opt.text));
+              Array.from(el.options).forEach(opt => opt.selected = (item.servicos || []).includes(opt.text));
+            } else {
+              el.value = item[id] || '';
             }
-          else {
-            el.value = item[id] || '';
           });
-        });
-        document.getElementById('salvarBtn').innerHTML = '<span>💾 Atualizar</span>';
-        document.getElementById('endereco').focus();
+          document.getElementById('salvarBtn').innerHTML = '<span>💾 Atualizar</span>';
+          document.getElementById('endereco').focus();
+        };
+        actionTd.appendChild(editButton);
+
+        const deleteButton = document.createElement('button');
+        deleteButton.innerHTML = '🗑️';
+        deleteButton.className = 'text-red-600 hover:text-red-500';
+        deleteButton.setAttribute('aria-label', 'Excluir');
+        deleteButton.onclick = () => excluir(item.id);
+        actionTd.appendChild(deleteButton);
+
+        tr.appendChild(actionTd);
+        tbody.appendChild(tr);
       });
-      actionTd.appendChild(editButton);
 
-      const deleteButton = document.createElement('button');
-      deleteButton.innerHTML = '🗑️';
-      deleteButton.className = 'text-red-600 hover:text-red-500';
-      deleteButton.setAttribute('aria-label', 'Excluir');
-      deleteButton.onclick = () => excluir(item.id);
-      actionTd.appendChild(deleteButton);
-
-      tr.appendChild(actionTd);
-      tbody.appendChild(tr);
-    });
-
-      document.getElementById('pageInfo').innerHTMLContent = `Página ${currentPage} de ${totalPages}`;
+      document.getElementById('pageInfo').textContent = `Página ${currentPage} de ${totalPages}`;
       document.getElementById('prevPage').disabled = currentPage === 1;
       document.getElementById('nextPage').disabled = currentPage === totalPages;
     }
 
     function limparFiltros() {
       document.getElementById('filtroEndereco').value = '';
-      document.getElementById('filtroBairroId').value = '';
+      document.getElementById('filtroBairro').value = '';
       document.getElementById('filtroData').value = '';
       aplicarFiltros();
     }
@@ -521,8 +518,7 @@
       const totalPages = Math.ceil(dadosCompletos.length / itemsPerPage);
       if (currentPage < totalPages) {
         currentPage++;
-      totalPages++;
-      aplicarFiltros();
+        aplicarFiltros();
       }
     };
 
@@ -532,7 +528,7 @@
       try {
         const response = await fetch(`${BASE_URL}/servicos/${id}`, { method: 'DELETE' });
         if (!response.ok) {
-          const erroData = await response.json().catch(() => {});
+          const errorData = await response.json().catch(() => ({}));
           throw new Error(errorData.error || `Erro HTTP: ${response.status}`);
         }
         await atualizarTabela();
