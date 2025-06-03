@@ -53,13 +53,6 @@
     <div class="bg-white rounded-lg shadow-sm p-6">
       <h2 class="text-2xl font-medium text-gray-900 mb-6 text-center">Cadastro de Serviços</h2>
 
-      <!-- Botão de Preencher Endereço Automático -->
-      <div class="mb-6 text-center">
-        <button onclick="pegarEndereco()" class="google-btn font-medium py-2 px-6 rounded-lg flex items-center justify-center mx-auto">
-          <span>🏠 Preencher Endereço Automático</span>
-        </button>
-      </div>
-
       <!-- Formulário -->
       <form id="formulario" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         <div class="flex flex-col">
@@ -73,10 +66,6 @@
         <div class="flex flex-col">
           <label for="bairro" class="text-gray-700 text-sm font-medium mb-1">Bairro</label>
           <input type="text" id="bairro" class="text-gray-900" readonly aria-label="Bairro">
-        </div>
-        <div class="flex flex-col">
-          <label for="cidade" class="text-gray-700 text-sm font-medium mb-1">Cidade</label>
-          <input type="text" id="cidade" class="text-gray-900" readonly aria-label="Cidade">
         </div>
         <div class="flex flex-col">
           <label for="tronco" class="text-gray-700 text-sm font-medium mb-1">Tronco</label>
@@ -258,69 +247,6 @@
       );
     }
 
-    // Preencher Endereço Automático
-    function pegarEndereco() {
-      if (Date.now() - lastGeolocationCall < debounceDelay) {
-        showStatus('Aguarde antes de tentar novamente.', 'error');
-        return;
-      }
-      lastGeolocationCall = Date.now();
-
-      if (!navigator.onLine) {
-        showStatus('Sem conexão. Insira manualmente.', 'error');
-        return;
-      }
-      if (!navigator.geolocation) {
-        showStatus('Geolocalização não suportada. Insira manualmente.', 'error');
-        return;
-      }
-
-      showStatus('Buscando endereço...', 'success');
-
-      navigator.geolocation.getCurrentPosition(
-        pos => {
-          const lat = pos.coords.latitude;
-          const lon = pos.coords.longitude;
-          const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`;
-
-          fetch(url, { headers: { 'User-Agent': 'CadastroServicos/1.0 (lucas.teixeira.tst@hotmail.com)' } })
-            .then(res => {
-              if (!res.ok) throw new Error(`Erro HTTP: ${res.status}`);
-              return res.json();
-            })
-            .then(data => {
-              console.log('Dados da API Nominatim:', data); // Para depuração
-              const address = data.address || {};
-              const rua = sanitizeInput(address.road || address.street || address.highway || '');
-              const numero = sanitizeInput(address.housenumber || '');
-              const bairro = sanitizeInput(address.suburb || address.neighbourhood || address.quarter || address.city_district || address.residential || address.village || '');
-              const cidade = sanitizeInput(address.city || address.town || address.village || address.municipality || address.county || '');
-
-              document.getElementById('endereco').value = rua ? `${rua}` : '';
-              document.getElementById('numero').value = numero || '';
-              document.getElementById('bairro').value = bairro || '';
-              document.getElementById('cidade').value = cidade || '';
-              document.getElementById('latitude').value = lat.toFixed(6);
-              document.getElementById('longitude').value = lon.toFixed(6);
-
-              if (!bairro) {
-                showStatus('Endereço obtido, mas o bairro não foi identificado. Insira manualmente se necessário.', 'success');
-              } else {
-                showStatus('Endereço obtido com sucesso!', 'success');
-              }
-            })
-            .catch(err => {
-              showStatus(`Erro ao buscar endereço: ${err.message}. Insira manualmente.`, 'error');
-              document.getElementById('endereco').focus();
-            });
-        },
-        err => {
-          showStatus('Erro ao obter localização: ' + err.message + '. Insira manualmente.', 'error');
-          document.getElementById('endereco').focus();
-        }
-      );
-    }
-
     // Salvar
     async function salvar(event) {
       event.preventDefault();
@@ -351,7 +277,6 @@
         endereco: sanitizeInput(endereco),
         numero: sanitizeInput(document.getElementById('numero').value.trim()),
         bairro: sanitizeInput(document.getElementById('bairro').value.trim()),
-        cidade: sanitizeInput(document.getElementById('cidade').value.trim()),
         tronco: sanitizeInput(document.getElementById('tronco').value.trim()),
         chave: sanitizeInput(document.getElementById('chave').value.trim()),
         qtd: qtd || null,
@@ -406,6 +331,12 @@
           throw new Error(errorData.error || `Erro HTTP: ${response.status}`);
         }
         dadosCompletos = await response.json();
+        // Ordenar por data (se disponível) ou ID em ordem decrescente
+        dadosCompletos.sort((a, b) => {
+          const dateA = a.data ? new Date(a.data) : new Date(a.id);
+          const dateB = b.data ? new Date(b.data) : new Date(b.id);
+          return dateB - dateA;
+        });
         currentPage = 1;
         aplicarFiltros();
       } catch (err) {
