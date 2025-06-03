@@ -225,7 +225,7 @@
       );
     }
 
-    // Preencher Endereço Automático
+    // Preencher Endereço Automático (Corrigido)
     function pegarEndereco() {
       if (Date.now() - lastGeolocationCall < debounceDelay) {
         showStatus('Aguarde antes de tentar novamente.', 'error');
@@ -259,13 +259,13 @@
               const address = data.address || {};
               const rua = sanitizeInput(address.road || address.street || '');
               const numero = sanitizeInput(address.housenumber || '');
-              const bairro = sanitizeInput(address.suburb || address.neighbourhood || '');
+              const bairro = sanitizeInput(address.suburb || address.neighbourhood || address.quarter || address.city_district || '');
               const cidade = sanitizeInput(address.city || address.town || address.village || '');
 
               document.getElementById('endereco').value = rua ? `${rua}` : '';
               document.getElementById('numero').value = numero;
-              document.getElementById('bairro').value = bairro;
-              document.getElementById('cidade').value = cidade;
+              document.getElementById('bairro').value = bairro || '';
+              document.getElementById('cidade').value = cidade || '';
               document.getElementById('latitude').value = lat.toFixed(6);
               document.getElementById('longitude').value = lon.toFixed(6);
 
