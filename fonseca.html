@@ -442,7 +442,7 @@
   <footer class="ms-status-bar mt-auto">
     <div class="container max-w-6xl mx-auto px-4 py-2 flex items-center justify-between">
       <div class="text-sm">
-        Sistema de Cadastro de Serviços v1.2 | © 2023
+        Sistema de Cadastro de Serviços v1.3 | © 2023
       </div>
       <div class="flex items-center">
         <div id="autoStatus" class="status-dot mr-2"></div>
@@ -458,6 +458,7 @@
       // Módulo de formulário
       form: {
         editId: null,
+        currentItem: null,
         
         save: function(event) {
           event.preventDefault();
@@ -474,10 +475,16 @@
           }
           
           const item = {
-            id: this.editId || Date.now(),
             ...app.utils.sanitizeForm(),
             servicos: servicosSelecionados.join(', ')
           };
+          
+          // Se estamos editando, adicionar o ID original
+          if (this.editId) {
+            item.id = this.editId;
+          } else {
+            item.id = Date.now(); // Novo ID para novos itens
+          }
           
           // Salva campos no cache
           app.cache.saveFields();
@@ -488,6 +495,7 @@
         clear: function() {
           document.getElementById('formulario').reset();
           this.editId = null;
+          this.currentItem = null;
           document.getElementById('btnSalvar').innerHTML = '<i class="fas fa-save"></i> Salvar Serviço';
           document.getElementById('endereco').focus();
           document.getElementById('editNotice').classList.add('hidden');
@@ -498,10 +506,11 @@
         },
         
         edit: function(id) {
-          const item = app.data.services.find(i => i.id === id);
+          const item = app.data.services.find(i => i.id == id);
           if (!item) return;
           
-          this.editId = id;
+          this.editId = item.id; // ID original do banco de dados
+          this.currentItem = item;
           
           // Preencher todos os campos
           Object.keys(item).forEach(key => {
@@ -704,10 +713,11 @@
       api: {
         async saveService(item) {
           try {
-            const method = app.form.editId ? 'PUT' : 'POST';
-            const url = app.form.editId ? `${app.BASE_URL}/servicos/${app.form.editId}` : `${app.BASE_URL}/servicos`;
+            const isEditing = !!app.form.editId;
+            const method = isEditing ? 'PUT' : 'POST';
+            const url = isEditing ? `${app.BASE_URL}/servicos/${app.form.editId}` : `${app.BASE_URL}/servicos`;
             
-            app.utils.showStatus('Salvando serviço...', 'success');
+            app.utils.showStatus(isEditing ? 'Atualizando serviço...' : 'Salvando serviço...', 'success');
             
             const response = await fetch(url, {
               method,
@@ -722,10 +732,9 @@
             
             await app.data.load();
             app.form.clear();
-            app.utils.showStatus(app.form.editId ? '✅ Registro atualizado com sucesso!' : '✅ Registro salvo com sucesso!', 'success');
-            app.form.editId = null;
+            app.utils.showStatus(isEditing ? '✅ Registro atualizado com sucesso!' : '✅ Registro salvo com sucesso!', 'success');
           } catch (err) {
-            app.utils.showStatus(`❌ Erro ao ${app.form.editId ? 'atualizar' : 'salvar'}: ${err.message}`, 'error');
+            app.utils.showStatus(`❌ Erro ao ${isEditing ? 'atualizar' : 'salvar'}: ${err.message}`, 'error');
           }
         },
         
@@ -876,7 +885,7 @@
         },
         
         showDetails: function(id) {
-          const item = this.services.find(i => i.id === id);
+          const item = this.services.find(i => i.id == id);
           if (!item) return;
           
           const container = document.getElementById('serviceDetails');
