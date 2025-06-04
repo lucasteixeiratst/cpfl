@@ -6,23 +6,23 @@
   <title>Cadastro de Serviços</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /* Use Segoe UI, Microsoft’s signature font, with fallbacks */
+    /* Use Segoe UI with fallbacks */
     body {
       font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
     }
 
-    /* Fluent Design-inspired styles */
+    /* Fluent Design card with subtle blur */
     .fluent-card {
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(0, 0, 0, 0.1);
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 10px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
       transition: box-shadow 0.3s ease;
     }
 
     .fluent-card:hover {
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
     }
 
     /* Smooth fade-in animation */
@@ -31,11 +31,11 @@
     }
 
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
+      from { opacity: 0; transform: translateY(8px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Custom scrollbar for select[multiple] */
+    /* Custom scrollbar */
     select[multiple] {
       scrollbar-width: thin;
       scrollbar-color: #005a9e transparent;
@@ -50,13 +50,14 @@
       border-radius: 4px;
     }
 
-    /* Status dot for footer */
+    /* Status dot */
     .status-dot {
-      width: 12px;
-      height: 12px;
+      width: 10px;
+      height: 10px;
       border-radius: 50%;
       display: inline-block;
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      margin-right: 8px;
     }
 
     .status-green {
@@ -67,109 +68,133 @@
       background-color: #d32f2f;
     }
 
-    /* Focus states for accessibility */
+    /* Focus states */
     input:focus, textarea:focus, select:focus {
       outline: none;
-      ring: 2px solid #005a9e;
-      box-shadow: 0 0 0 3px rgba(0, 90, 158, 0.3);
+      box-shadow: 0 0 0 3px rgba(0, 90, 158, 0.25);
+      border-color: #005a9e;
     }
 
-    /* Hover and active states for buttons */
+    /* Button hover and active states */
+    button {
+      transition: all 0.2s ease;
+    }
+
     button:hover {
       transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
 
     button:active {
       transform: translateY(0);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Compact input styling */
+    .compact-input {
+      padding: 0.5rem;
+      font-size: 0.875rem;
+      line-height: 1.25rem;
+    }
+
+    /* Status message with icons */
+    .status-success::before {
+      content: '✅ ';
+      display: inline-block;
+    }
+
+    .status-error::before {
+      content: '⚠️ ';
+      display: inline-block;
     }
   </style>
 </head>
-<body class="bg-gray-100 font-sans min-h-screen flex flex-col">
-  <div class="container max-w-6xl mx-auto p-4 flex-grow">
+<body class="bg-gray-200 font-sans min-h-screen flex flex-col">
+  <div class="container max-w-5xl mx-auto p-4 flex-grow">
     <div class="fluent-card p-6 md:p-8">
-      <h2 class="text-2xl font-semibold text-center text-gray-900 mb-6">Cadastro de Serviços</h2>
+      <h2 class="text-2xl font-bold text-center text-gray-900 mb-6">Cadastro de Serviços</h2>
 
       <!-- Botão de Preencher Endereço Automático -->
       <div class="mb-6 text-center">
-        <button onclick="pegarEndereco()" class="bg-[#005a9e] hover:bg-[#003087] text-white font-medium py-2 px-6 rounded-md shadow-sm transition-all duration-200 flex items-center justify-center mx-auto">
-          <span>🏠 Preencher Endereço Automático</span>
+        <button onclick="pegarEndereco()" class="bg-gradient-to-r from-[#005a9e] to-[#0078d4] hover:from-[#003087] hover:to-[#005a9e] text-white font-medium py-2 px-6 rounded-md shadow-sm transition-all duration-200 flex items-center justify-center mx-auto">
+          <span class="mr-2">🏠</span> Preencher Endereço Automático
         </button>
       </div>
 
       <!-- Seção de Testes -->
-      <div class="mb-8 p-4 bg-gray-50/80 rounded-md shadow-inner">
-        <h3 class="text-lg font-medium text-gray-800 mb-4">Testes de Conexão</h3>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <button onclick="testarBackend()" class="bg-[#005a9e] hover:bg-[#003087] text-white font-medium py-2 px-4 rounded-md shadow-sm transition-all duration-200 flex items-center justify-center">
-            <span>🔗 Testar Backend</span>
+      <div class="mb-8 p-4 bg-gray-50/90 rounded-md shadow-inner">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Testes de Conexão</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <button onclick="testarBackend()" class="bg-gradient-to-r from-[#005a9e] to-[#0078d4] hover:from-[#003087] hover:to-[#005a9e] text-white font-medium py-2 px-4 rounded-md shadow-sm transition-all duration-200 flex items-center justify-center">
+            <span class="mr-2">🔗</span> Testar Backend
           </button>
-          <button onclick="testarBanco()" class="bg-[#2e7d32] hover:bg-[#1b5e20] text-white font-medium py-2 px-4 rounded-md shadow-sm transition-all duration-200 flex items-center justify-center">
-            <span>🗄️ Testar Banco</span>
+          <button onclick="testarBanco()" class="bg-gradient-to-r from-[#2e7d32] to-[#4caf50] hover:from-[#1b5e20] hover:to-[#2e7d32] text-white font-medium py-2 px-4 rounded-md shadow-sm transition-all duration-200 flex items-center justify-center">
+            <span class="mr-2">🗄️</span> Testar Banco
           </button>
-          <button onclick="testarServicos()" class="bg-[#6a1b9a] hover:bg-[#4a148c] text-white font-medium py-2 px-4 rounded-md shadow-sm transition-all duration-200 flex items-center justify-center">
-            <span>📋 Testar Serviços</span>
+          <button onclick="testarServicos()" class="bg-gradient-to-r from-[#6a1b9a] to-[#ab47bc] hover:from-[#4a148c] hover:to-[#6a1b9a] text-white font-medium py-2 px-4 rounded-md shadow-sm transition-all duration-200 flex items-center justify-center">
+            <span class="mr-2">📋</span> Testar Serviços
           </button>
         </div>
         <div id="statusTestes" class="mt-4 p-3 rounded-md text-white hidden" aria-live="assertive"></div>
       </div>
 
       <!-- Formulário -->
-      <form id="formulario" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-        <div class="flex flex-col">
-          <label for="endereco" class="text-gray-800 font-medium mb-1">Endereço</label>
+      <form id="formulario" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        <div class="flex flex-col lg:col-span-2">
+          <label for="endereco" class="text-gray-800 font-semibold text-sm mb-1">Endereço</label>
           <input type="text" id="endereco" class="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Endereço" required>
         </div>
         <div class="flex flex-col">
-          <label for="numero" class="text-gray-800 font-medium mb-1">Número</label>
-          <input type="text" id="numero" class="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Número">
+          <label for="numero" class="text-gray-800 font-semibold text-sm mb-1">Número</label>
+          <input type="text" id="numero" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Número">
         </div>
         <div class="flex flex-col">
-          <label for="bairro" class="text-gray-800 font-medium mb-1">Bairro</label>
-          <input type="text" id="bairro" class="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Bairro" required>
+          <label for="bairro" class="text-gray-800 font-semibold text-sm mb-1">Bairro</label>
+          <input type="text" id="bairro" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Bairro" required>
         </div>
         <div class="flex flex-col">
-          <label for="cidade" class="text-gray-800 font-medium mb-1">Cidade</label>
-          <input type="text" id="cidade" class="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Cidade" required>
+          <label for="cidade" class="text-gray-800 font-semibold text-sm mb-1">Cidade</label>
+          <input type="text" id="cidade" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Cidade" required>
         </div>
         <div class="flex flex-col">
-          <label for="tronco" class="text-gray-800 font-medium mb-1">Tronco</label>
-          <input type="text" id="tronco" class="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Tronco">
+          <label for="tronco" class="text-gray-800 font-semibold text-sm mb-1">Tronco</label>
+          <input type="text" id="tronco" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Tronco">
         </div>
         <div class="flex flex-col">
-          <label for="chave" class="text-gray-800 font-medium mb-1">Chave</label>
-          <input type="text" id="chave" class="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Chave">
+          <label for="chave" class="text-gray-800 font-semibold text-sm mb-1">Chave</label>
+          <input type="text" id="chave" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Chave">
         </div>
         <div class="flex flex-col">
-          <label for="qtd" class="text-gray-800 font-medium mb-1">Quantidade</label>
-          <input type="number" id="qtd" class="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Quantidade" min="0" step="1">
+          <label for="qtd" class="text-gray-800 font-semibold text-sm mb-1">Quantidade</label>
+          <input type="number" id="qtd" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Quantidade" min="0" step="1">
         </div>
         <div class="flex flex-col">
-          <label for="alimentador" class="text-gray-800 font-medium mb-1">Alimentador</label>
-          <input type="text" id="alimentador" class="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Alimentador">
+          <label for="alimentador" class="text-gray-800 font-semibold text-sm mb-1">Alimentador</label>
+          <input type="text" id="alimentador" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Alimentador">
         </div>
-        <div class="flex flex-col col-span-1 sm:col-span-2 lg:col-span-3">
-          <label for="obs" class="text-gray-800 font-medium mb-1">Observação</label>
-          <textarea id="obs" class="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white h-24" aria-label="Observação"></textarea>
-        </div>
-        <div class="flex flex-col">
-          <label for="data" class="text-gray-800 font-medium mb-1">Data</label>
-          <input type="date" id="data" class="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Data">
+        <div class="flex flex-col col-span-1 sm:col-span-2 lg:col-span-4">
+          <label for="obs" class="text-gray-800 font-semibold text-sm mb-1">Observação</label>
+          <textarea id="obs" class="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white h-20" aria-label="Observação"></textarea>
         </div>
         <div class="flex flex-col">
-          <label for="equipe" class="text-gray-800 font-medium mb-1">Equipe</label>
-          <input type="text" id="equipe" class="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Equipe">
+          <label for="data" class="text-gray-800 font-semibold text-sm mb-1">Data</label>
+          <input type="date" id="data" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Data">
         </div>
         <div class="flex flex-col">
-          <label for="matricula" class="text-gray-800 font-medium mb-1">Matrícula</label>
-          <input type="text" id="matricula" class="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Matrícula">
+          <label for="equipe" class="text-gray-800 font-semibold text-sm mb-1">Equipe</label>
+          <input type="text" id="equipe" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Equipe">
         </div>
         <div class="flex flex-col">
-          <label for="ea" class="text-gray-800 font-medium mb-1">EA</label>
-          <input type="text" id="ea" class="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="EA">
+          <label for="matricula" class="text-gray-800 font-semibold text-sm mb-1">Matrícula</label>
+          <input type="text" id="matricula" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Matrícula">
         </div>
-        <div class="flex flex-col col-span-1 sm:col-span-2 lg:col-span-3">
-          <label for="servico" class="text-gray-800 font-medium mb-1">Serviço (Selecione um ou mais)</label>
-          <select id="servico" multiple size="6" class="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white w-full" aria-label="Seleção de serviços" required>
+        <div class="flex flex-col">
+          <label for="ea" class="text-gray-800 font-semibold text-sm mb-1">EA</label>
+          <input type="text" id="ea" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="EA">
+        </div>
+        <div class="flex flex-col col-span-1 sm:col-span-2 lg:col-span-4">
+          <label for="servico" class="text-gray-800 font-semibold text-sm mb-1">Serviço (Selecione um ou mais)</label>
+          <select id="servico" multiple size="5" class="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white w-full" aria-label="Seleção de serviços" required>
             <option value="PC">Poda primária completa - PC</option>
             <option value="PS">Poda secundária completa - PS</option>
             <option value="PP">Poda primária parcial - PP</option>
@@ -180,25 +205,25 @@
           </select>
         </div>
         <div class="flex flex-col">
-          <label for="latitude" class="text-gray-800 font-medium mb-1">Latitude</label>
-          <input type="text" id="latitude" class="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-gray-50" readonly aria-label="Latitude">
+          <label for="latitude" class="text-gray-800 font-semibold text-sm mb-1">Latitude</label>
+          <input type="text" id="latitude" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-gray-50" readonly aria-label="Latitude">
         </div>
         <div class="flex flex-col">
-          <label for="longitude" class="text-gray-800 font-medium mb-1">Longitude</label>
-          <input type="text" id="longitude" class="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-gray-50" readonly aria-label="Longitude">
+          <label for="longitude" class="text-gray-800 font-semibold text-sm mb-1">Longitude</label>
+          <input type="text" id="longitude" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-gray-50" readonly aria-label="Longitude">
         </div>
       </form>
 
       <!-- Botões do Formulário -->
       <div class="flex flex-wrap gap-3 mb-6 justify-center">
-        <button onclick="pegarLatLon()" class="bg-[#005a9e] hover:bg-[#003087] text-white font-medium py-2 px-6 rounded-md shadow-sm transition-all duration-200 flex items-center">
-          <span>📍 Localizar</span>
+        <button onclick="pegarLatLon()" class="bg-gradient-to-r from-[#005a9e] to-[#0078d4] hover:from-[#003087] hover:to-[#005a9e] text-white font-medium py-2 px-6 rounded-md shadow-sm transition-all duration-200 flex items-center">
+          <span class="mr-2">📍</span> Localizar
         </button>
-        <button id="salvarBtn" onclick="salvar(event)" class="bg-[#2e7d32] hover:bg-[#1b5e20] text-white font-medium py-2 px-6 rounded-md shadow-sm transition-all duration-200 flex items-center">
-          <span>💾 Salvar</span>
+        <button id="salvarBtn" onclick="salvar(event)" class="bg-gradient-to-r from-[#2e7d32] to-[#4caf50] hover:from-[#1b5e20] hover:to-[#2e7d32] text-white font-medium py-2 px-6 rounded-md shadow-sm transition-all duration-200 flex items-center">
+          <span class="mr-2">💾</span> Salvar
         </button>
-        <button onclick="limparFormulario ficar()" class="bg-[#616161] hover:bg-[#424242] text-white font-medium py-2 px-6 rounded-md shadow-sm transition-all duration-200 flex items-center">
-          <span>🧹 Limpar</span>
+        <button onclick="limparFormulario()" class="bg-gradient-to-r from-[#616161] to-[#757575] hover:from-[#424242] hover:to-[#616161] text-white font-medium py-2 px-6 rounded-md shadow-sm transition-all duration-200 flex items-center">
+          <span class="mr-2">🧹</span> Limpar
         </button>
       </div>
 
@@ -209,23 +234,23 @@
       <div class="overflow-x-auto">
         <table id="tabela" class="w-full border-collapse bg-white rounded-md shadow-sm">
           <thead>
-            <tr class="bg-[#005a9e] text-white">
-              <th class="p-3 text-left font-medium">Endereço</th>
-              <th class="p-3 text-left font-medium">Número</th>
-              <th class="p-3 text-left font-medium">Bairro</th>
-              <th class="p-3 text-left font-medium">Tronco</th>
-              <th class="p-3 text-left font-medium">Chave</th>
-              <th class="p-3 text-left font-medium">Qtd</th>
-              <th class="p-3 text-left font-medium">Alimentador</th>
-              <th class="p-3 text-left font-medium">Obs</th>
-              <th class="p-3 text-left font-medium">Data</th>
-              <th class="p-3 text-left font-medium">Equipe</th>
-              <th class="p-3 text-left font-medium">Matrícula</th>
-              <th class="p-3 text-left font-medium">EA</th>
-              <th class="p-3 text-left font-medium">Serviços</th>
-              <th class="p-3 text-left font-medium">Lat</th>
-              <th class="p-3 text-left font-medium">Lon</th>
-              <th class="p-3 text-left font-medium">Ações</th>
+            <tr class="bg-gradient-to-r from-[#005a9e] to-[#0078d4] text-white">
+              <th class="p-3 text-left font-medium text-sm">Endereço</th>
+              <th class="p-3 text-left font-medium text-sm">Número</th>
+              <th class="p-3 text-left font-medium text-sm">Bairro</th>
+              <th class="p-3 text-left font-medium text-sm">Tronco</th>
+              <th class="p-3 text-left font-medium text-sm">Chave</th>
+              <th class="p-3 text-left font-medium text-sm">Qtd</th>
+              <th class="p-3 text-left font-medium text-sm">Alimentador</th>
+              <th class="p-3 text-left font-medium text-sm">Obs</th>
+              <th class="p-3 text-left font-medium text-sm">Data</th>
+              <th class="p-3 text-left font-medium text-sm">Equipe</th>
+              <th class="p-3 text-left font-medium text-sm">Matrícula</th>
+              <th class="p-3 text-left font-medium text-sm">EA</th>
+              <th class="p-3 text-left font-medium text-sm">Serviços</th>
+              <th class="p-3 text-left font-medium text-sm">Lat</th>
+              <th class="p-3 text-left font-medium text-sm">Lon</th>
+              <th class="p-3 text-left font-medium text-sm">Ações</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-200"></tbody>
@@ -235,8 +260,9 @@
   </div>
 
   <!-- Rodapé com Status Automático -->
-  <footer class="bg-[#1f1f1f] text-white text-center py-3">
+  <footer class="bg-[#1f1f1f] text-white text-center py-3 flex items-center justify-center gap-2 text-sm">
     <div id="autoStatus" class="status-dot" title="Status Automático"></div>
+    <span id="autoStatusText">Verificando conexão...</span>
   </footer>
 
   <script>
@@ -254,7 +280,7 @@
     function showStatus(message, type, target = 'status') {
       const status = document.getElementById(target);
       status.textContent = message;
-      status.className = `p-3 rounded-md text-white fade-in ${type === 'success' ? 'bg-[#2e7d32]' : 'bg-[#d32f2f]'}`;
+      status.className = `p-3 rounded-md text-white fade-in ${type === 'success' ? 'bg-[#2e7d32] status-success' : 'bg-[#d32f2f] status-error'}`;
       status.classList.remove('hidden');
       setTimeout(() => status.classList.add('hidden'), 5000);
     }
@@ -442,7 +468,7 @@
         limparFormulario();
         showStatus(editId ? 'Registro atualizado!' : 'Registro salvo!', 'success');
         editId = null;
-        document.getElementById('salvarBtn').innerHTML = '<span>💾 Salvar</span>';
+        document.getElementById('salvarBtn').innerHTML = '<span class="mr-2">💾</span> Salvar';
       } catch (err) {
         console.error('Erro na requisição:', err);
         showStatus(`Erro ao ${editId ? 'atualizar' : 'salvar'}: ${err.message}.`, 'error');
@@ -453,7 +479,7 @@
     function limparFormulario() {
       document.getElementById('formulario').reset();
       editId = null;
-      document.getElementById('salvarBtn').innerHTML = '<span>💾 Salvar</span>';
+      document.getElementById('salvarBtn').innerHTML = '<span class="mr-2">💾</span> Salvar';
       document.getElementById('endereco').focus();
     }
 
@@ -469,9 +495,9 @@
 
         const tbody = document.querySelector('#tabela tbody');
         tbody.innerHTML = '';
-        dados.forEach(item => {
+        dados.forEach((item, index) => {
           const tr = document.createElement('tr');
-          tr.className = 'border-t hover:bg-gray-50 transition-colors';
+          tr.className = `border-t ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'} hover:bg-gray-100 transition-colors`;
           const cells = [
             item.endereco || '',
             item.numero || '',
@@ -492,7 +518,7 @@
 
           cells.forEach(cell => {
             const td = document.createElement('td');
-            td.className = 'p-3 text-gray-800 break-words';
+            td.className = 'p-3 text-gray-800 text-sm break-words';
             td.textContent = cell;
             tr.appendChild(td);
           });
@@ -513,7 +539,7 @@
                 el.value = item[id] || '';
               }
             });
-            document.getElementById('salvarBtn').innerHTML = '<span>💾 Atualizar</span>';
+            document.getElementById('salvarBtn').innerHTML = '<span class="mr-2">💾</span> Atualizar';
             document.getElementById('endereco').focus();
           };
           actionTd.appendChild(editButton);
@@ -559,14 +585,18 @@
           const data = await response.json();
           document.getElementById('autoStatus').className = 'status-dot status-green';
           document.getElementById('autoStatus').title = `Conexão OK - ${data.time}`;
+          document.getElementById('autoStatusText').textContent = `Conexão OK - ${data.time}`;
+        } else {
+          throw new Error('Conexão falhou');
         }
       } catch {
         document.getElementById('autoStatus').className = 'status-dot status-red';
         document.getElementById('autoStatus').title = 'Conexão Falhou';
+        document.getElementById('autoStatusText').textContent = 'Conexão Falhou';
       }
     }
-    setInterval(autoTestConnection, 60000); // Executa a cada 1 minuto
-    autoTestConnection(); // Executa imediatamente ao carregar
+    setInterval(autoTestConnection, 60000);
+    autoTestConnection();
 
     // Inicializar
     atualizarTabela();
