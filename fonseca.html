@@ -207,6 +207,20 @@
       display: inline-block;
       margin: 2px;
     }
+    
+    .editing-mode {
+      box-shadow: 0 0 0 2px var(--ms-blue);
+    }
+    
+    .edit-notice {
+      background-color: #e1f0ff;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
   </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -239,6 +253,15 @@
   </header>
 
   <div class="container max-w-6xl mx-auto p-4 flex-grow">
+    <!-- Aviso de modo de edição -->
+    <div id="editNotice" class="edit-notice hidden">
+      <i class="fas fa-edit text-blue-600"></i>
+      <div>
+        <strong>Modo de Edição</strong>
+        <p>Você está editando um serviço existente. Atualize as informações e clique em "Atualizar Serviço".</p>
+      </div>
+    </div>
+    
     <div class="ms-card p-6 mb-6">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <!-- Painel de Geolocalização -->
@@ -439,7 +462,7 @@
         save: function(event) {
           event.preventDefault();
           const endereco = document.getElementById('endereco').value.trim();
-          const servicosSelecionados = Array.from(document.getElementById('servico').selectedOptions).map(opt => opt.text);
+          const servicosSelecionados = Array.from(document.getElementById('servico').selectedOptions).map(opt => opt.value);
           
           if (!endereco) {
             app.utils.showStatus('Endereço é obrigatório.', 'error');
@@ -453,7 +476,7 @@
           const item = {
             id: this.editId || Date.now(),
             ...app.utils.sanitizeForm(),
-            servicos: servicosSelecionados
+            servicos: servicosSelecionados.join(', ')
           };
           
           // Salva campos no cache
@@ -467,6 +490,8 @@
           this.editId = null;
           document.getElementById('btnSalvar').innerHTML = '<i class="fas fa-save"></i> Salvar Serviço';
           document.getElementById('endereco').focus();
+          document.getElementById('editNotice').classList.add('hidden');
+          document.body.classList.remove('editing-mode');
           
           // Restaura campos do cache
           app.cache.loadFields();
@@ -477,13 +502,17 @@
           if (!item) return;
           
           this.editId = id;
+          
+          // Preencher todos os campos
           Object.keys(item).forEach(key => {
             const element = document.getElementById(key);
             if (element) {
               if (key === 'servico') {
-                Array.from(element.options).forEach(opt => 
-                  opt.selected = (item.servicos || '').split(', ').includes(opt.text)
-                );
+                // Para o campo de serviços (select múltiplo)
+                const servicosArray = item.servicos.split(', ');
+                Array.from(element.options).forEach(option => {
+                  option.selected = servicosArray.includes(option.value);
+                });
               } else {
                 element.value = item[key] || '';
               }
@@ -493,6 +522,10 @@
           document.getElementById('btnSalvar').innerHTML = '<i class="fas fa-sync-alt"></i> Atualizar Serviço';
           document.getElementById('endereco').focus();
           window.scrollTo({ top: 0, behavior: 'smooth' });
+          
+          // Mostrar aviso de edição
+          document.getElementById('editNotice').classList.remove('hidden');
+          document.body.classList.add('editing-mode');
         }
       },
       
@@ -806,7 +839,7 @@
               <div class="flex justify-between">
                 <h4 class="font-semibold text-lg">${item.endereco} ${item.numero}</h4>
                 <div class="flex gap-2">
-                  <button onclick="app.form.edit(${item.id})" class="text-blue-600 hover:text-blue-800" title="Editar">
+                  <button onclick="app.form.edit(${item.id}); app.details.closePanel();" class="text-blue-600 hover:text-blue-800" title="Editar">
                     <i class="fas fa-edit"></i>
                   </button>
                   <button onclick="app.api.deleteService(${item.id})" class="text-red-600 hover:text-red-800" title="Excluir">
