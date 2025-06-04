@@ -6,6 +6,8 @@
   <title>Cadastro de Serviços - Edição Avançada</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/uuid@9.0.1/dist/umd/uuidv4.min.js"></script>
   <style>
     :root {
       --ms-blue: #0078d7;
@@ -298,7 +300,7 @@
     <div class="edit-modal-content">
       <div class="edit-modal-header">
         <h3 class="text-xl font-semibold">Editar Serviço</h3>
-        <button id="closeModal" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+        <button id="closeModal" class="text-gray-500 hover:text-gray-700 text-2xl">×</button>
       </div>
       <div class="edit-modal-body" id="editModalBody">
         <!-- Conteúdo dinâmico -->
@@ -471,7 +473,7 @@
       </div>
 
       <!-- Mensagem de Status -->
-      <div id="status" class="mb-6 p-3 rounded text-white hidden"></div>
+      <div id="status" class="mb-6 p-3 rounded text-white hidden" aria-live="polite"></div>
     </div>
 
     <!-- Tabela de Dados com Edição Direta -->
@@ -522,7 +524,7 @@
             </button>
           </div>
         </div>
-        <div id="statusTestes" class="mt-2 p-2 rounded text-sm hidden"></div>
+        <div id="statusTestes" class="mt-2 p-2 rounded text-sm hidden" aria-live="polite"></div>
       </div>
     </div>
   </div>
@@ -552,34 +554,51 @@
         
         save: function(event) {
           event.preventDefault();
+          const btnSalvar = document.getElementById('btnSalvar');
+          btnSalvar.disabled = true;
+          btnSalvar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+          
           const endereco = document.getElementById('endereco').value.trim();
           const servicosSelecionados = Array.from(document.getElementById('servico').selectedOptions).map(opt => opt.value);
+          const qtd = document.getElementById('qtd').value;
+          const data = document.getElementById('data').value;
           
           if (!endereco) {
             app.utils.showStatus('Endereço é obrigatório.', 'error');
+            btnSalvar.disabled = false;
+            btnSalvar.innerHTML = this.editId ? '<i class="fas fa-sync-alt"></i> Atualizar Serviço' : '<i class="fas fa-save"></i> Salvar Serviço';
             return;
           }
           if (!servicosSelecionados.length) {
             app.utils.showStatus('Selecione pelo menos um serviço.', 'error');
+            btnSalvar.disabled = false;
+            btnSalvar.innerHTML = this.editId ? '<i class="fas fa-sync-alt"></i> Atualizar Serviço' : '<i class="fas fa-save"></i> Salvar Serviço';
+            return;
+          }
+          if (qtd && qtd < 0) {
+            app.utils.showStatus('Quantidade deve ser um número positivo.', 'error');
+            btnSalvar.disabled = false;
+            btnSalvar.innerHTML = this.editId ? '<i class="fas fa-sync-alt"></i> Atualizar Serviço' : '<i class="fas fa-save"></i> Salvar Serviço';
+            return;
+          }
+          if (data && new Date(data) > new Date()) {
+            app.utils.showStatus('Data não pode ser futura.', 'error');
+            btnSalvar.disabled = false;
+            btnSalvar.innerHTML = this.editId ? '<i class="fas fa-sync-alt"></i> Atualizar Serviço' : '<i class="fas fa-save"></i> Salvar Serviço';
             return;
           }
           
           const item = {
+            id: this.editId || uuidv4(),
             ...app.utils.sanitizeForm(),
             servicos: servicosSelecionados.join(', ')
           };
           
-          // Se estamos editando, adicionar o ID original
-          if (this.editId) {
-            item.id = this.editId;
-          } else {
-            item.id = Date.now(); // Novo ID para novos itens
-          }
-          
-          // Salva campos no cache
           app.cache.saveFields();
-          
-          app.api.saveService(item);
+          app.api.saveService(item).finally(() => {
+            btnSalvar.disabled = false;
+            btnSalvar.innerHTML = this.editId ? '<i class="fas fa-sync-alt"></i> Atualizar Serviço' : '<i class="fas fa-save"></i> Salvar Serviço';
+          });
         },
         
         clear: function() {
@@ -587,44 +606,51 @@
           this.editId = null;
           this.currentItem = null;
           document.getElementById('btnSalvar').innerHTML = '<i class="fas fa-save"></i> Salvar Serviço';
-          document.getElementById('endereco').focus();
           document.getElementById('editNotice').classList.add('hidden');
           document.body.classList.remove('editing-mode');
-          
-          // Restaura campos do cache
+          document.getElementById('endereco').focus();
           app.cache.loadFields();
         },
         
         edit: function(id) {
           const item = app.data.services.find(i => i.id == id);
-          if (!item) return;
+          if (!item) {
+            app.utils.showStatus('Serviço não encontrado.', 'error');
+            return;
+          }
           
-          this.editId = item.id; // ID original do banco de dados
+          this.editId = id.toString();
           this.currentItem = item;
           
+          // Limpar formulário antes de preencher
+          document.getElementById('formulario').reset();
+          
           // Preencher todos os campos
-          Object.keys(item).forEach(key => {
+          const fields = [
+            'endereco', 'numero', 'bairro', 'tronco', 'chave',
+            'qtd', 'alimentador', 'obs', 'data', 'equipe', 'matricula', 'ea',
+            'latitude', 'longitude'
+          ];
+          
+          fields.forEach(key => {
             const element = document.getElementById(key);
             if (element) {
-              if (key === 'servico') {
-                // Para o campo de serviços (select múltiplo)
-                const servicosArray = item.servicos.split(', ');
-                Array.from(element.options).forEach(option => {
-                  option.selected = servicosArray.includes(option.value);
-                });
-              } else {
-                element.value = item[key] || '';
-              }
+              element.value = app.utils.sanitizeInput(item[key] || '');
             }
           });
           
-          document.getElementById('btnSalvar').innerHTML = '<i class="fas fa-sync-alt"></i> Atualizar Serviço';
-          document.getElementById('endereco').focus();
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          // Preencher serviços (select múltiplo)
+          const servicoElement = document.getElementById('servico');
+          const servicosArray = item.servicos ? item.servicos.split(', ').map(s => s.trim()) : [];
+          Array.from(servicoElement.options).forEach(option => {
+            option.selected = servicosArray.includes(option.value);
+          });
           
-          // Mostrar aviso de edição
+          document.getElementById('btnSalvar').innerHTML = '<i class="fas fa-sync-alt"></i> Atualizar Serviço';
           document.getElementById('editNotice').classList.remove('hidden');
           document.body.classList.add('editing-mode');
+          document.getElementById('endereco').focus();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         }
       },
       
@@ -654,7 +680,7 @@
       // Módulo de geolocalização
       geolocation: {
         lastCall: 0,
-        debounceDelay: 1000,
+        debounceDelay: 3000,
         
         getCoordinates: function() {
           if (Date.now() - this.lastCall < this.debounceDelay) {
@@ -710,7 +736,6 @@
                 .then(data => {
                   const address = data.address || {};
                   
-                  // Mapeamento melhorado para bairro
                   const bairro = address.suburb || 
                                 address.neighbourhood || 
                                 address.quarter || 
@@ -742,7 +767,9 @@
       details: {
         togglePanel: function() {
           const panel = document.getElementById('detailsPanel');
-          const overlay = document.getElementById('overlay');
+          const overlay = document.getElementById('modalOverlay');
+          
+          if (!panel) return; // Verifica se o painel existe
           
           if (panel.classList.contains('open')) {
             panel.classList.remove('open');
@@ -755,8 +782,10 @@
         },
         
         closePanel: function() {
-          document.getElementById('detailsPanel').classList.remove('open');
-          document.getElementById('overlay').classList.remove('show');
+          const panel = document.getElementById('detailsPanel');
+          const overlay = document.getElementById('modalOverlay');
+          if (panel) panel.classList.remove('open');
+          if (overlay) overlay.classList.remove('show');
         }
       },
       
@@ -816,8 +845,14 @@
             });
             
             if (!response.ok) {
-              const errorData = await response.json().catch(() => ({}));
-              throw new Error(errorData.error || `Erro HTTP: ${response.status}`);
+              let errorMessage = `Erro HTTP: ${response.status}`;
+              try {
+                const errorData = await response.json();
+                errorMessage = errorData.error || errorMessage;
+              } catch {
+                // Backend didn't return valid JSON
+              }
+              throw new Error(errorMessage);
             }
             
             await app.data.load();
@@ -858,7 +893,6 @@
           }
         },
         
-        // Função para atualizar um campo específico
         async updateField(id, field, value) {
           try {
             const response = await fetch(`${app.BASE_URL}/servicos/${id}`, {
@@ -872,7 +906,6 @@
               throw new Error(errorData.error || `Erro HTTP: ${response.status}`);
             }
             
-            // Mostrar notificação
             const notice = document.getElementById('inlineEditNotice');
             notice.style.display = 'flex';
             setTimeout(() => notice.style.display = 'none', 2000);
@@ -893,8 +926,7 @@
           try {
             const response = await fetch(`${app.BASE_URL}/servicos`);
             if (!response.ok) {
-              const errorData = await response.json().catch(() => ({}));
-              throw new Error(errorData.error || `Erro HTTP: ${response.status}`);
+              throw new Error(`Erro HTTP: ${response.status}`);
             }
             this.services = await response.json();
             this.renderTable();
@@ -907,31 +939,34 @@
           const tbody = document.querySelector('#tabela tbody');
           tbody.innerHTML = '';
           
+          if (this.services.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="p-3 text-center">Nenhum serviço registrado</td></tr>';
+            return;
+          }
+          
           this.services.forEach(item => {
             const tr = document.createElement('tr');
             tr.className = 'hover:bg-gray-50 transition-colors';
             
-            // Formatando serviços como tags
             const servicesHtml = item.servicos 
-              ? item.servicos.split(', ').map(s => 
-                  `<span class="service-tag">${s}</span>`).join('') 
+              ? item.servicos.split(', ').map(s => `<span class="service-tag">${app.utils.sanitizeInput(s)}</span>`).join('')
               : '';
             
             tr.innerHTML = `
-              <td class="editable-cell" data-field="endereco" data-id="${item.id}">${item.endereco || ''} ${item.numero || ''}</td>
-              <td class="editable-cell" data-field="bairro" data-id="${item.id}">${item.bairro || ''}</td>
-              <td class="editable-cell" data-field="qtd" data-id="${item.id}">${item.qtd || ''}</td>
-              <td class="editable-cell" data-field="data" data-id="${item.id}">${item.data || ''}</td>
-              <td class="editable-cell" data-field="equipe" data-id="${item.id}">${item.equipe || ''}</td>
+              <td class="editable-cell" data-field="endereco" data-id="${item.id}">${app.utils.sanitizeInput(item.endereco || '')} ${app.utils.sanitizeInput(item.numero || '')}</td>
+              <td class="editable-cell" data-field="bairro" data-id="${item.id}">${app.utils.sanitizeInput(item.bairro || '')}</td>
+              <td class="editable-cell" data-field="qtd" data-id="${item.id}">${app.utils.sanitizeInput(item.qtd || '')}</td>
+              <td class="editable-cell" data-field="data" data-id="${item.id}">${app.utils.sanitizeInput(item.data || '')}</td>
+              <td class="editable-cell" data-field="equipe" data-id="${item.id}">${app.utils.sanitizeInput(item.equipe || '')}</td>
               <td>${servicesHtml}</td>
               <td class="flex gap-2">
-                <button onclick="app.form.edit(${item.id})" class="text-blue-600 hover:text-blue-800" aria-label="Editar">
+                <button onclick="app.form.edit('${item.id}')" class="text-blue-600 hover:text-blue-800" aria-label="Editar">
                   <i class="fas fa-edit"></i>
                 </button>
-                <button onclick="app.api.deleteService(${item.id})" class="text-red-600 hover:text-red-800" aria-label="Excluir">
+                <button onclick="app.api.deleteService('${item.id}')" class="text-red-600 hover:text-red-800" aria-label="Excluir">
                   <i class="fas fa-trash"></i>
                 </button>
-                <button onclick="app.details.showDetails(${item.id})" class="text-green-600 hover:text-green-800" aria-label="Detalhes">
+                <button onclick="app.details.showDetails('${item.id}')" class="text-green-600 hover:text-green-800" aria-label="Detalhes">
                   <i class="fas fa-eye"></i>
                 </button>
               </td>
@@ -940,7 +975,6 @@
             tbody.appendChild(tr);
           });
           
-          // Adicionar event listeners para edição em linha
           this.setupInlineEditing();
         },
         
@@ -957,7 +991,6 @@
               const input = this.querySelector('input');
               input.focus();
               
-              // Salvar ao pressionar Enter ou sair do campo
               input.addEventListener('keyup', (e) => {
                 if (e.key === 'Enter') {
                   app.saveInlineEdit(input, this);
@@ -972,7 +1005,7 @@
         },
         
         renderFullDetails() {
-          const container = document.getElementById('serviceDetails');
+          const container = document.getElementById('serviceDetails') || document.createElement('div');
           container.innerHTML = '';
           
           if (this.services.length === 0) {
@@ -984,45 +1017,43 @@
             const card = document.createElement('div');
             card.className = 'ms-card p-4';
             
-            // Formatando serviços como tags
             const servicesHtml = item.servicos 
-              ? item.servicos.split(', ').map(s => 
-                  `<span class="service-tag">${s}</span>`).join('') 
+              ? item.servicos.split(', ').map(s => `<span class="service-tag">${app.utils.sanitizeInput(s)}</span>`).join('')
               : '';
             
             card.innerHTML = `
               <div class="flex justify-between">
-                <h4 class="font-semibold text-lg">${item.endereco} ${item.numero}</h4>
+                <h4 class="font-semibold text-lg">${app.utils.sanitizeInput(item.endereco)} ${app.utils.sanitizeInput(item.numero)}</h4>
                 <div class="flex gap-2">
-                  <button onclick="app.form.edit(${item.id}); app.details.closePanel();" class="text-blue-600 hover:text-blue-800" title="Editar">
+                  <button onclick="app.form.edit('${item.id}'); app.details.closePanel();" class="text-blue-600 hover:text-blue-800" title="Editar">
                     <i class="fas fa-edit"></i>
                   </button>
-                  <button onclick="app.api.deleteService(${item.id})" class="text-red-600 hover:text-red-800" title="Excluir">
+                  <button onclick="app.api.deleteService('${item.id}')" class="text-red-600 hover:text-red-800" title="Excluir">
                     <i class="fas fa-trash"></i>
                   </button>
                 </div>
               </div>
               <div class="mt-3 grid grid-cols-2 gap-3 text-sm">
-                <div><strong>Bairro:</strong> ${item.bairro || '-'}</div>
-                <div><strong>Tronco:</strong> ${item.tronco || '-'}</div>
-                <div><strong>Chave:</strong> ${item.chave || '-'}</div>
-                <div><strong>Quantidade:</strong> ${item.qtd || '-'}</div>
-                <div><strong>Alimentador:</strong> ${item.alimentador || '-'}</div>
-                <div><strong>Data:</strong> ${item.data || '-'}</div>
-                <div><strong>Equipe:</strong> ${item.equipe || '-'}</div>
-                <div><strong>Matrícula:</strong> ${item.matricula || '-'}</div>
-                <div><strong>EA:</strong> ${item.ea || '-'}</div>
+                <div><strong>Bairro:</strong> ${app.utils.sanitizeInput(item.bairro || '-')}</div>
+                <div><strong>Tronco:</strong> ${app.utils.sanitizeInput(item.tronco || '-')}</div>
+                <div><strong>Chave:</strong> ${app.utils.sanitizeInput(item.chave || '-')}</div>
+                <div><strong>Quantidade:</strong> ${app.utils.sanitizeInput(item.qtd || '-')}</div>
+                <div><strong>Alimentador:</strong> ${app.utils.sanitizeInput(item.alimentador || '-')}</div>
+                <div><strong>Data:</strong> ${app.utils.sanitizeInput(item.data || '-')}</div>
+                <div><strong>Equipe:</strong> ${app.utils.sanitizeInput(item.equipe || '-')}</div>
+                <div><strong>Matrícula:</strong> ${app.utils.sanitizeInput(item.matricula || '-')}</div>
+                <div><strong>EA:</strong> ${app.utils.sanitizeInput(item.ea || '-')}</div>
               </div>
               <div class="mt-3">
                 <strong>Observação:</strong>
-                <p class="mt-1 bg-gray-50 p-2 rounded">${item.obs || '-'}</p>
+                <p class="mt-1 bg-gray-50 p-2 rounded">${app.utils.sanitizeInput(item.obs || '-')}</p>
               </div>
               <div class="mt-3">
                 <strong>Serviços:</strong>
                 <div class="mt-1 flex flex-wrap gap-1">${servicesHtml}</div>
               </div>
               <div class="mt-3 text-xs text-gray-500">
-                <strong>Coordenadas:</strong> ${item.latitude || '-'}, ${item.longitude || '-'}
+                <strong>Coordenadas:</strong> ${app.utils.sanitizeInput(item.latitude || '-')}, ${app.utils.sanitizeInput(item.longitude || '-')}
               </div>
             `;
             
@@ -1032,50 +1063,51 @@
         
         showDetails: function(id) {
           const item = this.services.find(i => i.id == id);
-          if (!item) return;
+          if (!item) {
+            app.utils.showStatus('Serviço não encontrado.', 'error');
+            return;
+          }
           
-          const container = document.getElementById('serviceDetails');
+          const container = document.getElementById('serviceDetails') || document.createElement('div');
           
-          // Formatando serviços como tags
           const servicesHtml = item.servicos 
-            ? item.servicos.split(', ').map(s => 
-                `<span class="service-tag">${s}</span>`).join('') 
+            ? item.servicos.split(', ').map(s => `<span class="service-tag">${app.utils.sanitizeInput(s)}</span>`).join('')
             : '';
           
           container.innerHTML = `
             <div class="ms-card p-4">
               <div class="flex justify-between">
-                <h4 class="font-semibold text-lg">${item.endereco} ${item.numero}</h4>
+                <h4 class="font-semibold text-lg">${app.utils.sanitizeInput(item.endereco)} ${app.utils.sanitizeInput(item.numero)}</h4>
                 <div class="flex gap-2">
-                  <button onclick="app.form.edit(${item.id}); app.details.closePanel();" class="text-blue-600 hover:text-blue-800" title="Editar">
+                  <button onclick="app.form.edit('${item.id}'); app.details.closePanel();" class="text-blue-600 hover:text-blue-800" title="Editar">
                     <i class="fas fa-edit"></i>
                   </button>
-                  <button onclick="app.api.deleteService(${item.id})" class="text-red-600 hover:text-red-800" title="Excluir">
+                  <button onclick="app.api.deleteService('${item.id}')" class="text-red-600 hover:text-red-800" title="Excluir">
                     <i class="fas fa-trash"></i>
                   </button>
                 </div>
               </div>
               <div class="mt-3 grid grid-cols-2 gap-3">
-                <div><strong>Bairro:</strong> ${item.bairro || '-'}</div>
-                <div><strong>Tronco:</strong> ${item.tronco || '-'}</div>
-                <div><strong>Chave:</strong> ${item.chave || '-'}</div>
-                <div><strong>Quantidade:</strong> ${item.qtd || '-'}</div>
-                <div><strong>Alimentador:</strong> ${item.alimentador || '-'}</div>
-                <div><strong>Data:</strong> ${item.data || '-'}</div>
-                <div><strong>Equipe:</strong> ${item.equipe || '-'}</div>
-                <div><strong>Matrícula:</strong> ${item.matricula || '-'}</div>
-                <div><strong>EA:</strong> ${item.ea || '-'}</div>
+                <div><strong>Bairro:</strong> ${app.utils.sanitizeInput(item.bairro || '-')}</div>
+                <div><strong>Tronco:</strong> ${app.utils.sanitizeInput(item.tronco || '-')}</div>
+                <div><strong>Chave:</strong> ${app.utils.sanitizeInput(item.chave || '-')}</div>
+                <div><strong>Quantidade:</strong> ${app.utils.sanitizeInput(item.qtd || '-')}</div>
+                <div><strong>Alimentador:</strong> ${app.utils.sanitizeInput(item.alimentador || '-')}</div>
+                <div><strong>Data:</strong> ${app.utils.sanitizeInput(item.data || '-')}</div>
+                <div><strong>Equipe:</strong> ${app.utils.sanitizeInput(item.equipe || '-')}</div>
+                <div><strong>Matrícula:</strong> ${app.utils.sanitizeInput(item.matricula || '-')}</div>
+                <div><strong>EA:</strong> ${app.utils.sanitizeInput(item.ea || '-')}</div>
               </div>
               <div class="mt-3">
                 <strong>Observação:</strong>
-                <p class="mt-1 bg-gray-50 p-2 rounded">${item.obs || '-'}</p>
+                <p class="mt-1 bg-gray-50 p-2 rounded">${app.utils.sanitizeInput(item.obs || '-')}</p>
               </div>
               <div class="mt-3">
                 <strong>Serviços:</strong>
                 <div class="mt-1 flex flex-wrap gap-1">${servicesHtml}</div>
               </div>
               <div class="mt-3 text-sm text-gray-500">
-                <strong>Coordenadas:</strong> ${item.latitude || '-'}, ${item.longitude || '-'}
+                <strong>Coordenadas:</strong> ${app.utils.sanitizeInput(item.latitude || '-')}, ${app.utils.sanitizeInput(item.longitude || '-')}
               </div>
             </div>
           `;
@@ -1088,7 +1120,7 @@
       utils: {
         sanitizeInput(input) {
           if (typeof input !== 'string') return input;
-          return input.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+          return DOMPurify.sanitize(input);
         },
         
         sanitizeForm() {
@@ -1143,10 +1175,8 @@
         const field = input.dataset.field;
         const id = input.dataset.id;
         
-        // Atualizar visualmente
         cell.textContent = newValue;
         
-        // Atualizar no servidor
         this.api.updateField(id, field, newValue);
       },
       
@@ -1154,18 +1184,15 @@
       init: function() {
         this.data.load();
         this.api.autoTestConnection();
-        setInterval(() => this.api.autoTestConnection(), 60000);
+        setInterval(() => this.api.autoTestConnection(), 300000); // 5 minutos
         
-        // Carregar cache ao iniciar
         app.cache.loadFields();
         
-        // Fechar painel de detalhes
-        document.getElementById('closeDetails').addEventListener('click', () => this.details.closePanel());
-        document.getElementById('overlay').addEventListener('click', () => this.details.closePanel());
+        // Ajuste para overlay existente
+        document.getElementById('modalOverlay').addEventListener('click', () => this.details.closePanel());
       }
     };
 
-    // Inicializar a aplicação quando o documento estiver carregado
     document.addEventListener('DOMContentLoaded', () => {
       app.init();
     });
