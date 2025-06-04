@@ -3,451 +3,127 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Cadastro de Serviços - Edição Avançada</title>
+  <title>Cadastro de Serviços</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/uuid@9.0.1/dist/umd/uuidv4.min.js"></script>
   <style>
-    :root {
-      --ms-blue: #0078d7;
-      --ms-blue-dark: #106ebe;
-      --ms-green: #107c10;
-      --ms-green-dark: #0e6b0e;
-      --ms-gray-light: #f3f2f1;
-      --ms-gray-border: #edebe9;
-    }
-    
-    body {
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      background-color: #f8f9fa;
-    }
-    
-    .fade-in { animation: fadeIn 0.3s; }
+    body { font-family: 'Roboto', sans-serif; }
+    .fade-in { animation: fadeIn 0.5s; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    
-    .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-    .status-green { background-color: var(--ms-green); }
-    .status-red { background-color: #d13438; }
-    
-    .ms-card {
-      border-radius: 4px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      background-color: white;
-      border: 1px solid var(--ms-gray-border);
+    select[multiple] { scrollbar-width: thin; }
+    select[multiple]::-webkit-scrollbar { width: 6px; }
+    select[multiple]::-webkit-scrollbar-thumb { background: #4285f4; border-radius: 4px; }
+    .table-container { max-height: 500px; overflow-y: auto; }
+    th { position: sticky; top: 0; z-index: 10; }
+    .google-btn { 
+      background-color: #4285f4; 
+      color: white; 
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2); 
+      transition: background-color 0.2s, box-shadow 0.2s; 
     }
-    
-    .ms-button {
-      border-radius: 4px;
-      font-weight: 600;
-      transition: all 0.2s;
-      padding: 8px 16px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      cursor: pointer;
-      border: none;
+    .google-btn:hover { 
+      background-color: #3267d6; 
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3); 
     }
-    
-    .ms-button-primary {
-      background-color: var(--ms-blue);
-      color: white;
+    .google-btn-secondary {
+      background-color: #f1f3f4;
+      color: #5f6368;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      transition: background-color 0.2s, box-shadow 0.2s;
     }
-    
-    .ms-button-primary:hover {
-      background-color: var(--ms-blue-dark);
+    .google-btn-secondary:hover {
+      background-color: #e8eaed;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
     }
-    
-    .ms-button-success {
-      background-color: var(--ms-green);
-      color: white;
+    input, textarea, select { 
+      border: 1px solid #dadce0; 
+      border-radius: 4px; 
+      padding: 8px; 
+      transition: border-color 0.2s; 
     }
-    
-    .ms-button-success:hover {
-      background-color: var(--ms-green-dark);
-    }
-    
-    .ms-button-neutral {
-      background-color: #f4f4f4;
-      color: #333;
-    }
-    
-    .ms-button-neutral:hover {
-      background-color: #eaeaea;
-    }
-    
-    .ms-form-label {
-      font-weight: 600;
-      color: #323130;
-      margin-bottom: 6px;
-      display: block;
-    }
-    
-    .ms-form-input {
-      border: 1px solid var(--ms-gray-border);
-      border-radius: 4px;
-      padding: 10px 12px;
-      width: 100%;
-      font-size: 15px;
-      transition: border-color 0.2s;
-    }
-    
-    .ms-form-input:focus {
-      outline: 2px solid var(--ms-blue);
-      outline-offset: -1px;
-      border-color: transparent;
-    }
-    
-    .ms-table {
-      width: 100%;
-      border-collapse: separate;
-      border-spacing: 0;
-    }
-    
-    .ms-table th {
-      background-color: var(--ms-gray-light);
-      font-weight: 600;
-      color: #323130;
-      text-align: left;
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--ms-gray-border);
-    }
-    
-    .ms-table td {
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--ms-gray-border);
-    }
-    
-    .ms-status-bar {
-      background-color: var(--ms-blue);
-      color: white;
-      padding: 10px 0;
-    }
-    
-    .editable-cell {
-      position: relative;
-      cursor: pointer;
-      transition: background-color 0.2s;
-    }
-    
-    .editable-cell:hover {
-      background-color: #f0f7ff;
-    }
-    
-    .editable-cell input {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      border: 2px solid var(--ms-blue);
-      padding: 0 10px;
-      font-size: inherit;
-      outline: none;
-      background: white;
-      box-sizing: border-box;
-    }
-    
-    .service-tag {
-      background-color: #e1f0ff;
-      color: var(--ms-blue);
-      border-radius: 4px;
-      padding: 3px 8px;
-      font-size: 12px;
-      display: inline-block;
-      margin: 2px;
-    }
-    
-    .edit-notice {
-      background-color: #e1f0ff;
-      padding: 10px;
-      border-radius: 4px;
-      margin-bottom: 15px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    
-    .editing-row {
-      background-color: #e6f7ff !important;
-    }
-    
-    .edit-modal {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: white;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-      border-radius: 8px;
-      z-index: 1000;
-      width: 90%;
-      max-width: 600px;
-      max-height: 90vh;
-      overflow-y: auto;
-      display: none;
-    }
-    
-    .edit-modal-content {
-      padding: 20px;
-    }
-    
-    .edit-modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding-bottom: 15px;
-      border-bottom: 1px solid #eee;
-    }
-    
-    .edit-modal-body {
-      padding: 20px 0;
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 15px;
-    }
-    
-    .edit-modal-footer {
-      padding-top: 15px;
-      border-top: 1px solid #eee;
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-    }
-    
-    .modal-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.5);
-      z-index: 999;
-      display: none;
-    }
-    
-    .form-group {
-      margin-bottom: 15px;
-    }
-    
-    .form-group label {
-      display: block;
-      margin-bottom: 5px;
-      font-weight: 600;
-      color: #555;
-    }
-    
-    .form-group input, .form-group select, .form-group textarea {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 15px;
-    }
-    
-    .form-group textarea {
-      min-height: 100px;
-      resize: vertical;
-    }
-    
-    .inline-edit-notice {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background: var(--ms-green);
-      color: white;
-      padding: 10px 20px;
-      border-radius: 4px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-      z-index: 1000;
-      display: none;
-    }
-    
-    .tests-section {
-      background-color: #f8f8f8;
-      border-top: 1px solid #eee;
-      padding: 15px;
-      margin-top: 30px;
-    }
-    
-    .tests-container {
-      max-width: 600px;
-      margin: 0 auto;
-    }
-    
-    .test-button {
-      background: #e5e5e5;
-      border: none;
-      padding: 6px 12px;
-      border-radius: 4px;
-      font-size: 14px;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    
-    .test-button:hover {
-      background: #d5d5d5;
+    input:focus, textarea:focus, select:focus { 
+      outline: none; 
+      border-color: #4285f4; 
+      box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.1); 
     }
   </style>
 </head>
-<body class="min-h-screen flex flex-col">
-  <!-- Overlay para modais -->
-  <div class="modal-overlay" id="modalOverlay"></div>
-  
-  <!-- Modal de edição -->
-  <div class="edit-modal" id="editModal">
-    <div class="edit-modal-content">
-      <div class="edit-modal-header">
-        <h3 class="text-xl font-semibold">Editar Serviço</h3>
-        <button id="closeModal" class="text-gray-500 hover:text-gray-700 text-2xl">×</button>
-      </div>
-      <div class="edit-modal-body" id="editModalBody">
-        <!-- Conteúdo dinâmico -->
-      </div>
-      <div class="edit-modal-footer">
-        <button id="saveChanges" class="ms-button ms-button-success">
-          <i class="fas fa-save"></i> Salvar Alterações
-        </button>
-        <button id="cancelEdit" class="ms-button ms-button-neutral">
-          <i class="fas fa-times"></i> Cancelar
+<body class="bg-gray-100 min-h-screen flex flex-col">
+  <div class="container max-w-5xl mx-auto p-4 flex-grow">
+    <div class="bg-white rounded-lg shadow-sm p-6">
+      <h2 class="text-2xl font-medium text-gray-900 mb-6 text-center">Cadastro de Serviços</h2>
+
+      <!-- Botão de Teste de Conexão -->
+      <div class="mb-6 text-center">
+        <button onclick="testarConexao()" class="google-btn font-medium py-2 px-6 rounded-lg flex items-center justify-center mx-auto">
+          <span>🔗 Testar Conexão com API</span>
         </button>
       </div>
-    </div>
-  </div>
 
-  <!-- Notificação de edição em linha -->
-  <div class="inline-edit-notice" id="inlineEditNotice">
-    <i class="fas fa-check-circle mr-2"></i>
-    <span>Alterações salvas com sucesso!</span>
-  </div>
-
-  <header class="bg-white shadow-sm">
-    <div class="container max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-      <div class="flex items-center">
-        <div class="bg-gray-200 border-2 border-dashed rounded-xl w-16 h-16" />
-        <div class="ml-4">
-          <h1 class="text-2xl font-semibold text-gray-800">Cadastro de Serviços</h1>
-          <p class="text-gray-600">Sistema de gerenciamento de serviços de poda</p>
-        </div>
-      </div>
-      <div class="flex items-center">
-        <div id="autoStatus" class="status-dot status-green mr-2"></div>
-        <span id="statusMessage">Conectado</span>
-      </div>
-    </div>
-  </header>
-
-  <div class="container max-w-6xl mx-auto p-4 flex-grow">
-    <!-- Aviso de modo de edição -->
-    <div id="editNotice" class="edit-notice hidden">
-      <i class="fas fa-edit text-blue-600"></i>
-      <div>
-        <strong>Modo de Edição</strong>
-        <p>Você está editando um serviço existente. Atualize as informações e clique em "Atualizar Serviço".</p>
-      </div>
-    </div>
-    
-    <div class="ms-card p-6 mb-6">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <!-- Painel de Geolocalização -->
-        <div class="ms-card bg-gray-50 p-4">
-          <h3 class="text-lg font-semibold text-gray-800 mb-3">Geolocalização</h3>
-          <div class="flex flex-col space-y-3">
-            <button onclick="app.geolocation.getAddress()" class="ms-button ms-button-primary">
-              <i class="fas fa-home"></i> Preencher Endereço Automático
-            </button>
-            <button onclick="app.geolocation.getCoordinates()" class="ms-button ms-button-primary">
-              <i class="fas fa-map-marker-alt"></i> Obter Coordenadas
-            </button>
-          </div>
-          <div class="grid grid-cols-2 gap-3 mt-4">
-            <div>
-              <label class="ms-form-label">Latitude</label>
-              <input type="text" id="latitude" class="ms-form-input" readonly>
-            </div>
-            <div>
-              <label class="ms-form-label">Longitude</label>
-              <input type="text" id="longitude" class="ms-form-input" readonly>
-            </div>
-          </div>
-        </div>
-
-        <!-- Painel de Registro -->
-        <div class="p-4">
-          <h3 class="text-lg font-semibold text-gray-800 mb-3">Dados do Serviço</h3>
-          <div class="grid grid-cols-2 gap-4">
-            <div class="flex flex-col">
-              <label for="equipe" class="ms-form-label">Equipe</label>
-              <input type="text" id="equipe" class="ms-form-input">
-            </div>
-            <div class="flex flex-col">
-              <label for="matricula" class="ms-form-label">Matrícula</label>
-              <input type="text" id="matricula" class="ms-form-input">
-            </div>
-            <div class="flex flex-col">
-              <label for="ea" class="ms-form-label">EA</label>
-              <input type="text" id="ea" class="ms-form-input">
-            </div>
-            <div class="flex flex-col">
-              <label for="data" class="ms-form-label">Data</label>
-              <input type="date" id="data" class="ms-form-input">
-            </div>
-          </div>
-        </div>
+      <!-- Botão de Preencher Endereço Automático -->
+      <div class="mb-6 text-center">
+        <button onclick="pegarEndereco()" class="google-btn font-medium py-2 px-6 rounded-lg flex items-center justify-center mx-auto">
+          <span>🏠 Preencher Endereço Automático</span>
+        </button>
       </div>
 
-      <!-- Formulário Principal -->
-      <h3 class="text-xl font-semibold text-gray-800 mb-4">Registro de Serviços</h3>
+      <!-- Formulário -->
       <form id="formulario" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-        <!-- Coluna 1 -->
         <div class="flex flex-col">
-          <label for="endereco" class="ms-form-label">Endereço</label>
-          <input type="text" id="endereco" class="ms-form-input" required>
+          <label for="endereco" class="text-gray-700 text-sm font-medium mb-1">Endereço</label>
+          <input type="text" id="endereco" class="text-gray-900" aria-label="Endereço" required>
         </div>
         <div class="flex flex-col">
-          <label for="numero" class="ms-form-label">Número</label>
-          <input type="text" id="numero" class="ms-form-input">
+          <label for="numero" class="text-gray-700 text-sm font-medium mb-1">Número</label>
+          <input type="text" id="numero" class="text-gray-900" aria-label="Número">
         </div>
         <div class="flex flex-col">
-          <label for="bairro" class="ms-form-label">Bairro</label>
-          <input type="text" id="bairro" class="ms-form-input">
-        </div>
-        
-        <!-- Coluna 2 -->
-        <div class="flex flex-col">
-          <label for="tronco" class="ms-form-label">Tronco</label>
-          <select id="tronco" class="ms-form-input">
-            <option value="">Selecione...</option>
-            <option value="TRONCO">TRONCO</option>
-            <option value="RAMAL">RAMAL</option>
-          </select>
+          <label for="bairro" class="text-gray-700 text-sm font-medium mb-1">Bairro</label>
+          <input type="text" id="bairro" class="text-gray-900" readonly aria-label="Bairro">
         </div>
         <div class="flex flex-col">
-          <label for="chave" class="ms-form-label">Chave</label>
-          <input type="text" id="chave" class="ms-form-input">
+          <label for="cidade" class="text-gray-700 text-sm font-medium mb-1">Cidade</label>
+          <input type="text" id="cidade" class="text-gray-900" readonly aria-label="Cidade">
         </div>
         <div class="flex flex-col">
-          <label for="qtd" class="ms-form-label">Quantidade</label>
-          <input type="number" id="qtd" class="ms-form-input" min="0" step="1">
+          <label for="tronco" class="text-gray-700 text-sm font-medium mb-1">Tronco</label>
+          <input type="text" id="tronco" class="text-gray-900" aria-label="Tronco">
         </div>
-        
-        <!-- Coluna 3 -->
         <div class="flex flex-col">
-          <label for="alimentador" class="ms-form-label">Alimentador</label>
-          <input type="text" id="alimentador" class="ms-form-input">
+          <label for="chave" class="text-gray-700 text-sm font-medium mb-1">Chave</label>
+          <input type="text" id="chave" class="text-gray-900" aria-label="Chave">
         </div>
-        
-        <!-- Observação -->
+        <div class="flex flex-col">
+          <label for="qtd" class="text-gray-700 text-sm font-medium mb-1">Quantidade</label>
+          <input type="number" id="qtd" class="text-gray-900" min="0" step="1" aria-label="Quantidade">
+        </div>
+        <div class="flex flex-col">
+          <label for="alimentador" class="text-gray-700 text-sm font-medium mb-1">Alimentador</label>
+          <input type="text" id="alimentador" class="text-gray-900" aria-label="Alimentador">
+        </div>
         <div class="flex flex-col col-span-1 sm:col-span-2 lg:col-span-3">
-          <label for="obs" class="ms-form-label">Observação</label>
-          <textarea id="obs" class="ms-form-input h-24"></textarea>
+          <label for="obs" class="text-gray-700 text-sm font-medium mb-1">Observação</label>
+          <textarea id="obs" class="text-gray-900 h-24 resize-y" aria-label="Observação"></textarea>
         </div>
-        
-        <!-- Serviços -->
+        <div class="flex flex-col">
+          <label for="data" class="text-gray-700 text-sm font-medium mb-1">Data</label>
+          <input type="date" id="data" class="text-gray-900" aria-label="Data">
+        </div>
+        <div class="flex flex-col">
+          <label for="equipe" class="text-gray-700 text-sm font-medium mb-1">Equipe</label>
+          <input type="text" id="equipe" class="text-gray-900" aria-label="Equipe">
+        </div>
+        <div class="flex flex-col">
+          <label for="matricula" class="text-gray-700 text-sm font-medium mb-1">Matrícula</label>
+          <input type="text" id="matricula" class="text-gray-900" aria-label="Matrícula">
+        </div>
+        <div class="flex flex-col">
+          <label for="ea" class="text-gray-700 text-sm font-medium mb-1">EA</label>
+          <input type="text" id="ea" class="text-gray-900" aria-label="EA">
+        </div>
         <div class="flex flex-col col-span-1 sm:col-span-2 lg:col-span-3">
-          <label for="servico" class="ms-form-label">Serviço (Selecione um ou mais)</label>
-          <select id="servico" multiple size="6" class="ms-form-input w-full" required>
+          <label for="servico" class="text-gray-700 text-sm font-medium mb-1">Serviço (Selecione um ou mais)</label>
+          <select id="servico" multiple size="6" class="text-gray-900 w-full" aria-label="Seleção de serviços" required>
             <option value="PC">Poda primária completa - PC</option>
             <option value="PS">Poda secundária completa - PS</option>
             <option value="PP">Poda primária parcial - PP</option>
@@ -457,745 +133,460 @@
             <option value="A">Cruzeta alta para 90 dias - A</option>
           </select>
         </div>
+        <div class="flex flex-col">
+          <label for="latitude" class="text-gray-700 text-sm font-medium mb-1">Latitude</label>
+          <input type="text" id="latitude" class="text-gray-900" readonly aria-label="Latitude">
+        </div>
+        <div class="flex flex-col">
+          <label for="longitude" class="text-gray-700 text-sm font-medium mb-1">Longitude</label>
+          <input type="text" id="longitude" class="text-gray-900" readonly aria-label="Longitude">
+        </div>
       </form>
 
       <!-- Botões do Formulário -->
       <div class="flex flex-wrap gap-3 mb-6 justify-center">
-        <button id="btnSalvar" onclick="app.form.save(event)" class="ms-button ms-button-success">
-          <i class="fas fa-save"></i> Salvar Serviço
+        <button onclick="pegarLatLon()" class="google-btn-secondary font-medium py-2 px-6 rounded-lg flex items-center">
+          <span>📍 Localizar</span>
         </button>
-        <button onclick="app.form.clear()" class="ms-button ms-button-neutral">
-          <i class="fas fa-broom"></i> Limpar Formulário
+        <button id="salvarBtn" onclick="salvar(event)" class="google-btn font-medium py-2 px-6 rounded-lg flex items-center">
+          <span>💾 Salvar</span>
         </button>
-        <button onclick="app.details.togglePanel()" class="ms-button ms-button-primary">
-          <i class="fas fa-list"></i> Ver Serviços
+        <button onclick="limparFormulario()" class="google-btn-secondary font-medium py-2 px-6 rounded-lg flex items-center">
+          <span>🧹 Limpar</span>
         </button>
       </div>
 
       <!-- Mensagem de Status -->
-      <div id="status" class="mb-6 p-3 rounded text-white hidden" aria-live="polite"></div>
-    </div>
+      <div id="status" class="mb-6 p-3 rounded-lg text-white hidden" aria-live="assertive"></div>
 
-    <!-- Tabela de Dados com Edição Direta -->
-    <div class="mt-6">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="text-xl font-semibold text-gray-800">Serviços Registrados</h3>
-        <div>
-          <button class="ms-button ms-button-neutral mr-2" onclick="app.toggleEditMode()">
-            <i class="fas fa-edit"></i> Modo Edição Direta
+      <!-- Filtros -->
+      <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+        <h3 class="text-base font-medium text-gray-700 mb-4">Filtros de Consulta</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="flex flex-col">
+            <label for="filtroEndereco" class="text-gray-700 text-sm font-medium mb-1">Endereço</label>
+            <input type="text" id="filtroEndereco" class="text-gray-900" placeholder="Digite o endereço">
+          </div>
+          <div class="flex flex-col">
+            <label for="filtroBairro" class="text-gray-700 text-sm font-medium mb-1">Bairro</label>
+            <input type="text" id="filtroBairro" class="text-gray-900" placeholder="Digite o bairro">
+          </div>
+          <div class="flex flex-col">
+            <label for="filtroData" class="text-gray-700 text-sm font-medium mb-1">Data</label>
+            <input type="date" id="filtroData" class="text-gray-900">
+          </div>
+        </div>
+        <div class="mt-4 flex justify-end gap-2">
+          <button onclick="aplicarFiltros()" class="google-btn font-medium py-2 px-4 rounded-lg">
+            Filtrar
           </button>
-          <button class="toggle-details" onclick="app.details.togglePanel()">
-            <i class="fas fa-expand"></i> Ver detalhes completos
+          <button onclick="limparFiltros()" class="google-btn-secondary font-medium py-2 px-4 rounded-lg">
+            Limpar
           </button>
         </div>
       </div>
-      <div class="overflow-x-auto ms-card">
-        <table id="tabela" class="ms-table w-full">
+
+      <!-- Tabela com Paginação -->
+      <div class="table-container">
+        <table id="tabela" class="w-full border-collapse bg-white rounded-lg">
           <thead>
-            <tr>
-              <th>Endereço</th>
-              <th>Bairro</th>
-              <th>Qtd</th>
-              <th>Data</th>
-              <th>Equipe</th>
-              <th>Serviços</th>
-              <th>Ações</th>
+            <tr class="bg-gray-100 text-gray-700">
+              <th class="p-3 text-left font-medium">Endereço</th>
+              <th class="p-3 text-left font-medium">Número</th>
+              <th class="p-3 text-left font-medium">Bairro</th>
+              <th class="p-3 text-left font-medium">Tronco</th>
+              <th class="p-3 text-left font-medium">Chave</th>
+              <th class="p-3 text-left font-medium">Qtd</th>
+              <th class="p-3 text-left font-medium">Alimentador</th>
+              <th class="p-3 text-left font-medium">Obs</th>
+              <th class="p-3 text-left font-medium">Data</th>
+              <th class="p-3 text-left font-medium">Equipe</th>
+              <th class="p-3 text-left font-medium">Matrícula</th>
+              <th class="p-3 text-left font-medium">EA</th>
+              <th class="p-3 text-left font-medium">Serviços</th>
+              <th class="p-3 text-left font-medium">Lat</th>
+              <th class="p-3 text-left font-medium">Lon</th>
+              <th class="p-3 text-left font-medium">Ações</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-200"></tbody>
         </table>
       </div>
-    </div>
-    
-    <!-- Testes de Conexão -->
-    <div class="tests-section">
-      <div class="tests-container">
-        <div class="flex justify-between items-center">
-          <h4 class="text-sm font-medium text-gray-600">Testes de Conexão</h4>
-          <div class="flex gap-2">
-            <button onclick="app.tests.testBackend()" class="test-button">
-              <i class="fas fa-link mr-1"></i> Backend
-            </button>
-            <button onclick="app.tests.testDatabase()" class="test-button">
-              <i class="fas fa-database mr-1"></i> Banco
-            </button>
-            <button onclick="app.tests.testServices()" class="test-button">
-              <i class="fas fa-list-check mr-1"></i> Serviços
-            </button>
-          </div>
-        </div>
-        <div id="statusTestes" class="mt-2 p-2 rounded text-sm hidden" aria-live="polite"></div>
+      <div class="flex justify-between items-center mt-4">
+        <button id="prevPage" class="google-btn-secondary font-medium py-2 px-4 rounded-lg disabled:bg-gray-200 disabled:text-gray-400" disabled>Anterior</button>
+        <span id="pageInfo" class="text-gray-700 text-sm">Página 1 de 1</span>
+        <button id="nextPage" class="google-btn-secondary font-medium py-2 px-4 rounded-lg disabled:bg-gray-200 disabled:text-gray-400" disabled>Próxima</button>
       </div>
     </div>
   </div>
 
-  <!-- Rodapé com Status Automático -->
-  <footer class="ms-status-bar mt-auto">
-    <div class="container max-w-6xl mx-auto px-4 py-2 flex items-center justify-between">
-      <div class="text-sm">
-        Sistema de Cadastro de Serviços v1.5 | © 2023
-      </div>
-      <div class="flex items-center">
-        <div id="autoStatus" class="status-dot mr-2"></div>
-        <span id="statusMessage">Conectando...</span>
-      </div>
-    </div>
-  </footer>
-
   <script>
-    const app = {
-      BASE_URL: 'https://fonseca.onrender.com',
-      editMode: false,
-      
-      // Módulo de formulário
-      form: {
-        editId: null,
-        currentItem: null,
-        
-        save: function(event) {
-          event.preventDefault();
-          const btnSalvar = document.getElementById('btnSalvar');
-          btnSalvar.disabled = true;
-          btnSalvar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
-          
-          const endereco = document.getElementById('endereco').value.trim();
-          const servicosSelecionados = Array.from(document.getElementById('servico').selectedOptions).map(opt => opt.value);
-          const qtd = document.getElementById('qtd').value;
-          const data = document.getElementById('data').value;
-          
-          if (!endereco) {
-            app.utils.showStatus('Endereço é obrigatório.', 'error');
-            btnSalvar.disabled = false;
-            btnSalvar.innerHTML = this.editId ? '<i class="fas fa-sync-alt"></i> Atualizar Serviço' : '<i class="fas fa-save"></i> Salvar Serviço';
-            return;
-          }
-          if (!servicosSelecionados.length) {
-            app.utils.showStatus('Selecione pelo menos um serviço.', 'error');
-            btnSalvar.disabled = false;
-            btnSalvar.innerHTML = this.editId ? '<i class="fas fa-sync-alt"></i> Atualizar Serviço' : '<i class="fas fa-save"></i> Salvar Serviço';
-            return;
-          }
-          if (qtd && qtd < 0) {
-            app.utils.showStatus('Quantidade deve ser um número positivo.', 'error');
-            btnSalvar.disabled = false;
-            btnSalvar.innerHTML = this.editId ? '<i class="fas fa-sync-alt"></i> Atualizar Serviço' : '<i class="fas fa-save"></i> Salvar Serviço';
-            return;
-          }
-          if (data && new Date(data) > new Date()) {
-            app.utils.showStatus('Data não pode ser futura.', 'error');
-            btnSalvar.disabled = false;
-            btnSalvar.innerHTML = this.editId ? '<i class="fas fa-sync-alt"></i> Atualizar Serviço' : '<i class="fas fa-save"></i> Salvar Serviço';
-            return;
-          }
-          
-          const item = {
-            id: this.editId || uuidv4(),
-            ...app.utils.sanitizeForm(),
-            servicos: servicosSelecionados.join(', ')
-          };
-          
-          app.cache.saveFields();
-          app.api.saveService(item).finally(() => {
-            btnSalvar.disabled = false;
-            btnSalvar.innerHTML = this.editId ? '<i class="fas fa-sync-alt"></i> Atualizar Serviço' : '<i class="fas fa-save"></i> Salvar Serviço';
-          });
-        },
-        
-        clear: function() {
-          document.getElementById('formulario').reset();
-          this.editId = null;
-          this.currentItem = null;
-          document.getElementById('btnSalvar').innerHTML = '<i class="fas fa-save"></i> Salvar Serviço';
-          document.getElementById('editNotice').classList.add('hidden');
-          document.body.classList.remove('editing-mode');
-          document.getElementById('endereco').focus();
-          app.cache.loadFields();
-        },
-        
-        edit: function(id) {
-          const item = app.data.services.find(i => i.id == id);
-          if (!item) {
-            app.utils.showStatus('Serviço não encontrado.', 'error');
-            return;
-          }
-          
-          this.editId = id.toString();
-          this.currentItem = item;
-          
-          // Limpar formulário antes de preencher
-          document.getElementById('formulario').reset();
-          
-          // Preencher todos os campos
-          const fields = [
-            'endereco', 'numero', 'bairro', 'tronco', 'chave',
-            'qtd', 'alimentador', 'obs', 'data', 'equipe', 'matricula', 'ea',
-            'latitude', 'longitude'
-          ];
-          
-          fields.forEach(key => {
-            const element = document.getElementById(key);
-            if (element) {
-              element.value = app.utils.sanitizeInput(item[key] || '');
-            }
-          });
-          
-          // Preencher serviços (select múltiplo)
-          const servicoElement = document.getElementById('servico');
-          const servicosArray = item.servicos ? item.servicos.split(', ').map(s => s.trim()) : [];
-          Array.from(servicoElement.options).forEach(option => {
-            option.selected = servicosArray.includes(option.value);
-          });
-          
-          document.getElementById('btnSalvar').innerHTML = '<i class="fas fa-sync-alt"></i> Atualizar Serviço';
-          document.getElementById('editNotice').classList.remove('hidden');
-          document.body.classList.add('editing-mode');
-          document.getElementById('endereco').focus();
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-      },
-      
-      // Módulo de cache
-      cache: {
-        fields: ['equipe', 'matricula', 'ea'],
-        
-        saveFields: function() {
-          this.fields.forEach(field => {
-            const value = document.getElementById(field).value.trim();
-            if (value) {
-              localStorage.setItem(field, value);
-            }
-          });
-        },
-        
-        loadFields: function() {
-          this.fields.forEach(field => {
-            const savedValue = localStorage.getItem(field);
-            if (savedValue) {
-              document.getElementById(field).value = savedValue;
-            }
-          });
-        }
-      },
-      
-      // Módulo de geolocalização
-      geolocation: {
-        lastCall: 0,
-        debounceDelay: 3000,
-        
-        getCoordinates: function() {
-          if (Date.now() - this.lastCall < this.debounceDelay) {
-            app.utils.showStatus('Aguarde antes de tentar novamente.', 'error');
-            return;
-          }
-          this.lastCall = Date.now();
-          
-          if (!navigator.geolocation) {
-            app.utils.showStatus('Geolocalização não suportada.', 'error');
-            return;
-          }
-          
-          app.utils.showStatus('Obtendo coordenadas...', 'success');
-          
-          navigator.geolocation.getCurrentPosition(
-            pos => {
-              document.getElementById('latitude').value = pos.coords.latitude.toFixed(6);
-              document.getElementById('longitude').value = pos.coords.longitude.toFixed(6);
-              app.utils.showStatus('Coordenadas obtidas com sucesso!', 'success');
-            },
-            err => app.utils.showStatus('Erro ao obter localização: ' + err.message, 'error')
-          );
-        },
-        
-        getAddress: function() {
-          if (Date.now() - this.lastCall < this.debounceDelay) {
-            app.utils.showStatus('Aguarde antes de tentar novamente.', 'error');
-            return;
-          }
-          this.lastCall = Date.now();
-          
-          if (!navigator.onLine) {
-            app.utils.showStatus('Sem conexão. Insira manualmente.', 'error');
-            return;
-          }
-          
-          if (!navigator.geolocation) {
-            app.utils.showStatus('Geolocalização não suportada. Insira manualmente.', 'error');
-            return;
-          }
-          
-          app.utils.showStatus('Buscando endereço...', 'success');
-          
-          navigator.geolocation.getCurrentPosition(
-            pos => {
-              const lat = pos.coords.latitude;
-              const lon = pos.coords.longitude;
-              const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`;
-              
-              fetch(url, { headers: { 'User-Agent': 'CadastroServicos/1.0' } })
-                .then(res => res.json())
-                .then(data => {
-                  const address = data.address || {};
-                  
-                  const bairro = address.suburb || 
-                                address.neighbourhood || 
-                                address.quarter || 
-                                address.city_district || 
-                                '';
-                  
-                  document.getElementById('endereco').value = address.road || address.street || '';
-                  document.getElementById('numero').value = address.housenumber || '';
-                  document.getElementById('bairro').value = bairro;
-                  document.getElementById('latitude').value = lat.toFixed(6);
-                  document.getElementById('longitude').value = lon.toFixed(6);
-                  
-                  app.utils.showStatus('Endereço obtido com sucesso!', 'success');
-                })
-                .catch(err => {
-                  app.utils.showStatus('Erro ao buscar endereço: ' + err.message, 'error');
-                  document.getElementById('endereco').focus();
-                });
-            },
-            err => {
-              app.utils.showStatus('Erro ao obter localização: ' + err.message, 'error');
-              document.getElementById('endereco').focus();
-            }
-          );
-        }
-      },
-      
-      // Módulo de visualização de detalhes
-      details: {
-        togglePanel: function() {
-          const panel = document.getElementById('detailsPanel');
-          const overlay = document.getElementById('modalOverlay');
-          
-          if (!panel) return; // Verifica se o painel existe
-          
-          if (panel.classList.contains('open')) {
-            panel.classList.remove('open');
-            overlay.classList.remove('show');
-          } else {
-            panel.classList.add('open');
-            overlay.classList.add('show');
-            app.data.renderFullDetails();
-          }
-        },
-        
-        closePanel: function() {
-          const panel = document.getElementById('detailsPanel');
-          const overlay = document.getElementById('modalOverlay');
-          if (panel) panel.classList.remove('open');
-          if (overlay) overlay.classList.remove('show');
-        }
-      },
-      
-      // Módulo de testes
-      tests: {
-        testBackend: async function() {
-          try {
-            app.utils.showStatus('Testando conexão com backend...', 'success', 'statusTestes');
-            const response = await fetch(app.BASE_URL);
-            if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
-            const data = await response.json();
-            app.utils.showStatus('✅ Backend conectado com sucesso! Mensagem: ' + data.message, 'success', 'statusTestes');
-          } catch (err) {
-            app.utils.showStatus('❌ Erro ao conectar ao backend: ' + err.message, 'error', 'statusTestes');
-          }
-        },
-        
-        testDatabase: async function() {
-          try {
-            app.utils.showStatus('Testando conexão com banco de dados...', 'success', 'statusTestes');
-            const response = await fetch(`${app.BASE_URL}/test-db`);
-            if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
-            const data = await response.json();
-            app.utils.showStatus('✅ Conexão com o banco bem-sucedida! Horário: ' + data.time, 'success', 'statusTestes');
-          } catch (err) {
-            app.utils.showStatus('❌ Erro ao conectar ao banco: ' + err.message, 'error', 'statusTestes');
-          }
-        },
-        
-        testServices: async function() {
-          try {
-            app.utils.showStatus('Testando endpoint de serviços...', 'success', 'statusTestes');
-            const response = await fetch(`${app.BASE_URL}/servicos`);
-            if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
-            const data = await response.json();
-            app.utils.showStatus(`✅ Endpoint /servicos funcionando! ${data.length} registros encontrados.`, 'success', 'statusTestes');
-          } catch (err) {
-            app.utils.showStatus('❌ Erro ao acessar /servicos: ' + err.message, 'error', 'statusTestes');
-          }
-        }
-      },
-      
-      // Módulo de API
-      api: {
-        async saveService(item) {
-          try {
-            const isEditing = !!app.form.editId;
-            const method = isEditing ? 'PUT' : 'POST';
-            const url = isEditing ? `${app.BASE_URL}/servicos/${app.form.editId}` : `${app.BASE_URL}/servicos`;
-            
-            app.utils.showStatus(isEditing ? 'Atualizando serviço...' : 'Salvando serviço...', 'success');
-            
-            const response = await fetch(url, {
-              method,
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(item)
-            });
-            
-            if (!response.ok) {
-              let errorMessage = `Erro HTTP: ${response.status}`;
-              try {
-                const errorData = await response.json();
-                errorMessage = errorData.error || errorMessage;
-              } catch {
-                // Backend didn't return valid JSON
-              }
-              throw new Error(errorMessage);
-            }
-            
-            await app.data.load();
-            app.form.clear();
-            app.utils.showStatus(isEditing ? '✅ Registro atualizado com sucesso!' : '✅ Registro salvo com sucesso!', 'success');
-          } catch (err) {
-            app.utils.showStatus(`❌ Erro ao ${isEditing ? 'atualizar' : 'salvar'}: ${err.message}`, 'error');
-          }
-        },
-        
-        async deleteService(id) {
-          if (!confirm('Deseja realmente excluir este serviço?')) return;
-          try {
-            app.utils.showStatus('Excluindo serviço...', 'success');
-            const response = await fetch(`${app.BASE_URL}/servicos/${id}`, { method: 'DELETE' });
-            if (!response.ok) {
-              const errorData = await response.json().catch(() => ({}));
-              throw new Error(errorData.error || `Erro HTTP: ${response.status}`);
-            }
-            await app.data.load();
-            app.utils.showStatus('✅ Serviço excluído com sucesso!', 'success');
-          } catch (err) {
-            app.utils.showStatus(`❌ Erro ao excluir: ${err.message}`, 'error');
-          }
-        },
-        
-        async autoTestConnection() {
-          try {
-            const response = await fetch(`${app.BASE_URL}/test-db`);
-            if (response.ok) {
-              const data = await response.json();
-              document.getElementById('autoStatus').className = 'status-dot status-green';
-              document.getElementById('statusMessage').textContent = `Conectado - ${data.time}`;
-            }
-          } catch {
-            document.getElementById('autoStatus').className = 'status-dot status-red';
-            document.getElementById('statusMessage').textContent = 'Conexão falhou';
-          }
-        },
-        
-        async updateField(id, field, value) {
-          try {
-            const response = await fetch(`${app.BASE_URL}/servicos/${id}`, {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ [field]: value })
-            });
-            
-            if (!response.ok) {
-              const errorData = await response.json().catch(() => ({}));
-              throw new Error(errorData.error || `Erro HTTP: ${response.status}`);
-            }
-            
-            const notice = document.getElementById('inlineEditNotice');
-            notice.style.display = 'flex';
-            setTimeout(() => notice.style.display = 'none', 2000);
-            
-            return true;
-          } catch (err) {
-            app.utils.showStatus(`❌ Erro ao atualizar campo: ${err.message}`, 'error');
-            return false;
-          }
-        }
-      },
-      
-      // Módulo de dados
-      data: {
-        services: [],
-        
-        async load() {
-          try {
-            const response = await fetch(`${app.BASE_URL}/servicos`);
-            if (!response.ok) {
-              throw new Error(`Erro HTTP: ${response.status}`);
-            }
-            this.services = await response.json();
-            this.renderTable();
-          } catch (err) {
-            app.utils.showStatus(`❌ Erro ao carregar dados: ${err.message}`, 'error');
-          }
-        },
-        
-        renderTable() {
-          const tbody = document.querySelector('#tabela tbody');
-          tbody.innerHTML = '';
-          
-          if (this.services.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="p-3 text-center">Nenhum serviço registrado</td></tr>';
-            return;
-          }
-          
-          this.services.forEach(item => {
-            const tr = document.createElement('tr');
-            tr.className = 'hover:bg-gray-50 transition-colors';
-            
-            const servicesHtml = item.servicos 
-              ? item.servicos.split(', ').map(s => `<span class="service-tag">${app.utils.sanitizeInput(s)}</span>`).join('')
-              : '';
-            
-            tr.innerHTML = `
-              <td class="editable-cell" data-field="endereco" data-id="${item.id}">${app.utils.sanitizeInput(item.endereco || '')} ${app.utils.sanitizeInput(item.numero || '')}</td>
-              <td class="editable-cell" data-field="bairro" data-id="${item.id}">${app.utils.sanitizeInput(item.bairro || '')}</td>
-              <td class="editable-cell" data-field="qtd" data-id="${item.id}">${app.utils.sanitizeInput(item.qtd || '')}</td>
-              <td class="editable-cell" data-field="data" data-id="${item.id}">${app.utils.sanitizeInput(item.data || '')}</td>
-              <td class="editable-cell" data-field="equipe" data-id="${item.id}">${app.utils.sanitizeInput(item.equipe || '')}</td>
-              <td>${servicesHtml}</td>
-              <td class="flex gap-2">
-                <button onclick="app.form.edit('${item.id}')" class="text-blue-600 hover:text-blue-800" aria-label="Editar">
-                  <i class="fas fa-edit"></i>
-                </button>
-                <button onclick="app.api.deleteService('${item.id}')" class="text-red-600 hover:text-red-800" aria-label="Excluir">
-                  <i class="fas fa-trash"></i>
-                </button>
-                <button onclick="app.details.showDetails('${item.id}')" class="text-green-600 hover:text-green-800" aria-label="Detalhes">
-                  <i class="fas fa-eye"></i>
-                </button>
-              </td>
-            `;
-            
-            tbody.appendChild(tr);
-          });
-          
-          this.setupInlineEditing();
-        },
-        
-        setupInlineEditing() {
-          document.querySelectorAll('.editable-cell').forEach(cell => {
-            cell.addEventListener('dblclick', function() {
-              if (!app.editMode) return;
-              
-              const value = this.textContent;
-              const field = this.dataset.field;
-              const id = this.dataset.id;
-              
-              this.innerHTML = `<input type="text" value="${value}" data-field="${field}" data-id="${id}">`;
-              const input = this.querySelector('input');
-              input.focus();
-              
-              input.addEventListener('keyup', (e) => {
-                if (e.key === 'Enter') {
-                  app.saveInlineEdit(input, this);
-                }
-              });
-              
-              input.addEventListener('blur', () => {
-                app.saveInlineEdit(input, this);
-              });
-            });
-          });
-        },
-        
-        renderFullDetails() {
-          const container = document.getElementById('serviceDetails') || document.createElement('div');
-          container.innerHTML = '';
-          
-          if (this.services.length === 0) {
-            container.innerHTML = '<p class="text-center py-8">Nenhum serviço registrado</p>';
-            return;
-          }
-          
-          this.services.forEach(item => {
-            const card = document.createElement('div');
-            card.className = 'ms-card p-4';
-            
-            const servicesHtml = item.servicos 
-              ? item.servicos.split(', ').map(s => `<span class="service-tag">${app.utils.sanitizeInput(s)}</span>`).join('')
-              : '';
-            
-            card.innerHTML = `
-              <div class="flex justify-between">
-                <h4 class="font-semibold text-lg">${app.utils.sanitizeInput(item.endereco)} ${app.utils.sanitizeInput(item.numero)}</h4>
-                <div class="flex gap-2">
-                  <button onclick="app.form.edit('${item.id}'); app.details.closePanel();" class="text-blue-600 hover:text-blue-800" title="Editar">
-                    <i class="fas fa-edit"></i>
-                  </button>
-                  <button onclick="app.api.deleteService('${item.id}')" class="text-red-600 hover:text-red-800" title="Excluir">
-                    <i class="fas fa-trash"></i>
-                  </button>
-                </div>
-              </div>
-              <div class="mt-3 grid grid-cols-2 gap-3 text-sm">
-                <div><strong>Bairro:</strong> ${app.utils.sanitizeInput(item.bairro || '-')}</div>
-                <div><strong>Tronco:</strong> ${app.utils.sanitizeInput(item.tronco || '-')}</div>
-                <div><strong>Chave:</strong> ${app.utils.sanitizeInput(item.chave || '-')}</div>
-                <div><strong>Quantidade:</strong> ${app.utils.sanitizeInput(item.qtd || '-')}</div>
-                <div><strong>Alimentador:</strong> ${app.utils.sanitizeInput(item.alimentador || '-')}</div>
-                <div><strong>Data:</strong> ${app.utils.sanitizeInput(item.data || '-')}</div>
-                <div><strong>Equipe:</strong> ${app.utils.sanitizeInput(item.equipe || '-')}</div>
-                <div><strong>Matrícula:</strong> ${app.utils.sanitizeInput(item.matricula || '-')}</div>
-                <div><strong>EA:</strong> ${app.utils.sanitizeInput(item.ea || '-')}</div>
-              </div>
-              <div class="mt-3">
-                <strong>Observação:</strong>
-                <p class="mt-1 bg-gray-50 p-2 rounded">${app.utils.sanitizeInput(item.obs || '-')}</p>
-              </div>
-              <div class="mt-3">
-                <strong>Serviços:</strong>
-                <div class="mt-1 flex flex-wrap gap-1">${servicesHtml}</div>
-              </div>
-              <div class="mt-3 text-xs text-gray-500">
-                <strong>Coordenadas:</strong> ${app.utils.sanitizeInput(item.latitude || '-')}, ${app.utils.sanitizeInput(item.longitude || '-')}
-              </div>
-            `;
-            
-            container.appendChild(card);
-          });
-        },
-        
-        showDetails: function(id) {
-          const item = this.services.find(i => i.id == id);
-          if (!item) {
-            app.utils.showStatus('Serviço não encontrado.', 'error');
-            return;
-          }
-          
-          const container = document.getElementById('serviceDetails') || document.createElement('div');
-          
-          const servicesHtml = item.servicos 
-            ? item.servicos.split(', ').map(s => `<span class="service-tag">${app.utils.sanitizeInput(s)}</span>`).join('')
-            : '';
-          
-          container.innerHTML = `
-            <div class="ms-card p-4">
-              <div class="flex justify-between">
-                <h4 class="font-semibold text-lg">${app.utils.sanitizeInput(item.endereco)} ${app.utils.sanitizeInput(item.numero)}</h4>
-                <div class="flex gap-2">
-                  <button onclick="app.form.edit('${item.id}'); app.details.closePanel();" class="text-blue-600 hover:text-blue-800" title="Editar">
-                    <i class="fas fa-edit"></i>
-                  </button>
-                  <button onclick="app.api.deleteService('${item.id}')" class="text-red-600 hover:text-red-800" title="Excluir">
-                    <i class="fas fa-trash"></i>
-                  </button>
-                </div>
-              </div>
-              <div class="mt-3 grid grid-cols-2 gap-3">
-                <div><strong>Bairro:</strong> ${app.utils.sanitizeInput(item.bairro || '-')}</div>
-                <div><strong>Tronco:</strong> ${app.utils.sanitizeInput(item.tronco || '-')}</div>
-                <div><strong>Chave:</strong> ${app.utils.sanitizeInput(item.chave || '-')}</div>
-                <div><strong>Quantidade:</strong> ${app.utils.sanitizeInput(item.qtd || '-')}</div>
-                <div><strong>Alimentador:</strong> ${app.utils.sanitizeInput(item.alimentador || '-')}</div>
-                <div><strong>Data:</strong> ${app.utils.sanitizeInput(item.data || '-')}</div>
-                <div><strong>Equipe:</strong> ${app.utils.sanitizeInput(item.equipe || '-')}</div>
-                <div><strong>Matrícula:</strong> ${app.utils.sanitizeInput(item.matricula || '-')}</div>
-                <div><strong>EA:</strong> ${app.utils.sanitizeInput(item.ea || '-')}</div>
-              </div>
-              <div class="mt-3">
-                <strong>Observação:</strong>
-                <p class="mt-1 bg-gray-50 p-2 rounded">${app.utils.sanitizeInput(item.obs || '-')}</p>
-              </div>
-              <div class="mt-3">
-                <strong>Serviços:</strong>
-                <div class="mt-1 flex flex-wrap gap-1">${servicesHtml}</div>
-              </div>
-              <div class="mt-3 text-sm text-gray-500">
-                <strong>Coordenadas:</strong> ${app.utils.sanitizeInput(item.latitude || '-')}, ${app.utils.sanitizeInput(item.longitude || '-')}
-              </div>
-            </div>
-          `;
-          
-          app.details.togglePanel();
-        }
-      },
-      
-      // Utilitários
-      utils: {
-        sanitizeInput(input) {
-          if (typeof input !== 'string') return input;
-          return DOMPurify.sanitize(input);
-        },
-        
-        sanitizeForm() {
-          const fields = [
-            'endereco', 'numero', 'bairro', 'tronco', 'chave',
-            'qtd', 'alimentador', 'obs', 'data', 'equipe', 'matricula', 'ea',
-            'latitude', 'longitude'
-          ];
-          
-          const result = {};
-          fields.forEach(field => {
-            const element = document.getElementById(field);
-            const value = element ? element.value.trim() : '';
-            result[field] = this.sanitizeInput(value);
-          });
-          return result;
-        },
-        
-        showStatus(message, type, target = 'status') {
-          const element = document.getElementById(target);
-          element.textContent = message;
-          element.className = `p-3 rounded fade-in ${type === 'success' ? 'bg-green-500' : 'bg-red-500'}`;
-          element.classList.remove('hidden');
-          
-          setTimeout(() => {
-            element.classList.add('hidden');
-          }, 5000);
-        }
-      },
-      
-      // Toggle modo de edição direta
-      toggleEditMode() {
-        this.editMode = !this.editMode;
-        const btn = document.querySelector('.ms-button-neutral');
-        
-        if (this.editMode) {
-          btn.innerHTML = '<i class="fas fa-check"></i> Modo Edição Ativo';
-          btn.classList.add('ms-button-success');
-          btn.classList.remove('ms-button-neutral');
-          this.utils.showStatus('Modo de edição direta ativado. Clique duas vezes em qualquer célula para editar.', 'success');
+    const BASE_URL = 'https://fonseca.onrender.com';
+    let editId = null;
+    let lastGeolocationCall = 0;
+    const debounceDelay = 1000;
+    let dadosCompletos = [];
+    let currentPage = 1;
+    const itemsPerPage = 10;
+
+    // Teste de Conexão
+    async function testarConexao() {
+      try {
+        const response = await fetch(`${BASE_URL}/servicos`, { method: 'HEAD', timeout: 5000 });
+        if (response.ok) {
+          showStatus('Conexão com a API estabelecida com sucesso!', 'success');
+          return true;
         } else {
-          btn.innerHTML = '<i class="fas fa-edit"></i> Modo Edição Direta';
-          btn.classList.add('ms-button-neutral');
-          btn.classList.remove('ms-button-success');
-          this.utils.showStatus('Modo de edição direta desativado.', 'success');
+          throw new Error(`Erro de conexão: Status ${response.status}`);
         }
-      },
-      
-      // Salvar edição em linha
-      saveInlineEdit(input, cell) {
-        const newValue = input.value;
-        const field = input.dataset.field;
-        const id = input.dataset.id;
-        
-        cell.textContent = newValue;
-        
-        this.api.updateField(id, field, newValue);
-      },
-      
-      // Inicialização
-      init: function() {
-        this.data.load();
-        this.api.autoTestConnection();
-        setInterval(() => this.api.autoTestConnection(), 300000); // 5 minutos
-        
-        app.cache.loadFields();
-        
-        // Ajuste para overlay existente
-        document.getElementById('modalOverlay').addEventListener('click', () => this.details.closePanel());
+      } catch (err) {
+        showStatus(`Erro ao conectar à API: ${err.message}. Verifique a rede ou o servidor.`, 'error');
+        return false;
+      }
+    }
+
+    function sanitizeInput(input) {
+      const div = document.createElement('div');
+      div.textContent = input;
+      return div.innerHTML;
+    }
+
+    function showStatus(message, type, target = 'status') {
+      const status = document.getElementById(target);
+      status.textContent = message;
+      status.className = `p-3 rounded-lg text-white fade-in ${type === 'success' ? 'bg-green-600' : 'bg-red-600'}`;
+      status.classList.remove('hidden');
+      setTimeout(() => status.classList.add('hidden'), 5000);
+    }
+
+    // Geolocalização
+    function pegarLatLon() {
+      if (Date.now() - lastGeolocationCall < debounceDelay) {
+        showStatus('Aguarde antes de tentar novamente.', 'error');
+        return;
+      }
+      lastGeolocationCall = Date.now();
+
+      if (!navigator.geolocation) {
+        showStatus('Geolocalização não suportada.', 'error');
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          document.getElementById('latitude').value = pos.coords.latitude.toFixed(6);
+          document.getElementById('longitude').value = pos.coords.longitude.toFixed(6);
+          showStatus('Coordenadas obtidas com sucesso!', 'success');
+        },
+        err => showStatus('Erro ao obter localização: ' + err.message, 'error')
+      );
+    }
+
+    // Preencher Endereço Automático
+    function pegarEndereco() {
+      if (Date.now() - lastGeolocationCall < debounceDelay) {
+        showStatus('Aguarde antes de tentar novamente.', 'error');
+        return;
+      }
+      lastGeolocationCall = Date.now();
+
+      if (!navigator.onLine) {
+        showStatus('Sem conexão. Insira manualmente.', 'error');
+        return;
+      }
+      if (!navigator.geolocation) {
+        showStatus('Geolocalização não suportada. Insira manualmente.', 'error');
+        return;
+      }
+
+      showStatus('Buscando endereço...', 'success');
+
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+          const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`;
+
+          fetch(url, { headers: { 'User-Agent': 'CadastroServicos/1.0 (lucas.teixeira.tst@hotmail.com)' } })
+            .then(res => {
+              if (!res.ok) throw new Error(`Erro HTTP: ${res.status}`);
+              return res.json();
+            })
+            .then(data => {
+              console.log('Dados da API Nominatim:', data); // Para depuração
+              const address = data.address || {};
+              const rua = sanitizeInput(address.road || address.street || address.highway || '');
+              const numero = sanitizeInput(address.housenumber || '');
+              const bairro = sanitizeInput(address.suburb || address.neighbourhood || address.quarter || address.city_district || address.residential || address.village || '');
+              const cidade = sanitizeInput(address.city || address.town || address.village || address.municipality || address.county || '');
+
+              document.getElementById('endereco').value = rua ? `${rua}` : '';
+              document.getElementById('numero').value = numero || '';
+              document.getElementById('bairro').value = bairro || '';
+              document.getElementById('cidade').value = cidade || '';
+              document.getElementById('latitude').value = lat.toFixed(6);
+              document.getElementById('longitude').value = lon.toFixed(6);
+
+              if (!bairro) {
+                showStatus('Endereço obtido, mas o bairro não foi identificado. Insira manualmente se necessário.', 'success');
+              } else {
+                showStatus('Endereço obtido com sucesso!', 'success');
+              }
+            })
+            .catch(err => {
+              showStatus(`Erro ao buscar endereço: ${err.message}. Insira manualmente.`, 'error');
+              document.getElementById('endereco').focus();
+            });
+        },
+        err => {
+          showStatus('Erro ao obter localização: ' + err.message + '. Insira manualmente.', 'error');
+          document.getElementById('endereco').focus();
+        }
+      );
+    }
+
+    // Salvar
+    async function salvar(event) {
+      event.preventDefault();
+      const endereco = document.getElementById('endereco').value.trim();
+      const qtd = document.getElementById('qtd').value.trim();
+      const data = document.getElementById('data').value;
+      const servicosSelecionados = Array.from(document.getElementById('servico').selectedOptions).map(opt => opt.text);
+
+      if (!endereco) {
+        showStatus('Endereço é obrigatório.', 'error');
+        return;
+      }
+      if (!servicosSelecionados.length) {
+        showStatus('Selecione pelo menos um serviço.', 'error');
+        return;
+      }
+      if (qtd && (isNaN(qtd) || qtd < 0)) {
+        showStatus('Quantidade deve ser um número positivo.', 'error');
+        return;
+      }
+      if (data && new Date(data) > new Date()) {
+        showStatus('A data não pode ser futura.', 'error');
+        return;
+      }
+
+      const item = {
+        id: editId || Date.now(),
+        endereco: sanitizeInput(endereco),
+        numero: sanitizeInput(document.getElementById('numero').value.trim()),
+        bairro: sanitizeInput(document.getElementById('bairro').value.trim()),
+        cidade: sanitizeInput(document.getElementById('cidade').value.trim()),
+        tronco: sanitizeInput(document.getElementById('tronco').value.trim()),
+        chave: sanitizeInput(document.getElementById('chave').value.trim()),
+        qtd: qtd || null,
+        alimentador: sanitizeInput(document.getElementById('alimentador').value.trim()),
+        obs: sanitizeInput(document.getElementById('obs').value.trim()),
+        data: data || null,
+        equipe: sanitizeInput(document.getElementById('equipe').value.trim()),
+        matricula: sanitizeInput(document.getElementById('matricula').value.trim()),
+        ea: sanitizeInput(document.getElementById('ea').value.trim()),
+        latitude: sanitizeInput(document.getElementById('latitude').value.trim()),
+        longitude: sanitizeInput(document.getElementById('longitude').value.trim()),
+        servicos: servicosSelecionados
+      };
+
+      try {
+        const method = editId ? 'PUT' : 'POST';
+        const url = editId ? `${BASE_URL}/servicos/${editId}` : `${BASE_URL}/servicos`;
+        const response = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(item)
+        });
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || `Erro HTTP: ${response.status} (${response.statusText})`);
+        }
+        await atualizarTabela();
+        limparFormulario();
+        showStatus(editId ? 'Registro atualizado!' : 'Registro salvo!', 'success');
+        editId = null;
+        document.getElementById('salvarBtn').innerHTML = '<span>💾 Salvar</span>';
+      } catch (err) {
+        console.error('Erro na requisição:', err);
+        showStatus(`Erro ao ${editId ? 'atualizar' : 'salvar'}: ${err.message}.`, 'error');
+      }
+    }
+
+    // Limpar
+    function limparFormulario() {
+      document.getElementById('formulario').reset();
+      editId = null;
+      document.getElementById('salvarBtn').innerHTML = '<span>💾 Salvar</span>';
+      document.getElementById('endereco').focus();
+    }
+
+    // Atualizar Tabela
+    async function atualizarTabela() {
+      try {
+        const response = await fetch(`${BASE_URL}/servicos`);
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || `Erro HTTP: ${response.status}`);
+        }
+        dadosCompletos = await response.json();
+        console.log('Dados recebidos da API:', dadosCompletos); // Depuração
+        // Ordenar por data (se disponível) ou ID em ordem decrescente
+        dadosCompletos.sort((a, b) => {
+          const dateA = a.data ? new Date(a.data) : new Date(a.id);
+          const dateB = b.data ? new Date(b.data) : new Date(b.id);
+          return dateB - dateA;
+        });
+        currentPage = 1;
+        aplicarFiltros();
+      } catch (err) {
+        console.error('Erro ao carregar tabela:', err);
+        showStatus(`Erro ao carregar dados: ${err.message}. Verifique a conexão ou a API.`, 'error');
+      }
+    }
+
+    // Filtrar e Paginar
+    function aplicarFiltros() {
+      const filtroEndereco = document.getElementById('filtroEndereco').value.toLowerCase();
+      const filtroBairro = document.getElementById('filtroBairro').value.toLowerCase();
+      const filtroData = document.getElementById('filtroData').value;
+
+      const dadosFiltrados = dadosCompletos.filter(item => {
+        const matchEndereco = !filtroEndereco || (item.endereco || '').toLowerCase().includes(filtroEndereco);
+        const matchBairro = !filtroBairro || (item.bairro || '').toLowerCase().includes(filtroBairro);
+        const matchData = !filtroData || (item.data || '') === filtroData;
+        return matchEndereco && matchBairro && matchData;
+      });
+
+      const totalPages = Math.ceil(dadosFiltrados.length / itemsPerPage);
+      currentPage = Math.min(currentPage, Math.max(1, totalPages));
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      const dadosPaginados = dadosFiltrados.slice(startIndex, endIndex);
+
+      const tbody = document.querySelector('#tabela tbody');
+      tbody.innerHTML = '';
+      if (dadosPaginados.length === 0) {
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = 16;
+        td.className = 'p-4 text-center text-gray-500';
+        td.textContent = 'Nenhum registro encontrado.';
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+      } else {
+        dadosPaginados.forEach(item => {
+          const tr = document.createElement('tr');
+          tr.className = 'border-t hover:bg-gray-50';
+          const cells = [
+            item.endereco || '',
+            item.numero || '',
+            item.bairro || '',
+            item.tronco || '',
+            item.chave || '',
+            item.qtd || '',
+            item.alimentador || '',
+            item.obs || '',
+            item.data || '',
+            item.equipe || '',
+            item.matricula || '',
+            item.ea || '',
+            item.servicos.join(', ') || '',
+            item.latitude || '',
+            item.longitude || ''
+          ];
+
+          cells.forEach(cell => {
+            const td = document.createElement('td');
+            td.className = 'p-4 text-gray-700';
+            td.textContent = cell;
+            tr.appendChild(td);
+          });
+
+          const actionTd = document.createElement('td');
+          actionTd.className = 'p-4 flex gap-2';
+          const editButton = document.createElement('button');
+          editButton.innerHTML = '✏️';
+          editButton.className = 'text-blue-600 hover:text-blue-500';
+          editButton.setAttribute('aria-label', 'Editar');
+          editButton.onclick = () => {
+            editId = item.id;
+            document.querySelectorAll('#formulario input, #formulario textarea, #formulario select').forEach(el => {
+              const id = el.id;
+              if (id === 'servico') {
+                Array.from(el.options).forEach(opt => opt.selected = (item.servicos || []).includes(opt.text));
+              } else {
+                el.value = item[id] || '';
+              }
+            });
+            document.getElementById('salvarBtn').innerHTML = '<span>💾 Atualizar</span>';
+            document.getElementById('endereco').focus();
+          };
+          actionTd.appendChild(editButton);
+
+          const deleteButton = document.createElement('button');
+          deleteButton.innerHTML = '🗑️';
+          deleteButton.className = 'text-red-600 hover:text-red-500';
+          deleteButton.setAttribute('aria-label', 'Excluir');
+          deleteButton.onclick = () => excluir(item.id);
+          actionTd.appendChild(deleteButton);
+
+          tr.appendChild(actionTd);
+          tbody.appendChild(tr);
+        });
+      }
+
+      document.getElementById('pageInfo').textContent = `Página ${currentPage} de ${totalPages}`;
+      document.getElementById('prevPage').disabled = currentPage === 1;
+      document.getElementById('nextPage').disabled = currentPage === totalPages;
+    }
+
+    function limparFiltros() {
+      document.getElementById('filtroEndereco').value = '';
+      document.getElementById('filtroBairro').value = '';
+      document.getElementById('filtroData').value = '';
+      aplicarFiltros();
+    }
+
+    document.getElementById('prevPage').onclick = () => {
+      if (currentPage > 1) {
+        currentPage--;
+        aplicarFiltros();
       }
     };
 
-    document.addEventListener('DOMContentLoaded', () => {
-      app.init();
-    });
+    document.getElementById('nextPage').onclick = () => {
+      const totalPages = Math.ceil(dadosCompletos.length / itemsPerPage);
+      if (currentPage < totalPages) {
+        currentPage++;
+        aplicarFiltros();
+      }
+    };
+
+    // Excluir
+    async function excluir(id) {
+      const endereco = document.getElementById('endereco').value.trim();
+      if (!endereco) {
+        showStatus('Endereço é obrigatório.', 'error');
+        return;
+      }
+      if (!await testarConexao()) return;
+      if (!confirm('Deseja realmente excluir?')) return;
+      try {
+        const response = await fetch(`${BASE_URL}/servicos/${id}`, { method: 'DELETE' });
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || `Erro HTTP: ${response.status}`);
+        }
+        await atualizarTabela();
+        showStatus('Registro excluído!', 'success');
+      } catch (err) {
+        console.error('Erro ao excluir:', err);
+        showStatus(`Erro ao excluir: ${err.message}.`, 'error');
+      }
+    }
+
+    // Inicializar
+    atualizarTabela();
   </script>
 </body>
 </html>
