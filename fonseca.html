@@ -125,11 +125,11 @@
         </div>
         <div class="flex flex-col">
           <label for="bairro" class="text-gray-800 font-medium mb-1">Bairro</label>
-          <input type="text" id="bairro" class="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-gray-50" aria-label="Bairro" readonly>
+          <input type="text" id="bairro" class="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Bairro" required>
         </div>
         <div class="flex flex-col">
           <label for="cidade" class="text-gray-800 font-medium mb-1">Cidade</label>
-          <input type="text" id="cidade" class="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-gray-50" aria-label="Cidade" readonly>
+          <input type="text" id="cidade" class="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Cidade" required>
         </div>
         <div class="flex flex-col">
           <label for="tronco" class="text-gray-800 font-medium mb-1">Tronco</label>
@@ -197,7 +197,7 @@
         <button id="salvarBtn" onclick="salvar(event)" class="bg-[#2e7d32] hover:bg-[#1b5e20] text-white font-medium py-2 px-6 rounded-md shadow-sm transition-all duration-200 flex items-center">
           <span>💾 Salvar</span>
         </button>
-        <button onclick="limparFormulario()" class="bg-[#616161] hover:bg-[#424242] text-white font-medium py-2 px-6 rounded-md shadow-sm transition-all duration-200 flex items-center">
+        <button onclick="limparFormulario ficar()" class="bg-[#616161] hover:bg-[#424242] text-white font-medium py-2 px-6 rounded-md shadow-sm transition-all duration-200 flex items-center">
           <span>🧹 Limpar</span>
         </button>
       </div>
@@ -381,12 +381,14 @@
     async function salvar(event) {
       event.preventDefault();
       const endereco = document.getElementById('endereco').value.trim();
+      const bairro = document.getElementById('bairro').value.trim();
+      const cidade = document.getElementById('cidade').value.trim();
       const qtd = document.getElementById('qtd').value.trim();
       const data = document.getElementById('data').value;
       const servicosSelecionados = Array.from(document.getElementById('servico').selectedOptions).map(opt => opt.text);
 
-      if (!endereco) {
-        showStatus('Endereço é obrigatório.', 'error');
+      if (!endereco || !bairro || !cidade) {
+        showStatus('Endereço, bairro e cidade são obrigatórios.', 'error');
         return;
       }
       if (!servicosSelecionados.length) {
@@ -407,8 +409,8 @@
         ...Object.fromEntries([
           ['endereco', sanitizeInput(endereco)],
           ['numero', sanitizeInput(document.getElementById('numero').value.trim())],
-          ['bairro', sanitizeInput(document.getElementById('bairro').value.trim())],
-          ['cidade', sanitizeInput(document.getElementById('cidade').value.trim())],
+          ['bairro', sanitizeInput(bairro)],
+          ['cidade', sanitizeInput(cidade)],
           ['tronco', sanitizeInput(document.getElementById('tronco').value.trim())],
           ['chave', sanitizeInput(document.getElementById('chave').value.trim())],
           ['qtd', qtd || null],
