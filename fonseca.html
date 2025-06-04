@@ -16,48 +16,48 @@
       background: rgba(255, 255, 255, 0.98);
       backdrop-filter: blur(12px);
       border: 1px solid rgba(0, 0, 0, 0.08);
-      border-radius: 10px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       transition: box-shadow 0.3s ease;
     }
 
     .fluent-card:hover {
-      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
     }
 
     /* Smooth fade-in animation */
     .fade-in {
-      animation: fadeIn 0.5s ease-in-out;
+      animation: fadeIn 0.4s ease-in-out;
     }
 
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(8px); }
+      from { opacity: 0; transform: translateY(4px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
     /* Custom scrollbar */
-    select[multiple] {
+    select {
       scrollbar-width: thin;
       scrollbar-color: #005a9e transparent;
     }
 
-    select[multiple]::-webkit-scrollbar {
-      width: 6px;
+    select::-webkit-scrollbar {
+      width: 4px;
     }
 
-    select[multiple]::-webkit-scrollbar-thumb {
+    select::-webkit-scrollbar-thumb {
       background: #005a9e;
       border-radius: 4px;
     }
 
     /* Status dot */
     .status-dot {
-      width: 10px;
-      height: 10px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
       display: inline-block;
       border: 1px solid rgba(255, 255, 255, 0.3);
-      margin-right: 8px;
+      margin-right: 6px;
     }
 
     .status-green {
@@ -71,7 +71,7 @@
     /* Focus states */
     input:focus, textarea:focus, select:focus {
       outline: none;
-      box-shadow: 0 0 0 3px rgba(0, 90, 158, 0.25);
+      box-shadow: 0 0 0 2px rgba(0, 90, 158, 0.25);
       border-color: #005a9e;
     }
 
@@ -82,19 +82,19 @@
 
     button:hover {
       transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     }
 
     button:active {
       transform: translateY(0);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
     }
 
     /* Compact input styling */
     .compact-input {
-      padding: 0.5rem;
-      font-size: 0.875rem;
-      line-height: 1.25rem;
+      padding: 0.375rem;
+      font-size: 0.75rem;
+      line-height: 1rem;
     }
 
     /* Status message with icons */
@@ -110,91 +110,95 @@
   </style>
 </head>
 <body class="bg-gray-200 font-sans min-h-screen flex flex-col">
-  <div class="container max-w-5xl mx-auto p-4 flex-grow">
-    <div class="fluent-card p-6 md:p-8">
-      <h2 class="text-2xl font-bold text-center text-gray-900 mb-6">Cadastro de Serviços</h2>
+  <div class="container max-w-4xl mx-auto p-2 flex-grow">
+    <div class="fluent-card p-4">
+      <h2 class="text-xl font-bold text-center text-gray-900 mb-4">Cadastro de Serviços</h2>
 
       <!-- Botão de Preencher Endereço Automático -->
-      <div class="mb-6 text-center">
-        <button onclick="pegarEndereco()" class="bg-gradient-to-r from-[#005a9e] to-[#0078d4] hover:from-[#003087] hover:to-[#005a9e] text-white font-medium py-2 px-6 rounded-md shadow-sm transition-all duration-200 flex items-center justify-center mx-auto">
-          <span class="mr-2">🏠</span> Preencher Endereço Automático
+      <div class="mb-4 text-center">
+        <button onclick="pegarEndereco()" class="bg-gradient-to-r from-[#005a9e] to-[#0078d4] hover:from-[#003087] hover:to-[#005a9e] text-white font-medium py-1 px-4 rounded-md shadow-sm transition-all duration-200 flex items-center justify-center mx-auto text-sm">
+          <span class="mr-1">🏠</span> Preencher Endereço
         </button>
       </div>
 
       <!-- Seção de Testes -->
-      <div class="mb-8 p-4 bg-gray-50/90 rounded-md shadow-inner">
-        <h3 class="text-lg font-semibold text-gray-800 mb-4">Testes de Conexão</h3>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <button onclick="testarBackend()" class="bg-gradient-to-r from-[#005a9e] to-[#0078d4] hover:from-[#003087] hover:to-[#005a9e] text-white font-medium py-2 px-4 rounded-md shadow-sm transition-all duration-200 flex items-center justify-center">
-            <span class="mr-2">🔗</span> Testar Backend
+      <div class="mb-4 p-2 bg-gray-50/90 rounded-md shadow-inner">
+        <h3 class="text-base font-semibold text-gray-800 mb-2">Testes de Conexão</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <button onclick="testarBackend()" class="bg-gradient-to-r from-[#005a9e] to-[#0078d4] hover:from-[#003087] hover:to-[#005a9e] text-white font-medium py-1 px-3 rounded-md shadow-sm transition-all duration-200 flex items-center justify-center text-sm">
+            <span class="mr-1">🔗</span> Backend
           </button>
-          <button onclick="testarBanco()" class="bg-gradient-to-r from-[#2e7d32] to-[#4caf50] hover:from-[#1b5e20] hover:to-[#2e7d32] text-white font-medium py-2 px-4 rounded-md shadow-sm transition-all duration-200 flex items-center justify-center">
-            <span class="mr-2">🗄️</span> Testar Banco
+          <button onclick="testarBanco()" class="bg-gradient-to-r from-[#2e7d32] to-[#4caf50] hover:from-[#1b5e20] hover:to-[#2e7d32] text-white font-medium py-1 px-3 rounded-md shadow-sm transition-all duration-200 flex items-center justify-center text-sm">
+            <span class="mr-1">🗄️</span> Banco
           </button>
-          <button onclick="testarServicos()" class="bg-gradient-to-r from-[#6a1b9a] to-[#ab47bc] hover:from-[#4a148c] hover:to-[#6a1b9a] text-white font-medium py-2 px-4 rounded-md shadow-sm transition-all duration-200 flex items-center justify-center">
-            <span class="mr-2">📋</span> Testar Serviços
+          <button onclick="testarServicos()" class="bg-gradient-to-r from-[#6a1b9a] to-[#ab47bc] hover:from-[#4a148c] hover:to-[#6a1b9a] text-white font-medium py-1 px-3 rounded-md shadow-sm transition-all duration-200 flex items-center justify-center text-sm">
+            <span class="mr-1">📋</span> Serviços
           </button>
         </div>
-        <div id="statusTestes" class="mt-4 p-3 rounded-md text-white hidden" aria-live="assertive"></div>
+        <div id="statusTestes" class="mt-2 p-2 rounded-md text-white text-sm hidden" aria-live="assertive"></div>
       </div>
 
       <!-- Formulário -->
-      <form id="formulario" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-        <div class="flex flex-col lg:col-span-2">
-          <label for="endereco" class="text-gray-800 font-semibold text-sm mb-1">Endereço</label>
-          <input type="text" id="endereco" class="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Endereço" required>
+      <form id="formulario" class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
+        <div class="flex flex-col">
+          <label for="endereco" class="text-gray-800 font-semibold text-xs mb-1">Endereço</label>
+          <input type="text" id="endereco" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Endereço" required>
         </div>
         <div class="flex flex-col">
-          <label for="numero" class="text-gray-800 font-semibold text-sm mb-1">Número</label>
-          <input type="text" id="numero" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Número">
-        </div>
-        <div class="flex flex-col">
-          <label for="bairro" class="text-gray-800 font-semibold text-sm mb-1">Bairro</label>
-          <input type="text" id="bairro" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Bairro" required>
-        </div>
-        <div class="flex flex-col">
-          <label for="cidade" class="text-gray-800 font-semibold text-sm mb-1">Cidade</label>
+          <label for="cidade" class="text-gray-800 font-semibold text-xs mb-1">Cidade</label>
           <input type="text" id="cidade" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Cidade" required>
         </div>
         <div class="flex flex-col">
-          <label for="tronco" class="text-gray-800 font-semibold text-sm mb-1">Tronco</label>
-          <input type="text" id="tronco" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Tronco">
+          <label for="numero" class="text-gray-800 font-semibold text-xs mb-1">Número</label>
+          <input type="text" id="numero" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Número">
         </div>
         <div class="flex flex-col">
-          <label for="chave" class="text-gray-800 font-semibold text-sm mb-1">Chave</label>
+          <label for="bairro" class="text-gray-800 font-semibold text-xs mb-1">Bairro</label>
+          <input type="text" id="bairro" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Bairro" required>
+        </div>
+        <div class="flex flex-col">
+          <label for="tronco" class="text-gray-800 font-semibold text-xs mb-1">Tronco</label>
+          <select id="tronco" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Tronco">
+            <option value="">Selecione</option>
+            <option value="Tronco">Tronco</option>
+            <option value="Ramal">Ramal</option>
+          </select>
+        </div>
+        <div class="flex flex-col">
+          <label for="chave" class="text-gray-800 font-semibold text-xs mb-1">Chave</label>
           <input type="text" id="chave" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Chave">
         </div>
         <div class="flex flex-col">
-          <label for="qtd" class="text-gray-800 font-semibold text-sm mb-1">Quantidade</label>
+          <label for="qtd" class="text-gray-800 font-semibold text-xs mb-1">Quantidade</label>
           <input type="number" id="qtd" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Quantidade" min="0" step="1">
         </div>
         <div class="flex flex-col">
-          <label for="alimentador" class="text-gray-800 font-semibold text-sm mb-1">Alimentador</label>
+          <label for="alimentador" class="text-gray-800 font-semibold text-xs mb-1">Alimentador</label>
           <input type="text" id="alimentador" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Alimentador">
         </div>
-        <div class="flex flex-col col-span-1 sm:col-span-2 lg:col-span-4">
-          <label for="obs" class="text-gray-800 font-semibold text-sm mb-1">Observação</label>
-          <textarea id="obs" class="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white h-20" aria-label="Observação"></textarea>
+        <div class="flex flex-col col-span-2">
+          <label for="obs" class="text-gray-800 font-semibold text-xs mb-1">Observação</label>
+          <textarea id="obs" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white h-16" aria-label="Observação"></textarea>
         </div>
         <div class="flex flex-col">
-          <label for="data" class="text-gray-800 font-semibold text-sm mb-1">Data</label>
+          <label for="data" class="text-gray-800 font-semibold text-xs mb-1">Data</label>
           <input type="date" id="data" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Data">
         </div>
         <div class="flex flex-col">
-          <label for="equipe" class="text-gray-800 font-semibold text-sm mb-1">Equipe</label>
+          <label for="equipe" class="text-gray-800 font-semibold text-xs mb-1">Equipe</label>
           <input type="text" id="equipe" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Equipe">
         </div>
         <div class="flex flex-col">
-          <label for="matricula" class="text-gray-800 font-semibold text-sm mb-1">Matrícula</label>
+          <label for="matricula" class="text-gray-800 font-semibold text-xs mb-1">Matrícula</label>
           <input type="text" id="matricula" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Matrícula">
         </div>
         <div class="flex flex-col">
-          <label for="ea" class="text-gray-800 font-semibold text-sm mb-1">EA</label>
+          <label for="ea" class="text-gray-800 font-semibold text-xs mb-1">EA</label>
           <input type="text" id="ea" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="EA">
         </div>
-        <div class="flex flex-col col-span-1 sm:col-span-2 lg:col-span-4">
-          <label for="servico" class="text-gray-800 font-semibold text-sm mb-1">Serviço (Selecione um ou mais)</label>
-          <select id="servico" multiple size="5" class="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white w-full" aria-label="Seleção de serviços" required>
+        <div class="flex flex-col col-span-2">
+          <label for="servico" class="text-gray-800 font-semibold text-xs mb-1">Serviço (Selecione um ou mais)</label>
+          <select id="servico" multiple size="4" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white w-full" aria-label="Seleção de serviços" required>
             <option value="PC">Poda primária completa - PC</option>
             <option value="PS">Poda secundária completa - PS</option>
             <option value="PP">Poda primária parcial - PP</option>
@@ -205,52 +209,52 @@
           </select>
         </div>
         <div class="flex flex-col">
-          <label for="latitude" class="text-gray-800 font-semibold text-sm mb-1">Latitude</label>
+          <label for="latitude" class="text-gray-800 font-semibold text-xs mb-1">Latitude</label>
           <input type="text" id="latitude" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-gray-50" readonly aria-label="Latitude">
         </div>
         <div class="flex flex-col">
-          <label for="longitude" class="text-gray-800 font-semibold text-sm mb-1">Longitude</label>
+          <label for="longitude" class="text-gray-800 font-semibold text-xs mb-1">Longitude</label>
           <input type="text" id="longitude" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-gray-50" readonly aria-label="Longitude">
         </div>
       </form>
 
       <!-- Botões do Formulário -->
-      <div class="flex flex-wrap gap-3 mb-6 justify-center">
-        <button onclick="pegarLatLon()" class="bg-gradient-to-r from-[#005a9e] to-[#0078d4] hover:from-[#003087] hover:to-[#005a9e] text-white font-medium py-2 px-6 rounded-md shadow-sm transition-all duration-200 flex items-center">
-          <span class="mr-2">📍</span> Localizar
+      <div class="flex flex-wrap gap-2 mb-4 justify-center">
+        <button onclick="pegarLatLon()" class="bg-gradient-to-r from-[#005a9e] to-[#0078d4] hover:from-[#003087] hover:to-[#005a9e] text-white font-medium py-1 px-4 rounded-md shadow-sm transition-all duration-200 flex items-center text-sm">
+          <span class="mr-1">📍</span> Localizar
         </button>
-        <button id="salvarBtn" onclick="salvar(event)" class="bg-gradient-to-r from-[#2e7d32] to-[#4caf50] hover:from-[#1b5e20] hover:to-[#2e7d32] text-white font-medium py-2 px-6 rounded-md shadow-sm transition-all duration-200 flex items-center">
-          <span class="mr-2">💾</span> Salvar
+        <button id="salvarBtn" onclick="salvar(event)" class="bg-gradient-to-r from-[#2e7d32] to-[#4caf50] hover:from-[#1b5e20] hover:to-[#2e7d32] text-white font-medium py-1 px-4 rounded-md shadow-sm transition-all duration-200 flex items-center text-sm">
+          <span class="mr-1">💾</span> Salvar
         </button>
-        <button onclick="limparFormulario()" class="bg-gradient-to-r from-[#616161] to-[#757575] hover:from-[#424242] hover:to-[#616161] text-white font-medium py-2 px-6 rounded-md shadow-sm transition-all duration-200 flex items-center">
-          <span class="mr-2">🧹</span> Limpar
+        <button onclick="limparFormulario()" class="bg-gradient-to-r from-[#616161] to-[#757575] hover:from-[#424242] hover:to-[#616161] text-white font-medium py-1 px-4 rounded-md shadow-sm transition-all duration-200 flex items-center text-sm">
+          <span class="mr-1">🧹</span> Limpar
         </button>
       </div>
 
       <!-- Mensagem de Status -->
-      <div id="status" class="mb-6 p-3 rounded-md text-white hidden" aria-live="assertive"></div>
+      <div id="status" class="mb-4 p-2 rounded-md text-white text-sm hidden" aria-live="assertive"></div>
 
       <!-- Tabela -->
       <div class="overflow-x-auto">
         <table id="tabela" class="w-full border-collapse bg-white rounded-md shadow-sm">
           <thead>
             <tr class="bg-gradient-to-r from-[#005a9e] to-[#0078d4] text-white">
-              <th class="p-3 text-left font-medium text-sm">Endereço</th>
-              <th class="p-3 text-left font-medium text-sm">Número</th>
-              <th class="p-3 text-left font-medium text-sm">Bairro</th>
-              <th class="p-3 text-left font-medium text-sm">Tronco</th>
-              <th class="p-3 text-left font-medium text-sm">Chave</th>
-              <th class="p-3 text-left font-medium text-sm">Qtd</th>
-              <th class="p-3 text-left font-medium text-sm">Alimentador</th>
-              <th class="p-3 text-left font-medium text-sm">Obs</th>
-              <th class="p-3 text-left font-medium text-sm">Data</th>
-              <th class="p-3 text-left font-medium text-sm">Equipe</th>
-              <th class="p-3 text-left font-medium text-sm">Matrícula</th>
-              <th class="p-3 text-left font-medium text-sm">EA</th>
-              <th class="p-3 text-left font-medium text-sm">Serviços</th>
-              <th class="p-3 text-left font-medium text-sm">Lat</th>
-              <th class="p-3 text-left font-medium text-sm">Lon</th>
-              <th class="p-3 text-left font-medium text-sm">Ações</th>
+              <th class="p-2 text-left font-medium text-xs">Endereço</th>
+              <th class="p-2 text-left font-medium text-xs">Número</th>
+              <th class="p-2 text-left font-medium text-xs">Bairro</th>
+              <th class="p-2 text-left font-medium text-xs">Tronco</th>
+              <th class="p-2 text-left font-medium text-xs">Chave</th>
+              <th class="p-2 text-left font-medium text-xs">Qtd</th>
+              <th class="p-2 text-left font-medium text-xs">Alimentador</th>
+              <th class="p-2 text-left font-medium text-xs">Obs</th>
+              <th class="p-2 text-left font-medium text-xs">Data</th>
+              <th class="p-2 text-left font-medium text-xs">Equipe</th>
+              <th class="p-2 text-left font-medium text-xs">Matrícula</th>
+              <th class="p-2 text-left font-medium text-xs">EA</th>
+              <th class="p-2 text-left font-medium text-xs">Serviços</th>
+              <th class="p-2 text-left font-medium text-xs">Lat</th>
+              <th class="p-2 text-left font-medium text-xs">Lon</th>
+              <th class="p-2 text-left font-medium text-xs">Ações</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-200"></tbody>
@@ -260,7 +264,7 @@
   </div>
 
   <!-- Rodapé com Status Automático -->
-  <footer class="bg-[#1f1f1f] text-white text-center py-3 flex items-center justify-center gap-2 text-sm">
+  <footer class="bg-[#1f1f1f] text-white text-center py-2 flex items-center justify-center gap-2 text-xs">
     <div id="autoStatus" class="status-dot" title="Status Automático"></div>
     <span id="autoStatusText">Verificando conexão...</span>
   </footer>
@@ -280,9 +284,9 @@
     function showStatus(message, type, target = 'status') {
       const status = document.getElementById(target);
       status.textContent = message;
-      status.className = `p-3 rounded-md text-white fade-in ${type === 'success' ? 'bg-[#2e7d32] status-success' : 'bg-[#d32f2f] status-error'}`;
+      status.className = `p-2 rounded-md text-white fade-in ${type === 'success' ? 'bg-[#2e7d32] status-success' : 'bg-[#d32f2f] status-error'}`;
       status.classList.remove('hidden');
-      setTimeout(() => status.classList.add('hidden'), 5000);
+      setTimeout(() => status.classList.add('hidden'), 4000);
     }
 
     // Testes Manuais
@@ -291,9 +295,9 @@
         const response = await fetch(BASE_URL);
         if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
         const data = await response.json();
-        showStatus('Backend conectado com sucesso! Mensagem: ' + data.message, 'success', 'statusTestes');
+        showStatus('Backend conectado! ' + data.message, 'success', 'statusTestes');
       } catch (err) {
-        showStatus('Erro ao conectar ao backend: ' + err.message, 'error', 'statusTestes');
+        showStatus('Erro no backend: ' + err.message, 'error', 'statusTestes');
       }
     }
 
@@ -303,12 +307,12 @@
         if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
         const data = await response.json();
         if (data.success) {
-          showStatus('Conexão com o banco bem-sucedida! Horário: ' + data.time, 'success', 'statusTestes');
+          showStatus('Banco conectado! Horário: ' + data.time, 'success', 'statusTestes');
         } else {
           throw new Error(data.error);
         }
       } catch (err) {
-        showStatus('Erro ao conectar ao banco: ' + err.message, 'error', 'statusTestes');
+        showStatus('Erro no banco: ' + err.message, 'error', 'statusTestes');
       }
     }
 
@@ -317,9 +321,9 @@
         const response = await fetch(`${BASE_URL}/servicos`);
         if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
         const data = await response.json();
-        showStatus(`Endpoint /servicos funcionando! ${data.length} registros encontrados.`, 'success', 'statusTestes');
+        showStatus(`Serviços OK! ${data.length} registros.`, 'success', 'statusTestes');
       } catch (err) {
-        showStatus('Erro ao acessar /servicos: ' + err.message, 'error', 'statusTestes');
+        showStatus('Erro nos serviços: ' + err.message, 'error', 'statusTestes');
       }
     }
 
@@ -339,14 +343,14 @@
         pos => {
           document.getElementById('latitude').value = pos.coords.latitude.toFixed(6);
           document.getElementById('longitude').value = pos.coords.longitude.toFixed(6);
-          showStatus('Coordenadas obtidas com sucesso!', 'success');
+          showStatus('Coordenadas obtidas!', 'success');
         },
-        err => showStatus('Erro ao obter localização: ' + err.message, 'error')
+        err => showStatus('Erro na localização: ' + err.message, 'error')
       );
     }
 
     // Preencher Endereço Automático
-    function pegarEndereco() {
+    async function pegarEndereco() {
       if (Date.now() - lastGeolocationCall < debounceDelay) {
         showStatus('Aguarde antes de tentar novamente.', 'error');
         return;
@@ -358,49 +362,43 @@
         return;
       }
       if (!navigator.geolocation) {
-        showStatus('Geolocalização não suportada. Insira manualmente.', 'error');
+        showStatus('Geolocalização não suportada.', 'error');
         return;
       }
 
-      showStatus('Buscando endereço...', 'success');
+      showStatus('🔄 Buscando endereço...', 'success');
 
-      navigator.geolocation.getCurrentPosition(
-        pos => {
-          const lat = pos.coords.latitude;
-          const lon = pos.coords.longitude;
-          const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`;
+      try {
+        const pos = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject);
+        });
 
-          fetch(url, { headers: { 'User-Agent': 'CadastroServicos/1.0 (lucas.teixeira.tst@hotmail.com)' } })
-            .then(res => {
-              if (!res.ok) throw new Error(`Erro HTTP: ${res.status}`);
-              return res.json();
-            })
-            .then(data => {
-              const address = data.address || {};
-              const rua = sanitizeInput(address.road || address.street || '');
-              const numero = sanitizeInput(address.housenumber || '');
-              const bairro = sanitizeInput(address.suburb || address.neighbourhood || '');
-              const cidade = sanitizeInput(address.city || address.town || address.village || '');
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`;
 
-              document.getElementById('endereco').value = rua ? `${rua}` : '';
-              document.getElementById('numero').value = numero;
-              document.getElementById('bairro').value = bairro;
-              document.getElementById('cidade').value = cidade;
-              document.getElementById('latitude').value = lat.toFixed(6);
-              document.getElementById('longitude').value = lon.toFixed(6);
+        const res = await fetch(url, { headers: { 'User-Agent': 'CadastroServicos/1.0/' } });
+        if (!res.ok) throw new Error(`Erro HTTP: ${res.status}`);
 
-              showStatus('Endereço obtido com sucesso!', 'success');
-            })
-            .catch(err => {
-              showStatus(`Erro ao buscar endereço: ${err.message}. Insira manualmente.`, 'error');
-              document.getElementById('endereco').focus();
-            });
-        },
-        err => {
-          showStatus('Erro ao obter localização: ' + err.message + '. Insira manualmente.', 'error');
-          document.getElementById('endereco').focus();
-        }
-      );
+        const data = await res.json();
+        const address = data.address || {};
+        const rua = sanitizeInput(address.road || address.street || '');
+        const numero = sanitizeInput(address.housenumber || '');
+        const bairro = sanitizeInput(address.suburb || address.neighbourhood || '');
+        const cidade = sanitizeInput(address.city || address.town || address.village || '');
+
+        document.getElementById('endereco').value = rua;
+        document.getElementById('numero').value = numero;
+        document.getElementById('bairro').value = bairro;
+        document.getElementById('cidade').value = cidade;
+        document.getElementById('latitude').value = lat.toFixed(6);
+        document.getElementById('longitude').value = lon.toFixed(6);
+
+        showStatus('Endereço obtido!', 'success');
+      } catch (err) {
+        showStatus(`Erro ao buscar endereço: ${err.message}.`, 'error');
+        document.getElementById('endereco').focus();
+      }
     }
 
     // Salvar
@@ -409,24 +407,25 @@
       const endereco = document.getElementById('endereco').value.trim();
       const bairro = document.getElementById('bairro').value.trim();
       const cidade = document.getElementById('cidade').value.trim();
+      const tronco = document.getElementById('tronco').value;
       const qtd = document.getElementById('qtd').value.trim();
       const data = document.getElementById('data').value;
       const servicosSelecionados = Array.from(document.getElementById('servico').selectedOptions).map(opt => opt.text);
 
       if (!endereco || !bairro || !cidade) {
-        showStatus('Endereço, bairro e cidade são obrigatórios.', 'error');
+        showStatus('Endereço, bairro e cidade obrigatórios.', 'error');
         return;
       }
       if (!servicosSelecionados.length) {
-        showStatus('Selecione pelo menos um serviço.', 'error');
+        showStatus('Selecione um serviço.', 'error');
         return;
       }
       if (qtd && (isNaN(qtd) || qtd < 0)) {
-        showStatus('Quantidade deve ser um número positivo.', 'error');
+        showStatus('Quantidade deve ser positiva.', 'error');
         return;
       }
       if (data && new Date(data) > new Date()) {
-        showStatus('A data não pode ser futura.', 'error');
+        showStatus('Data não pode ser futura.', 'error');
         return;
       }
 
@@ -437,7 +436,7 @@
           ['numero', sanitizeInput(document.getElementById('numero').value.trim())],
           ['bairro', sanitizeInput(bairro)],
           ['cidade', sanitizeInput(cidade)],
-          ['tronco', sanitizeInput(document.getElementById('tronco').value.trim())],
+          ['tronco', sanitizeInput(tronco)],
           ['chave', sanitizeInput(document.getElementById('chave').value.trim())],
           ['qtd', qtd || null],
           ['alimentador', sanitizeInput(document.getElementById('alimentador').value.trim())],
@@ -462,15 +461,15 @@
         });
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.error || `Erro HTTP: ${response.status} (${response.statusText})`);
+          throw new Error(errorData.error || `Erro HTTP: ${response.status}`);
         }
         await atualizarTabela();
         limparFormulario();
-        showStatus(editId ? 'Registro atualizado!' : 'Registro salvo!', 'success');
+        showStatus(editId ? 'Atualizado!' : 'Salvo!', 'success');
         editId = null;
-        document.getElementById('salvarBtn').innerHTML = '<span class="mr-2">💾</span> Salvar';
+        document.getElementById('salvarBtn').innerHTML = '<span class="mr-1">💾</span> Salvar';
       } catch (err) {
-        console.error('Erro na requisição:', err);
+        console.error('Erro:', err);
         showStatus(`Erro ao ${editId ? 'atualizar' : 'salvar'}: ${err.message}.`, 'error');
       }
     }
@@ -479,7 +478,7 @@
     function limparFormulario() {
       document.getElementById('formulario').reset();
       editId = null;
-      document.getElementById('salvarBtn').innerHTML = '<span class="mr-2">💾</span> Salvar';
+      document.getElementById('salvarBtn').innerHTML = '<span class="mr-1">💾</span> Salvar';
       document.getElementById('endereco').focus();
     }
 
@@ -518,13 +517,13 @@
 
           cells.forEach(cell => {
             const td = document.createElement('td');
-            td.className = 'p-3 text-gray-800 text-sm break-words';
+            td.className = 'p-2 text-gray-800 text-xs break-words';
             td.textContent = cell;
             tr.appendChild(td);
           });
 
           const actionTd = document.createElement('td');
-          actionTd.className = 'p-3 flex gap-2';
+          actionTd.className = 'p-2 flex gap-1';
           const editButton = document.createElement('button');
           editButton.innerHTML = '✏️';
           editButton.className = 'text-[#005a9e] hover:text-[#003087]';
@@ -539,7 +538,7 @@
                 el.value = item[id] || '';
               }
             });
-            document.getElementById('salvarBtn').innerHTML = '<span class="mr-2">💾</span> Atualizar';
+            document.getElementById('salvarBtn').innerHTML = '<span class="mr-1">💾</span> Atualizar';
             document.getElementById('endereco').focus();
           };
           actionTd.appendChild(editButton);
@@ -556,13 +555,13 @@
         });
       } catch (err) {
         console.error('Erro ao carregar tabela:', err);
-        showStatus(`Erro ao carregar dados: ${err.message}.`, 'error');
+        showStatus(`Erro ao carregar: ${err.message}.`, 'error');
       }
     }
 
     // Excluir
     async function excluir(id) {
-      if (!confirm('Deseja realmente excluir?')) return;
+      if (!confirm('Deseja excluir?')) return;
       try {
         const response = await fetch(`${BASE_URL}/servicos/${id}`, { method: 'DELETE' });
         if (!response.ok) {
@@ -570,7 +569,7 @@
           throw new Error(errorData.error || `Erro HTTP: ${response.status}`);
         }
         await atualizarTabela();
-        showStatus('Registro excluído!', 'success');
+        showStatus('Excluído!', 'success');
       } catch (err) {
         console.error('Erro ao excluir:', err);
         showStatus(`Erro ao excluir: ${err.message}.`, 'error');
@@ -585,14 +584,14 @@
           const data = await response.json();
           document.getElementById('autoStatus').className = 'status-dot status-green';
           document.getElementById('autoStatus').title = `Conexão OK - ${data.time}`;
-          document.getElementById('autoStatusText').textContent = `Conexão OK - ${data.time}`;
+          document.getElementById('autoStatusText').textContent = `OK - ${data.time}`;
         } else {
           throw new Error('Conexão falhou');
         }
       } catch {
         document.getElementById('autoStatus').className = 'status-dot status-red';
         document.getElementById('autoStatus').title = 'Conexão Falhou';
-        document.getElementById('autoStatusText').textContent = 'Conexão Falhou';
+        document.getElementById('autoStatusText').textContent = 'Falhou';
       }
     }
     setInterval(autoTestConnection, 60000);
