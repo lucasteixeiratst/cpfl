@@ -6,8 +6,6 @@
   <title>Cadastro de Serviços</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/uuid@9.0.1/dist/umd/uuidv4.min.js"></script>
   <style>
     :root {
       --ms-blue: #0078d7;
@@ -226,12 +224,14 @@
   </style>
 </head>
 <body class="min-h-screen flex flex-col">
+  <!-- Overlay para detalhes -->
   <div class="overlay" id="overlay"></div>
   
+  <!-- Painel de detalhes -->
   <div class="details-panel" id="detailsPanel">
     <div class="flex justify-between items-center mb-6">
       <h3 class="text-xl font-semibold">Detalhes do Serviço</h3>
-      <button id="closeDetails" class="text-gray-500 hover:text-gray-700 text-2xl">×</button>
+      <button id="closeDetails" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
     </div>
     <div id="serviceDetails" class="space-y-4"></div>
   </div>
@@ -253,6 +253,7 @@
   </header>
 
   <div class="container max-w-6xl mx-auto p-4 flex-grow">
+    <!-- Aviso de modo de edição -->
     <div id="editNotice" class="edit-notice hidden">
       <i class="fas fa-edit text-blue-600"></i>
       <div>
@@ -263,6 +264,7 @@
     
     <div class="ms-card p-6 mb-6">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <!-- Painel de Geolocalização -->
         <div class="ms-card bg-gray-50 p-4">
           <h3 class="text-lg font-semibold text-gray-800 mb-3">Geolocalização</h3>
           <div class="flex flex-col space-y-3">
@@ -285,6 +287,7 @@
           </div>
         </div>
 
+        <!-- Painel de Registro -->
         <div class="p-4">
           <h3 class="text-lg font-semibold text-gray-800 mb-3">Dados do Serviço</h3>
           <div class="grid grid-cols-2 gap-4">
@@ -308,8 +311,10 @@
         </div>
       </div>
 
+      <!-- Formulário Principal -->
       <h3 class="text-xl font-semibold text-gray-800 mb-4">Registro de Serviços</h3>
       <form id="formulario" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        <!-- Coluna 1 -->
         <div class="flex flex-col">
           <label for="endereco" class="ms-form-label">Endereço</label>
           <input type="text" id="endereco" class="ms-form-input" required>
@@ -323,6 +328,7 @@
           <input type="text" id="bairro" class="ms-form-input">
         </div>
         
+        <!-- Coluna 2 -->
         <div class="flex flex-col">
           <label for="tronco" class="ms-form-label">Tronco</label>
           <select id="tronco" class="ms-form-input">
@@ -340,16 +346,19 @@
           <input type="number" id="qtd" class="ms-form-input" min="0" step="1">
         </div>
         
+        <!-- Coluna 3 -->
         <div class="flex flex-col">
           <label for="alimentador" class="ms-form-label">Alimentador</label>
           <input type="text" id="alimentador" class="ms-form-input">
         </div>
         
+        <!-- Observação -->
         <div class="flex flex-col col-span-1 sm:col-span-2 lg:col-span-3">
           <label for="obs" class="ms-form-label">Observação</label>
           <textarea id="obs" class="ms-form-input h-24"></textarea>
         </div>
         
+        <!-- Serviços -->
         <div class="flex flex-col col-span-1 sm:col-span-2 lg:col-span-3">
           <label for="servico" class="ms-form-label">Serviço (Selecione um ou mais)</label>
           <select id="servico" multiple size="6" class="ms-form-input w-full" required>
@@ -364,6 +373,7 @@
         </div>
       </form>
 
+      <!-- Botões do Formulário -->
       <div class="flex flex-wrap gap-3 mb-6 justify-center">
         <button id="btnSalvar" onclick="app.form.save(event)" class="ms-button ms-button-success">
           <i class="fas fa-save"></i> Salvar Serviço
@@ -376,9 +386,11 @@
         </button>
       </div>
 
-      <div id="status" class="mb-6 p-3 rounded text-white hidden" aria-live="polite"></div>
+      <!-- Mensagem de Status -->
+      <div id="status" class="mb-6 p-3 rounded text-white hidden"></div>
     </div>
 
+    <!-- Tabela de Dados -->
     <div class="mt-6">
       <div class="flex justify-between items-center mb-4">
         <h3 class="text-xl font-semibold text-gray-800">Serviços Registrados</h3>
@@ -404,6 +416,7 @@
       </div>
     </div>
     
+    <!-- Testes de Conexão (mais discretos) -->
     <div class="tests-section">
       <div class="tests-container">
         <div class="flex justify-between items-center">
@@ -420,15 +433,16 @@
             </button>
           </div>
         </div>
-        <div id="statusTestes" class="mt-2 p-2 rounded text-sm hidden" aria-live="polite"></div>
+        <div id="statusTestes" class="mt-2 p-2 rounded text-sm hidden"></div>
       </div>
     </div>
   </div>
 
+  <!-- Rodapé com Status Automático -->
   <footer class="ms-status-bar mt-auto">
     <div class="container max-w-6xl mx-auto px-4 py-2 flex items-center justify-between">
       <div class="text-sm">
-        Sistema de Cadastro de Serviços v1.2 | © 2023
+        Sistema de Cadastro de Serviços v1.3 | © 2023
       </div>
       <div class="flex items-center">
         <div id="autoStatus" class="status-dot mr-2"></div>
@@ -441,110 +455,90 @@
     const app = {
       BASE_URL: 'https://fonseca.onrender.com',
       
+      // Módulo de formulário
       form: {
         editId: null,
+        currentItem: null,
         
         save: function(event) {
           event.preventDefault();
-          const btnSalvar = document.getElementById('btnSalvar');
-          btnSalvar.disabled = true;
-          btnSalvar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
-          
           const endereco = document.getElementById('endereco').value.trim();
           const servicosSelecionados = Array.from(document.getElementById('servico').selectedOptions).map(opt => opt.value);
-          const qtd = document.getElementById('qtd').value;
-          const data = document.getElementById('data').value;
           
           if (!endereco) {
             app.utils.showStatus('Endereço é obrigatório.', 'error');
-            btnSalvar.disabled = false;
-            btnSalvar.innerHTML = this.editId ? '<i class="fas fa-sync-alt"></i> Atualizar Serviço' : '<i class="fas fa-save"></i> Salvar Serviço';
             return;
           }
           if (!servicosSelecionados.length) {
             app.utils.showStatus('Selecione pelo menos um serviço.', 'error');
-            btnSalvar.disabled = false;
-            btnSalvar.innerHTML = this.editId ? '<i class="fas fa-sync-alt"></i> Atualizar Serviço' : '<i class="fas fa-save"></i> Salvar Serviço';
-            return;
-          }
-          if (qtd && qtd < 0) {
-            app.utils.showStatus('Quantidade deve ser um número positivo.', 'error');
-            btnSalvar.disabled = false;
-            btnSalvar.innerHTML = this.editId ? '<i class="fas fa-sync-alt"></i> Atualizar Serviço' : '<i class="fas fa-save"></i> Salvar Serviço';
-            return;
-          }
-          if (data && new Date(data) > new Date()) {
-            app.utils.showStatus('Data não pode ser futura.', 'error');
-            btnSalvar.disabled = false;
-            btnSalvar.innerHTML = this.editId ? '<i class="fas fa-sync-alt"></i> Atualizar Serviço' : '<i class="fas fa-save"></i> Salvar Serviço';
             return;
           }
           
           const item = {
-            id: this.editId || uuidv4(),
             ...app.utils.sanitizeForm(),
             servicos: servicosSelecionados.join(', ')
           };
           
+          // Se estamos editando, adicionar o ID original
+          if (this.editId) {
+            item.id = this.editId;
+          } else {
+            item.id = Date.now(); // Novo ID para novos itens
+          }
+          
+          // Salva campos no cache
           app.cache.saveFields();
-          app.api.saveService(item).finally(() => {
-            btnSalvar.disabled = false;
-            btnSalvar.innerHTML = this.editId ? '<i class="fas fa-sync-alt"></i> Atualizar Serviço' : '<i class="fas fa-save"></i> Salvar Serviço';
-          });
+          
+          app.api.saveService(item);
         },
         
         clear: function() {
           document.getElementById('formulario').reset();
           this.editId = null;
+          this.currentItem = null;
           document.getElementById('btnSalvar').innerHTML = '<i class="fas fa-save"></i> Salvar Serviço';
+          document.getElementById('endereco').focus();
           document.getElementById('editNotice').classList.add('hidden');
           document.body.classList.remove('editing-mode');
-          document.getElementById('endereco').focus();
+          
+          // Restaura campos do cache
           app.cache.loadFields();
         },
         
         edit: function(id) {
-          const item = app.data.services.find(i => i.id == id); // Use == para lidar com string/number
-          if (!item) {
-            app.utils.showStatus('Serviço não encontrado.', 'error');
-            return;
-          }
+          const item = app.data.services.find(i => i.id == id);
+          if (!item) return;
           
-          this.editId = id.toString(); // Garantir que editId seja string
-          
-          // Limpar formulário antes de preencher
-          document.getElementById('formulario').reset();
+          this.editId = item.id; // ID original do banco de dados
+          this.currentItem = item;
           
           // Preencher todos os campos
-          const fields = [
-            'endereco', 'numero', 'bairro', 'tronco', 'chave',
-            'qtd', 'alimentador', 'obs', 'data', 'equipe', 'matricula', 'ea',
-            'latitude', 'longitude'
-          ];
-          
-          fields.forEach(key => {
+          Object.keys(item).forEach(key => {
             const element = document.getElementById(key);
             if (element) {
-              element.value = app.utils.sanitizeInput(item[key] || '');
+              if (key === 'servico') {
+                // Para o campo de serviços (select múltiplo)
+                const servicosArray = item.servicos.split(', ');
+                Array.from(element.options).forEach(option => {
+                  option.selected = servicosArray.includes(option.value);
+                });
+              } else {
+                element.value = item[key] || '';
+              }
             }
           });
           
-          // Preencher serviços (select múltiplo)
-          const servicoElement = document.getElementById('servico');
-          const servicosArray = item.servicos ? item.servicos.split(', ').map(s => s.trim()) : [];
-          Array.from(servicoElement.options).forEach(option => {
-            option.selected = servicosArray.includes(option.value);
-          });
-          
-          // Atualizar interface
           document.getElementById('btnSalvar').innerHTML = '<i class="fas fa-sync-alt"></i> Atualizar Serviço';
-          document.getElementById('editNotice').classList.remove('hidden');
-          document.body.classList.add('editing-mode');
           document.getElementById('endereco').focus();
           window.scrollTo({ top: 0, behavior: 'smooth' });
+          
+          // Mostrar aviso de edição
+          document.getElementById('editNotice').classList.remove('hidden');
+          document.body.classList.add('editing-mode');
         }
       },
       
+      // Módulo de cache
       cache: {
         fields: ['equipe', 'matricula', 'ea'],
         
@@ -567,9 +561,10 @@
         }
       },
       
+      // Módulo de geolocalização
       geolocation: {
         lastCall: 0,
-        debounceDelay: 3000,
+        debounceDelay: 1000,
         
         getCoordinates: function() {
           if (Date.now() - this.lastCall < this.debounceDelay) {
@@ -618,44 +613,25 @@
             pos => {
               const lat = pos.coords.latitude;
               const lon = pos.coords.longitude;
-              const cacheKey = `address_${lat}_${lon}`;
-              const cachedAddress = localStorage.getItem(cacheKey);
-              
-              if (cachedAddress) {
-                const address = JSON.parse(cachedAddress);
-                document.getElementById('endereco').value = address.road || '';
-                document.getElementById('numero').value = address.housenumber || '';
-                document.getElementById('bairro').value = address.bairro || '';
-                document.getElementById('latitude').value = lat.toFixed(6);
-                document.getElementById('longitude').value = lon.toFixed(6);
-                app.utils.showStatus('Endereço obtido do cache!', 'success');
-                return;
-              }
-              
               const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`;
               
               fetch(url, { headers: { 'User-Agent': 'CadastroServicos/1.0' } })
-                .then(res => {
-                  if (res.status === 429) {
-                    throw new Error('Limite de requisições excedido. Tente novamente mais tarde.');
-                  }
-                  if (!res.ok) throw new Error(`Erro HTTP: ${res.status}`);
-                  return res.json();
-                })
+                .then(res => res.json())
                 .then(data => {
                   const address = data.address || {};
-                  const bairro = address.suburb || address.neighbourhood || address.quarter || address.city_district || '';
+                  
+                  // Mapeamento melhorado para bairro
+                  const bairro = address.suburb || 
+                                address.neighbourhood || 
+                                address.quarter || 
+                                address.city_district || 
+                                '';
+                  
                   document.getElementById('endereco').value = address.road || address.street || '';
                   document.getElementById('numero').value = address.housenumber || '';
                   document.getElementById('bairro').value = bairro;
                   document.getElementById('latitude').value = lat.toFixed(6);
                   document.getElementById('longitude').value = lon.toFixed(6);
-                  
-                  localStorage.setItem(cacheKey, JSON.stringify({
-                    road: address.road || address.street || '',
-                    housenumber: address.housenumber || '',
-                    bairro
-                  }));
                   
                   app.utils.showStatus('Endereço obtido com sucesso!', 'success');
                 })
@@ -672,6 +648,7 @@
         }
       },
       
+      // Módulo de visualização de detalhes
       details: {
         togglePanel: function() {
           const panel = document.getElementById('detailsPanel');
@@ -693,6 +670,7 @@
         }
       },
       
+      // Módulo de testes
       tests: {
         testBackend: async function() {
           try {
@@ -731,13 +709,15 @@
         }
       },
       
+      // Módulo de API
       api: {
         async saveService(item) {
           try {
-            const method = app.form.editId ? 'PUT' : 'POST';
-            const url = app.form.editId ? `${app.BASE_URL}/servicos/${app.form.editId}` : `${app.BASE_URL}/servicos`;
+            const isEditing = !!app.form.editId;
+            const method = isEditing ? 'PUT' : 'POST';
+            const url = isEditing ? `${app.BASE_URL}/servicos/${app.form.editId}` : `${app.BASE_URL}/servicos`;
             
-            app.utils.showStatus('Salvando serviço...', 'success');
+            app.utils.showStatus(isEditing ? 'Atualizando serviço...' : 'Salvando serviço...', 'success');
             
             const response = await fetch(url, {
               method,
@@ -746,22 +726,15 @@
             });
             
             if (!response.ok) {
-              let errorMessage = `Erro HTTP: ${response.status}`;
-              try {
-                const errorData = await response.json();
-                errorMessage = errorData.error || errorMessage;
-              } catch {
-                // Backend não retornou JSON válido
-              }
-              throw new Error(errorMessage);
+              const errorData = await response.json().catch(() => ({}));
+              throw new Error(errorData.error || `Erro HTTP: ${response.status}`);
             }
             
             await app.data.load();
             app.form.clear();
-            app.utils.showStatus(app.form.editId ? '✅ Registro atualizado com sucesso!' : '✅ Registro salvo com sucesso!', 'success');
-            app.form.editId = null;
+            app.utils.showStatus(isEditing ? '✅ Registro atualizado com sucesso!' : '✅ Registro salvo com sucesso!', 'success');
           } catch (err) {
-            app.utils.showStatus(`❌ Erro ao ${app.form.editId ? 'atualizar' : 'salvar'}: ${err.message}`, 'error');
+            app.utils.showStatus(`❌ Erro ao ${isEditing ? 'atualizar' : 'salvar'}: ${err.message}`, 'error');
           }
         },
         
@@ -796,6 +769,7 @@
         }
       },
       
+      // Módulo de dados
       data: {
         services: [],
         
@@ -803,49 +777,45 @@
           try {
             const response = await fetch(`${app.BASE_URL}/servicos`);
             if (!response.ok) {
-              throw new Error(`Erro HTTP: ${response.status}`);
+              const errorData = await response.json().catch(() => ({}));
+              throw new Error(errorData.error || `Erro HTTP: ${response.status}`);
             }
             this.services = await response.json();
+            this.renderTable();
           } catch (err) {
-            this.services = [];
             app.utils.showStatus(`❌ Erro ao carregar dados: ${err.message}`, 'error');
           }
-          this.renderTable();
         },
         
         renderTable() {
           const tbody = document.querySelector('#tabela tbody');
           tbody.innerHTML = '';
           
-          if (this.services.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="p-3 text-center">Nenhum serviço registrado</td></tr>';
-            return;
-          }
-          
           this.services.forEach(item => {
             const tr = document.createElement('tr');
             tr.className = 'hover:bg-gray-50 transition-colors';
             
+            // Formatando serviços como tags
             const servicesHtml = item.servicos 
               ? item.servicos.split(', ').map(s => 
-                  `<span class="service-tag">${app.utils.sanitizeInput(s)}</span>`).join('')
+                  `<span class="service-tag">${s}</span>`).join('') 
               : '';
             
             tr.innerHTML = `
-              <td class="p-3">${app.utils.sanitizeInput(item.endereco || '')} ${app.utils.sanitizeInput(item.numero || '')}</td>
-              <td class="p-3">${app.utils.sanitizeInput(item.bairro || '')}</td>
-              <td class="p-3">${app.utils.sanitizeInput(item.qtd || '')}</td>
-              <td class="p-3">${app.utils.sanitizeInput(item.data || '')}</td>
-              <td class="p-3">${app.utils.sanitizeInput(item.equipe || '')}</td>
+              <td class="p-3">${item.endereco || ''} ${item.numero || ''}</td>
+              <td class="p-3">${item.bairro || ''}</td>
+              <td class="p-3">${item.qtd || ''}</td>
+              <td class="p-3">${item.data || ''}</td>
+              <td class="p-3">${item.equipe || ''}</td>
               <td class="p-3">${servicesHtml}</td>
               <td class="p-3 flex gap-2">
-                <button onclick="app.form.edit('${item.id}')" class="text-blue-600 hover:text-blue-800" aria-label="Editar">
+                <button onclick="app.form.edit(${item.id})" class="text-blue-600 hover:text-blue-800" aria-label="Editar">
                   <i class="fas fa-edit"></i>
                 </button>
-                <button onclick="app.api.deleteService('${item.id}')" class="text-red-600 hover:text-red-800" aria-label="Excluir">
+                <button onclick="app.api.deleteService(${item.id})" class="text-red-600 hover:text-red-800" aria-label="Excluir">
                   <i class="fas fa-trash"></i>
                 </button>
-                <button onclick="app.details.showDetails('${item.id}')" class="text-green-600 hover:text-green-800" aria-label="Detalhes">
+                <button onclick="app.details.showDetails(${item.id})" class="text-green-600 hover:text-green-800" aria-label="Detalhes">
                   <i class="fas fa-eye"></i>
                 </button>
               </td>
@@ -868,44 +838,45 @@
             const card = document.createElement('div');
             card.className = 'ms-card p-4';
             
+            // Formatando serviços como tags
             const servicesHtml = item.servicos 
               ? item.servicos.split(', ').map(s => 
-                  `<span class="service-tag">${app.utils.sanitizeInput(s)}</span>`).join('')
+                  `<span class="service-tag">${s}</span>`).join('') 
               : '';
             
             card.innerHTML = `
               <div class="flex justify-between">
-                <h4 class="font-semibold text-lg">${app.utils.sanitizeInput(item.endereco)} ${app.utils.sanitizeInput(item.numero)}</h4>
+                <h4 class="font-semibold text-lg">${item.endereco} ${item.numero}</h4>
                 <div class="flex gap-2">
-                  <button onclick="app.form.edit('${item.id}'); app.details.closePanel();" class="text-blue-600 hover:text-blue-800" title="Editar">
+                  <button onclick="app.form.edit(${item.id}); app.details.closePanel();" class="text-blue-600 hover:text-blue-800" title="Editar">
                     <i class="fas fa-edit"></i>
                   </button>
-                  <button onclick="app.api.deleteService('${item.id}')" class="text-red-600 hover:text-red-800" title="Excluir">
+                  <button onclick="app.api.deleteService(${item.id})" class="text-red-600 hover:text-red-800" title="Excluir">
                     <i class="fas fa-trash"></i>
                   </button>
                 </div>
               </div>
               <div class="mt-3 grid grid-cols-2 gap-3 text-sm">
-                <div><strong>Bairro:</strong> ${app.utils.sanitizeInput(item.bairro || '-')}</div>
-                <div><strong>Tronco:</strong> ${app.utils.sanitizeInput(item.tronco || '-')}</div>
-                <div><strong>Chave:</strong> ${app.utils.sanitizeInput(item.chave || '-')}</div>
-                <div><strong>Quantidade:</strong> ${app.utils.sanitizeInput(item.qtd || '-')}</div>
-                <div><strong>Alimentador:</strong> ${app.utils.sanitizeInput(item.alimentador || '-')}</div>
-                <div><strong>Data:</strong> ${app.utils.sanitizeInput(item.data || '-')}</div>
-                <div><strong>Equipe:</strong> ${app.utils.sanitizeInput(item.equipe || '-')}</div>
-                <div><strong>Matrícula:</strong> ${app.utils.sanitizeInput(item.matricula || '-')}</div>
-                <div><strong>EA:</strong> ${app.utils.sanitizeInput(item.ea || '-')}</div>
+                <div><strong>Bairro:</strong> ${item.bairro || '-'}</div>
+                <div><strong>Tronco:</strong> ${item.tronco || '-'}</div>
+                <div><strong>Chave:</strong> ${item.chave || '-'}</div>
+                <div><strong>Quantidade:</strong> ${item.qtd || '-'}</div>
+                <div><strong>Alimentador:</strong> ${item.alimentador || '-'}</div>
+                <div><strong>Data:</strong> ${item.data || '-'}</div>
+                <div><strong>Equipe:</strong> ${item.equipe || '-'}</div>
+                <div><strong>Matrícula:</strong> ${item.matricula || '-'}</div>
+                <div><strong>EA:</strong> ${item.ea || '-'}</div>
               </div>
               <div class="mt-3">
                 <strong>Observação:</strong>
-                <p class="mt-1 bg-gray-50 p-2 rounded">${app.utils.sanitizeInput(item.obs || '-')}</p>
+                <p class="mt-1 bg-gray-50 p-2 rounded">${item.obs || '-'}</p>
               </div>
               <div class="mt-3">
                 <strong>Serviços:</strong>
                 <div class="mt-1 flex flex-wrap gap-1">${servicesHtml}</div>
               </div>
               <div class="mt-3 text-xs text-gray-500">
-                <strong>Coordenadas:</strong> ${app.utils.sanitizeInput(item.latitude || '-')}, ${app.utils.sanitizeInput(item.longitude || '-')}
+                <strong>Coordenadas:</strong> ${item.latitude || '-'}, ${item.longitude || '-'}
               </div>
             `;
             
@@ -915,52 +886,50 @@
         
         showDetails: function(id) {
           const item = this.services.find(i => i.id == id);
-          if (!item) {
-            app.utils.showStatus('Serviço não encontrado.', 'error');
-            return;
-          }
+          if (!item) return;
           
           const container = document.getElementById('serviceDetails');
           
+          // Formatando serviços como tags
           const servicesHtml = item.servicos 
             ? item.servicos.split(', ').map(s => 
-                `<span class="service-tag">${app.utils.sanitizeInput(s)}</span>`).join('')
+                `<span class="service-tag">${s}</span>`).join('') 
             : '';
           
           container.innerHTML = `
             <div class="ms-card p-4">
               <div class="flex justify-between">
-                <h4 class="font-semibold text-lg">${app.utils.sanitizeInput(item.endereco)} ${app.utils.sanitizeInput(item.numero)}</h4>
+                <h4 class="font-semibold text-lg">${item.endereco} ${item.numero}</h4>
                 <div class="flex gap-2">
-                  <button onclick="app.form.edit('${item.id}'); app.details.closePanel();" class="text-blue-600 hover:text-blue-800" title="Editar">
+                  <button onclick="app.form.edit(${item.id}); app.details.closePanel();" class="text-blue-600 hover:text-blue-800" title="Editar">
                     <i class="fas fa-edit"></i>
                   </button>
-                  <button onclick="app.api.deleteService('${item.id}')" class="text-red-600 hover:text-red-800" title="Excluir">
+                  <button onclick="app.api.deleteService(${item.id})" class="text-red-600 hover:text-red-800" title="Excluir">
                     <i class="fas fa-trash"></i>
                   </button>
                 </div>
               </div>
               <div class="mt-3 grid grid-cols-2 gap-3">
-                <div><strong>Bairro:</strong> ${app.utils.sanitizeInput(item.bairro || '-')}</div>
-                <div><strong>Tronco:</strong> ${app.utils.sanitizeInput(item.tronco || '-')}</div>
-                <div><strong>Chave:</strong> ${app.utils.sanitizeInput(item.chave || '-')}</div>
-                <div><strong>Quantidade:</strong> ${app.utils.sanitizeInput(item.qtd || '-')}</div>
-                <div><strong>Alimentador:</strong> ${app.utils.sanitizeInput(item.alimentador || '-')}</div>
-                <div><strong>Data:</strong> ${app.utils.sanitizeInput(item.data || '-')}</div>
-                <div><strong>Equipe:</strong> ${app.utils.sanitizeInput(item.equipe || '-')}</div>
-                <div><strong>Matrícula:</strong> ${app.utils.sanitizeInput(item.matricula || '-')}</div>
-                <div><strong>EA:</strong> ${app.utils.sanitizeInput(item.ea || '-')}</div>
+                <div><strong>Bairro:</strong> ${item.bairro || '-'}</div>
+                <div><strong>Tronco:</strong> ${item.tronco || '-'}</div>
+                <div><strong>Chave:</strong> ${item.chave || '-'}</div>
+                <div><strong>Quantidade:</strong> ${item.qtd || '-'}</div>
+                <div><strong>Alimentador:</strong> ${item.alimentador || '-'}</div>
+                <div><strong>Data:</strong> ${item.data || '-'}</div>
+                <div><strong>Equipe:</strong> ${item.equipe || '-'}</div>
+                <div><strong>Matrícula:</strong> ${item.matricula || '-'}</div>
+                <div><strong>EA:</strong> ${item.ea || '-'}</div>
               </div>
               <div class="mt-3">
                 <strong>Observação:</strong>
-                <p class="mt-1 bg-gray-50 p-2 rounded">${app.utils.sanitizeInput(item.obs || '-')}</p>
+                <p class="mt-1 bg-gray-50 p-2 rounded">${item.obs || '-'}</p>
               </div>
               <div class="mt-3">
                 <strong>Serviços:</strong>
                 <div class="mt-1 flex flex-wrap gap-1">${servicesHtml}</div>
               </div>
               <div class="mt-3 text-sm text-gray-500">
-                <strong>Coordenadas:</strong> ${app.utils.sanitizeInput(item.latitude || '-')}, ${app.utils.sanitizeInput(item.longitude || '-')}
+                <strong>Coordenadas:</strong> ${item.latitude || '-'}, ${item.longitude || '-'}
               </div>
             </div>
           `;
@@ -969,10 +938,11 @@
         }
       },
       
+      // Utilitários
       utils: {
         sanitizeInput(input) {
           if (typeof input !== 'string') return input;
-          return DOMPurify.sanitize(input);
+          return input.replace(/</g, "&lt;").replace(/>/g, "&gt;");
         },
         
         sanitizeForm() {
@@ -1003,18 +973,22 @@
         }
       },
       
+      // Inicialização
       init: function() {
         this.data.load();
         this.api.autoTestConnection();
-        setInterval(() => this.api.autoTestConnection(), 300000); // 5 minutos
+        setInterval(() => this.api.autoTestConnection(), 60000);
         
+        // Carregar cache ao iniciar
         app.cache.loadFields();
         
+        // Fechar painel de detalhes
         document.getElementById('closeDetails').addEventListener('click', () => this.details.closePanel());
         document.getElementById('overlay').addEventListener('click', () => this.details.closePanel());
       }
     };
 
+    // Inicializar a aplicação quando o documento estiver carregado
     document.addEventListener('DOMContentLoaded', () => {
       app.init();
     });
