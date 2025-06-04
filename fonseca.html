@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Cadastro de Serviços</title>
+  <title>Cadastro de Serviços - Edição Avançada</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -21,12 +21,8 @@
       background-color: #f8f9fa;
     }
     
-    .fade-in { animation: fadeIn 0.5s; }
+    .fade-in { animation: fadeIn 0.3s; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    
-    select[multiple] { scrollbar-width: thin; }
-    select[multiple]::-webkit-scrollbar { width: 6px; }
-    select[multiple]::-webkit-scrollbar-thumb { background: var(--ms-blue); border-radius: 4px; }
     
     .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
     .status-green { background-color: var(--ms-green); }
@@ -79,28 +75,6 @@
       background-color: #eaeaea;
     }
     
-    .ms-form-label {
-      font-weight: 600;
-      color: #323130;
-      margin-bottom: 6px;
-      display: block;
-    }
-    
-    .ms-form-input {
-      border: 1px solid var(--ms-gray-border);
-      border-radius: 4px;
-      padding: 10px 12px;
-      width: 100%;
-      font-size: 15px;
-      transition: border-color 0.2s;
-    }
-    
-    .ms-form-input:focus {
-      outline: 2px solid var(--ms-blue);
-      outline-offset: -1px;
-      border-color: transparent;
-    }
-    
     .ms-table {
       width: 100%;
       border-collapse: separate;
@@ -127,75 +101,28 @@
       padding: 10px 0;
     }
     
-    .details-panel {
-      position: fixed;
-      top: 0;
-      right: -500px;
-      width: 480px;
-      height: 100vh;
-      background: white;
-      box-shadow: -2px 0 10px rgba(0,0,0,0.1);
-      z-index: 1000;
-      transition: right 0.3s ease;
-      overflow-y: auto;
-      padding: 20px;
+    .editable-cell {
+      position: relative;
+      cursor: pointer;
+      transition: background-color 0.2s;
     }
     
-    .details-panel.open {
-      right: 0;
+    .editable-cell:hover {
+      background-color: #f0f7ff;
     }
     
-    .overlay {
-      position: fixed;
+    .editable-cell input {
+      position: absolute;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0,0,0,0.5);
-      z-index: 999;
-      display: none;
-    }
-    
-    .overlay.show {
-      display: block;
-    }
-    
-    .tests-section {
-      background-color: #f8f8f8;
-      border-top: 1px solid #eee;
-      padding: 15px;
-      margin-top: 30px;
-    }
-    
-    .tests-container {
-      max-width: 600px;
-      margin: 0 auto;
-    }
-    
-    .test-button {
-      background: #e5e5e5;
-      border: none;
-      padding: 6px 12px;
-      border-radius: 4px;
-      font-size: 14px;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    
-    .test-button:hover {
-      background: #d5d5d5;
-    }
-    
-    .toggle-details {
-      background: none;
-      border: none;
-      color: var(--ms-blue);
-      cursor: pointer;
-      font-size: 14px;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      padding: 5px 0;
+      border: 2px solid var(--ms-blue);
+      padding: 0 10px;
+      font-size: inherit;
+      outline: none;
+      background: white;
+      box-sizing: border-box;
     }
     
     .service-tag {
@@ -208,32 +135,204 @@
       margin: 2px;
     }
     
-    .editing-mode {
-      box-shadow: 0 0 0 2px var(--ms-blue);
+    .spreadsheet-header {
+      background-color: #f0f0f0;
+      padding: 15px;
+      border-bottom: 1px solid #ddd;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
     
-    .edit-notice {
-      background-color: #e1f0ff;
-      padding: 10px;
+    .spreadsheet-tools {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .spreadsheet-tools button {
+      padding: 6px 12px;
+      background: white;
+      border: 1px solid #ddd;
       border-radius: 4px;
-      margin-bottom: 15px;
+      cursor: pointer;
       display: flex;
       align-items: center;
+      gap: 5px;
+    }
+    
+    .spreadsheet-tools button:hover {
+      background-color: #f5f5f5;
+    }
+    
+    .editing-row {
+      background-color: #e6f7ff !important;
+    }
+    
+    .selection-checkbox {
+      width: 20px;
+      height: 20px;
+    }
+    
+    .context-menu {
+      position: absolute;
+      background: white;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      border-radius: 4px;
+      z-index: 1000;
+      display: none;
+    }
+    
+    .context-menu-item {
+      padding: 8px 15px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .context-menu-item:hover {
+      background-color: #f0f0f0;
+    }
+    
+    .multi-select {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      padding: 5px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      min-height: 40px;
+      align-items: center;
+    }
+    
+    .multi-select-option {
+      background-color: #e1f0ff;
+      color: var(--ms-blue);
+      border-radius: 4px;
+      padding: 3px 8px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    
+    .multi-select-option .remove {
+      cursor: pointer;
+      font-size: 12px;
+    }
+    
+    .multi-select input {
+      border: none;
+      outline: none;
+      padding: 5px;
+      min-width: 100px;
+    }
+    
+    .edit-modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      border-radius: 8px;
+      z-index: 1000;
+      width: 90%;
+      max-width: 800px;
+      max-height: 90vh;
+      overflow-y: auto;
+      display: none;
+    }
+    
+    .edit-modal-content {
+      padding: 20px;
+    }
+    
+    .edit-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 15px;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .edit-modal-body {
+      padding: 20px 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+    }
+    
+    .edit-modal-footer {
+      padding-top: 15px;
+      border-top: 1px solid #eee;
+      display: flex;
+      justify-content: flex-end;
       gap: 10px;
+    }
+    
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 999;
+      display: none;
+    }
+    
+    .form-group {
+      margin-bottom: 15px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+      color: #555;
+    }
+    
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 15px;
+    }
+    
+    .form-group textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+    
+    .selected-row {
+      background-color: #e6f7ff !important;
     }
   </style>
 </head>
 <body class="min-h-screen flex flex-col">
-  <!-- Overlay para detalhes -->
-  <div class="overlay" id="overlay"></div>
+  <!-- Overlay para modais -->
+  <div class="modal-overlay" id="modalOverlay"></div>
   
-  <!-- Painel de detalhes -->
-  <div class="details-panel" id="detailsPanel">
-    <div class="flex justify-between items-center mb-6">
-      <h3 class="text-xl font-semibold">Detalhes do Serviço</h3>
-      <button id="closeDetails" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+  <!-- Modal de edição -->
+  <div class="edit-modal" id="editModal">
+    <div class="edit-modal-content">
+      <div class="edit-modal-header">
+        <h3 class="text-xl font-semibold">Editar Serviço</h3>
+        <button id="closeModal" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+      </div>
+      <div class="edit-modal-body" id="editModalBody">
+        <!-- Conteúdo dinâmico -->
+      </div>
+      <div class="edit-modal-footer">
+        <button id="saveChanges" class="ms-button ms-button-success">
+          <i class="fas fa-save"></i> Salvar Alterações
+        </button>
+        <button id="cancelEdit" class="ms-button ms-button-neutral">
+          <i class="fas fa-times"></i> Cancelar
+        </button>
+      </div>
     </div>
-    <div id="serviceDetails" class="space-y-4"></div>
   </div>
 
   <header class="bg-white shadow-sm">
@@ -253,196 +352,64 @@
   </header>
 
   <div class="container max-w-6xl mx-auto p-4 flex-grow">
-    <!-- Aviso de modo de edição -->
-    <div id="editNotice" class="edit-notice hidden">
-      <i class="fas fa-edit text-blue-600"></i>
+    <div class="spreadsheet-header">
       <div>
-        <strong>Modo de Edição</strong>
-        <p>Você está editando um serviço existente. Atualize as informações e clique em "Atualizar Serviço".</p>
+        <h2 class="text-xl font-semibold">Serviços Registrados</h2>
+        <p class="text-gray-600">Clique duas vezes em qualquer célula para editar</p>
       </div>
+      <div class="spreadsheet-tools">
+        <button id="btnAddNew">
+          <i class="fas fa-plus"></i> Novo Serviço
+        </button>
+        <button id="btnSaveAll">
+          <i class="fas fa-save"></i> Salvar Tudo
+        </button>
+        <button id="btnDeleteSelected">
+          <i class="fas fa-trash"></i> Excluir Selecionados
+        </button>
+        <button id="btnExport">
+          <i class="fas fa-file-export"></i> Exportar
+        </button>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table id="spreadsheet" class="ms-table w-full">
+        <thead>
+          <tr>
+            <th style="width: 30px">
+              <input type="checkbox" id="selectAll" class="selection-checkbox">
+            </th>
+            <th>Endereço</th>
+            <th>Número</th>
+            <th>Bairro</th>
+            <th>Tronco</th>
+            <th>Chave</th>
+            <th>Qtd</th>
+            <th>Alimentador</th>
+            <th>Data</th>
+            <th>Equipe</th>
+            <th>Matrícula</th>
+            <th>EA</th>
+            <th>Serviços</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="spreadsheetBody">
+          <!-- Conteúdo dinâmico -->
+        </tbody>
+      </table>
     </div>
     
-    <div class="ms-card p-6 mb-6">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <!-- Painel de Geolocalização -->
-        <div class="ms-card bg-gray-50 p-4">
-          <h3 class="text-lg font-semibold text-gray-800 mb-3">Geolocalização</h3>
-          <div class="flex flex-col space-y-3">
-            <button onclick="app.geolocation.getAddress()" class="ms-button ms-button-primary">
-              <i class="fas fa-home"></i> Preencher Endereço Automático
-            </button>
-            <button onclick="app.geolocation.getCoordinates()" class="ms-button ms-button-primary">
-              <i class="fas fa-map-marker-alt"></i> Obter Coordenadas
-            </button>
-          </div>
-          <div class="grid grid-cols-2 gap-3 mt-4">
-            <div>
-              <label class="ms-form-label">Latitude</label>
-              <input type="text" id="latitude" class="ms-form-input" readonly>
-            </div>
-            <div>
-              <label class="ms-form-label">Longitude</label>
-              <input type="text" id="longitude" class="ms-form-input" readonly>
-            </div>
-          </div>
-        </div>
-
-        <!-- Painel de Registro -->
-        <div class="p-4">
-          <h3 class="text-lg font-semibold text-gray-800 mb-3">Dados do Serviço</h3>
-          <div class="grid grid-cols-2 gap-4">
-            <div class="flex flex-col">
-              <label for="equipe" class="ms-form-label">Equipe</label>
-              <input type="text" id="equipe" class="ms-form-input">
-            </div>
-            <div class="flex flex-col">
-              <label for="matricula" class="ms-form-label">Matrícula</label>
-              <input type="text" id="matricula" class="ms-form-input">
-            </div>
-            <div class="flex flex-col">
-              <label for="ea" class="ms-form-label">EA</label>
-              <input type="text" id="ea" class="ms-form-input">
-            </div>
-            <div class="flex flex-col">
-              <label for="data" class="ms-form-label">Data</label>
-              <input type="date" id="data" class="ms-form-input">
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Formulário Principal -->
-      <h3 class="text-xl font-semibold text-gray-800 mb-4">Registro de Serviços</h3>
-      <form id="formulario" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-        <!-- Coluna 1 -->
-        <div class="flex flex-col">
-          <label for="endereco" class="ms-form-label">Endereço</label>
-          <input type="text" id="endereco" class="ms-form-input" required>
-        </div>
-        <div class="flex flex-col">
-          <label for="numero" class="ms-form-label">Número</label>
-          <input type="text" id="numero" class="ms-form-input">
-        </div>
-        <div class="flex flex-col">
-          <label for="bairro" class="ms-form-label">Bairro</label>
-          <input type="text" id="bairro" class="ms-form-input">
-        </div>
-        
-        <!-- Coluna 2 -->
-        <div class="flex flex-col">
-          <label for="tronco" class="ms-form-label">Tronco</label>
-          <select id="tronco" class="ms-form-input">
-            <option value="">Selecione...</option>
-            <option value="TRONCO">TRONCO</option>
-            <option value="RAMAL">RAMAL</option>
-          </select>
-        </div>
-        <div class="flex flex-col">
-          <label for="chave" class="ms-form-label">Chave</label>
-          <input type="text" id="chave" class="ms-form-input">
-        </div>
-        <div class="flex flex-col">
-          <label for="qtd" class="ms-form-label">Quantidade</label>
-          <input type="number" id="qtd" class="ms-form-input" min="0" step="1">
-        </div>
-        
-        <!-- Coluna 3 -->
-        <div class="flex flex-col">
-          <label for="alimentador" class="ms-form-label">Alimentador</label>
-          <input type="text" id="alimentador" class="ms-form-input">
-        </div>
-        
-        <!-- Observação -->
-        <div class="flex flex-col col-span-1 sm:col-span-2 lg:col-span-3">
-          <label for="obs" class="ms-form-label">Observação</label>
-          <textarea id="obs" class="ms-form-input h-24"></textarea>
-        </div>
-        
-        <!-- Serviços -->
-        <div class="flex flex-col col-span-1 sm:col-span-2 lg:col-span-3">
-          <label for="servico" class="ms-form-label">Serviço (Selecione um ou mais)</label>
-          <select id="servico" multiple size="6" class="ms-form-input w-full" required>
-            <option value="PC">Poda primária completa - PC</option>
-            <option value="PS">Poda secundária completa - PS</option>
-            <option value="PP">Poda primária parcial - PP</option>
-            <option value="SP">Poda secundária parcial - SP</option>
-            <option value="U">Cruzeta urgente troca em 15 dias - U</option>
-            <option value="CV">Corte de cerca viva - CV</option>
-            <option value="A">Cruzeta alta para 90 dias - A</option>
-          </select>
-        </div>
-      </form>
-
-      <!-- Botões do Formulário -->
-      <div class="flex flex-wrap gap-3 mb-6 justify-center">
-        <button id="btnSalvar" onclick="app.form.save(event)" class="ms-button ms-button-success">
-          <i class="fas fa-save"></i> Salvar Serviço
-        </button>
-        <button onclick="app.form.clear()" class="ms-button ms-button-neutral">
-          <i class="fas fa-broom"></i> Limpar Formulário
-        </button>
-        <button onclick="app.details.togglePanel()" class="ms-button ms-button-primary">
-          <i class="fas fa-list"></i> Ver Serviços
-        </button>
-      </div>
-
-      <!-- Mensagem de Status -->
-      <div id="status" class="mb-6 p-3 rounded text-white hidden"></div>
-    </div>
-
-    <!-- Tabela de Dados -->
-    <div class="mt-6">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="text-xl font-semibold text-gray-800">Serviços Registrados</h3>
-        <button class="toggle-details" onclick="app.details.togglePanel()">
-          <i class="fas fa-expand"></i> Ver detalhes completos
-        </button>
-      </div>
-      <div class="overflow-x-auto ms-card">
-        <table id="tabela" class="ms-table w-full">
-          <thead>
-            <tr>
-              <th>Endereço</th>
-              <th>Bairro</th>
-              <th>Qtd</th>
-              <th>Data</th>
-              <th>Equipe</th>
-              <th>Serviços</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-200"></tbody>
-        </table>
-      </div>
-    </div>
-    
-    <!-- Testes de Conexão (mais discretos) -->
-    <div class="tests-section">
-      <div class="tests-container">
-        <div class="flex justify-between items-center">
-          <h4 class="text-sm font-medium text-gray-600">Testes de Conexão</h4>
-          <div class="flex gap-2">
-            <button onclick="app.tests.testBackend()" class="test-button">
-              <i class="fas fa-link mr-1"></i> Backend
-            </button>
-            <button onclick="app.tests.testDatabase()" class="test-button">
-              <i class="fas fa-database mr-1"></i> Banco
-            </button>
-            <button onclick="app.tests.testServices()" class="test-button">
-              <i class="fas fa-list-check mr-1"></i> Serviços
-            </button>
-          </div>
-        </div>
-        <div id="statusTestes" class="mt-2 p-2 rounded text-sm hidden"></div>
-      </div>
-    </div>
+    <!-- Mensagem de Status -->
+    <div id="status" class="mt-4 p-3 rounded text-white hidden"></div>
   </div>
 
   <!-- Rodapé com Status Automático -->
   <footer class="ms-status-bar mt-auto">
     <div class="container max-w-6xl mx-auto px-4 py-2 flex items-center justify-between">
       <div class="text-sm">
-        Sistema de Cadastro de Serviços v1.3 | © 2023
+        Sistema de Cadastro de Serviços v2.0 | © 2023 | Modo Planilha
       </div>
       <div class="flex items-center">
         <div id="autoStatus" class="status-dot mr-2"></div>
@@ -454,275 +421,475 @@
   <script>
     const app = {
       BASE_URL: 'https://fonseca.onrender.com',
+      services: [],
+      editingCell: null,
+      selectedIds: new Set(),
+      currentEditId: null,
       
-      // Módulo de formulário
-      form: {
-        editId: null,
-        currentItem: null,
+      // Inicialização
+      init: function() {
+        this.loadData();
+        this.setupEventListeners();
+        this.autoTestConnection();
+        setInterval(() => this.autoTestConnection(), 60000);
+      },
+      
+      // Carregar dados
+      async loadData() {
+        try {
+          const response = await fetch(`${this.BASE_URL}/servicos`);
+          if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
+          this.services = await response.json();
+          this.renderSpreadsheet();
+        } catch (err) {
+          this.showStatus(`❌ Erro ao carregar dados: ${err.message}`, 'error');
+        }
+      },
+      
+      // Renderizar planilha
+      renderSpreadsheet() {
+        const tbody = document.getElementById('spreadsheetBody');
+        tbody.innerHTML = '';
         
-        save: function(event) {
-          event.preventDefault();
-          const endereco = document.getElementById('endereco').value.trim();
-          const servicosSelecionados = Array.from(document.getElementById('servico').selectedOptions).map(opt => opt.value);
+        this.services.forEach(service => {
+          const tr = document.createElement('tr');
+          tr.dataset.id = service.id;
+          if (this.selectedIds.has(service.id)) tr.classList.add('selected-row');
           
-          if (!endereco) {
-            app.utils.showStatus('Endereço é obrigatório.', 'error');
-            return;
-          }
-          if (!servicosSelecionados.length) {
-            app.utils.showStatus('Selecione pelo menos um serviço.', 'error');
-            return;
-          }
+          // Formatando serviços como tags
+          const servicesHtml = service.servicos 
+            ? service.servicos.split(', ').map(s => 
+                `<span class="service-tag">${s}</span>`).join('') 
+            : '';
           
-          const item = {
-            ...app.utils.sanitizeForm(),
-            servicos: servicosSelecionados.join(', ')
-          };
+          tr.innerHTML = `
+            <td class="text-center">
+              <input type="checkbox" class="selection-checkbox row-select" data-id="${service.id}">
+            </td>
+            <td class="editable-cell" data-field="endereco">${service.endereco || ''}</td>
+            <td class="editable-cell" data-field="numero">${service.numero || ''}</td>
+            <td class="editable-cell" data-field="bairro">${service.bairro || ''}</td>
+            <td class="editable-cell" data-field="tronco">${service.tronco || ''}</td>
+            <td class="editable-cell" data-field="chave">${service.chave || ''}</td>
+            <td class="editable-cell" data-field="qtd">${service.qtd || ''}</td>
+            <td class="editable-cell" data-field="alimentador">${service.alimentador || ''}</td>
+            <td class="editable-cell" data-field="data">${service.data || ''}</td>
+            <td class="editable-cell" data-field="equipe">${service.equipe || ''}</td>
+            <td class="editable-cell" data-field="matricula">${service.matricula || ''}</td>
+            <td class="editable-cell" data-field="ea">${service.ea || ''}</td>
+            <td>${servicesHtml}</td>
+            <td class="flex gap-2">
+              <button class="edit-service-btn" data-id="${service.id}" title="Editar Completo">
+                <i class="fas fa-edit text-blue-600"></i>
+              </button>
+              <button class="delete-service-btn" data-id="${service.id}" title="Excluir">
+                <i class="fas fa-trash text-red-600"></i>
+              </button>
+            </td>
+          `;
           
-          // Se estamos editando, adicionar o ID original
-          if (this.editId) {
-            item.id = this.editId;
-          } else {
-            item.id = Date.now(); // Novo ID para novos itens
-          }
-          
-          // Salva campos no cache
-          app.cache.saveFields();
-          
-          app.api.saveService(item);
-        },
+          tbody.appendChild(tr);
+        });
         
-        clear: function() {
-          document.getElementById('formulario').reset();
-          this.editId = null;
-          this.currentItem = null;
-          document.getElementById('btnSalvar').innerHTML = '<i class="fas fa-save"></i> Salvar Serviço';
-          document.getElementById('endereco').focus();
-          document.getElementById('editNotice').classList.add('hidden');
-          document.body.classList.remove('editing-mode');
-          
-          // Restaura campos do cache
-          app.cache.loadFields();
-        },
+        // Adicionar event listeners para as células editáveis
+        document.querySelectorAll('.editable-cell').forEach(cell => {
+          cell.addEventListener('dblclick', this.startEditing.bind(this));
+        });
         
-        edit: function(id) {
-          const item = app.data.services.find(i => i.id == id);
-          if (!item) return;
-          
-          this.editId = item.id; // ID original do banco de dados
-          this.currentItem = item;
-          
-          // Preencher todos os campos
-          Object.keys(item).forEach(key => {
-            const element = document.getElementById(key);
-            if (element) {
-              if (key === 'servico') {
-                // Para o campo de serviços (select múltiplo)
-                const servicosArray = item.servicos.split(', ');
-                Array.from(element.options).forEach(option => {
-                  option.selected = servicosArray.includes(option.value);
-                });
-              } else {
-                element.value = item[key] || '';
-              }
+        // Adicionar event listeners para botões de ação
+        document.querySelectorAll('.edit-service-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            const id = e.currentTarget.dataset.id;
+            this.openEditModal(id);
+          });
+        });
+        
+        document.querySelectorAll('.delete-service-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            const id = e.currentTarget.dataset.id;
+            this.deleteService(id);
+          });
+        });
+        
+        // Adicionar event listeners para seleção de linhas
+        document.querySelectorAll('.row-select').forEach(checkbox => {
+          checkbox.addEventListener('change', (e) => {
+            const id = e.target.dataset.id;
+            if (e.target.checked) {
+              this.selectedIds.add(id);
+              e.target.closest('tr').classList.add('selected-row');
+            } else {
+              this.selectedIds.delete(id);
+              e.target.closest('tr').classList.remove('selected-row');
             }
           });
-          
-          document.getElementById('btnSalvar').innerHTML = '<i class="fas fa-sync-alt"></i> Atualizar Serviço';
-          document.getElementById('endereco').focus();
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-          
-          // Mostrar aviso de edição
-          document.getElementById('editNotice').classList.remove('hidden');
-          document.body.classList.add('editing-mode');
+        });
+      },
+      
+      // Iniciar edição de célula
+      startEditing(e) {
+        // Se já estiver editando, salve primeiro
+        if (this.editingCell) {
+          this.finishEditing();
+        }
+        
+        const cell = e.currentTarget;
+        const value = cell.textContent;
+        const field = cell.dataset.field;
+        const rowId = cell.closest('tr').dataset.id;
+        
+        cell.innerHTML = `<input type="text" value="${value}" data-field="${field}" data-row="${rowId}">`;
+        const input = cell.querySelector('input');
+        input.focus();
+        
+        // Salvar referência para a célula sendo editada
+        this.editingCell = cell;
+        
+        // Adicionar event listeners para salvar ao perder foco ou pressionar Enter
+        input.addEventListener('blur', this.finishEditing.bind(this));
+        input.addEventListener('keyup', (e) => {
+          if (e.key === 'Enter') this.finishEditing();
+        });
+      },
+      
+      // Finalizar edição de célula
+      finishEditing() {
+        if (!this.editingCell) return;
+        
+        const input = this.editingCell.querySelector('input');
+        const newValue = input.value;
+        const field = input.dataset.field;
+        const rowId = input.dataset.row;
+        
+        // Atualizar visualmente
+        this.editingCell.textContent = newValue;
+        this.editingCell = null;
+        
+        // Atualizar dados localmente
+        const service = this.services.find(s => s.id == rowId);
+        if (service) {
+          service[field] = newValue;
+          this.saveService(service);
         }
       },
       
-      // Módulo de cache
-      cache: {
-        fields: ['equipe', 'matricula', 'ea'],
+      // Abrir modal de edição completa
+      openEditModal(id) {
+        this.currentEditId = id;
+        const service = this.services.find(s => s.id == id);
+        if (!service) return;
         
-        saveFields: function() {
-          this.fields.forEach(field => {
-            const value = document.getElementById(field).value.trim();
-            if (value) {
-              localStorage.setItem(field, value);
+        const modalBody = document.getElementById('editModalBody');
+        modalBody.innerHTML = this.getEditForm(service);
+        
+        // Mostrar modal
+        document.getElementById('editModal').style.display = 'block';
+        document.getElementById('modalOverlay').style.display = 'block';
+        
+        // Configurar multi-select de serviços
+        this.setupMultiSelect(service);
+      },
+      
+      // Gerar formulário de edição
+      getEditForm(service) {
+        const services = service.servicos ? service.servicos.split(', ') : [];
+        const serviceOptions = [
+          'PC', 'PS', 'PP', 'SP', 'U', 'CV', 'A'
+        ];
+        
+        return `
+          <div class="form-group">
+            <label>Endereço</label>
+            <input type="text" id="edit-endereco" value="${service.endereco || ''}">
+          </div>
+          <div class="form-group">
+            <label>Número</label>
+            <input type="text" id="edit-numero" value="${service.numero || ''}">
+          </div>
+          <div class="form-group">
+            <label>Bairro</label>
+            <input type="text" id="edit-bairro" value="${service.bairro || ''}">
+          </div>
+          <div class="form-group">
+            <label>Tronco</label>
+            <select id="edit-tronco">
+              <option value="">Selecione...</option>
+              <option value="TRONCO" ${service.tronco === 'TRONCO' ? 'selected' : ''}>TRONCO</option>
+              <option value="RAMAL" ${service.tronco === 'RAMAL' ? 'selected' : ''}>RAMAL</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Chave</label>
+            <input type="text" id="edit-chave" value="${service.chave || ''}">
+          </div>
+          <div class="form-group">
+            <label>Quantidade</label>
+            <input type="number" id="edit-qtd" value="${service.qtd || ''}">
+          </div>
+          <div class="form-group">
+            <label>Alimentador</label>
+            <input type="text" id="edit-alimentador" value="${service.alimentador || ''}">
+          </div>
+          <div class="form-group">
+            <label>Data</label>
+            <input type="date" id="edit-data" value="${service.data || ''}">
+          </div>
+          <div class="form-group">
+            <label>Equipe</label>
+            <input type="text" id="edit-equipe" value="${service.equipe || ''}">
+          </div>
+          <div class="form-group">
+            <label>Matrícula</label>
+            <input type="text" id="edit-matricula" value="${service.matricula || ''}">
+          </div>
+          <div class="form-group">
+            <label>EA</label>
+            <input type="text" id="edit-ea" value="${service.ea || ''}">
+          </div>
+          <div class="form-group">
+            <label>Observação</label>
+            <textarea id="edit-obs">${service.obs || ''}</textarea>
+          </div>
+          <div class="form-group">
+            <label>Serviços</label>
+            <div class="multi-select" id="service-select">
+              ${services.map(s => `
+                <div class="multi-select-option">
+                  ${s}
+                  <span class="remove" data-value="${s}">×</span>
+                </div>
+              `).join('')}
+              <input type="text" id="service-input" placeholder="Adicione serviços...">
+            </div>
+            <div class="mt-2">
+              ${serviceOptions.map(opt => `
+                <button type="button" class="service-option-btn" data-value="${opt}">${opt}</button>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      },
+      
+      // Configurar multi-select
+      setupMultiSelect(service) {
+        const selectedServices = service.servicos ? service.servicos.split(', ') : [];
+        
+        // Adicionar serviços existentes
+        const serviceSelect = document.getElementById('service-select');
+        
+        // Evento para adicionar serviço ao pressionar Enter
+        document.getElementById('service-input').addEventListener('keyup', (e) => {
+          if (e.key === 'Enter' && e.target.value.trim()) {
+            const value = e.target.value.trim();
+            if (!selectedServices.includes(value)) {
+              selectedServices.push(value);
+              this.updateServiceSelect(selectedServices);
+              e.target.value = '';
+            }
+          }
+        });
+        
+        // Evento para remover serviço
+        serviceSelect.addEventListener('click', (e) => {
+          if (e.target.classList.contains('remove')) {
+            const value = e.target.dataset.value;
+            const index = selectedServices.indexOf(value);
+            if (index !== -1) {
+              selectedServices.splice(index, 1);
+              this.updateServiceSelect(selectedServices);
+            }
+          }
+        });
+        
+        // Evento para botões de serviço
+        document.querySelectorAll('.service-option-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            const value = e.target.dataset.value;
+            if (!selectedServices.includes(value)) {
+              selectedServices.push(value);
+              this.updateServiceSelect(selectedServices);
             }
           });
-        },
+        });
+      },
+      
+      // Atualizar display de serviços selecionados
+      updateServiceSelect(services) {
+        const serviceSelect = document.getElementById('service-select');
+        const input = document.getElementById('service-input');
         
-        loadFields: function() {
-          this.fields.forEach(field => {
-            const savedValue = localStorage.getItem(field);
-            if (savedValue) {
-              document.getElementById(field).value = savedValue;
+        serviceSelect.innerHTML = `
+          ${services.map(s => `
+            <div class="multi-select-option">
+              ${s}
+              <span class="remove" data-value="${s}">×</span>
+            </div>
+          `).join('')}
+          <input type="text" id="service-input" placeholder="Adicione serviços...">
+        `;
+        
+        // Reatribuir eventos
+        document.getElementById('service-input').addEventListener('keyup', (e) => {
+          if (e.key === 'Enter' && e.target.value.trim()) {
+            const value = e.target.value.trim();
+            if (!services.includes(value)) {
+              services.push(value);
+              this.updateServiceSelect(services);
+              e.target.value = '';
+            }
+          }
+        });
+      },
+      
+      // Salvar serviço
+      async saveService(service) {
+        try {
+          const method = service.id ? 'PUT' : 'POST';
+          const url = service.id ? `${this.BASE_URL}/servicos/${service.id}` : `${this.BASE_URL}/servicos`;
+          
+          this.showStatus('Salvando alterações...', 'success');
+          
+          const response = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(service)
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `Erro HTTP: ${response.status}`);
+          }
+          
+          // Recarregar dados se for um novo item
+          if (!service.id) {
+            await this.loadData();
+          }
+          
+          this.showStatus('✅ Alterações salvas com sucesso!', 'success');
+        } catch (err) {
+          this.showStatus(`❌ Erro ao salvar: ${err.message}`, 'error');
+        }
+      },
+      
+      // Excluir serviço
+      async deleteService(id) {
+        if (!confirm('Deseja realmente excluir este serviço?')) return;
+        try {
+          this.showStatus('Excluindo serviço...', 'success');
+          const response = await fetch(`${this.BASE_URL}/servicos/${id}`, { method: 'DELETE' });
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `Erro HTTP: ${response.status}`);
+          }
+          
+          // Remover localmente
+          this.services = this.services.filter(s => s.id != id);
+          this.renderSpreadsheet();
+          
+          this.showStatus('✅ Serviço excluído com sucesso!', 'success');
+        } catch (err) {
+          this.showStatus(`❌ Erro ao excluir: ${err.message}`, 'error');
+        }
+      },
+      
+      // Salvar alterações do modal
+      saveModalChanges() {
+        const service = this.services.find(s => s.id == this.currentEditId);
+        if (!service) return;
+        
+        // Atualizar campos
+        service.endereco = document.getElementById('edit-endereco').value;
+        service.numero = document.getElementById('edit-numero').value;
+        service.bairro = document.getElementById('edit-bairro').value;
+        service.tronco = document.getElementById('edit-tronco').value;
+        service.chave = document.getElementById('edit-chave').value;
+        service.qtd = document.getElementById('edit-qtd').value;
+        service.alimentador = document.getElementById('edit-alimentador').value;
+        service.data = document.getElementById('edit-data').value;
+        service.equipe = document.getElementById('edit-equipe').value;
+        service.matricula = document.getElementById('edit-matricula').value;
+        service.ea = document.getElementById('edit-ea').value;
+        service.obs = document.getElementById('edit-obs').value;
+        
+        // Obter serviços selecionados
+        const services = [];
+        document.querySelectorAll('#service-select .multi-select-option').forEach(el => {
+          services.push(el.textContent.replace('×', '').trim());
+        });
+        service.servicos = services.join(', ');
+        
+        // Salvar
+        this.saveService(service);
+        this.closeEditModal();
+        this.renderSpreadsheet();
+      },
+      
+      // Fechar modal de edição
+      closeEditModal() {
+        document.getElementById('editModal').style.display = 'none';
+        document.getElementById('modalOverlay').style.display = 'none';
+        this.currentEditId = null;
+      },
+      
+      // Testar conexão automaticamente
+      async autoTestConnection() {
+        try {
+          const response = await fetch(`${this.BASE_URL}/test-db`);
+          if (response.ok) {
+            const data = await response.json();
+            document.getElementById('autoStatus').className = 'status-dot status-green';
+            document.getElementById('statusMessage').textContent = `Conectado - ${data.time}`;
+          }
+        } catch {
+          document.getElementById('autoStatus').className = 'status-dot status-red';
+          document.getElementById('statusMessage').textContent = 'Conexão falhou';
+        }
+      },
+      
+      // Configurar event listeners
+      setupEventListeners() {
+        // Fechar modal
+        document.getElementById('closeModal').addEventListener('click', () => this.closeEditModal());
+        document.getElementById('cancelEdit').addEventListener('click', () => this.closeEditModal());
+        document.getElementById('modalOverlay').addEventListener('click', () => this.closeEditModal());
+        
+        // Salvar alterações do modal
+        document.getElementById('saveChanges').addEventListener('click', () => this.saveModalChanges());
+        
+        // Selecionar todos
+        document.getElementById('selectAll').addEventListener('change', (e) => {
+          const isChecked = e.target.checked;
+          document.querySelectorAll('.row-select').forEach(checkbox => {
+            checkbox.checked = isChecked;
+            const id = checkbox.dataset.id;
+            if (isChecked) {
+              this.selectedIds.add(id);
+              checkbox.closest('tr').classList.add('selected-row');
+            } else {
+              this.selectedIds.delete(id);
+              checkbox.closest('tr').classList.remove('selected-row');
             }
           });
-        }
-      },
-      
-      // Módulo de geolocalização
-      geolocation: {
-        lastCall: 0,
-        debounceDelay: 1000,
+        });
         
-        getCoordinates: function() {
-          if (Date.now() - this.lastCall < this.debounceDelay) {
-            app.utils.showStatus('Aguarde antes de tentar novamente.', 'error');
-            return;
-          }
-          this.lastCall = Date.now();
-          
-          if (!navigator.geolocation) {
-            app.utils.showStatus('Geolocalização não suportada.', 'error');
-            return;
-          }
-          
-          app.utils.showStatus('Obtendo coordenadas...', 'success');
-          
-          navigator.geolocation.getCurrentPosition(
-            pos => {
-              document.getElementById('latitude').value = pos.coords.latitude.toFixed(6);
-              document.getElementById('longitude').value = pos.coords.longitude.toFixed(6);
-              app.utils.showStatus('Coordenadas obtidas com sucesso!', 'success');
-            },
-            err => app.utils.showStatus('Erro ao obter localização: ' + err.message, 'error')
-          );
-        },
+        // Adicionar novo serviço
+        document.getElementById('btnAddNew').addEventListener('click', () => {
+          this.openEditModal(null);
+        });
         
-        getAddress: function() {
-          if (Date.now() - this.lastCall < this.debounceDelay) {
-            app.utils.showStatus('Aguarde antes de tentar novamente.', 'error');
-            return;
-          }
-          this.lastCall = Date.now();
-          
-          if (!navigator.onLine) {
-            app.utils.showStatus('Sem conexão. Insira manualmente.', 'error');
-            return;
-          }
-          
-          if (!navigator.geolocation) {
-            app.utils.showStatus('Geolocalização não suportada. Insira manualmente.', 'error');
-            return;
-          }
-          
-          app.utils.showStatus('Buscando endereço...', 'success');
-          
-          navigator.geolocation.getCurrentPosition(
-            pos => {
-              const lat = pos.coords.latitude;
-              const lon = pos.coords.longitude;
-              const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`;
-              
-              fetch(url, { headers: { 'User-Agent': 'CadastroServicos/1.0' } })
-                .then(res => res.json())
-                .then(data => {
-                  const address = data.address || {};
-                  
-                  // Mapeamento melhorado para bairro
-                  const bairro = address.suburb || 
-                                address.neighbourhood || 
-                                address.quarter || 
-                                address.city_district || 
-                                '';
-                  
-                  document.getElementById('endereco').value = address.road || address.street || '';
-                  document.getElementById('numero').value = address.housenumber || '';
-                  document.getElementById('bairro').value = bairro;
-                  document.getElementById('latitude').value = lat.toFixed(6);
-                  document.getElementById('longitude').value = lon.toFixed(6);
-                  
-                  app.utils.showStatus('Endereço obtido com sucesso!', 'success');
-                })
-                .catch(err => {
-                  app.utils.showStatus('Erro ao buscar endereço: ' + err.message, 'error');
-                  document.getElementById('endereco').focus();
-                });
-            },
-            err => {
-              app.utils.showStatus('Erro ao obter localização: ' + err.message, 'error');
-              document.getElementById('endereco').focus();
-            }
-          );
-        }
-      },
-      
-      // Módulo de visualização de detalhes
-      details: {
-        togglePanel: function() {
-          const panel = document.getElementById('detailsPanel');
-          const overlay = document.getElementById('overlay');
-          
-          if (panel.classList.contains('open')) {
-            panel.classList.remove('open');
-            overlay.classList.remove('show');
-          } else {
-            panel.classList.add('open');
-            overlay.classList.add('show');
-            app.data.renderFullDetails();
-          }
-        },
-        
-        closePanel: function() {
-          document.getElementById('detailsPanel').classList.remove('open');
-          document.getElementById('overlay').classList.remove('show');
-        }
-      },
-      
-      // Módulo de testes
-      tests: {
-        testBackend: async function() {
+        // Salvar tudo
+        document.getElementById('btnSaveAll').addEventListener('click', async () => {
           try {
-            app.utils.showStatus('Testando conexão com backend...', 'success', 'statusTestes');
-            const response = await fetch(app.BASE_URL);
-            if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
-            const data = await response.json();
-            app.utils.showStatus('✅ Backend conectado com sucesso! Mensagem: ' + data.message, 'success', 'statusTestes');
-          } catch (err) {
-            app.utils.showStatus('❌ Erro ao conectar ao backend: ' + err.message, 'error', 'statusTestes');
-          }
-        },
-        
-        testDatabase: async function() {
-          try {
-            app.utils.showStatus('Testando conexão com banco de dados...', 'success', 'statusTestes');
-            const response = await fetch(`${app.BASE_URL}/test-db`);
-            if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
-            const data = await response.json();
-            app.utils.showStatus('✅ Conexão com o banco bem-sucedida! Horário: ' + data.time, 'success', 'statusTestes');
-          } catch (err) {
-            app.utils.showStatus('❌ Erro ao conectar ao banco: ' + err.message, 'error', 'statusTestes');
-          }
-        },
-        
-        testServices: async function() {
-          try {
-            app.utils.showStatus('Testando endpoint de serviços...', 'success', 'statusTestes');
-            const response = await fetch(`${app.BASE_URL}/servicos`);
-            if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
-            const data = await response.json();
-            app.utils.showStatus(`✅ Endpoint /servicos funcionando! ${data.length} registros encontrados.`, 'success', 'statusTestes');
-          } catch (err) {
-            app.utils.showStatus('❌ Erro ao acessar /servicos: ' + err.message, 'error', 'statusTestes');
-          }
-        }
-      },
-      
-      // Módulo de API
-      api: {
-        async saveService(item) {
-          try {
-            const isEditing = !!app.form.editId;
-            const method = isEditing ? 'PUT' : 'POST';
-            const url = isEditing ? `${app.BASE_URL}/servicos/${app.form.editId}` : `${app.BASE_URL}/servicos`;
+            this.showStatus('Salvando todas as alterações...', 'success');
             
-            app.utils.showStatus(isEditing ? 'Atualizando serviço...' : 'Salvando serviço...', 'success');
+            // Filtrar apenas serviços modificados
+            const servicesToSave = this.services;
             
-            const response = await fetch(url, {
-              method,
+            // Enviar em lote
+            const response = await fetch(`${this.BASE_URL}/servicos/batch`, {
+              method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(item)
+              body: JSON.stringify(servicesToSave)
             });
             
             if (!response.ok) {
@@ -730,261 +897,38 @@
               throw new Error(errorData.error || `Erro HTTP: ${response.status}`);
             }
             
-            await app.data.load();
-            app.form.clear();
-            app.utils.showStatus(isEditing ? '✅ Registro atualizado com sucesso!' : '✅ Registro salvo com sucesso!', 'success');
+            this.showStatus('✅ Todas as alterações foram salvas!', 'success');
           } catch (err) {
-            app.utils.showStatus(`❌ Erro ao ${isEditing ? 'atualizar' : 'salvar'}: ${err.message}`, 'error');
+            this.showStatus(`❌ Erro ao salvar tudo: ${err.message}`, 'error');
           }
-        },
+        });
         
-        async deleteService(id) {
-          if (!confirm('Deseja realmente excluir este serviço?')) return;
-          try {
-            app.utils.showStatus('Excluindo serviço...', 'success');
-            const response = await fetch(`${app.BASE_URL}/servicos/${id}`, { method: 'DELETE' });
-            if (!response.ok) {
-              const errorData = await response.json().catch(() => ({}));
-              throw new Error(errorData.error || `Erro HTTP: ${response.status}`);
-            }
-            await app.data.load();
-            app.utils.showStatus('✅ Serviço excluído com sucesso!', 'success');
-          } catch (err) {
-            app.utils.showStatus(`❌ Erro ao excluir: ${err.message}`, 'error');
-          }
-        },
-        
-        async autoTestConnection() {
-          try {
-            const response = await fetch(`${app.BASE_URL}/test-db`);
-            if (response.ok) {
-              const data = await response.json();
-              document.getElementById('autoStatus').className = 'status-dot status-green';
-              document.getElementById('statusMessage').textContent = `Conectado - ${data.time}`;
-            }
-          } catch {
-            document.getElementById('autoStatus').className = 'status-dot status-red';
-            document.getElementById('statusMessage').textContent = 'Conexão falhou';
-          }
-        }
-      },
-      
-      // Módulo de dados
-      data: {
-        services: [],
-        
-        async load() {
-          try {
-            const response = await fetch(`${app.BASE_URL}/servicos`);
-            if (!response.ok) {
-              const errorData = await response.json().catch(() => ({}));
-              throw new Error(errorData.error || `Erro HTTP: ${response.status}`);
-            }
-            this.services = await response.json();
-            this.renderTable();
-          } catch (err) {
-            app.utils.showStatus(`❌ Erro ao carregar dados: ${err.message}`, 'error');
-          }
-        },
-        
-        renderTable() {
-          const tbody = document.querySelector('#tabela tbody');
-          tbody.innerHTML = '';
-          
-          this.services.forEach(item => {
-            const tr = document.createElement('tr');
-            tr.className = 'hover:bg-gray-50 transition-colors';
-            
-            // Formatando serviços como tags
-            const servicesHtml = item.servicos 
-              ? item.servicos.split(', ').map(s => 
-                  `<span class="service-tag">${s}</span>`).join('') 
-              : '';
-            
-            tr.innerHTML = `
-              <td class="p-3">${item.endereco || ''} ${item.numero || ''}</td>
-              <td class="p-3">${item.bairro || ''}</td>
-              <td class="p-3">${item.qtd || ''}</td>
-              <td class="p-3">${item.data || ''}</td>
-              <td class="p-3">${item.equipe || ''}</td>
-              <td class="p-3">${servicesHtml}</td>
-              <td class="p-3 flex gap-2">
-                <button onclick="app.form.edit(${item.id})" class="text-blue-600 hover:text-blue-800" aria-label="Editar">
-                  <i class="fas fa-edit"></i>
-                </button>
-                <button onclick="app.api.deleteService(${item.id})" class="text-red-600 hover:text-red-800" aria-label="Excluir">
-                  <i class="fas fa-trash"></i>
-                </button>
-                <button onclick="app.details.showDetails(${item.id})" class="text-green-600 hover:text-green-800" aria-label="Detalhes">
-                  <i class="fas fa-eye"></i>
-                </button>
-              </td>
-            `;
-            
-            tbody.appendChild(tr);
-          });
-        },
-        
-        renderFullDetails() {
-          const container = document.getElementById('serviceDetails');
-          container.innerHTML = '';
-          
-          if (this.services.length === 0) {
-            container.innerHTML = '<p class="text-center py-8">Nenhum serviço registrado</p>';
+        // Excluir selecionados
+        document.getElementById('btnDeleteSelected').addEventListener('click', () => {
+          if (this.selectedIds.size === 0) {
+            this.showStatus('Selecione pelo menos um serviço para excluir', 'error');
             return;
           }
           
-          this.services.forEach(item => {
-            const card = document.createElement('div');
-            card.className = 'ms-card p-4';
-            
-            // Formatando serviços como tags
-            const servicesHtml = item.servicos 
-              ? item.servicos.split(', ').map(s => 
-                  `<span class="service-tag">${s}</span>`).join('') 
-              : '';
-            
-            card.innerHTML = `
-              <div class="flex justify-between">
-                <h4 class="font-semibold text-lg">${item.endereco} ${item.numero}</h4>
-                <div class="flex gap-2">
-                  <button onclick="app.form.edit(${item.id}); app.details.closePanel();" class="text-blue-600 hover:text-blue-800" title="Editar">
-                    <i class="fas fa-edit"></i>
-                  </button>
-                  <button onclick="app.api.deleteService(${item.id})" class="text-red-600 hover:text-red-800" title="Excluir">
-                    <i class="fas fa-trash"></i>
-                  </button>
-                </div>
-              </div>
-              <div class="mt-3 grid grid-cols-2 gap-3 text-sm">
-                <div><strong>Bairro:</strong> ${item.bairro || '-'}</div>
-                <div><strong>Tronco:</strong> ${item.tronco || '-'}</div>
-                <div><strong>Chave:</strong> ${item.chave || '-'}</div>
-                <div><strong>Quantidade:</strong> ${item.qtd || '-'}</div>
-                <div><strong>Alimentador:</strong> ${item.alimentador || '-'}</div>
-                <div><strong>Data:</strong> ${item.data || '-'}</div>
-                <div><strong>Equipe:</strong> ${item.equipe || '-'}</div>
-                <div><strong>Matrícula:</strong> ${item.matricula || '-'}</div>
-                <div><strong>EA:</strong> ${item.ea || '-'}</div>
-              </div>
-              <div class="mt-3">
-                <strong>Observação:</strong>
-                <p class="mt-1 bg-gray-50 p-2 rounded">${item.obs || '-'}</p>
-              </div>
-              <div class="mt-3">
-                <strong>Serviços:</strong>
-                <div class="mt-1 flex flex-wrap gap-1">${servicesHtml}</div>
-              </div>
-              <div class="mt-3 text-xs text-gray-500">
-                <strong>Coordenadas:</strong> ${item.latitude || '-'}, ${item.longitude || '-'}
-              </div>
-            `;
-            
-            container.appendChild(card);
-          });
-        },
-        
-        showDetails: function(id) {
-          const item = this.services.find(i => i.id == id);
-          if (!item) return;
-          
-          const container = document.getElementById('serviceDetails');
-          
-          // Formatando serviços como tags
-          const servicesHtml = item.servicos 
-            ? item.servicos.split(', ').map(s => 
-                `<span class="service-tag">${s}</span>`).join('') 
-            : '';
-          
-          container.innerHTML = `
-            <div class="ms-card p-4">
-              <div class="flex justify-between">
-                <h4 class="font-semibold text-lg">${item.endereco} ${item.numero}</h4>
-                <div class="flex gap-2">
-                  <button onclick="app.form.edit(${item.id}); app.details.closePanel();" class="text-blue-600 hover:text-blue-800" title="Editar">
-                    <i class="fas fa-edit"></i>
-                  </button>
-                  <button onclick="app.api.deleteService(${item.id})" class="text-red-600 hover:text-red-800" title="Excluir">
-                    <i class="fas fa-trash"></i>
-                  </button>
-                </div>
-              </div>
-              <div class="mt-3 grid grid-cols-2 gap-3">
-                <div><strong>Bairro:</strong> ${item.bairro || '-'}</div>
-                <div><strong>Tronco:</strong> ${item.tronco || '-'}</div>
-                <div><strong>Chave:</strong> ${item.chave || '-'}</div>
-                <div><strong>Quantidade:</strong> ${item.qtd || '-'}</div>
-                <div><strong>Alimentador:</strong> ${item.alimentador || '-'}</div>
-                <div><strong>Data:</strong> ${item.data || '-'}</div>
-                <div><strong>Equipe:</strong> ${item.equipe || '-'}</div>
-                <div><strong>Matrícula:</strong> ${item.matricula || '-'}</div>
-                <div><strong>EA:</strong> ${item.ea || '-'}</div>
-              </div>
-              <div class="mt-3">
-                <strong>Observação:</strong>
-                <p class="mt-1 bg-gray-50 p-2 rounded">${item.obs || '-'}</p>
-              </div>
-              <div class="mt-3">
-                <strong>Serviços:</strong>
-                <div class="mt-1 flex flex-wrap gap-1">${servicesHtml}</div>
-              </div>
-              <div class="mt-3 text-sm text-gray-500">
-                <strong>Coordenadas:</strong> ${item.latitude || '-'}, ${item.longitude || '-'}
-              </div>
-            </div>
-          `;
-          
-          app.details.togglePanel();
-        }
+          if (confirm(`Deseja realmente excluir ${this.selectedIds.size} serviço(s)?`)) {
+            this.selectedIds.forEach(id => {
+              this.deleteService(id);
+            });
+            this.selectedIds.clear();
+          }
+        });
       },
       
-      // Utilitários
-      utils: {
-        sanitizeInput(input) {
-          if (typeof input !== 'string') return input;
-          return input.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        },
+      // Mostrar status
+      showStatus(message, type) {
+        const element = document.getElementById('status');
+        element.textContent = message;
+        element.className = `p-3 rounded fade-in ${type === 'success' ? 'bg-green-500' : 'bg-red-500'}`;
+        element.classList.remove('hidden');
         
-        sanitizeForm() {
-          const fields = [
-            'endereco', 'numero', 'bairro', 'tronco', 'chave',
-            'qtd', 'alimentador', 'obs', 'data', 'equipe', 'matricula', 'ea',
-            'latitude', 'longitude'
-          ];
-          
-          const result = {};
-          fields.forEach(field => {
-            const element = document.getElementById(field);
-            const value = element ? element.value.trim() : '';
-            result[field] = this.sanitizeInput(value);
-          });
-          return result;
-        },
-        
-        showStatus(message, type, target = 'status') {
-          const element = document.getElementById(target);
-          element.textContent = message;
-          element.className = `p-3 rounded fade-in ${type === 'success' ? 'bg-green-500' : 'bg-red-500'}`;
-          element.classList.remove('hidden');
-          
-          setTimeout(() => {
-            element.classList.add('hidden');
-          }, 5000);
-        }
-      },
-      
-      // Inicialização
-      init: function() {
-        this.data.load();
-        this.api.autoTestConnection();
-        setInterval(() => this.api.autoTestConnection(), 60000);
-        
-        // Carregar cache ao iniciar
-        app.cache.loadFields();
-        
-        // Fechar painel de detalhes
-        document.getElementById('closeDetails').addEventListener('click', () => this.details.closePanel());
-        document.getElementById('overlay').addEventListener('click', () => this.details.closePanel());
+        setTimeout(() => {
+          element.classList.add('hidden');
+        }, 5000);
       }
     };
 
