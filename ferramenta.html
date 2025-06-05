@@ -1,210 +1,588 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerar files.json para Mapa CPFL</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            padding: 0;
-            background-color: #f4f4f4;
-        }
-        h1 {
-            font-size: 24px;
-            color: #333;
-        }
-        button {
-            background-color: #4285F4;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            font-size: 16px;
-            border-radius: 5px;
-            cursor: pointer;
-            margin: 10px 0;
-        }
-        button:hover {
-            background-color: #357ae8;
-        }
-        #log {
-            background-color: white;
-            border: 1px solid #ccc;
-            padding: 10px;
-            height: 300px;
-            overflow-y: auto;
-            margin-bottom: 10px;
-            font-family: monospace;
-            font-size: 14px;
-        }
-        #jsonOutput {
-            width: 100%;
-            height: 200px;
-            font-family: monospace;
-            font-size: 14px;
-            background-color: #fff;
-            border: 1px solid #ccc;
-            padding: 10px;
-            margin-bottom: 10px;
-        }
-        #copyJson {
-            background-color: #4CAF50;
-        }
-        #copyJson:hover {
-            background-color: #45a049;
-        }
-    </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cadastro de Serviços</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    /* Use Segoe UI with fallbacks */
+    body {
+      font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+    }
+
+    /* Fluent Design card with subtle blur */
+    .fluent-card {
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      transition: box-shadow 0.3s ease;
+    }
+
+    .fluent-card:hover {
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    }
+
+    /* Smooth fade-in animation */
+    .fade-in {
+      animation: fadeIn 0.4s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Custom scrollbar */
+    select {
+      scrollbar-width: thin;
+      scrollbar-color: #005a9e transparent;
+    }
+
+    select::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    select::-webkit-scrollbar-thumb {
+      background: #005a9e;
+      border-radius: 4px;
+    }
+
+    /* Status dot */
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      margin-right: 6px;
+    }
+
+    .status-green {
+      background-color: #2e7d32;
+    }
+
+    .status-red {
+      background-color: #d32f2f;
+    }
+
+    /* Focus states */
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(0, 90, 158, 0.25);
+      border-color: #005a9e;
+    }
+
+    /* Button hover and active states */
+    button {
+      transition: all 0.2s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    button:active {
+      transform: translateY(0);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Compact input styling */
+    .compact-input {
+      padding: 0.375rem;
+      font-size: 0.75rem;
+      line-height: 1rem;
+    }
+
+    /* Status message with icons */
+    .status-success::before {
+      content: '✅ ';
+      display: inline-block;
+    }
+
+    .status-error::before {
+      content: '⚠️ ';
+      display: inline-block;
+    }
+  </style>
 </head>
-<body>
-    <h1>Gerar files.json para Mapa CPFL</h1>
-    <button id="generateBtn">Gerar files.json</button>
-    <div id="log">Aguardando início do processamento...</div>
-    <textarea id="jsonOutput" readonly placeholder="O arquivo files.json aparecerá aqui após a geração."></textarea>
-    <button id="copyJson" style="display: none;">Copiar JSON</button>
+<body class="bg-gray-200 font-sans min-h-screen flex flex-col">
+  <div class="container max-w-4xl mx-auto p-2 flex-grow">
+    <div class="fluent-card p-4">
+      <h2 class="text-xl font-bold text-center text-gray-900 mb-4">Cadastro de Serviços</h2>
 
-    <script>
-        const generateBtn = document.getElementById('generateBtn');
-        const logDiv = document.getElementById('log');
-        const jsonOutput = document.getElementById('jsonOutput');
-        const copyJsonBtn = document.getElementById('copyJson');
+      <!-- Botão de Preencher Endereço Automático -->
+      <div class="mb-4 text-center">
+        <button onclick="pegarEndereco()" class="bg-gradient-to-r from-[#005a9e] to-[#0078d4] hover:from-[#003087] hover:to-[#005a9e] text-white font-medium py-1 px-4 rounded-md shadow-sm transition-all duration-200 flex items-center justify-center mx-auto text-sm">
+          <span class="mr-1">🏠</span> Preencher Endereço
+        </button>
+      </div>
 
-        // Lista de arquivos KMZ
-        const kmzFiles = [
-            "AGUAS DE LINDOIA.kmz", "AGUDOS.kmz", "ALTINOPOLIS.kmz", "AMERICANA.kmz", "AMPARO.kmz",
-            "ARACATUBA.kmz", "ARARAQUARA.kmz", "BARIRI.kmz", "BARRA BONITA.kmz", "BARRETOS.kmz",
-            "BATATAIS.kmz", "BAURU.kmz", "BEBEDOURO.kmz", "BIRIGUI.kmz", "BOA ESPERANCA DO SUL.kmz",
-            "BOTUCATU.kmz", "BRAUNA.kmz", "BROTAS.kmz", "CAFELANDIA.kmz", "CAJOBI.kmz",
-            "CAJURU.kmz", "CAMPINAS BARAO GERALDO-1.kmz", "CAMPINAS CAMPO GRANDE-1.kmz",
-            "CAMPINAS CENTRO-1.kmz", "CAMPINAS SOUZAS-1.kmz", "CAMPINAS TREVO-1.kmz", "CAPIVARI.kmz",
-            "CONGONHAS.kmz", "COSMOPOLIS.kmz", "CRAVINHOS.kmz", "DESCALVADO.kmz", "DOIS CORREGOS.kmz",
-            "DOURADO.kmz", "DUARTINA.kmz", "ESPIRITO SANTO DO PINHAL.kmz", "FRANCA.kmz", "GARCA.kmz",
-            "GAVIAO PEIXOTO.kmz", "GETULINA.kmz", "GUAIRA.kmz", "GUANABARA.kmz", "GUARARAPES.kmz",
-            "GUARIBA.kmz", "HIPODROMO.kmz", "HORTOLANDIA.kmz", "IACANGA.kmz", "IBIRA.kmz",
-            "IBITINGA.kmz", "IGARAPAVA.kmz", "IPUA.kmz", "ITAPIRA.kmz", "ITAPOLIS.kmz", "ITATIBA.kmz",
-            "ITATINGA.kmz", "ITUVERAVA.kmz", "JABOTICABAL.kmz", "JARDINOPOLIS.kmz", "JAU.kmz",
-            "JOSE BONIFACIO.kmz", "LENCOIS PAULISTA.kmz", "LINS.kmz", "MARILIA.kmz", "MATAO.kmz",
-            "METROPOLITANA.kmz", "MIGUELOPOLIS.kmz", "MIRASSOL.kmz", "MONTE ALTO.kmz",
-            "MONTE APRAZIVEL.kmz", "MONTE MOR.kmz", "MORRO AGUDO.kmz", "MORRO DO CIPO.kmz",
-            "NOVA GRANADA.kmz", "OCAUCU.kmz", "OLIMPIA.kmz", "ORLANDIA.kmz", "PARAISO.kmz",
-            "PARDINHO.kmz", "PAULINIA.kmz", "PEDERNEIRAS.kmz", "PEDREGULHO.kmz", "PENAPOLIS.kmz",
-            "PIACATU.kmz", "PIRACICABA SANTA CECILIA.kmz", "PIRACICABA SANTA TEREZINHA.kmz",
-            "PIRACICABA.kmz", "PIRAJUI - EA.kmz", "PIRANGI.kmz", "PITANGUEIRAS.kmz", "POMPEIA.kmz",
-            "PRESIDENTE ALVES.kmz", "PROMISSAO.kmz", "RESTINGA.kmz", "RIBEIRAO PRETO NORTE.kmz",
-            "RIBEIRAO PRETO SUL.kmz", "RINCAO.kmz", "SANTA ADELIA.kmz", "SANTA BARBARA DOESTE.kmz",
-            "SANTA ROSA DE VITERBO.kmz", "SANTO ANTONIO ARACANGUA.kmz", "SAO CARLOS.kmz",
-            "SAO JOAQUIM DA BARRA.kmz", "SAO JOSE RIO PRETO.kmz", "SAO MANUEL.kmz", "SAO PEDRO.kmz",
-            "SAO SIMAO.kmz", "SERRA NEGRA.kmz", "SERRANA.kmz", "SERTAOZINHO.kmz", "SOCORRO.kmz",
-            "SUMARE.kmz", "TANABI.kmz", "TAQUARITINGA.kmz", "UIRAPURU.kmz", "VALINHOS.kmz",
-            "VALPARAISO.kmz", "VIRADOURO.kmz"
-        ];
+      <!-- Seção de Testes -->
+      <div class="mb-4 p-2 bg-gray-50/90 rounded-md shadow-inner">
+        <h3 class="text-base font-semibold text-gray-800 mb-2">Testes de Conexão</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <button onclick="testarBackend()" class="bg-gradient-to-r from-[#005a9e] to-[#0078d4] hover:from-[#003087] hover:to-[#005a9e] text-white font-medium py-1 px-3 rounded-md shadow-sm transition-all duration-200 flex items-center justify-center text-sm">
+            <span class="mr-1">🔗</span> Supabase
+          </button>
+          <button onclick="testarBanco()" class="bg-gradient-to-r from-[#2e7d32] to-[#4caf50] hover:from-[#1b5e20] hover:to-[#2e7d32] text-white font-medium py-1 px-3 rounded-md shadow-sm transition-all duration-200 flex items-center justify-center text-sm">
+            <span class="mr-1">🗄️</span> Banco
+          </button>
+        </div>
+        <div id="statusTestes" class="mt-2 p-2 rounded-md text-white text-sm hidden" aria-live="assertive"></div>
+      </div>
 
-        // Base URL dos KMZ (raiz do repositório)
-        const baseUrl = "https://lucasteixeiratst.github.io/cpfl/";
+      <!-- Formulário -->
+      <form id="formulario" class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
+        <div class="flex flex-col">
+          <label for="endereco" class="text-gray-800 font-semibold text-xs mb-1">Endereço</label>
+          <input type="text" id="endereco" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Endereço" required>
+        </div>
+        <div class="flex flex-col">
+          <label for="cidade" class="text-gray-800 font-semibold text-xs mb-1">Cidade</label>
+          <input type="text" id="cidade" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Cidade" required>
+        </div>
+        <div class="flex flex-col">
+          <label for="numero" class="text-gray-800 font-semibold text-xs mb-1">Número</label>
+          <input type="text" id="numero" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Número">
+        </div>
+        <div class="flex flex-col">
+          <label for="bairro" class="text-gray-800 font-semibold text-xs mb-1">Bairro</label>
+          <input type="text" id="bairro" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Bairro" required>
+        </div>
+        <div class="flex flex-col">
+          <label for="tronco" class="text-gray-800 font-semibold text-xs mb-1">Tronco</label>
+          <select id="tronco" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Tronco">
+            <option value="">Selecione</option>
+            <option value="Tronco">Tronco</option>
+            <option value="Ramal">Ramal</option>
+          </select>
+        </div>
+        <div class="flex flex-col">
+          <label for="chave" class="text-gray-800 font-semibold text-xs mb-1">Chave</label>
+          <input type="text" id="chave" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Chave">
+        </div>
+        <div class="flex flex-col">
+          <label for="qtd" class="text-gray-800 font-semibold text-xs mb-1">Quantidade</label>
+          <input type="number" id="qtd" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Quantidade" min="0" step="1">
+        </div>
+        <div class="flex flex-col">
+          <label for="alimentador" class="text-gray-800 font-semibold text-xs mb-1">Alimentador</label>
+          <input type="text" id="alimentador" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Alimentador">
+        </div>
+        <div class="flex flex-col col-span-2">
+          <label for="obs" class="text-gray-800 font-semibold text-xs mb-1">Observação</label>
+          <textarea id="obs" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white h-16" aria-label="Observação"></textarea>
+        </div>
+        <div class="flex flex-col">
+          <label for="data" class="text-gray-800 font-semibold text-xs mb-1">Data</label>
+          <input type="date" id="data" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Data">
+        </div>
+        <div class="flex flex-col">
+          <label for="equipe" class="text-gray-800 font-semibold text-xs mb-1">Equipe</label>
+          <input type="text" id="equipe" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Equipe">
+        </div>
+        <div class="flex flex-col">
+          <label for="matricula" class="text-gray-800 font-semibold text-xs mb-1">Matrícula</label>
+          <input type="text" id="matricula" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="Matrícula">
+        </div>
+        <div class="flex flex-col">
+          <label for="ea" class="text-gray-800 font-semibold text-xs mb-1">EA</label>
+          <input type="text" id="ea" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white" aria-label="EA">
+        </div>
+        <div class="flex flex-col col-span-2">
+          <label for="servico" class="text-gray-800 font-semibold text-xs mb-1">Serviço (Selecione um ou mais)</label>
+          <select id="servico" multiple size="4" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-white w-full" aria-label="Seleção de serviços" required>
+            <option value="PC">Poda primária completa - PC</option>
+            <option value="PS">Poda secundária completa - PS</option>
+            <option value="PP">Poda primária parcial - PP</option>
+            <option value="SP">Poda secundária parcial - SP</option>
+            <option value="U">Cruzeta urgente troca em 15 dias - U</option>
+            <option value="CV">Corte de cerca viva - CV</option>
+            <option value="A">Cruzeta alta para 90 dias - A</option>
+          </select>
+        </div>
+        <div class="flex flex-col">
+          <label for="latitude" class="text-gray-800 font-semibold text-xs mb-1">Latitude</label>
+          <input type="text" id="latitude" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-gray-50" readonly aria-label="Latitude">
+        </div>
+        <div class="flex flex-col">
+          <label for="longitude" class="text-gray-800 font-semibold text-xs mb-1">Longitude</label>
+          <input type="text" id="longitude" class="compact-input border border-gray-300 rounded-md focus:ring-2 focus:ring-[#005a9e] bg-gray-50" readonly aria-label="Longitude">
+        </div>
+      </form>
 
-        // Função para logar mensagens
-        function logMessage(message) {
-            logDiv.innerHTML += message + '<br>';
-            logDiv.scrollTop = logDiv.scrollHeight;
-        }
+      <!-- Botões do Formulário -->
+      <div class="flex flex-wrap gap-2 mb-4 justify-center">
+        <button onclick="pegarLatLon()" class="bg-gradient-to-r from-[#005a9e] to-[#0078d4] hover:from-[#003087] hover:to-[#005a9e] text-white font-medium py-1 px-4 rounded-md shadow-sm transition-all duration-200 flex items-center text-sm">
+          <span class="mr-1">📍</span> Localizar
+        </button>
+        <button id="salvarBtn" onclick="salvar(event)" class="bg-gradient-to-r from-[#2e7d32] to-[#4caf50] hover:from-[#1b5e20] hover:to-[#2e7d32] text-white font-medium py-1 px-4 rounded-md shadow-sm transition-all duration-200 flex items-center text-sm">
+          <span class="mr-1">💾</span> Salvar
+        </button>
+        <button onclick="limparFormulario()" class="bg-gradient-to-r from-[#616161] to-[#757575] hover:from-[#424242] hover:to-[#616161] text-white font-medium py-1 px-4 rounded-md shadow-sm transition-all duration-200 flex items-center text-sm">
+          <span class="mr-1">🧹</span> Limpar
+        </button>
+      </div>
 
-        // Função para processar um KMZ
-        async function processKMZ(fileName) {
-            try {
-                const url = `${baseUrl}${fileName}`;
-                logMessage(`Processando ${fileName}...`);
-                const response = await fetch(url);
-                if (!response.ok) throw new Error(`Erro ao baixar: ${response.status}`);
+      <!-- Mensagem de Status -->
+      <div id="status" class="mb-4 p-2 rounded-md text-white text-sm hidden" aria-live="assertive"></div>
 
-                const arrayBuffer = await response.arrayBuffer();
-                const zip = await JSZip.loadAsync(arrayBuffer);
-                const kmlFile = zip.file(/\.kml$/i)[0];
-                if (!kmlFile) throw new Error(`Arquivo KML não encontrado`);
+      <!-- Tabela -->
+      <div class="overflow-x-auto">
+        <table id="tabela" class="w-full border-collapse bg-white rounded-md shadow-sm">
+          <thead>
+            <tr class="bg-gradient-to-r from-[#005a9e] to-[#0078d4] text-white">
+              <th class="p-2 text-left font-medium text-xs">Endereço</th>
+              <th class="p-2 text-left font-medium text-xs">Número</th>
+              <th class="p-2 text-left font-medium text-xs">Bairro</th>
+              <th class="p-2 text-left font-medium text-xs">Tronco</th>
+              <th class="p-2 text-left font-medium text-xs">Chave</th>
+              <th class="p-2 text-left font-medium text-xs">Qtd</th>
+              <th class="p-2 text-left font-medium text-xs">Alimentador</th>
+              <th class="p-2 text-left font-medium text-xs">Obs</th>
+              <th class="p-2 text-left font-medium text-xs">Data</th>
+              <th class="p-2 text-left font-medium text-xs">Equipe</th>
+              <th class="p-2 text-left font-medium text-xs">Matrícula</th>
+              <th class="p-2 text-left font-medium text-xs">EA</th>
+              <th class="p-2 text-left font-medium text-xs">Serviços</th>
+              <th class="p-2 text-left font-medium text-xs">Lat</th>
+              <th class="p-2 text-left font-medium text-xs">Lon</th>
+              <th class="p-2 text-left font-medium text-xs">Ações</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 
-                const kmlContent = await kmlFile.async('string');
-                const kmlDoc = new DOMParser().parseFromString(kmlContent, 'text/xml');
-                const geojson = toGeoJSON.kml(kmlDoc);
+  <!-- Rodapé com Status Automático -->
+  <footer class="bg-[#1f1f1f] text-white text-center py-2 flex items-center justify-center gap-2 text-xs">
+    <div id="autoStatus" class="status-dot" title="Status Automático"></div>
+    <span id="autoStatusText">Verificando conexão...</span>
+  </footer>
 
-                // Extrair marcadores (pontos)
-                const markers = [];
-                geojson.features.forEach(feature => {
-                    if (feature.geometry.type === 'Point') {
-                        const props = feature.properties || {};
-                        const name = props.name || '';
-                        const alimentador = props.Alimentador || '';
-                        if (name || alimentador) {
-                            markers.push({
-                                name: name,
-                                alimentador: alimentador,
-                                coordinates: feature.geometry.coordinates // [lon, lat]
-                            });
-                        }
-                    }
-                });
+  <script>
+    // Inicializar o cliente Supabase
+    const supabaseUrl = 'https://apwforodphfoorwhaqdo.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFwd2Zvcm9kcGhmb29yd2hhcWRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwODQ5ODcsImV4cCI6MjA2NDY2MDk4N30.lmLDwaDpYPs32K5fL-aU8wgMJy5U8za0r91jJCiT9vc';
+    const supabase = Supabase.createClient(supabaseUrl, supabaseKey);
 
-                logMessage(`Concluído: ${fileName} (${markers.length} marcadores)`);
-                return {
-                    name: fileName,
-                    url: url,
-                    markers: markers
-                };
-            } catch (error) {
-                logMessage(`Erro em ${fileName}: ${error.message}`);
-                return {
-                    name: fileName,
-                    url: `${baseUrl}${fileName}`,
-                    markers: [],
-                    error: error.message
-                };
-            }
-        }
+    let editId = null;
+    let lastGeolocationCall = 0;
+    const debounceDelay = 1000;
 
-        // Função principal para gerar files.json
-        async function generateFilesJson() {
-            generateBtn.disabled = true;
-            logDiv.innerHTML = '';
-            logMessage('Iniciando processamento dos 116 arquivos KMZ...');
+    function sanitizeInput(input) {
+      const div = document.createElement('div');
+      div.textContent = input;
+      return div.innerHTML;
+    }
 
-            const results = [];
-            for (const fileName of kmzFiles) {
-                const result = await processKMZ(fileName);
-                results.push(result);
-            }
+    function showStatus(message, type, target = 'status') {
+      const status = document.getElementById(target);
+      status.textContent = message;
+      status.className = `p-2 rounded-md text-white fade-in ${type === 'success' ? 'bg-[#2e7d32] status-success' : 'bg-[#d32f2f] status-error'}`;
+      status.classList.remove('hidden');
+      setTimeout(() => status.classList.add('hidden'), 4000);
+    }
 
-            // Gerar o files.json
-            const filesJson = { files: results };
-            const jsonString = JSON.stringify(filesJson, null, 2);
+    // Testes Manuais
+    async function testarBackend() {
+      try {
+        const { data, error } = await supabase.from('servicos').select('id', { count: 'exact', head: true });
+        if (error) throw error;
+        showStatus('Supabase conectado!', 'success', 'statusTestes');
+      } catch (err) {
+        showStatus('Erro no Supabase: ' + err.message, 'error', 'statusTestes');
+      }
+    }
 
-            // Exibir no textarea
-            jsonOutput.value = jsonString;
-            copyJsonBtn.style.display = 'inline-block';
+    async function testarBanco() {
+      try {
+        const { data, error } = await supabase.from('servicos').select('id', { count: 'exact', head: true });
+        if (error) throw error;
+        showStatus('Banco Supabase OK!', 'success', 'statusTestes');
+      } catch (err) {
+        showStatus('Erro no banco Supabase: ' + err.message, 'error', 'statusTestes');
+      }
+    }
 
-            // Criar download
-            const blob = new Blob([jsonString], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'files.json';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+    // Geolocalização
+    function pegarLatLon() {
+      if (Date.now() - lastGeolocationCall < debounceDelay) {
+        showStatus('Aguarde antes de tentar novamente.', 'error');
+        return;
+      }
+      lastGeolocationCall = Date.now();
 
-            logMessage('files.json gerado e baixado!');
-            generateBtn.disabled = false;
-        }
+      if (!navigator.geolocation) {
+        showStatus('Geolocalização não suportada.', 'error');
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          document.getElementById('latitude').value = pos.coords.latitude.toFixed(6);
+          document.getElementById('longitude').value = pos.coords.longitude.toFixed(6);
+          showStatus('Coordenadas obtidas!', 'success');
+        },
+        err => showStatus('Erro na localização: ' + err.message, 'error')
+      );
+    }
 
-        // Copiar JSON para a área de transferência
-        copyJsonBtn.addEventListener('click', () => {
-            jsonOutput.select();
-            document.execCommand('copy');
-            logMessage('JSON copiado para a área de transferência!');
+    // Preencher Endereço Automático
+    async function pegarEndereco() {
+      if (Date.now() - lastGeolocationCall < debounceDelay) {
+        showStatus('Aguarde antes de tentar novamente.', 'error');
+        return;
+      }
+      lastGeolocationCall = Date.now();
+
+      if (!navigator.onLine) {
+        showStatus('Sem conexão. Insira manualmente.', 'error');
+        return;
+      }
+      if (!navigator.geolocation) {
+        showStatus('Geolocalização não suportada.', 'error');
+        return;
+      }
+
+      showStatus('🔄 Buscando endereço...', 'success');
+
+      try {
+        const pos = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject);
         });
 
-        // Iniciar geração ao clicar no botão
-        generateBtn.addEventListener('click', generateFilesJson);
-    </script>
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`;
+
+        const res = await fetch(url, { headers: { 'User-Agent': 'CadastroServicos/1.0/' } });
+        if (!res.ok) throw new Error(`Erro HTTP: ${res.status}`);
+
+        const data = await res.json();
+        const address = data.address || {};
+        const rua = sanitizeInput(address.road || address.street || '');
+        const numero = sanitizeInput(address.housenumber || '');
+        const bairro = sanitizeInput(address.suburb || address.neighbourhood || '');
+        const cidade = sanitizeInput(address.city || address.town || address.village || '');
+
+        document.getElementById('endereco').value = rua;
+        document.getElementById('numero').value = numero;
+        document.getElementById('bairro').value = bairro;
+        document.getElementById('cidade').value = cidade;
+        document.getElementById('latitude').value = lat.toFixed(6);
+        document.getElementById('longitude').value = lon.toFixed(2);
+
+        showStatus('Endereço obtido!', 'success');
+      } catch (err) {
+        showStatus(`Erro ao buscar endereço: ${err.message}.`, 'error');
+        document.getElementById('endereco').focus();
+      }
+    }
+
+    // Salvar
+    async function salvar(event) {
+      event.preventDefault();
+      const endereco = document.getElementById('endereco').value.trim();
+      const bairro = document.getElementById('bairro').value.trim();
+      const cidade = document.getElementById('cidade').value.trim();
+      const tronco = document.getElementById('tronco').value;
+      const qtd = document.getElementById('qtd').value;
+      const data = document.getElementById('data').value;
+      const servicosSelecionados = Array.from(document.getElementById('servico').selectedOptions).map(opt => opt.textContent);
+
+      if (!endereco || !bairro || !cidade) {
+        showStatus('Endereço, bairro e cidade são obrigatórios.', 'error');
+        return;
+      }
+      if (!servicosSelecionados.length) {
+        showStatus('Selecione pelo menos um serviço.', 'error');
+        return;
+      }
+      if (qtd && (isNaN(qtd) || qtd < 0)) {
+        showStatus('Quantidade deve ser positiva.', 'error');
+        return;
+      }
+      if (data && new Date(data) > new Date()) {
+        showStatus('Data não pode ser futura.', 'error');
+        return;
+      }
+
+      const item = {
+        id: editId || Date.now(),
+        endereco: sanitizeInput(endereco),
+        numero: sanitizeInput(document.getElementById('numero').value.trim()),
+        bairro: sanitizeInput(bairro),
+        cidade: sanitizeInput(cidade),
+        tronco: sanitizeInput(tronco),
+        chave: sanitizeInput(document.getElementById('chave').value.trim()),
+        qtd: qtd ? parseInt(qtd) : null,
+        alimentador: sanitizeInput(document.getElementById('alimentador').value.trim()),
+        obs: sanitizeInput(document.getElementById('obs').value.trim()),
+        data: data || null,
+        equipe: sanitizeInput(document.getElementById('equipe').value.trim()),
+        matricula: sanitizeInput(document.getElementById('matricula').value.trim()),
+        ea: sanitizeInput(document.getElementById('ea').value.trim()),
+        latitude: sanitizeInput(document.getElementById('latitude').value.trim()),
+        longitude: sanitizeInput(document.getElementById('longitude').value.trim()),
+        servicos: servicosSelecionados
+      };
+
+      try {
+        let result;
+        if (editId) {
+          const { data, error } = await supabase
+            .from('servicos')
+            .update(item)
+            .eq('id', editId)
+            .select();
+          if (error) throw error;
+          result = data;
+        } else {
+          const { data, error } = await supabase
+            .from('servicos')
+            .insert([item])
+            .select();
+          if (error) throw error;
+          result = data;
+        }
+        await atualizarTabela();
+        limparFormulario();
+        showStatus(editId ? 'Atualizado!' : 'Salvo!', 'success');
+        editId = null;
+        document.getElementById('salvarBtn').innerHTML = '<span class="mr-1">💾</span> Salvar';
+      } catch (err) {
+        console.error('Erro:', err);
+        showStatus(`Erro ao ${editId ? 'atualizar' : 'salvar'}: ${err.message}.`, 'error');
+      }
+    }
+
+    // Limpar
+    function limparFormulario() {
+      document.getElementById('formulario').reset();
+      editId = null;
+      document.getElementById('salvarBtn').innerHTML = '<span class="mr-1">💾</span> Salvar';
+      document.getElementById('endereco').focus();
+    }
+
+    // Atualizar Tabela
+    async function atualizarTabela() {
+      try {
+        const { data, error } = await supabase
+          .from('servicos')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (error) throw error;
+
+        const tbody = document.querySelector('#tabela tbody');
+        tbody.innerHTML = '';
+        data.forEach((item, index) => {
+          const tr = document.createElement('tr');
+          tr.className = `border-t ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'} hover:bg-gray-100 transition-colors`;
+          const cells = [
+            item.endereco || '',
+            item.numero || '',
+            item.bairro || '',
+            item.tronco || '',
+            item.chave || '',
+            item.qtd || '',
+            item.alimentador || '',
+            item.obs || '',
+            item.data || '',
+            item.equipe || '',
+            item.matricula || '',
+            item.ea || '',
+            item.servicos ? item.servicos.join(', ') : '',
+            item.latitude || '',
+            item.longitude || ''
+          ];
+
+          cells.forEach(cell => {
+            const td = document.createElement('td');
+            td.className = 'p-2 text-gray-800 text-xs break-words';
+            td.textContent = cell;
+            tr.appendChild(td);
+          });
+
+          const actionTd = document.createElement('td');
+          actionTd.className = 'p-2 flex gap-1';
+          const editButton = document.createElement('button');
+          editButton.innerHTML = '✏️';
+          editButton.className = 'text-[#005a9e] hover:text-[#003087]';
+          editButton.setAttribute('aria-label', 'Editar');
+          editButton.onclick = () => {
+            editId = item.id;
+            document.querySelectorAll('#formulario input, #formulario textarea, #formulario select').forEach(el => {
+              const id = el.id;
+              if (id === 'servico') {
+                Array.from(el.options).forEach(opt => opt.selected = item.servicos && item.servicos.includes(opt.text));
+              } else {
+                el.value = item[id] || '';
+              }
+            });
+            document.getElementById('salvarBtn').innerHTML = '<span class="mr-1">💾</span> Atualizar';
+            document.getElementById('endereco').focus();
+          };
+          actionTd.appendChild(editButton);
+
+          const deleteButton = document.createElement('button');
+          deleteButton.innerHTML = '🗑️';
+          deleteButton.className = 'text-[#d32f2f] hover:text-[#b71c1c]';
+          deleteButton.setAttribute('aria-label', 'Excluir');
+          deleteButton.onclick = () => excluir(item.id);
+          actionTd.appendChild(deleteButton);
+
+          tr.appendChild(actionTd);
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        console.error('Erro ao carregar tabela:', err);
+        showStatus(`Erro ao carregar: ${err.message}.`, 'error');
+      }
+    }
+
+    // Excluir
+    async function excluir(id) {
+      if (!confirm('Deseja excluir?')) return;
+      try {
+        const { error } = await supabase
+          .from('servicos')
+          .delete()
+          .eq('id', id);
+        if (error) throw error;
+        await atualizarTabela();
+        showStatus('Excluído!', 'success');
+      } catch (err) {
+        console.error('Erro ao excluir:', err);
+        showStatus(`Erro ao excluir: ${err.message}.`, 'error');
+      }
+    }
+
+    // Teste Automático a Cada 1 Minuto
+    async function autoTestConnection() {
+      try {
+        const { data, error } = await supabase.from('servicos').select('id', { count: 'exact', head: true });
+        if (error) throw error;
+        document.getElementById('autoStatus').className = 'status-dot status-green';
+        document.getElementById('autoStatus').title = 'Conexão OK';
+        document.getElementById('autoStatusText').textContent = 'OK';
+      } catch {
+        document.getElementById('autoStatus').className = 'status-dot status-red';
+        document.getElementById('autoStatus').title = 'Conexão Falhou';
+        document.getElementById('autoStatusText').textContent = 'Falhou';
+      }
+    }
+    setInterval(autoTestConnection, 60000);
+    autoTestConnection();
+
+    // Inicializar
+    atualizarTabela();
+  </script>
 </body>
 </html>
