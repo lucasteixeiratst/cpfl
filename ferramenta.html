@@ -82,6 +82,11 @@
       content: '⚠️ ';
       display: inline-block;
     }
+    .status-error, .status-success {
+      font-size: 0.875rem;
+      padding: 0.75rem;
+      border-radius: 0.375rem;
+    }
   </style>
 </head>
 <body class="bg-gray-200 font-sans min-h-screen flex flex-col">
@@ -256,6 +261,7 @@
     const supabaseUrl = 'https://apwforodphfoorwhaqdo.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFwd2Zvcm9kcGhmb29yd2hhcWRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwODQ5ODcsImV4cCI6MjA2NDY2MDk4N30.lmLDwaDpYPs32K5fL-aU8wgMJy5U8za0r91jJCiT9vc';
     const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+    console.log('Supabase cliente inicializado:', supabaseUrl);
 
     let editId = null;
     let lastGeolocationCall = 0;
@@ -273,29 +279,32 @@
       status.className = `p-3 rounded-md text-white fade-in ${type === 'success' ? 'bg-[#2e7d32] status-success' : 'bg-[#d32f2f] status-error'}`;
       status.classList.remove('hidden');
       setTimeout(() => status.classList.add('hidden'), 5000);
+      console.log(`Status exibido: ${message} (${type})`);
     }
 
     // Testes Manuais
     async function testarBackend() {
       try {
+        console.log('Iniciando teste de backend...');
         const { data, error } = await supabase.from('servicos').select('id', { count: 'exact', head: true });
-        if (error) throw error;
+        if (error) throw new Error(`Erro na consulta: ${error.message}`);
         console.log('Teste Supabase OK:', data);
         showStatus('Supabase conectado!', 'success', 'statusTestes');
       } catch (error) {
-        console.error('Erro no Supabase:', error);
+        console.error('Erro no teste de backend:', error);
         showStatus(`Erro no Supabase: ${error.message}`, 'error', 'statusTestes');
       }
     }
 
     async function testarBanco() {
       try {
+        console.log('Iniciando teste de banco...');
         const { data, error } = await supabase.from('servicos').select('id', { count: 'exact', head: true });
-        if (error) throw error;
+        if (error) throw new Error(`Erro na consulta: ${error.message}`);
         console.log('Teste Banco OK:', data);
         showStatus('Banco Supabase OK!', 'success', 'statusTestes');
       } catch (error) {
-        console.error('Erro no banco:', error);
+        console.error('Erro no teste de banco:', error);
         showStatus(`Erro no banco Supabase: ${error.message}`, 'error', 'statusTestes');
       }
     }
@@ -310,15 +319,17 @@
 
       if (!navigator.geolocation) {
         showStatus('Geolocalização não suportada pelo navegador.', 'error');
+        console.error('Geolocalização não suportada.');
         return;
       }
 
+      console.log('Solicitando geolocalização...');
       navigator.geolocation.getCurrentPosition(
         pos => {
           document.getElementById('latitude').value = pos.coords.latitude.toFixed(6);
           document.getElementById('longitude').value = pos.coords.longitude.toFixed(6);
           showStatus('Coordenadas obtidas!', 'success');
-          console.log('Coordenadas:', { lat: pos.coords.latitude, lon: pos.coords.longitude });
+          console.log('Coordenadas obtidas:', { lat: pos.coords.latitude, lon: pos.coords.longitude });
         },
         err => {
           console.error('Erro na geolocalização:', err);
@@ -342,41 +353,47 @@
 
       if (!navigator.onLine) {
         showStatus('Sem conexão à internet. Insira o endereço manualmente.', 'error');
+        console.error('Sem conexão à internet.');
         return;
       }
       if (!navigator.geolocation) {
         showStatus('Geolocalização não suportada pelo navegador.', 'error');
+        console.error('Geolocalização não suportada.');
         return;
       }
 
       showStatus('🔄 Buscando endereço...', 'success');
+      console.log('Solicitando endereço via Nominatim...');
 
       try {
         const pos = await new Promise((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 10000 }));
+          navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 10000 });
         });
 
         const lat = pos.coords.latitude;
         const lon = pos.coords.longitude;
-        const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1}`;
+        const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`;
 
-        const res = await fetch(url, { headers: { 'User-Agent': ' 'CadastroServicos/1.0' } });
-        if (!res.ok) throw new Error(`Erro ao status HTTP: ${res.status}`);
+        console.log('Requisição Nominatim:', url);
+        const res = await fetch(url, { headers: { 'User-Agent': 'CadastroServicos/1.0' } });
+        if (!res.ok) throw new Error(`Erro HTTP: ${res.status}`);
+
         const data = await res.json();
+        console.log('Resposta Nominatim:', data);
         const address = data.address || {};
-        const rua = sanitizeInput(address.rua || address.street || '');
+        const rua = sanitizeInput(address.road || address.street || '');
         const numero = sanitizeInput(address.housenumber || '');
-        const bairro = sanitizeInput(address.bairro || address.neighbourhood || '');
-        const cidade = sanitizeInput(address.cidade || address.village || '');
+        const bairro = sanitizeInput(address.suburb || address.neighbourhood || '');
+        const cidade = sanitizeInput(address.city || address.town || address.village || '');
 
         document.getElementById('endereco').value = rua;
         document.getElementById('numero').value = numero;
         document.getElementById('bairro').value = bairro;
         document.getElementById('cidade').value = cidade;
-        document.getElementById('latitude').value = lat.toFixed(2 document.getElementById('latitude').value = lat.toFixed(6);
-        document.getElementById('longitude').value = lon.toFixed(2 document.getElementById('longitude').value = lon.toFixed(6);
+        document.getElementById('latitude').value = lat.toFixed(6);
+        document.getElementById('longitude').value = lon.toFixed(6);
 
-        console.log('Endereço obtido:', { rua, numero, bairro, cidade, lat, lon });
+        console.log('Endereço preenchido:', { rua, numero, bairro, cidade, lat, lon });
         showStatus('Endereço obtido!', 'success');
       } catch (error) {
         console.error('Erro ao buscar endereço:', error);
@@ -388,28 +405,33 @@
     // Salvar
     async function salvar(event) {
       event.preventDefault();
+      console.log('Iniciando salvamento...');
       const endereco = document.getElementById('endereco').value.trim();
       const bairro = document.getElementById('bairro').value.trim();
       const cidade = document.getElementById('cidade').value.trim();
       const tronco = document.getElementById('tronco').value.trim();
       const qtd = document.getElementById('qtd').value.trim();
       const data = document.getElementById('data').value.trim();
-      const servicosSelecionados = Array.from(document.getElementById('servico').value.selectedOptions).map(opt => opt.text));
+      const servicosSelecionados = Array.from(document.getElementById('servico').selectedOptions).map(opt => opt.text);
 
       if (!endereco || !bairro || !cidade) {
         showStatus('Endereço, bairro e cidade são obrigatórios.', 'error');
+        console.error('Campos obrigatórios não preenchidos.');
         return;
       }
       if (!servicosSelecionados.length) {
         showStatus('Selecione pelo menos um serviço.', 'error');
+        console.error('Nenhum serviço selecionado.');
         return;
       }
       if (qtd && (isNaN(qtd) || qtd < 0)) {
         showStatus('Quantidade deve ser positiva.', 'error');
+        console.error('Quantidade inválida:', qtd);
         return;
       }
-      if (data && new Date(data) > new Date()) ) {
+      if (data && new Date(data) > new Date()) {
         showStatus('Data não pode ser futura.', 'error');
+        console.error('Data futura:', data);
         return;
       }
 
@@ -420,7 +442,7 @@
         bairro: sanitizeInput(bairro),
         cidade: sanitizeInput(cidade),
         tronco: sanitizeInput(tronco),
-        chave: sanitizeInput(document.getElementById('chave').value.trim())),
+        chave: sanitizeInput(document.getElementById('chave').value.trim()),
         qtd: qtd ? parseInt(qtd) : null,
         alimentador: sanitizeInput(document.getElementById('alimentador').value.trim()),
         obs: sanitizeInput(document.getElementById('obs').value.trim()),
@@ -433,24 +455,29 @@
         servicos: servicosSelecionados
       };
 
+      console.log('Item a ser salvo:', item);
+
       try {
         let result;
         if (editId) {
+          console.log('Atualizando registro:', editId);
           const { data, error } = await supabase
             .from('servicos')
             .update(item)
             .eq('id', editId)
             .select();
-          if (error) throw error;
+          if (error) throw new Error(`Erro na atualização: ${error.message}`);
           result = data;
         } else {
+          console.log('Inserindo novo registro...');
           const { data, error } = await supabase
             .from('servicos')
             .insert([item])
             .select();
-          if (error) throw error;
+          if (error) throw new Error(`Erro na inserção: ${error.message}`);
           result = data;
         }
+        console.log('Operação bem-sucedida:', result);
         await atualizarTabela();
         limparFormulario();
         showStatus(editId ? 'Atualizado!' : 'Salvo!', 'success');
@@ -464,6 +491,7 @@
 
     // Limpar
     function limparFormulario() {
+      console.log('Limpando formulário...');
       document.getElementById('formulario').reset();
       editId = null;
       document.getElementById('salvarBtn').innerHTML = '<span class="mr-2">💾</span> Salvar';
@@ -473,11 +501,12 @@
     // Atualizar Tabela
     async function atualizarTabela() {
       try {
+        console.log('Atualizando tabela...');
         const { data, error } = await supabase
           .from('servicos')
           .select('*')
           .order('created_at', { ascending: false });
-        if (error) throw error;
+        if (error) throw new Error(`Erro na consulta: ${error.message}`);
 
         const tbody = document.querySelector('#tabela tbody');
         tbody.innerHTML = '';
@@ -517,6 +546,7 @@
           editButton.className = 'text-blue-600 hover:text-blue-800';
           editButton.setAttribute('aria-label', 'Editar');
           editButton.onclick = () => {
+            console.log('Editando registro:', item.id);
             editId = item.id;
             document.querySelectorAll('#formulario input, #formulario textarea, #formulario select').forEach(el => {
               const id = el.id;
@@ -541,6 +571,7 @@
           tr.appendChild(actionTd);
           tbody.appendChild(tr);
         });
+        console.log('Tabela atualizada com', data.length, 'registros.');
       } catch (error) {
         console.error('Erro ao carregar tabela:', error);
         showStatus(`Erro ao carregar tabela: ${error.message}`, 'error');
@@ -549,15 +580,20 @@
 
     // Excluir
     async function excluir(id) {
-      if (!confirm('Deseja excluir este registro?')) return;
+      if (!confirm('Deseja excluir este registro?')) {
+        console.log('Exclusão cancelada.');
+        return;
+      }
       try {
+        console.log('Excluindo registro:', id);
         const { error } = await supabase
           .from('servicos')
           .delete()
           .eq('id', id);
-        if (error) throw error;
+        if (error) throw new Error(`Erro na exclusão: ${error.message}`);
         await atualizarTabela();
         showStatus('Registro excluído!', 'success');
+        console.log('Registro excluído:', id);
       } catch (error) {
         console.error('Erro ao excluir:', error);
         showStatus(`Erro ao excluir: ${error.message}`, 'error');
@@ -567,8 +603,9 @@
     // Teste Automático a Cada 1 Minuto
     async function autoTestConnection() {
       try {
+        console.log('Executando teste automático...');
         const { data, error } = await supabase.from('servicos').select('id', { count: 'exact', head: true });
-        if (error) throw error;
+        if (error) throw new Error(`Erro na consulta: ${error.message}`);
         document.getElementById('autoStatus').className = 'status-dot status-green';
         document.getElementById('autoStatus').title = 'Conexão OK';
         document.getElementById('autoStatusText').textContent = 'OK';
@@ -586,8 +623,9 @@
     // Teste de Conexão Básica
     async function testarConexaoBasica() {
       try {
+        console.log('Executando teste de conexão básica...');
         const { data, error } = await supabase.from('servicos').select('id', { count: 'exact', head: true });
-        if (error) throw error;
+        if (error) throw new Error(`Erro na consulta: ${error.message}`);
         console.log('Conexão básica OK:', data);
         showStatus('Conexão básica OK!', 'success', 'statusTestes');
       } catch (error) {
@@ -598,6 +636,7 @@
     testarConexaoBasica();
 
     // Inicializar
+    console.log('Inicializando aplicação...');
     atualizarTabela();
   </script>
 </body>
