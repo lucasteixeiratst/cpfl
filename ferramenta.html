@@ -274,7 +274,7 @@
     // Configuração do Supabase
     const supabaseUrl = 'https://apwforodphfoorwhaqdo.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFwd2Zvcm9kcGhmb29yd2hhcWRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwODQ5ODcsImV4cCI6MjA2NDY2MDk4N30.lmLDwaDpYPs32K5fL-aU8wgMJy5U8za0r91jJCiT9vc';
-    const supabase = Supabase.createClient(supabaseUrl, supabaseKey);
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
     let editId = null;
     let lastGeolocationCall = 0;
@@ -296,7 +296,6 @@
 
     // Testes Manuais
     async function testarBackend() {
-      // Como agora usamos Supabase diretamente, este teste pode ser removido ou adaptado
       showStatus('Teste de backend não aplicável (usando Supabase diretamente).', 'success', 'statusTestes');
     }
 
@@ -436,7 +435,7 @@
         equipe: sanitizeInput(document.getElementById('equipe').value.trim()),
         matricula: sanitizeInput(document.getElementById('matricula').value.trim()),
         ea: sanitizeInput(document.getElementById('ea').value.trim()),
-        servicos: servicosSelecionados.join(', '), // Armazenar como string
+        servicos: servicosSelecionados.join(', '),
         latitude: sanitizeInput(document.getElementById('latitude').value.trim()),
         longitude: sanitizeInput(document.getElementById('longitude').value.trim())
       };
