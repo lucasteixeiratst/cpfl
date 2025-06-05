@@ -364,7 +364,7 @@
     <script src="https://unpkg.com/maplibre-gl"></script>
     <script src="https://unpkg.com/@tmcw/togeojson"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.6.0/jszip.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 </head>
 <body>
     <div id="map"></div>
@@ -659,7 +659,7 @@
         displayFileList();
 
         map.on('load', () => {
-            const lastFileName = localStorage.getItem('lastSelectedFileName');
+            const lastFileName = localStorage.getItem('lastSelectedFile');
             if (lastFileName) {
                 const file = predefinedFiles.find(f => f.name === lastFileName);
                 if (file) loadKMZFromServer(file.url, file.name);
@@ -706,7 +706,7 @@
                 return;
             }
 
-            const records = features.map(feature => {
+            const records = features.map(feature => ({
                 file_name: fileName,
                 feature_type: feature.geometry.type,
                 name: feature.properties.name || null,
@@ -715,13 +715,10 @@
                 geometry: feature.geometry,
                 latitude: feature.geometry.type === 'Point' ? feature.geometry.coordinates[1] : null,
                 longitude: feature.geometry.type === 'Point' ? feature.geometry.coordinates[0] : null
-            });
+            }));
 
             try {
-                const { data, error } = await supabase.from('map_features').upsert(records, {
-                    onConflict: ['file_name', 'name', 'alimentador', 'geometry'],
-                    ignoreDuplicates: true
-                });
+                const { data, error } = await supabase.from('map_features').insert(records);
                 if (error) throw error;
                 showStatus(`Dados de ${fileName} salvos no Supabase!`, 'success');
             } catch (error) {
@@ -1182,16 +1179,15 @@
                     if (map.getLayer(labelLayerId)) map.setLayoutProperty(labelLayerId, 'visibility', visibility);
                 }
             });
-        };
+        }
 
         function toggleLines() {
             state.linesVisible = !state.linesVisible;
             const visibility = state.linesVisible ? 'visible' : 'none';
-            visibility;
             state.files.forEach(file => {
-                if (file.hasLines)) {
+                if (file.hasLines) {
                     const lineLayerId = `lines-${file.sourceId}`;
-                    if (map.getLayer(lineLayerId))) map.setLayoutProperty(lineLayerId, 'visibility', visibility);
+                    if (map.getLayer(lineLayerId)) map.setLayoutProperty(lineLayerId, 'visibility', visibility);
                 }
             });
         }
@@ -1262,7 +1258,6 @@
             }
 
             const matches = [];
-            // Local search
             state.files.forEach(file => {
                 if (file.hasMarkers) {
                     const markerSource = map.getSource(`${file.sourceId}-markers`);
@@ -1292,7 +1287,6 @@
                 }
             });
 
-            // Supabase search
             if (supabase) {
                 try {
                     const { data, error } = await supabase
