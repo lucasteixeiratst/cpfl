@@ -218,41 +218,42 @@
 
       <!-- Botões do Formulário -->
       <div class="flex flex-wrap gap-2 mb-4 justify-center">
-        <button onclick="pegarLatLon()" class="bg-gradient-to-r from-[#005a9e] to-[#0078d4] hover:from-[#003087] hover:to-[#005a9e] text-white font-medium py-1 px-4 rounded-md shadow-sm transition-all duration-200 flex items-center text-sm">
+        <button onclick="pegarLatLon()" class="bg-gradient-to-r from-[#005a9e] to-[#0078d4] hover:from-[#003087] hover:to-[#005a9e] text-white font-medium py-2 px-4 rounded-md shadow-sm:flex items-center text-sm">
           <span class="mr-1">📍</span> Localizar
         </button>
-        <button id="salvarBtn" onclick="salvar(event)" class="bg-gradient-to-r from-[#2e7d32] to-[#4caf50] hover:from-[#1b5e20] hover:to-[#2e7d32] text-white font-medium py-1 px-4 rounded-md shadow-sm transition-all duration-200 flex items-center text-sm">
+        <button id="salvarBtn" onclick="salvar(event)" class="bg-gradient-to-r from-[#2e7d32] to-[#4caf50] hover:from-[#1b5e20] hover:to-[#2e7d32] text-white font-medium py-2 px-4 rounded-md shadow-sm:flex items-center text-sm">
           <span class="mr-1">💾</span> Salvar
         </button>
-        <button onclick="limparFormulario()" class="bg-gradient-to-r from-[#616161] to-[#757575] hover:from-[#424242] hover:to-[#616161] text-white font-medium py-1 px-4 rounded-md shadow-sm transition-all duration-200 flex items-center text-sm">
+        <button onclick="limparFormulario()" class="bg-gradient-to-r from-[#616161] to-[#757575] hover:from-[#424242] hover:to-[#616161] text-white font-medium py-2 px-4 rounded-md shadow-sm:flex items-center text-sm">
           <span class="mr-1">🧹</span> Limpar
         </button>
       </div>
 
       <!-- Mensagem de Status -->
-      <div id="status" class="mb-4 p-2 rounded-md text-white text-sm hidden" aria-live="assertive"></div>
+      <div id="status" class="mb-4 p-2 rounded-md text-white text-sm hidden" aria-hidden="true"></div>
 
       <!-- Tabela -->
       <div class="overflow-x-auto">
         <table id="tabela" class="w-full border-collapse bg-white rounded-md shadow-sm">
           <thead>
             <tr class="bg-gradient-to-r from-[#005a9e] to-[#0078d4] text-white">
-              <th class="p-2 text-left font-medium text-xs">Endereço</th>
-              <th class="p-2 text-left font-medium text-xs">Número</th>
-              <th class="p-2 text-left font-medium text-xs">Bairro</th>
-              <th class="p-2 text-left font-medium text-xs">Tronco</th>
-              <th class="p-2 text-left font-medium text-xs">Chave</th>
-              <th class="p-2 text-left font-medium text-xs">Qtd</th>
-              <th class="p-2 text-left font-medium text-xs">Alimentador</th>
-              <th class="p-2 text-left font-medium text-xs">Obs</th>
-              <th class="p-2 text-left font-medium text-xs">Data</th>
-              <th class="p-2 text-left font-medium text-xs">Equipe</th>
-              <th class="p-2 text-left font-medium text-xs">Matrícula</th>
-              <th class="p-2 text-left font-medium text-xs">EA</th>
-              <th class="p-2 text-left font-medium text-xs">Serviços</th>
-              <th class="p-2 text-left font-medium text-xs">Lat</th>
-              <th class="p-2 text-left font-medium text-xs">Lon</th>
-              <th class="p-2 text-left font-medium text-xs">Ações</th>
+              <th class="p-2 text-left font-medium text-sm">Endereço</th>
+              <th class="p-2 text-left font-medium text-sm">Número</th>
+              <th class="p-2 text-left font-medium text-sm">Bairro</th>
+              <th class="p-2 text-left font-medium text-sm">Cidade</th>
+              <th class="p-2 text-left font-medium text-sm">Tronco</th>
+              <th class="p-2 text-left font-medium text-sm">Chave</th>
+              <th class="p-2 text-left font-medium text-sm">Qtd</th>
+              <th class="p-2 text-left font-medium text-sm">Alimentador</th>
+              <th class="p-2 text-left font-medium text-sm">Obs</th>
+              <th class="p-2 text-left font-medium text-sm">Data</th>
+              <th class="p-2 text-left font-medium text-sm">Equipe</th>
+              <th class="p-2 text-left font-medium text-sm">Matrícula</th>
+              <th class="p-2 text-left font-medium text-sm">EA</th>
+              <th class="p-2 text-left font-medium text-sm">Serviços</th>
+              <th class="p-2 text-left font-medium text-sm">Lat</th>
+              <th class="p-2 text-left font-medium text-sm">Lon</th>
+              <th class="p-2 text-left font-medium text-sm">Ações</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-200"></tbody>
@@ -262,16 +263,23 @@
   </div>
 
   <!-- Rodapé com Status Automático -->
-  <footer class="bg-[#1f1f1f] text-white text-center py-2 flex items-center justify-center gap-2 text-xs">
-    <div id="autoStatus" class="status-dot" title="Status Automático"></div>
-    <span id="autoStatusText">Verificando conexão...</span>
+  <footer class="bg-[#1f1f1f] text-white text-center py-2 flex items-center justify-center gap-2 text-sm">
+    <div id="status" class="status-dot"></div>
+    <span id="statusText">Verificando conexão...</span>
   </footer>
 
   <script>
+    // Verificar se o Supabase SDK está carregado
+    if (typeof supabase === 'undefined') {
+      console.error('Supabase SDK não carregado. Verifique o script CDN.');
+      showStatus('Erro: Supabase SDK não carregado.', 'error', 'statusTestes');
+      throw new Error('Supabase SDK não carregado');
+    }
+
     // Inicializar o cliente Supabase
     const supabaseUrl = 'https://apwforodphfoorwhaqdo.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFwd2Zvcm9kcGhmb29yd2hhcWRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwODQ5ODcsImV4cCI6MjA2NDY2MDk4N30.lmLDwaDpYPs32K5fL-aU8wgMJy5U8za0r91jJCiT9vc';
-    const supabase = Supabase.createClient(supabaseUrl, supabaseKey);
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzd2Zvcm9kcGhmb29yd2hhcW5vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwODMzODcsImV4cCI6MjA2NDY2MDk4N30.lmLDwaDpYPs32K5fL-aU8wgM-tJy5v8zaF91jJCiT9vc';
+    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
     let editId = null;
     let lastGeolocationCall = 0;
@@ -296,8 +304,10 @@
       try {
         const { data, error } = await supabase.from('servicos').select('id', { count: 'exact', head: true });
         if (error) throw error;
+        console.log('Teste Supabase OK:', data);
         showStatus('Supabase conectado!', 'success', 'statusTestes');
       } catch (err) {
+        console.error('Erro no Supabase:', err);
         showStatus('Erro no Supabase: ' + err.message, 'error', 'statusTestes');
       }
     }
@@ -305,9 +315,10 @@
     async function testarBanco() {
       try {
         const { data, error } = await supabase.from('servicos').select('id', { count: 'exact', head: true });
-        if (error) throw error;
+        console.log('Teste Banco OK:', data);
         showStatus('Banco Supabase OK!', 'success', 'statusTestes');
       } catch (err) {
+        console.error('Erro no banco:', err);
         showStatus('Erro no banco Supabase: ' + err.message, 'error', 'statusTestes');
       }
     }
@@ -326,8 +337,8 @@
       }
       navigator.geolocation.getCurrentPosition(
         pos => {
-          document.getElementById('latitude').value = pos.coords.latitude.toFixed(6);
-          document.getElementById('longitude').value = pos.coords.longitude.toFixed(6);
+          document.getElementById('latitude').value = pos.coords.latitude.toFixed(2);
+          document.getElementById('longitude').value = pos.coords.latitude.toFixed(2);
           showStatus('Coordenadas obtidas!', 'success');
         },
         err => showStatus('Erro na localização: ' + err.message, 'error')
@@ -335,7 +346,7 @@
     }
 
     // Preencher Endereço Automático
-    async function pegarEndereco() {
+    async function pegarGaragem() {
       if (Date.now() - lastGeolocationCall < debounceDelay) {
         showStatus('Aguarde antes de tentar novamente.', 'error');
         return;
@@ -362,8 +373,8 @@
         const lon = pos.coords.longitude;
         const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`;
 
-        const res = await fetch(url, { headers: { 'User-Agent': 'CadastroServicos/1.0/' } });
-        if (!res.ok) throw new Error(`Erro HTTP: ${res.status}`);
+        const res = await fetch(url, { headers: { 'User-Agent': 'CadastroServicos/1.0' } });
+        if (!res.ok) throw new Error(`Erro HTTP: ${res.status}`));
 
         const data = await res.json();
         const address = data.address || {};
@@ -376,213 +387,232 @@
         document.getElementById('numero').value = numero;
         document.getElementById('bairro').value = bairro;
         document.getElementById('cidade').value = cidade;
-        document.getElementById('latitude').value = lat.toFixed(6);
+        document.getElementById('latitude').value = lat.toFixed(2);
         document.getElementById('longitude').value = lon.toFixed(2);
 
+        console.log('Endereço obtido!');
         showStatus('Endereço obtido!', 'success');
       } catch (err) {
         showStatus(`Erro ao buscar endereço: ${err.message}.`, 'error');
         document.getElementById('endereco').focus();
-      }
+        }
     }
 
     // Salvar
     async function salvar(event) {
       event.preventDefault();
-      const endereco = document.getElementById('endereco').value.trim();
-      const bairro = document.getElementById('bairro').value.trim();
-      const cidade = document.getElementById('cidade').value.trim();
-      const tronco = document.getElementById('tronco').value;
-      const qtd = document.getElementById('qtd').value;
-      const data = document.getElementById('data').value;
-      const servicosSelecionados = Array.from(document.getElementById('servico').selectedOptions).map(opt => opt.textContent);
+        const endereco = document.getElementById('endereco').value.trim();
+        const bairro = document.getElementById('bairro').value.trim();
+        const cidade = document.getElementById('cidade').value.trim();
+        const tronco = document.getElementById('tronco').value;
+        const qtd = document.getElementById('qtd').value;
+        const data = document.getElementById('data').value;
+        const const servicosSelecionados = Array.from(document.getElementById('servico').selectedOptions).map(opt => opt.text);
 
-      if (!endereco || !bairro || !cidade) {
-        showStatus('Endereço, bairro e cidade são obrigatórios.', 'error');
-        return;
-      }
-      if (!servicosSelecionados.length) {
-        showStatus('Selecione pelo menos um serviço.', 'error');
-        return;
-      }
-      if (qtd && (isNaN(qtd) || qtd < 0)) {
-        showStatus('Quantidade deve ser positiva.', 'error');
-        return;
-      }
-      if (data && new Date(data) > new Date()) {
-        showStatus('Data não pode ser futura.', 'error');
-        return;
-      }
-
-      const item = {
-        id: editId || Date.now(),
-        endereco: sanitizeInput(endereco),
-        numero: sanitizeInput(document.getElementById('numero').value.trim()),
-        bairro: sanitizeInput(bairro),
-        cidade: sanitizeInput(cidade),
-        tronco: sanitizeInput(tronco),
-        chave: sanitizeInput(document.getElementById('chave').value.trim()),
-        qtd: qtd ? parseInt(qtd) : null,
-        alimentador: sanitizeInput(document.getElementById('alimentador').value.trim()),
-        obs: sanitizeInput(document.getElementById('obs').value.trim()),
-        data: data || null,
-        equipe: sanitizeInput(document.getElementById('equipe').value.trim()),
-        matricula: sanitizeInput(document.getElementById('matricula').value.trim()),
-        ea: sanitizeInput(document.getElementById('ea').value.trim()),
-        latitude: sanitizeInput(document.getElementById('latitude').value.trim()),
-        longitude: sanitizeInput(document.getElementById('longitude').value.trim()),
-        servicos: servicosSelecionados
-      };
-
-      try {
-        let result;
-        if (editId) {
-          const { data, error } = await supabase
-            .from('servicos')
-            .update(item)
-            .eq('id', editId)
-            .select();
-          if (error) throw error;
-          result = data;
-        } else {
-          const { data, error } = await supabase
-            .from('servicos')
-            .insert([item])
-            .select();
-          if (error) throw error;
-          result = data;
+        if (!endereco || !bairro || !cidade) {
+            showStatus('Endereço, bairro e cidade são obrigatórios.', 'error');
+            return;
         }
-        await atualizarTabela();
-        limparFormulario();
-        showStatus(editId ? 'Atualizado!' : 'Salvo!', 'success');
-        editId = null;
-        document.getElementById('salvarBtn').innerHTML = '<span class="mr-1">💾</span> Salvar';
-      } catch (err) {
-        console.error('Erro:', err);
-        showStatus(`Erro ao ${editId ? 'atualizar' : 'salvar'}: ${err.message}.`, 'error');
-      }
-    }
+        if (!servicosSelecionados.length) {
+            showStatus('Selecione pelo menos um serviço.', 'error');
+            return;
+        }
+        if (qtd && (isNaN(qtd) || qtd < 0)) {
+            showStatus('Quantidade deve ser positiva.', 'error');
+            return;
+        }
+        if (data && new Date(data) > new Date()) {
+            showStatus('Data não pode ser futura.', 'error');
+            return;
+        }
 
-    // Limpar
-    function limparFormulario() {
-      document.getElementById('formulario').reset();
-      editId = null;
-      document.getElementById('salvarBtn').innerHTML = '<span class="mr-1">💾</span> Salvar';
-      document.getElementById('endereco').focus();
-    }
-
-    // Atualizar Tabela
-    async function atualizarTabela() {
-      try {
-        const { data, error } = await supabase
-          .from('servicos')
-          .select('*')
-          .order('created_at', { ascending: false });
-        if (error) throw error;
-
-        const tbody = document.querySelector('#tabela tbody');
-        tbody.innerHTML = '';
-        data.forEach((item, index) => {
-          const tr = document.createElement('tr');
-          tr.className = `border-t ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'} hover:bg-gray-100 transition-colors`;
-          const cells = [
-            item.endereco || '',
-            item.numero || '',
-            item.bairro || '',
-            item.tronco || '',
-            item.chave || '',
-            item.qtd || '',
-            item.alimentador || '',
-            item.obs || '',
-            item.data || '',
-            item.equipe || '',
-            item.matricula || '',
-            item.ea || '',
-            item.servicos ? item.servicos.join(', ') : '',
-            item.latitude || '',
-            item.longitude || ''
-          ];
-
-          cells.forEach(cell => {
-            const td = document.createElement('td');
-            td.className = 'p-2 text-gray-800 text-xs break-words';
-            td.textContent = cell;
-            tr.appendChild(td);
-          });
-
-          const actionTd = document.createElement('td');
-          actionTd.className = 'p-2 flex gap-1';
-          const editButton = document.createElement('button');
-          editButton.innerHTML = '✏️';
-          editButton.className = 'text-[#005a9e] hover:text-[#003087]';
-          editButton.setAttribute('aria-label', 'Editar');
-          editButton.onclick = () => {
-            editId = item.id;
-            document.querySelectorAll('#formulario input, #formulario textarea, #formulario select').forEach(el => {
-              const id = el.id;
-              if (id === 'servico') {
-                Array.from(el.options).forEach(opt => opt.selected = item.servicos && item.servicos.includes(opt.text));
-              } else {
-                el.value = item[id] || '';
-              }
-            });
-            document.getElementById('salvarBtn').innerHTML = '<span class="mr-1">💾</span> Atualizar';
-            document.getElementById('endereco').focus();
+        const item = {
+            id: editId || Date.now(),
+            endereco: sanitizeInput(endereco),
+            numero: sanitizeInput(document.getElementById('numero').value.trim()),
+            bairro: sanitizeInput(bairro),
+            cidade: sanitizeInput(cidade),
+            tronco: sanitizeInput(tronco),
+            chave: sanitizeInput(document.getElementById('chave').value.trim()),
+            qtd: qtd ? parseInt(qtd) : null,
+            alimentador: sanitizeInput(document.getElementById('alimantador').value.trim()),
+            obs: sanitizeInput(document.getElementById('obs').value.trim()),
+            data: data || null,
+            equipe: sanitizeInput(document.getElementById('equipe').value.trim()),
+            matricula: equipe: sanitizeInput(document.getElementById('matricula').value.trim()),
+            ea: matricula: sanitizeInput(document.getElementById('data').value.trim()),
+            latitude: sanitizeInput(document.getElementById('latitude').value.trim()),
+            longitude: latitude: sanitizeInput(document.getElementById('longitude').value.trim()),
+            servicos: servicosSelecionados
           };
-          actionTd.appendChild(editButton);
 
-          const deleteButton = document.createElement('button');
-          deleteButton.innerHTML = '🗑️';
-          deleteButton.className = 'text-[#d32f2f] hover:text-[#b71c1c]';
-          deleteButton.setAttribute('aria-label', 'Excluir');
-          deleteButton.onclick = () => excluir(item.id);
-          actionTd.appendChild(deleteButton);
-
-          tr.appendChild(actionTd);
-          tbody.appendChild(tr);
-        });
-      } catch (err) {
-        console.error('Erro ao carregar tabela:', err);
-        showStatus(`Erro ao carregar: ${err.message}.`, 'error');
+        try {
+          let result;
+          if (editId) {
+            const { data, error } = await supabase
+              .from('servicos')
+              .update(item)
+              .eq('id', editId)
+              .select();
+            if (error) throw error;
+            result = data;
+          } else {
+            const { data, error } = await supabase
+              .from('servicos')
+              .insert([item])
+              .select();
+            if (error) throw error;
+            result = data;
+          }
+          await atualizarTabela();
+          limparFormulario();
+          showStatus(editId ? 'Atualizado!' : 'Salvo!', 'success');
+          editId = null;
+          document.getElementById('salvarBtn').innerHTML = '<span class="mr-1">💾</span> Salvar';
+        } catch (err) {
+          console.error('Erro ao salvar:', err);
+          showStatus(`Erro ao ${editId ? 'atualizar' : 'salvar'}: ${err.message}.`, 'error');
+        }
       }
-    }
 
-    // Excluir
-    async function excluir(id) {
-      if (!confirm('Deseja excluir?')) return;
-      try {
-        const { error } = await supabase
-          .from('servicos')
-          .delete()
-          .eq('id', id);
-        if (error) throw error;
-        await atualizarTabela();
-        showStatus('Excluído!', 'success');
-      } catch (err) {
-        console.error('Erro ao excluir:', err);
-        showStatus(`Erro ao excluir: ${err.message}.`, 'error');
+      // Limpar
+      function limparFormulario() {
+        document.getElementById('formulario').reset();
+        editId = null;
+        document.getElementById('salvarBtn').style;
+        document.querySelectorById('endereco').focus();
       }
-    }
 
-    // Teste Automático a Cada 1 Minuto
-    async function autoTestConnection() {
-      try {
-        const { data, error } = await supabase.from('servicos').select('id', { count: 'exact', head: true });
-        if (error) throw error;
-        document.getElementById('autoStatus').className = 'status-dot status-green';
-        document.getElementById('autoStatus').title = 'Conexão OK';
-        document.getElementById('autoStatusText').textContent = 'OK';
-      } catch {
-        document.getElementById('autoStatus').className = 'status-dot status-red';
-        document.getElementById('autoStatus').title = 'Conexão Falhou';
-        document.getElementById('autoStatusText').textContent = 'Falhou';
+      // Atualizar Tabela
+      async function atualizarTabela() {
+        try {
+          const { data, error } = await supabase
+            .from('servicos')
+            .select('*')
+            .order('created_at', { ascending: false });
+          if (error) throw error;
+
+          const tbody = document.querySelector('#tabela #tbody');
+          tbody.innerHTML = '';
+          data.forEach((item, index) => {
+            const tr = document.createElement('tr');
+            tr.className = `border-t ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'} hover:bg-gray-100 transition-colors`;
+            const cells = [
+              item.endereco || '',
+              item.numero || '',
+              item.number || '',
+              item.bairro || '',
+              item.tronco || '',
+              item.chave || '',
+              item.qtd || '',
+              item.alimentador || '',
+              item.obs || '',
+              item.data || '',
+              item.equipe || '',
+              item.matricula || '',
+              item.ea || '',
+              item.servicos ? item.servicos.join(', ') : '',
+              item.latitude || '',
+              item.longitude || ''
+            ];
+
+            cells.forEach(cell => {
+              const td = document.createElement('td');
+              td.className = 'p-2 text-gray-800 text-sm break-words';
+              td.textContent = cell;
+              tr.appendChild(td);
+            });
+
+            const actionTd = document.createElement('td');
+            actionTd.className = 'p-2 flex gap-2';
+            const editButton = document.createElement('button');
+            editButton.innerHTML = '✏️';
+            editButton.className=' 'text-[#2e7d32] hover:text-[#003087b]';
+            editButton.setAttribute('aria-label', 'Editar');
+            editButton.onclick = () => {
+              editId = item.id;
+              document.querySelectorAll('#formulario input, #formulario textarea, #formulario select').forEach(el => {
+                const id = el.id;
+                if (id === 'servico') {
+                  Array.from(el.options).forEach(opt => opt.selected = item.servicos && item.servicos.includes(opt.text));
+                } else {
+                  el.value = item[id] || '';
+                }
+              });
+              document.getElementById('salvarBtn').value.innerHTML = '<span class="mr-1">💾</span> Atualizar';
+              document.getElementById('endereco').focus();
+            };
+            actionTd.appendChild(editButton);
+
+            const deleteButton = document.createElement('button');
+            deleteButton.innerHTML = '🗑';
+            deleteButton.className=' 'text-[#d32f2f]' hover:text-[#b71c1c]';
+            deleteButton.setAttribute('aria-label', 'Excluir');
+            deleteButton.onclick = () => excluir(item.id);
+
+            showStatus('Excluído!', 'success');
+            actionTd.appendChild(deleteButton);
+
+            tr.appendChild(actionTd);
+            tbody.appendChild(tr);
+          });
+        } catch (err) {
+          console.error('Erro ao carregar tabela:', err);
+          showStatus(`Erro ao carregar: ${err.message}.`, 'error');
+        }
       }
-    }
-    setInterval(autoTestConnection, 60000);
-    autoTestConnection();
 
-    // Inicializar
-    atualizarTabela();
-  </script>
+      // Excluir
+      async function excluir(id) {
+        if (!confirm('Deseja excluir?')) return;
+        try {
+          const { error } = await supabase
+            .from('servicos')
+            .delete()
+            .eq('id', id);
+          if (error) throw error;
+          await atualizarTabela();
+          showStatus('Excluído!', 'success');
+        } catch (err) {
+          console.error('Erro ao excluir:', err);
+          showStatus(`Erro ao excluir: ${err.message}.`, 'error');
+        }
+      }
+
+      // Teste Automático a Cada 1 Minuto
+      async function autoTest() {
+        try {
+          const { data, error } = await supabase.from('servicos').select('id', { count: 'exact', head: true });
+          if (error) throw error;
+          document.getElementById('autoStatus').className = 'status-dot status-green';
+          document.getElementById('autoStatus').className = 'Conexão OK';
+          document.getElementById('autoStatusText').textContent = 'OK';
+        } catch (err) {
+          console.error('Erro no teste automático:', err);
+          document.getElementById('autoStatus').className = 'status-dot-status-red';
+          document.getElementById('autoStatus').titleText = 'Erro ao status';
+          document.getElementById('autoStatusText').textContent = 'Falhou';
+        }
+      }
+      setInterval(autoTest, 60000);
+      autoTest();
+
+      // Teste de Conexão Básica
+      async function testarConexaBasica() {
+        try {
+          const { data, error } = await supabase.from('servicos').select('id', { count: 'exact', head: true });
+          if (error) throw error;
+          console.log('Conexão básica OK:', data);
+          showStatus('Conexão básica OK!', 'success', 'statusTestes');
+        } catch (err) {
+          console.error('Erro na conexão básica:', err);
+          showStatus('Erro na conexão: ' + err.message, 'error', 'statusTestes');
+        }
+      }
+      testarConexaBasica();
+
+      // Inicializar
+      atualizarTabela();
+    </script>
 </body>
 </html>
