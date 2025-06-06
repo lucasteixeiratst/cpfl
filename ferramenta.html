@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Map Viewer</title>
+    <title>Simple Map Viewer with Supabase</title>
     <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
     <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
@@ -22,12 +22,12 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
             z-index: 1000;
         }
-        .controls input, .controls button {
+        .controls input, .controls button, .controls select {
             margin: 5px;
             padding: 8px;
             font-size: 14px;
         }
-        .search-results {
+        .search-results, .file-list {
             max-height: 200px;
             overflow-y: auto;
             margin-top: 10px;
@@ -35,11 +35,11 @@
             padding: 10px;
             border-radius: 5px;
         }
-        .search-results div {
+        .search-results div, .file-list div {
             padding: 5px;
             cursor: pointer;
         }
-        .search-results div:hover {
+        .search-results div:hover, .file-list div:hover {
             background: #f0f0f0;
         }
     </style>
@@ -51,6 +51,9 @@
         <button onclick="searchFeatures()">Search</button>
         <button onclick="document.getElementById('fileInput').click()">Upload KMZ</button>
         <input type="file" id="fileInput" accept=".kmz" style="display: none;">
+        <select id="fileSelect" onchange="loadFileFromSupabase(this.value)">
+            <option value="">Select a KMZ file</option>
+        </select>
         <div id="searchResults" class="search-results" style="display: none;"></div>
     </div>
 
@@ -75,6 +78,47 @@
             markersVisible: true
         };
 
+        // Load files from Supabase on page load
+        async function loadSupabaseFiles() {
+            const { data, error } = await supabase
+                .from('kmz_metadata')
+                .select('file_name');
+            if (error) {
+                console.error('Error listing files:', error);
+                alert('Failed to load files from Supabase.');
+                return;
+            }
+
+            const fileSelect = document.getElementById('fileSelect');
+            fileSelect.innerHTML = '<option value="">Select a KMZ file</option>';
+            data.forEach(item => {
+                if (item.file_name.endsWith('.kmz')) {
+                    const option = document.createElement('option');
+                    option.value = item.file_name;
+                    option.textContent = item.file_name;
+                    fileSelect.appendChild(option);
+                }
+            });
+        }
+
+        // Load file from Supabase
+        async function loadFileFromSupabase(fileName) {
+            if (!fileName) return;
+
+            try {
+                const { data, error } = await supabase.storage
+                    .from('kmz-files')
+                    .download(`public/${fileName}`);
+                if (error) throw error;
+
+                const arrayBuffer = await data.arrayBuffer();
+                await handleFile(arrayBuffer, fileName);
+            } catch (error) {
+                console.error('Error downloading KMZ:', error);
+                alert('Failed to load KMZ file from Supabase.');
+            }
+        }
+
         // Handle file upload
         document.getElementById('fileInput').addEventListener('change', async (event) => {
             const file = event.target.files[0];
@@ -83,21 +127,38 @@
             // Upload to Supabase Storage
             const { data, error } = await supabase.storage
                 .from('kmz-files')
-                .upload(`public/${file.name}`, file);
+                .upload(`public/${file.name}`, file, {
+                    upsert: true // Overwrite if file exists
+                });
             if (error) {
                 console.error('Upload error:', error);
                 alert('Failed to upload KMZ file.');
                 return;
             }
 
+            // Insert metadata into kmz_metadata table
+            const { error: metadataError } = await supabase
+                .from('kmz_metadata')
+                .insert({
+                    file_name: file.name,
+                    bucket_path: `public/${file.name}`
+                });
+            if (metadataError) {
+                console.error('Error inserting metadata:', metadataError);
+                alert('Failed to save file metadata.');
+                return;
+            }
+
             // Process and display the uploaded file
             await handleFile(file, file.name);
+            // Refresh file list
+            await loadSupabaseFiles();
         });
 
         // Process KMZ file
         async function handleFile(file, fileName) {
             try {
-                const arrayBuffer = await file.arrayBuffer();
+                const arrayBuffer = typeof file === 'object' ? await file.arrayBuffer() : file;
                 const zip = await JSZip.loadAsync(arrayBuffer);
                 const kmlFile = zip.file(/\.kml$/i)[0];
                 if (!kmlFile) throw new Error('No KML file found in KMZ.');
@@ -128,7 +189,7 @@
                 }
             });
 
-            // Add sources
+            // Add sources and layers
             if (pointFeatures.features.length > 0) {
                 map.addSource(sourceId + '-markers', { type: 'geojson', data: pointFeatures });
                 map.addLayer({
@@ -212,12 +273,12 @@
             }
         }
 
-        // Load map and ensure fonts are available
+        // Load map and initialize
         map.on('load', () => {
-            // Ensure Open Sans is available
             document.fonts.load('12px Open Sans Semibold').then(() => {
                 console.log('Fonts loaded');
             });
+            loadSupabaseFiles();
         });
     </script>
 </body>
