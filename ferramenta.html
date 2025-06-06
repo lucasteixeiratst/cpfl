@@ -167,6 +167,58 @@
             border-radius: 4px;
             margin: 5px 0;
         }
+        .connection-status {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: red;
+            z-index: 1000;
+            box-shadow: 0 0 4px rgba(0,0,0,0.5);
+        }
+        .connection-status.connected {
+            background-color: green;
+        }
+        .toggle-switch {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        .toggle-switch input {
+            display: none;
+        }
+        .toggle-switch label {
+            position: relative;
+            width: 50px;
+            height: 24px;
+            background-color: #ccc;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .toggle-switch label::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background-color: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.2s;
+        }
+        .toggle-switch input:checked + label {
+            background-color: #4285F4;
+        }
+        .toggle-switch input:checked + label::after {
+            transform: translateX(26px);
+        }
+        .toggle-switch span {
+            margin-left: 10px;
+        }
     </style>
     <link href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" rel="stylesheet">
     <script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
@@ -188,6 +240,11 @@
         <button id="btnGroupLines"><img src="https://img.icons8.com/material-outlined/24/000000/layers.png" alt="Grupos"></button>
         <button id="btnLoadedFiles"><img src="https://img.icons8.com/material-outlined/24/000000/folder-invoices.png" alt="Arquivos"></button>
         <button id="btnStyles"><img src="https://img.icons8.com/material-outlined/24/000000/paint.png" alt="Estilos"></button>
+        <div class="toggle-switch">
+            <input type="checkbox" id="modeToggle" checked>
+            <label for="modeToggle"></label>
+            <span id="modeLabel">Modo Banco</span>
+        </div>
     </div>
     <div class="search-bar">
         <input type="text" id="searchInput" placeholder="Buscar no mapa...">
@@ -212,6 +269,7 @@
     <div class="style-menu" id="styleMenu">
         <ul id="styleList"></ul>
     </div>
+    <div id="connectionStatus" class="connection-status"></div>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const supabaseUrl = 'https://apwforodphfoorwhaqdo.supabase.co';
@@ -225,6 +283,7 @@
                 userLocation: null,
                 files: [],
                 selectedGroups: new Map(),
+                isDatabaseMode: true
             };
 
             const mapStyles = [
@@ -248,8 +307,28 @@
             const loadedFiles = document.getElementById('loadedFiles');
             const loadedFilesList = document.getElementById('loadedFilesList');
             const styleMenu = document.getElementById('styleMenu');
+            const connectionStatus = document.getElementById('connectionStatus');
+            const modeToggle = document.getElementById('modeToggle');
+            const modeLabel = document.getElementById('modeLabel');
+
+            async function checkDatabaseConnection() {
+                try {
+                    const { data, error } = await supabase.from('kmz_data').select('id').limit(1);
+                    if (error) throw error;
+                    connectionStatus.classList.add('connected');
+                    return true;
+                } catch (error) {
+                    console.error('Erro de conexão com o banco:', error);
+                    connectionStatus.classList.remove('connected');
+                    return false;
+                }
+            }
+
+            setInterval(checkDatabaseConnection, 10000);
+            checkDatabaseConnection();
 
             async function fetchKMZFiles() {
+                if (!state.isDatabaseMode) return [];
                 const { data, error } = await supabase
                     .from('kmz_data')
                     .select('file_name')
@@ -277,7 +356,7 @@
 
             map.on('load', () => {
                 displayFileList();
-                loadDataInView();
+                if (state.isDatabaseMode) loadDataInView();
             });
 
             document.getElementById('btnKMZ').addEventListener('click', () => toggleVisibility(kmzMenu));
@@ -295,9 +374,42 @@
             document.getElementById('showAll').addEventListener('click', showAllGroups);
             document.getElementById('btnStyles').addEventListener('click', () => { displayStyleList(); toggleVisibility(styleMenu); });
 
-            map.on('moveend', loadDataInView);
+            modeToggle.addEventListener('change', () => {
+                state.isDatabaseMode = modeToggle.checked;
+                modeLabel.textContent = state.isDatabaseMode ? 'Modo Banco' : 'Modo Online';
+                clearMap();
+                if (state.isDatabaseMode) {
+                    displayFileList();
+                    loadDataInView();
+                } else {
+                    kmzList.innerHTML = '<li>Carregar localmente...</li>';
+                }
+            });
+
+            map.on('moveend', () => {
+                if (state.isDatabaseMode) loadDataInView();
+            });
+
+            function clearMap() {
+                state.files.forEach(file => {
+                    if (file.hasMarkers) {
+                        if (map.getLayer(`marker-circles-${file.sourceId}`)) map.removeLayer(`marker-circles-${file.sourceId}`);
+                        if (map.getLayer(`marker-labels-${file.sourceId}`)) map.removeLayer(`marker-labels-${file.sourceId}`);
+                        if (map.getSource(`${file.sourceId}-markers`)) map.removeSource(`${file.sourceId}-markers`);
+                    }
+                    if (file.hasLines) {
+                        if (map.getLayer(`lines-${file.sourceId}`)) map.removeLayer(`lines-${file.sourceId}`);
+                        if (map.getSource(`${file.sourceId}-lines`)) map.removeSource(`${file.sourceId}-lines`);
+                    }
+                });
+                state.files = [];
+                state.selectedGroups.clear();
+                updateGroupMenu();
+                updateLoadedFilesList();
+            }
 
             async function loadDataInView() {
+                if (!state.isDatabaseMode) return;
                 const bounds = map.getBounds();
                 const sw = bounds.getSouthWest();
                 const ne = bounds.getNorthEast();
@@ -311,29 +423,14 @@
                         .limit(2000);
                     if (error) throw error;
 
-                    // Limpa camadas existentes
-                    state.files.forEach(file => {
-                        if (file.hasMarkers) {
-                            if (map.getLayer(`marker-circles-${file.sourceId}`)) map.removeLayer(`marker-circles-${file.sourceId}`);
-                            if (map.getLayer(`marker-labels-${file.sourceId}`)) map.removeLayer(`marker-labels-${file.sourceId}`);
-                            if (map.getSource(`${file.sourceId}-markers`)) map.removeSource(`${file.sourceId}-markers`);
-                        }
-                        if (file.hasLines) {
-                            if (map.getLayer(`lines-${file.sourceId}`)) map.removeLayer(`lines-${file.sourceId}`);
-                            if (map.getSource(`${file.sourceId}-lines`)) map.removeSource(`${file.sourceId}-lines`);
-                        }
-                    });
-                    state.files = [];
-                    state.selectedGroups.clear();
+                    clearMap();
 
-                    // Agrupa dados por file_name
                     const groupedData = data.reduce((acc, item) => {
                         if (!acc[item.file_name]) acc[item.file_name] = [];
                         acc[item.file_name].push(item);
                         return acc;
                     }, {});
 
-                    // Adiciona ao mapa
                     for (const fileName in groupedData) {
                         const features = groupedData[fileName].map(item => ({
                             type: 'Feature',
@@ -380,11 +477,13 @@
                         try {
                             const data = await parseKMZ(reader.result);
                             addDataToMap(data, file.name);
-                            await uploadKMZToSupabase(file.name, file, data);
-                            displayFileList();
+                            if (state.isDatabaseMode) {
+                                await uploadKMZToSupabase(file.name, file, data);
+                                await displayFileList();
+                            }
                         } catch (error) {
                             console.error(`Erro ao processar ${file.name}:`, error);
-                            alert(`Erro ao processar ${file.name}.`);
+                            alert(`Erro ao processar ${file.name}: ${error.message}`);
                         }
                     };
                     reader.readAsArrayBuffer(file);
@@ -402,11 +501,13 @@
                             ? await parseKMZ(reader.result)
                             : toGeoJSON.kml(new DOMParser().parseFromString(reader.result, 'text/xml'));
                         addDataToMap(data, file.name);
-                        await uploadKMZToSupabase(file.name, file, data);
-                        displayFileList();
+                        if (state.isDatabaseMode) {
+                            await uploadKMZToSupabase(file.name, file, data);
+                            await displayFileList();
+                        }
                     } catch (error) {
                         console.error('Erro ao processar arquivo:', error);
-                        alert('Erro ao processar o arquivo.');
+                        alert(`Erro ao processar ${file.name}: ${error.message}`);
                     }
                 };
                 if (file.name.endsWith('.kmz')) {
@@ -419,17 +520,20 @@
             async function parseKMZ(data) {
                 const zip = await JSZip.loadAsync(data);
                 const kmlFile = zip.file(/\.kml$/i)[0];
-                if (!kmlFile) throw new Error('Arquivo KML não encontrado.');
+                if (!kmlFile) throw new Error('Arquivo KML não encontrado no KMZ.');
                 const kmlContent = await kmlFile.async('string');
                 return toGeoJSON.kml(new DOMParser().parseFromString(kmlContent, 'text/xml'));
             }
 
             async function uploadKMZToSupabase(fileName, file, geojson) {
                 try {
+                    console.log(`Iniciando upload de ${fileName}`);
                     const { error: storageError } = await supabase.storage
                         .from('kmz-files')
                         .upload(fileName, file, { contentType: 'application/vnd.google-earth.kmz', upsert: true });
-                    if (storageError) throw storageError;
+                    if (storageError) throw new Error(`Erro no Storage: ${storageError.message}`);
+
+                    console.log(`Arquivo ${fileName} salvo no Storage`);
 
                     const metadata = geojson.features.map(feature => ({
                         file_name: fileName,
@@ -443,16 +547,28 @@
                     for (let i = 0; i < metadata.length; i += batchSize) {
                         const batch = metadata.slice(i, i + batchSize);
                         const { error: dbError } = await supabase.from('kmz_data').insert(batch);
-                        if (dbError) throw dbError;
+                        if (dbError) throw new Error(`Erro na inserção: ${dbError.message}`);
                     }
+
+                    console.log(`Metadados de ${fileName} inseridos na tabela kmz_data`);
                     alert(`Arquivo ${fileName} carregado com sucesso no banco de dados!`);
+
+                    // Verifica se os dados foram salvos
+                    const { data, error: verifyError } = await supabase
+                        .from('kmz_data')
+                        .select('id')
+                        .eq('file_name', fileName)
+                        .limit(1);
+                    if (verifyError || !data.length) throw new Error('Falha ao verificar dados inseridos');
                 } catch (error) {
                     console.error(`Erro no upload de ${fileName}:`, error);
                     alert(`Erro ao carregar ${fileName}: ${error.message}`);
+                    throw error;
                 }
             }
 
             async function loadKMZFromSupabase(fileName) {
+                if (!state.isDatabaseMode) return;
                 try {
                     const { data, error } = await supabase
                         .from('kmz_data')
@@ -784,6 +900,7 @@
             }
 
             async function searchFeatures() {
+                if (!state.isDatabaseMode) return alert('Busca disponível apenas no modo Banco.');
                 const term = searchInput.value.toLowerCase().trim();
                 if (!term) return alert('Digite um termo para buscar.');
 
@@ -921,6 +1038,7 @@
                             });
                         }
                     });
+                    applyGroupFilter();
                 });
             }
         });
