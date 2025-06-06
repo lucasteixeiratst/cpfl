@@ -340,10 +340,10 @@
             color: #555;
         }
     </style>
-    <link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet" />
-    <script src="https://unpkg.com/maplibre-gl"></script>
-    <script src="https://unpkg.com/@tmcw/togeojson"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.6.0/jszip.min.js"></script>
+    <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
+    <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tmcw/togeojson@4.5.0/togeojson.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -430,7 +430,7 @@
     <script>
         const supabaseUrl = 'https://apwforodphfoorwhaqdo.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFwd2Zvcm9kcGhmb29yd2hhcWRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwODQ5ODcsImV4cCI6MjA2NDY2MDk4N30.lmLDwaDpYPs32K5fL-aU8wgMJy5U8za0r91jJCiT9vc';
-        const supabase = Supabase.createClient(supabaseUrl, supabaseKey);
+        const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
         const state = {
             markersVisible: true,
@@ -591,6 +591,28 @@
             localStorage.setItem('recentFiles', JSON.stringify(recentFiles));
         }
 
+        async function loadFilesFromSupabase() {
+            const { data, error } = await supabase
+                .from('kmz_files')
+                .select('name');
+            if (error) {
+                console.error('Erro ao carregar arquivos do Supabase:', error);
+                return;
+            }
+            data.forEach(file => {
+                const li = document.createElement('li');
+                li.textContent = file.name;
+                li.addEventListener('click', async () => {
+                    await loadKMZFromSupabase(file.name);
+                    localStorage.setItem('lastSelectedFile', file.name);
+                    updateRecentFiles(file.name);
+                    displayFileList();
+                    kmzMenu.style.display = 'none';
+                });
+                kmzList.appendChild(li);
+            });
+        }
+
         function displayFileList() {
             kmzList.innerHTML = '';
             const recentFiles = JSON.parse(localStorage.getItem('recentFiles') || '[]');
@@ -615,17 +637,23 @@
                 });
                 kmzList.appendChild(li);
             });
+
+            loadFilesFromSupabase();
         }
 
         displayFileList();
 
-        map.on('load', () => {
+        map.on('load', async () => {
             const lastFile = localStorage.getItem('lastSelectedFile');
             if (lastFile) {
                 const file = predefinedFiles.find(f => f.name === lastFile);
                 if (file) loadKMZFromURL(file.url, file.name);
             }
-            loadDataFromSupabase();
+            try {
+                await loadDataFromSupabase();
+            } catch (error) {
+                console.error('Erro ao carregar dados do Supabase:', error);
+            }
         });
 
         document.getElementById('btnKMZ').addEventListener('click', () => toggleVisibility(kmzMenu));
@@ -687,78 +715,134 @@
                     geojson = toGeoJSON.kml(new DOMParser().parseFromString(text, 'text/xml'));
                 }
                 await uploadToSupabase(geojson, file.name);
-                loadDataFromSupabase();
+                displayFileList();
             } catch (error) {
                 console.error('Erro ao processar o arquivo:', error);
-                alert('Erro ao processar o arquivo KML/KMZ.');
+                alert('Erro ao carregar o arquivo KML/KMZ.');
             }
         }
 
         async function uploadToSupabase(geojson, fileName) {
-            const { data: kmzFile, error: fileError } = await supabase
-                .from('kmz_files')
-                .insert([{ name: fileName }])
-                .select()
-                .single();
-            if (fileError) throw fileError;
+            try {
+                const { data: kmzFile, error: fileError } = await supabase
+                    .from('kmz_files')
+                    .insert([{ name: fileName }])
+                    .select()
+                    .single();
+                if (fileError) throw fileError;
 
-            for (const feature of geojson.features) {
-                if (feature.geometry.type === 'Point') {
-                    const { error } = await supabase.from('markers').insert([{
-                        kmz_file_id: kmzFile.id,
-                        name: feature.properties.name,
-                        description: feature.properties.description,
-                        coordinates: feature.geometry
-                    }]);
-                    if (error) throw error;
-                } else if (feature.geometry.type === 'LineString') {
-                    const { error } = await supabase.from('lines').insert([{
-                        kmz_file_id: kmzFile.id,
-                        name: feature.properties.name,
-                        description: feature.properties.description,
-                        coordinates: feature.geometry,
-                        color: feature.properties.color || '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')
-                    }]);
-                    if (error) throw error;
-                } else if (feature.geometry.type === 'Polygon') {
-                    const { error } = await supabase.from('polygons').insert([{
-                        kmz_file_id: kmzFile.id,
-                        name: feature.properties.name,
-                        description: feature.properties.description,
-                        coordinates: feature.geometry,
-                        color: feature.properties.color || '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')
-                    }]);
-                    if (error) throw error;
+                for (const feature of geojson.features) {
+                    if (feature.geometry.type === 'Point') {
+                        const { error } = await supabase.from('markers').insert([{
+                            kmz_file_id: kmzFile.id,
+                            name: feature.properties?.name || '',
+                            description: feature.properties?.description || '',
+                            coordinates: JSON.stringify(feature.geometry.coordinates)
+                        }]);
+                        if (error) console.error('Erro ao inserir marcador:', error);
+                    } else if (feature.geometry.type === 'LineString') {
+                        const { error } = await supabase.from('lines').insert([{
+                            kmz_file_id: kmzFile.id,
+                            name: feature.properties?.name || '',
+                            description: feature.properties?.description || '',
+                            coordinates: JSON.stringify(feature.geometry.coordinates),
+                            color: feature.properties?.color || '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')
+                        }]);
+                        if (error) console.error('Erro ao inserir linha:', error);
+                    } else if (feature.geometry.type === 'Polygon') {
+                        const { error } = await supabase.from('polygons').insert([{
+                            kmz_file_id: kmzFile.id,
+                            name: feature.properties?.name || '',
+                            description: feature.properties?.description || '',
+                            coordinates: JSON.stringify(feature.geometry.coordinates),
+                            color: feature.properties?.color || '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')
+                        }]);
+                        if (error) console.error('Erro ao inserir polígono:', error);
+                    }
                 }
+                await loadDataFromSupabase();
+            } catch (error) {
+                console.error('Erro ao fazer upload para o Supabase:', error);
+                alert('Erro ao fazer upload para o banco de dados.');
             }
         }
 
         async function loadDataFromSupabase() {
-            const bounds = map.getBounds();
-            const sw = bounds.getSouthWest();
-            const ne = bounds.getNorthEast();
-            const bbox = `POLYGON((${sw.lng} ${sw.lat}, ${ne.lng} ${sw.lat}, ${ne.lng} ${ne.lat}, ${sw.lng} ${ne.lat}, ${sw.lng} ${sw.lat}))`;
+            try {
+                const bounds = map.getBounds();
+                const sw = bounds.getSouthWest();
+                const ne = bounds.getNorthEast();
+                const bbox = `POLYGON((${sw.lng} ${sw.lat}, ${ne.lng} ${sw.lat}, ${ne.lng} ${ne.lat}, ${sw.lng} ${ne.lat}, ${sw.lng} ${sw.lat}))`;
 
-            const { data: markers, error: markersError } = await supabase
-                .from('markers')
-                .select('id, name, description, coordinates')
-                .filter('coordinates', 'st_intersects', bbox);
-            if (markersError) throw markersError;
-            addMarkersToMap(markers);
+                const { data: markers, error: markersError } = await supabase
+                    .from('markers')
+                    .select('id, name, description, coordinates')
+                    .filter('coordinates', 'st_within', `SRID=4326;${bbox}`);
+                if (markersError) throw markersError;
+                addMarkersToMap(markers);
 
-            const { data: lines, error: linesError } = await supabase
-                .from('lines')
-                .select('id, name, description, coordinates, color')
-                .filter('coordinates', 'st_intersects', bbox);
-            if (linesError) throw linesError;
-            addLinesToMap(lines);
+                const { data: lines, error: linesError } = await supabase
+                    .from('lines')
+                    .select('id, name, description, coordinates, color')
+                    .filter('coordinates', 'st_within', `SRID=4326;${bbox}`);
+                if (linesError) throw linesError;
+                addLinesToMap(lines);
 
-            const { data: polygons, error: polygonsError } = await supabase
-                .from('polygons')
-                .select('id, name, description, coordinates, color')
-                .filter('coordinates', 'st_intersects', bbox);
-            if (polygonsError) throw polygonsError;
-            addPolygonsToMap(polygons);
+                const { data: polygons, error: polygonsError } = await supabase
+                    .from('polygons')
+                    .select('id, name, description, coordinates, color')
+                    .filter('coordinates', 'st_within', `SRID=4326;${bbox}`);
+                if (polygonsError) throw polygonsError;
+                addPolygonsToMap(polygons);
+            } catch (error) {
+                console.error('Erro ao carregar dados do Supabase:', error);
+            }
+        }
+
+        async function loadKMZFromSupabase(fileName) {
+            try {
+                const { data: kmzFile, error } = await supabase
+                    .from('kmz_files')
+                    .select('id')
+                    .eq('name', fileName)
+                    .single();
+                if (error) throw error;
+
+                const kmzFileId = kmzFile.id;
+                const markers = await supabase.from('markers').select('id, name, description, coordinates').eq('kmz_file_id', kmzFileId);
+                const lines = await supabase.from('lines').select('id, name, description, coordinates, color').eq('kmz_file_id', kmzFileId);
+                const polygons = await supabase.from('polygons').select('id, name, description, coordinates, color').eq('kmz_file_id', kmzFileId);
+
+                if (markers.error || lines.error || polygons.error) {
+                    throw new Error('Erro ao carregar dados do Supabase');
+                }
+
+                const geojson = {
+                    type: 'FeatureCollection',
+                    features: [
+                        ...markers.data.map(m => ({
+                            type: 'Feature',
+                            properties: { name: m.name, description: m.description },
+                            geometry: { type: 'Point', coordinates: JSON.parse(m.coordinates) }
+                        })),
+                        ...lines.data.map(l => ({
+                            type: 'Feature',
+                            properties: { name: l.name, description: l.description, color: l.color },
+                            geometry: { type: 'LineString', coordinates: JSON.parse(l.coordinates) }
+                        })),
+                        ...polygons.data.map(p => ({
+                            type: 'Feature',
+                            properties: { name: p.name, description: p.description, color: p.color },
+                            geometry: { type: 'Polygon', coordinates: JSON.parse(p.coordinates) }
+                        }))
+                    ]
+                };
+
+                addDataToMap(geojson, fileName);
+            } catch (error) {
+                console.error('Erro ao carregar KMZ do Supabase:', error);
+                alert('Erro ao carregar arquivo do banco de dados.');
+            }
         }
 
         function addMarkersToMap(markers) {
@@ -767,11 +851,12 @@
                 features: markers.map(marker => ({
                     type: 'Feature',
                     properties: { id: marker.id, name: marker.name, description: marker.description },
-                    geometry: marker.coordinates
+                    geometry: { type: 'Point', coordinates: JSON.parse(marker.coordinates) }
                 }))
             };
-            if (map.getSource('markers')) map.getSource('markers').setData(geojson);
-            else {
+            if (map.getSource('markers')) {
+                map.getSource('markers').setData(geojson);
+            } else {
                 map.addSource('markers', { type: 'geojson', data: geojson });
                 map.addLayer({
                     id: 'markers',
@@ -779,7 +864,27 @@
                     source: 'markers',
                     paint: {
                         'circle-radius': 6,
-                        'circle-color': '#FF5722'
+                        'circle-color': '#FF5722',
+                        'circle-stroke-width': 2,
+                        'circle-stroke-color': '#FFFFFF'
+                    },
+                    layout: { 'visibility': state.markersVisible ? 'visible' : 'none' }
+                });
+                map.addLayer({
+                    id: 'marker-labels',
+                    type: 'symbol',
+                    source: 'markers',
+                    layout: {
+                        'text-field': ['get', 'name'],
+                        'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
+                        'text-size': 12,
+                        'text-offset': [0, 1.5],
+                        'visibility': state.namesVisible ? 'visible' : 'none'
+                    },
+                    paint: {
+                        'text-color': '#000000',
+                        'text-halo-color': '#FFFFFF',
+                        'text-halo-width': 1
                     }
                 });
             }
@@ -791,11 +896,12 @@
                 features: lines.map(line => ({
                     type: 'Feature',
                     properties: { id: line.id, name: line.name, description: line.description, color: line.color },
-                    geometry: line.coordinates
+                    geometry: { type: 'LineString', coordinates: JSON.parse(line.coordinates) }
                 }))
             };
-            if (map.getSource('lines')) map.getSource('lines').setData(geojson);
-            else {
+            if (map.getSource('lines')) {
+                map.getSource('lines').setData(geojson);
+            } else {
                 map.addSource('lines', { type: 'geojson', data: geojson });
                 map.addLayer({
                     id: 'lines',
@@ -804,7 +910,8 @@
                     paint: {
                         'line-color': ['get', 'color'],
                         'line-width': 4
-                    }
+                    },
+                    layout: { 'visibility': state.linesVisible ? 'visible' : 'none' }
                 });
             }
         }
@@ -815,11 +922,12 @@
                 features: polygons.map(polygon => ({
                     type: 'Feature',
                     properties: { id: polygon.id, name: polygon.name, description: polygon.description, color: polygon.color },
-                    geometry: polygon.coordinates
+                    geometry: { type: 'Polygon', coordinates: JSON.parse(polygon.coordinates) }
                 }))
             };
-            if (map.getSource('polygons')) map.getSource('polygons').setData(geojson);
-            else {
+            if (map.getSource('polygons')) {
+                map.getSource('polygons').setData(geojson);
+            } else {
                 map.addSource('polygons', { type: 'geojson', data: geojson });
                 map.addLayer({
                     id: 'polygons',
@@ -828,7 +936,8 @@
                     paint: {
                         'fill-color': ['get', 'color'],
                         'fill-opacity': 0.5
-                    }
+                    },
+                    layout: { 'visibility': 'visible' }
                 });
             }
         }
@@ -850,7 +959,7 @@
                 }
                 addDataToMap(data, fileName);
             } catch (error) {
-                console.error('Erro ao carregar o arquivo KMZ/KML:', error);
+                console.error('Erro ao carregar o arquivo KMZ:', error);
                 alert('Erro ao carregar o arquivo KMZ/KML.');
             }
         }
@@ -862,9 +971,12 @@
             const reader = new FileReader();
             reader.onload = async () => {
                 try {
-                    const data = file.name.endsWith('.kmz')
-                        ? await parseKMZ(reader.result)
-                        : toGeoJSON.kml(new DOMParser().parseFromString(reader.result, 'text/xml'));
+                    const data;
+                    if (file.name.endsWith('.kmz')) {
+                        data = await parseKMZ(reader.result);
+                    } else {
+                        data = toGeoJSON.kml(new DOMParser().parseFromString(reader.result, 'text/xml'));
+                    }
                     addDataToMap(data, file.name);
                     localStorage.setItem('lastSelectedFile', file.name);
                     updateRecentFiles(file.name);
@@ -882,19 +994,28 @@
         }
 
         async function parseKMZ(data) {
-            const zip = await JSZip.loadAsync(data);
-            const kmlFile = zip.file(/\.kml$/i)[0];
-            if (!kmlFile) throw new Error('Arquivo KML não encontrado dentro do KMZ.');
-            const kmlContent = await kmlFile.async('string');
-            return toGeoJSON.kml(new DOMParser().parseFromString(kmlContent, 'text/xml'));
+            try {
+                const zip = await JSZip.loadAsync(data);
+                const kmlFiles = zip.file(/\.kml$/i);
+                if (!kmlFiles || kmlFiles.length === 0) throw new Error('Nenhum arquivo KML encontrado no KMZ');
+                
+                const kmlFile = kmlFiles[0];
+                const kmlText = await kmlFile.async('text');
+                const kmlDoc = new DOMParser().parseFromString(kmlText, 'text/xml');
+                return toGeoJSON.kml(kmlDoc);
+            } catch (error) {
+                console.error('Erro ao analisar KMZ:', error);
+                throw error;
+            }
         }
 
         function addDataToMap(geojson, fileName) {
-            const sanitizedFileName = fileName.replace(/\s+/g, '_').replace(/[^\w\-]/g, '');
+            const sanitizedFileName = fileName.replace(/\s+/g, '_').replace(/[^\w\s-]/g, '');
             const sourceId = `source-${sanitizedFileName}`;
             const markerLayerId = `marker-circles-${sourceId}`;
             const labelLayerId = `marker-labels-${sourceId}`;
             const lineLayerId = `lines-${sourceId}`;
+            const polygonLayerId = `polygons-${sourceId}`;
 
             if (state.files.find(file => file.name === fileName)) {
                 alert(`O arquivo "${fileName}" já está carregado.`);
@@ -903,12 +1024,16 @@
 
             const pointFeaturesArray = [];
             const lineFeaturesArray = [];
+            const polygonFeaturesArray = [];
 
             function extractGeometries(feature) {
                 const geometries = [];
                 if (feature.geometry.type === 'GeometryCollection') {
                     feature.geometry.geometries.forEach(geom => {
-                        geometries.push({ ...feature, geometry: geom });
+                        geometries.push({
+                            ...feature,
+                            geometry: geom
+                        });
                     });
                 } else {
                     geometries.push(feature);
@@ -921,19 +1046,27 @@
                 features.forEach(f => {
                     if (f.geometry.type === 'Point') {
                         pointFeaturesArray.push(f);
-                    } else if (['LineString', 'MultiLineString', 'Polygon', 'MultiPolygon'].includes(f.geometry.type)) {
+                    } else if (['LineString', 'MultiLineString'].includes(f.geometry.type)) {
                         f.properties = f.properties || {};
                         if (!f.properties.color) {
                             const color = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
                             f.properties.color = color;
                         }
                         lineFeaturesArray.push(f);
+                    } else if (['Polygon', 'MultiPolygon'].includes(f.geometry.type)) {
+                        f.properties = f.properties || {};
+                        if (!f.properties.color) {
+                            const color = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+                            f.properties.color = color;
+                        }
+                        polygonFeaturesArray.push(f);
                     }
                 });
             });
 
             const pointFeatures = { type: 'FeatureCollection', features: pointFeaturesArray };
             const lineFeatures = { type: 'FeatureCollection', features: lineFeaturesArray };
+            const polygonFeatures = { type: 'FeatureCollection', features: polygonFeaturesArray };
 
             let groupingProperty = null;
             const exampleLine = lineFeatures.features.find(f => f.properties && (f.properties.Alimentador || f.properties.name));
@@ -959,9 +1092,11 @@
                 sourceId: sourceId,
                 hasMarkers: pointFeatures.features.length > 0,
                 hasLines: lineFeatures.features.length > 0,
+                hasPolygons: polygonFeatures.features.length > 0,
                 groupingProperty: groupingProperty,
                 pointFeatures: pointFeatures,
-                lineFeatures: lineFeatures
+                lineFeatures: lineFeatures,
+                polygonFeatures: polygonFeatures
             });
 
             if (pointFeatures.features.length > 0) {
@@ -984,7 +1119,7 @@
                     type: 'symbol',
                     source: sourceId + '-markers',
                     layout: {
-                        'text-field': ['coalesce', ['get', 'name'], ['get', 'Alimentador']],
+                        'text-field': ['coalesce', ['get', 'name'], ['get', 'Alimentador'], ''],
                         'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
                         'text-size': 12,
                         'text-offset': [0, 1.5],
@@ -1009,6 +1144,20 @@
                         'line-width': 4
                     },
                     layout: { 'visibility': state.linesVisible ? 'visible' : 'none' }
+                });
+            }
+
+            if (polygonFeatures.features.length > 0) {
+                map.addSource(sourceId + '-polygons', { type: 'geojson', data: polygonFeatures });
+                map.addLayer({
+                    id: polygonLayerId,
+                    type: 'fill',
+                    source: sourceId + '-polygons',
+                    paint: {
+                        'fill-color': ['get', 'color'],
+                        'fill-opacity': 0.5
+                    },
+                    layout: { 'visibility': 'visible' }
                 });
             }
 
@@ -1056,17 +1205,17 @@
             const li = document.createElement('li');
             li.textContent = fileName;
             const removeBtn = document.createElement('button');
-            removeBtn.textContent = 'Remover';
-            removeBtn.addEventListener('click', () => {
+            removeBtn.textContent = '删除';
+            removeBtn.onclick = () => {
                 removeFileFromMap(fileName);
                 li.remove();
-            });
+            };
             li.appendChild(removeBtn);
             loadedFilesList.appendChild(li);
         }
 
         function removeFileFromMap(fileName) {
-            const fileIndex = state.files.findIndex(file => file.name === fileName);
+            const fileIndex = state.files.findIndex(f => f.name === fileName);
             if (fileIndex === -1) return;
 
             const file = state.files[fileIndex];
@@ -1077,13 +1226,29 @@
                 const labelLayerId = `marker-labels-${sourceId}`;
                 if (map.getLayer(markerLayerId)) map.removeLayer(markerLayerId);
                 if (map.getLayer(labelLayerId)) map.removeLayer(labelLayerId);
-                if (map.getSource(sourceId + '-markers')) map.removeSource(sourceId + '-markers');
+                if (map.getSource(sourceId + '-markers')) {
+                    map.removeSource(sourceId + '-markers');
+                }
             }
 
             if (file.hasLines) {
                 const lineLayerId = `lines-${sourceId}`;
-                if (map.getLayer(lineLayerId)) map.removeLayer(lineLayerId);
-                if (map.getSource(sourceId + '-lines')) map.removeSource(sourceId + '-lines');
+                if (map.getLayer(lineLayerId)) {
+                    map.removeLayer(lineLayerId);
+                }
+                if (map.getSource(sourceId + '-lines')) {
+                    map.removeSource(sourceId + '-lines');
+                }
+            }
+
+            if (file.hasPolygons) {
+                const polygonLayerId = `polygons-${sourceId}`;
+                if (map.getLayer(polygonLayerId)) {
+                    map.removeLayer(polygonLayerId);
+                }
+                if (map.getSource(sourceId + '-polygons')) {
+                    map.removeSource(sourceId + '-polygons');
+                }
             }
 
             if (file.hasLines && file.groupingProperty && state.selectedGroups.has(sourceId)) {
@@ -1097,17 +1262,18 @@
         function applyGroupFilter() {
             state.files.forEach(file => {
                 if (!file.hasLines || !file.groupingProperty) return;
+
                 const sourceId = file.sourceId;
                 const lineLayerId = `lines-${sourceId}`;
                 const groupingProperty = file.groupingProperty;
                 const selectedGroups = state.selectedGroups.get(sourceId);
 
+                if (!map.getLayer(lineLayerId)) return;
+
                 if (!selectedGroups || selectedGroups.size === 0) {
-                    map.setFilter(lineLayerId, ["==", ["get", groupingProperty], "___no_match___"]);
-                } else if (selectedGroups.size === getTotalGroups(sourceId, groupingProperty)) {
-                    map.setFilter(lineLayerId, null);
+                    map.setFilter(lineLayerId, ['==', ['get', groupingProperty], '']);
                 } else {
-                    map.setFilter(lineLayerId, ["in", groupingProperty, ...Array.from(selectedGroups)]);
+                    map.setFilter(lineLayerId, ['in', ['get', groupingProperty], ...Array.from(selectedGroups)]);
                 }
             });
         }
@@ -1165,10 +1331,20 @@
                 if (file.hasMarkers) {
                     const markerLayerId = `marker-circles-${file.sourceId}`;
                     const labelLayerId = `marker-labels-${file.sourceId}`;
-                    if (map.getLayer(markerLayerId)) map.setLayoutProperty(markerLayerId, 'visibility', visibility);
-                    if (map.getLayer(labelLayerId)) map.setLayoutProperty(labelLayerId, 'visibility', visibility);
+                    if (map.getLayer(markerLayerId)) {
+                        map.setLayoutProperty(markerLayerId, 'visibility', visibility);
+                    }
+                    if (map.getLayer(labelLayerId)) {
+                        map.setLayoutProperty(labelLayerId, 'visibility', visibility);
+                    }
                 }
             });
+            if (map.getLayer('markers')) {
+                map.setLayoutProperty('markers', 'visibility', visibility);
+            }
+            if (map.getLayer('marker-labels')) {
+                map.setLayoutProperty('marker-labels', 'visibility', visibility);
+            }
         }
 
         function toggleNames() {
@@ -1177,9 +1353,14 @@
             state.files.forEach(file => {
                 if (file.hasMarkers) {
                     const labelLayerId = `marker-labels-${file.sourceId}`;
-                    if (map.getLayer(labelLayerId)) map.setLayoutProperty(labelLayerId, 'visibility', visibility);
+                    if (map.getLayer(labelLayerId)) {
+                        map.setLayoutProperty(labelLayerId, 'visibility', visibility);
+                    }
                 }
             });
+            if (map.getLayer('marker-labels')) {
+                map.setLayoutProperty('marker-labels', 'visibility', visibility);
+            }
         }
 
         function toggleLines() {
@@ -1188,9 +1369,14 @@
             state.files.forEach(file => {
                 if (file.hasLines) {
                     const lineLayerId = `lines-${file.sourceId}`;
-                    if (map.getLayer(lineLayerId)) map.setLayoutProperty(lineLayerId, 'visibility', visibility);
+                    if (map.getLayer(lineLayerId)) {
+                        map.setLayoutProperty(lineLayerId, 'visibility', visibility);
+                    }
                 }
             });
+            if (map.getLayer('lines')) {
+                map.setLayoutProperty('lines', 'visibility', visibility);
+            }
         }
 
         function resetView() {
@@ -1204,7 +1390,9 @@
                     const userCoords = [position.coords.longitude, position.coords.latitude];
                     state.userLocation = userCoords;
                     map.flyTo({ center: userCoords, zoom: 16 });
-                    if (userLocationMarker) userLocationMarker.remove();
+                    if (userLocationMarker) {
+                        userLocationMarker.remove();
+                    }
                     userLocationMarker = new maplibregl.Marker({ color: 'blue' })
                         .setLngLat(userCoords)
                         .addTo(map);
@@ -1283,6 +1471,34 @@
                         });
                     }
                 }
+                if (file.hasPolygons) {
+                    const polygonSource = map.getSource(`${file.sourceId}-polygons`);
+                    if (polygonSource && polygonSource._data.features) {
+                        polygonSource._data.features.forEach(feature => {
+                            if (feature.properties && (
+                                (feature.properties.name && feature.properties.name.toLowerCase().includes(term)) ||
+                                (feature.properties.Alimentador && feature.properties.Alimentador.toLowerCase().includes(term))
+                            )) {
+                                matches.push(feature);
+                            }
+                        });
+                    }
+                }
+            });
+
+            const supabaseSources = ['markers', 'lines', 'polygons'];
+            supabaseSources.forEach(source => {
+                const sourceData = map.getSource(source);
+                if (sourceData && sourceData._data.features) {
+                    sourceData._data.features.forEach(feature => {
+                        if (feature.properties && (
+                            (feature.properties.name && feature.properties.name.toLowerCase().includes(term)) ||
+                            (feature.properties.description && feature.properties.description.toLowerCase().includes(term))
+                        )) {
+                            matches.push(feature);
+                        }
+                    });
+                }
             });
 
             const searchResultsDiv = document.getElementById('searchResults');
@@ -1290,7 +1506,13 @@
                 alert('Nenhum resultado encontrado para a busca.');
                 searchResultsDiv.innerHTML = '';
             } else {
-                let referencePoint = state.userLocation || map.getCenter().toArray();
+                let referencePoint;
+                if (state.userLocation) {
+                    referencePoint = state.userLocation;
+                } else {
+                    const center = map.getCenter();
+                    referencePoint = [center.lng, center.lat];
+                }
                 matches.forEach(feature => {
                     const center = getFeatureCenter(feature);
                     feature.properties.distance = computeDistance(referencePoint, center);
@@ -1360,7 +1582,7 @@
                             type: 'symbol',
                             source: file.sourceId + '-markers',
                             layout: {
-                                'text-field': ['coalesce', ['get', 'name'], ['get', 'Alimentador']],
+                                'text-field': ['coalesce', ['get', 'name'], ['get', 'Alimentador'], ''],
                                 'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
                                 'text-size': 12,
                                 'text-offset': [0, 1.5],
@@ -1386,8 +1608,22 @@
                             layout: { 'visibility': state.linesVisible ? 'visible' : 'none' }
                         });
                     }
+                    if (file.hasPolygons) {
+                        map.addSource(file.sourceId + '-polygons', { type: 'geojson', data: file.polygonFeatures });
+                        map.addLayer({
+                            id: `polygons-${file.sourceId}`,
+                            type: 'fill',
+                            source: file.sourceId + '-polygons',
+                            paint: {
+                                'fill-color': ['get', 'color'],
+                                'fill-opacity': 0.5
+                            },
+                            layout: { 'visibility': 'visible' }
+                        });
+                    }
                 });
                 applyGroupFilter();
+                loadDataFromSupabase();
             });
         }
 
