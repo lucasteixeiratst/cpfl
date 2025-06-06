@@ -398,7 +398,7 @@
                         if (map.getSource(`${file.sourceId}-markers`)) map.removeSource(`${file.sourceId}-markers`);
                     }
                     if (file.hasLines) {
-                        if (map.getLayer(`lines-${file.sourceId}`)) map.removeLayer(`lines-${file.sourceId}`);
+                        if (map.getLayer(`line-${file.sourceId}`)) map.removeLayer(`line-${file.sourceId}`);
                         if (map.getSource(`${file.sourceId}-lines`)) map.removeSource(`${file.sourceId}-lines`);
                     }
                 });
@@ -553,7 +553,6 @@
                     console.log(`Metadados de ${fileName} inseridos na tabela kmz_data`);
                     alert(`Arquivo ${fileName} carregado com sucesso no banco de dados!`);
 
-                    // Verifica se os dados foram salvos
                     const { data, error: verifyError } = await supabase
                         .from('kmz_data')
                         .select('id')
@@ -593,7 +592,7 @@
                 const sourceId = `source-${sanitizedFileName}`;
                 const markerLayerId = `marker-circles-${sourceId}`;
                 const labelLayerId = `marker-labels-${sourceId}`;
-                const lineLayerId = `lines-${sourceId}`;
+                const lineLayerId = `line-${sourceId}`;
 
                 if (state.files.find(file => file.name === fileName)) return;
 
@@ -777,7 +776,7 @@
                 }
 
                 if (file.hasLines) {
-                    if (map.getLayer(`lines-${sourceId}`)) map.removeLayer(`lines-${sourceId}`);
+                    if (map.getLayer(`line-${sourceId}`)) map.removeLayer(`line-${sourceId}`);
                     if (map.getSource(`${sourceId}-lines`)) map.removeSource(`${sourceId}-lines`);
                 }
 
@@ -793,7 +792,7 @@
                 state.files.forEach(file => {
                     if (!file.hasLines || !file.groupingProperty) return;
                     const sourceId = file.sourceId;
-                    const lineLayerId = `lines-${sourceId}`;
+                    const lineLayerId = `line-${sourceId}`;
                     const groupingProperty = file.groupingProperty;
                     const selectedGroups = state.selectedGroups.get(sourceId);
 
@@ -877,7 +876,7 @@
                 const visibility = state.linesVisible ? 'visible' : 'none';
                 state.files.forEach(file => {
                     if (file.hasLines) {
-                        if (map.getLayer(`lines-${file.sourceId}`)) map.setLayoutProperty(`lines-${file.sourceId}`, 'visibility', visibility);
+                        if (map.getLayer(`line-${file.sourceId}`)) map.setLayoutProperty(`line-${file.sourceId}`, 'visibility', visibility);
                     }
                 });
             }
@@ -900,14 +899,14 @@
             }
 
             async function searchFeatures() {
-                if (!state.isDatabaseMode) return alert('Busca disponível apenas no modo Banco.');
+                if (!state.isDatabaseMode) return alert('Busca não disponível no modo Online.');
                 const term = searchInput.value.toLowerCase().trim();
                 if (!term) return alert('Digite um termo para buscar.');
 
                 try {
                     const { data, error } = await supabase
                         .from('kmz_data')
-                        .select('id, file_name, feature_type, geometry, properties')
+                        .select('id, file_name, geometry, properties')
                         .or(`properties->>name.ilike.%${term}%,properties->>Alimentador.ilike.%${term}%`)
                         .order('properties->>name', { ascending: true })
                         .limit(50);
@@ -930,20 +929,20 @@
                 searchResultsDiv.innerHTML = '';
                 const ul = document.createElement('ul');
 
-                results.forEach(result => {
+                results.forEach(item => {
                     const li = document.createElement('li');
                     const nameSpan = document.createElement('span');
-                    const displayName = result.properties.name || result.properties.Alimentador || 'Sem nome';
+                    const displayName = item.properties.name || item.properties.Alimentador || 'Sem nome';
                     nameSpan.textContent = displayName;
 
                     const viewButton = document.createElement('button');
                     viewButton.textContent = 'Visualizar';
                     viewButton.onclick = () => {
-                        const geometry = turf.fromWkt(result.geometry);
+                        const geometry = turf.fromWkt(item.geometry);
                         const center = getFeatureCenter(geometry);
                         map.flyTo({ center: center, zoom: 16 });
                         searchResultsDiv.innerHTML = '';
-                    };
+                    }
 
                     li.appendChild(nameSpan);
                     li.appendChild(viewButton);
@@ -1027,7 +1026,7 @@
                         if (file.hasLines) {
                             map.addSource(file.sourceId + '-lines', { type: 'geojson', data: file.lineFeatures });
                             map.addLayer({
-                                id: `lines-${file.sourceId}`,
+                                id: `line-${file.sourceId}`,
                                 type: 'line',
                                 source: file.sourceId + '-lines',
                                 paint: {
