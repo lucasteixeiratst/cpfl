@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Visualizador de Mapas</title>
     <style>
         body, html {
@@ -32,7 +32,8 @@
             padding: 10px 0;
         }
         .menu button {
-            background-color: #fff;
+            position: relative;
+            background-color: #ffffff;
             border: none;
             padding: 10px;
             margin: 5px 0;
@@ -53,6 +54,20 @@
         .menu button img {
             width: 20px;
             height: 20px;
+        }
+        .button-legend {
+            position: absolute;
+            top: 50%;
+            left: 50px;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.9);
+            border-radius: 4px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            padding: 5px;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 2000;
+            display: none;
         }
         .search-bar {
             position: absolute;
@@ -76,14 +91,19 @@
             font-size: 14px;
             border-radius: 8px;
             background-color: #f9f9f9;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
         }
         .search-bar button {
             background-color: #4285F4;
             color: white;
             border: none;
             padding: 10px;
-            border-radius: 4px;
+            border-radius: 8px;
             cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .search-bar button:hover {
+            background-color: #357ae8;
         }
         .search-results {
             position: absolute;
@@ -93,7 +113,7 @@
             max-height: 200px;
             overflow-y: auto;
             background-color: white;
-            border-radius: 4px;
+            border-radius: 8px;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
             z-index: 1000;
         }
@@ -111,9 +131,10 @@
             align-items: center;
         }
         .search-results li:hover {
-            background-color: #f9f9f9;
+            background-color: #f0f0f0;
         }
         .search-results button {
+            margin-left: 10px;
             background-color: #4285F4;
             color: white;
             border: none;
@@ -122,50 +143,160 @@
             cursor: pointer;
             font-size: 12px;
         }
-        .kmz-menu, .line-menu, .loaded-files, .style-menu {
+        .search-results button:hover {
+            background-color: #357ae8;
+        }
+        .kmz-menu {
             position: absolute;
+            top: 80px;
+            left: 80px;
             background: #fff;
             border-radius: 8px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-            z-index: 1000;
+            z-index: 2000;
             padding: 10px;
             display: none;
+            width: 300px;
+            max-height: 400px;
+            overflow-y: auto;
         }
-        .kmz-menu { top: 80px; left: 80px; width: 300px; max-height: 400px; overflow-y: auto; }
-        .line-menu { top: 80px; left: 100px; }
-        .loaded-files { top: 80px; left: 120px; width: 220px; max-height: 300px; overflow-y: auto; }
-        .style-menu { top: 80px; left: 140px; width: 200px; }
-        .kmz-menu ul, .line-menu ul, .loaded-files ul, .style-menu ul {
+        .kmz-menu ul {
             list-style: none;
             margin: 0;
             padding: 0;
         }
-        .kmz-menu li, .line-menu li, .loaded-files li, .style-menu li {
+        .kmz-menu li {
+            padding: 8px 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .kmz-menu li:hover {
+            background-color: #f0f0f0;
+        }
+        .kmz-menu li:last-child {
+            border-bottom: none;
+        }
+        .line-menu {
+            position: absolute;
+            top: 80px;  
+            left: 100px; 
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            z-index: 2000;
+            padding: 10px;
+            display: none;
+        }
+        .line-menu ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .line-menu li {
             padding: 8px 10px;
             border-bottom: 1px solid #f0f0f0;
+        }
+        .line-menu li:last-child {
+            border-bottom: none;
+        }
+        .line-menu li label {
             cursor: pointer;
-        }
-        .kmz-menu li:hover, .style-menu li:hover { background-color: #f9f0f0; }
-        .loaded-files h3 {
-            margin: 0 0 10px;
-            font-size: 16px;
-            text-align: center;
-        }
-        .loaded-files li button {
-            background-color: #e74c3c;
-            color: white;
-            border: none;
-            padding: 3px 6px;
-            border-radius: 4px;
-            font-size: 10px;
         }
         .line-menu button {
             background-color: #4285F4;
             color: #fff;
             border: none;
             padding: 5px 10px;
-            border-radius: 4px;
+            border-radius: 5px;
+            cursor: pointer;
             margin: 5px 0;
+        }
+        .line-menu button:hover {
+            background-color: #357ae8;
+        }
+        .loaded-files-menu {
+            position: absolute;
+            top: 80px;
+            left: 120px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            z-index: 2000;
+            padding: 10px;
+            display: none;
+            width: 220px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .loaded-files-menu h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            text-align: center;
+        }
+        .loaded-files-menu ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        .loaded-files-menu li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .loaded-files-menu li:last-child {
+            border-bottom: none;
+        }
+        .loaded-files-menu li button {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 3px 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 10px;
+        }
+        .loaded-files-menu li button:hover {
+            background-color: #c0392b;
+        }
+        .style-menu {
+            position: absolute;
+            top: 80px;
+            left: 140px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            z-index: 2000;
+            padding: 10px;
+            display: none;
+            width: 200px;
+        }
+        .style-menu ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        .style-menu li {
+            padding: 8px 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .style-menu li:hover {
+            background-color: #f0f0f0;
+        }
+        .style-menu li:last-child {
+            border-bottom: none;
+        }
+        footer {
+            position: absolute;
+            bottom: 5px;
+            width: 100%;
+            text-align: center;
+            font-size: 10px;
+            color: #555;
         }
         .connection-status {
             position: absolute;
@@ -220,7 +351,7 @@
             margin-left: 10px;
         }
     </style>
-    <link href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" rel="stylesheet">
+    <link href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" rel="stylesheet" />
     <script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
     <script src="https://unpkg.com/@tmcw/togeojson@5.2.0/dist/togeojson.umd.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
@@ -230,16 +361,50 @@
 <body>
     <div id="map"></div>
     <div class="menu">
-        <button id="btnKMZ"><img src="https://img.icons8.com/ios-filled/50/000000/upload.png" alt="Upload"></button>
-        <button id="btnUploadMultiple"><img src="https://img.icons8.com/ios-filled/50/000000/upload-to-cloud.png" alt="Upload Múltiplo"></button>
-        <button id="btnMarkers"><img src="https://img.icons8.com/material-outlined/24/000000/map-pin.png" alt="Marcadores"></button>
-        <button id="btnNames"><img src="https://img.icons8.com/material-outlined/24/000000/name.png" alt="Nomes"></button>
-        <button id="btnLines"><img src="https://img.icons8.com/material-outlined/24/000000/polyline.png" alt="Linhas"></button>
-        <button id="btnReset"><img src="https://img.icons8.com/material-outlined/24/000000/refresh.png" alt="Resetar"></button>
-        <button id="btnLocation"><img src="https://img.icons8.com/material-outlined/24/000000/compass.png" alt="Localização"></button>
-        <button id="btnGroupLines"><img src="https://img.icons8.com/material-outlined/24/000000/layers.png" alt="Grupos"></button>
-        <button id="btnLoadedFiles"><img src="https://img.icons8.com/material-outlined/24/000000/folder-invoices.png" alt="Arquivos"></button>
-        <button id="btnStyles"><img src="https://img.icons8.com/material-outlined/24/000000/paint.png" alt="Estilos"></button>
+        <button id="btnKMZ">
+            <img src="https://img.icons8.com/ios-filled/50/000000/upload.png" alt="Upload">
+            <div class="button-legend">Carregar KMZ/KML</div>
+        </button>
+        <button id="btnUploadMultiple" style="display: none;">
+            <img src="https://img.icons8.com/ios-filled/50/000000/upload-to-cloud.png" alt="Upload Múltiplo">
+            <div class="button-legend">Carregar para Banco</div>
+        </button>
+        <button id="btnLoadJSON">
+            <img src="https://img.icons8.com/material-outlined/24/000000/json.png" alt="Carregar JSON">
+            <div class="button-legend">Carregar JSON</div>
+        </button>
+        <button id="btnMarkers">
+            <img src="https://img.icons8.com/material-outlined/24/000000/map-pin.png" alt="Marcadores">
+            <div class="button-legend">Exibir/Ocultar Marcadores</div>
+        </button>
+        <button id="btnNames">
+            <img src="https://img.icons8.com/material-outlined/24/000000/name.png" alt="Nomes">
+            <div class="button-legend">Exibir/Ocultar Nomes</div>
+        </button>
+        <button id="btnLines">
+            <img src="https://img.icons8.com/material-outlined/24/000000/polyline.png" alt="Linhas">
+            <div class="button-legend">Exibir/Ocultar Linhas</div>
+        </button>
+        <button id="btnReset">
+            <img src="https://img.icons8.com/material-outlined/24/000000/refresh.png" alt="Resetar">
+            <div class="button-legend">Resetar Visão</div>
+        </button>
+        <button id="btnLocation">
+            <img src="https://img.icons8.com/material-outlined/24/000000/compass.png" alt="Localização Atual">
+            <div class="button-legend">Minha Localização</div>
+        </button>
+        <button id="btnLineGroups">
+            <img src="https://img.icons8.com/material-outlined/24/000000/layers.png" alt="Grupos de Linhas">
+            <div class="button-legend">Grupos de Linhas</div>
+        </button>
+        <button id="btnLoadedFiles">
+            <img src="https://img.icons8.com/material-outlined/24/000000/folder-invoices.png" alt="Arquivos Carregados">
+            <div class="button-legend">Arquivos Carregados</div>
+        </button>
+        <button id="btnStyles">
+            <img src="https://img.icons8.com/material-outlined/24/000000/paint.png" alt="Estilos">
+            <div class="button-legend">Estilos do Mapa</div>
+        </button>
         <div class="toggle-switch">
             <input type="checkbox" id="modeToggle" checked>
             <label for="modeToggle"></label>
@@ -247,13 +412,15 @@
         </div>
     </div>
     <div class="search-bar">
-        <input type="text" id="searchInput" placeholder="Buscar no mapa...">
+        <input type="text" id="searchInput" placeholder="Buscar no mapa..." />
         <button id="btnSearch">Buscar</button>
     </div>
     <div id="searchResults" class="search-results"></div>
     <div class="kmz-menu" id="kmzMenu">
         <ul id="kmzList"></ul>
-        <ul><li id="selectDevice">Selecionar do dispositivo...</li></ul>
+        <ul>
+            <li id="selectDevice">Selecionar do dispositivo...</li>
+        </ul>
     </div>
     <div class="line-menu" id="lineMenu">
         <div style="display:flex; gap:10px; margin-bottom:10px;">
@@ -262,7 +429,7 @@
         </div>
         <ul id="lineGroupsList"></ul>
     </div>
-    <div class="loaded-files" id="loadedFiles">
+    <div class="loaded-files-menu" id="loadedFilesMenu">
         <h3>Arquivos Carregados</h3>
         <ul id="loadedFilesList"></ul>
     </div>
@@ -270,6 +437,9 @@
         <ul id="styleList"></ul>
     </div>
     <div id="connectionStatus" class="connection-status"></div>
+    <footer>
+        Todos direitos reservados a Lucas Teixeira.
+    </footer>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const supabaseUrl = 'https://apwforodphfoorwhaqdo.supabase.co';
@@ -304,12 +474,14 @@
             const kmzList = document.getElementById('kmzList');
             const lineMenu = document.getElementById('lineMenu');
             const lineGroupsList = document.getElementById('lineGroupsList');
-            const loadedFiles = document.getElementById('loadedFiles');
+            const loadedFilesMenu = document.getElementById('loadedFilesMenu');
             const loadedFilesList = document.getElementById('loadedFilesList');
+            const btnLoadedFiles = document.getElementById('btnLoadedFiles');
             const styleMenu = document.getElementById('styleMenu');
             const connectionStatus = document.getElementById('connectionStatus');
             const modeToggle = document.getElementById('modeToggle');
             const modeLabel = document.getElementById('modeLabel');
+            const btnUploadMultiple = document.getElementById('btnUploadMultiple');
 
             async function checkDatabaseConnection() {
                 try {
@@ -340,14 +512,36 @@
                 return data.map(item => ({ name: item.file_name }));
             }
 
+            function updateRecentFiles(fileName) {
+                let recentFiles = JSON.parse(localStorage.getItem('recentFiles') || '[]');
+                recentFiles = recentFiles.filter(f => f !== fileName);
+                recentFiles.unshift(fileName);
+                recentFiles = recentFiles.slice(0, 5);
+                localStorage.setItem('recentFiles', JSON.stringify(recentFiles));
+            }
+
             async function displayFileList() {
                 kmzList.innerHTML = '';
-                const predefinedFiles = await fetchKMZFiles();
-                predefinedFiles.sort((a, b) => a.name.localeCompare(b.name)).forEach(file => {
+                const recentFiles = JSON.parse(localStorage.getItem('recentFiles') || '[]');
+                const recentFileSet = new Set(recentFiles);
+                let predefinedFiles = [];
+                if (state.isDatabaseMode) {
+                    predefinedFiles = await fetchKMZFiles();
+                }
+                const recent = predefinedFiles.filter(file => recentFileSet.has(file.name));
+                const others = predefinedFiles.filter(file => !recentFileSet.has(file.name));
+                const sortedRecent = recent.sort((a, b) => recentFiles.indexOf(a.name) - recentFiles.indexOf(b.name));
+                const sortedOthers = others.sort((a, b) => a.name.localeCompare(b.name));
+                const sortedFiles = [...sortedRecent, ...sortedOthers];
+
+                sortedFiles.forEach(file => {
                     const li = document.createElement('li');
                     li.textContent = file.name;
                     li.addEventListener('click', () => {
                         loadKMZFromSupabase(file.name);
+                        localStorage.setItem('lastSelectedFile', file.name);
+                        updateRecentFiles(file.name);
+                        displayFileList();
                         kmzMenu.style.display = 'none';
                     });
                     kmzList.appendChild(li);
@@ -356,27 +550,42 @@
 
             map.on('load', () => {
                 displayFileList();
-                if (state.isDatabaseMode) loadDataInView();
+                if (state.isDatabaseMode) {
+                    const lastFile = localStorage.getItem('lastSelectedFile');
+                    if (lastFile) loadKMZFromSupabase(lastFile);
+                    loadDataInView();
+                }
             });
 
             document.getElementById('btnKMZ').addEventListener('click', () => toggleVisibility(kmzMenu));
             document.getElementById('btnUploadMultiple').addEventListener('click', selectMultipleFiles);
+            document.getElementById('btnLoadJSON').addEventListener('click', selectJSONFile);
             document.getElementById('btnMarkers').addEventListener('click', toggleMarkers);
             document.getElementById('btnNames').addEventListener('click', toggleNames);
             document.getElementById('btnLines').addEventListener('click', toggleLines);
             document.getElementById('btnReset').addEventListener('click', resetView);
             document.getElementById('btnLocation').addEventListener('click', goToCurrentLocation);
-            document.getElementById('btnGroupLines').addEventListener('click', () => state.selectedGroups.size ? toggleVisibility(lineMenu) : alert('Sem grupos de linhas.'));
-            document.getElementById('btnLoadedFiles').addEventListener('click', () => toggleVisibility(loadedFiles));
+            document.getElementById('btnLineGroups').addEventListener('click', () => {
+                if (state.selectedGroups.size === 0) {
+                    alert('Não há grupos de linhas para filtrar.');
+                } else {
+                    toggleVisibility(lineMenu);
+                }
+            });
+            btnLoadedFiles.addEventListener('click', () => toggleVisibility(loadedFilesMenu));
             document.getElementById('btnSearch').addEventListener('click', searchFeatures);
             document.getElementById('selectDevice').addEventListener('click', selectFromDevice);
             document.getElementById('hideAll').addEventListener('click', hideAllGroups);
             document.getElementById('showAll').addEventListener('click', showAllGroups);
-            document.getElementById('btnStyles').addEventListener('click', () => { displayStyleList(); toggleVisibility(styleMenu); });
+            document.getElementById('btnStyles').addEventListener('click', () => {
+                displayStyleList();
+                toggleVisibility(styleMenu);
+            });
 
             modeToggle.addEventListener('change', () => {
                 state.isDatabaseMode = modeToggle.checked;
                 modeLabel.textContent = state.isDatabaseMode ? 'Modo Banco' : 'Modo Online';
+                btnUploadMultiple.style.display = state.isDatabaseMode ? 'flex' : 'none';
                 clearMap();
                 if (state.isDatabaseMode) {
                     displayFileList();
@@ -398,7 +607,7 @@
                         if (map.getSource(`${file.sourceId}-markers`)) map.removeSource(`${file.sourceId}-markers`);
                     }
                     if (file.hasLines) {
-                        if (map.getLayer(`line-${file.sourceId}`)) map.removeLayer(`line-${file.sourceId}`);
+                        if (map.getLayer(`lines-${file.sourceId}`)) map.removeLayer(`lines-${file.sourceId}`);
                         if (map.getSource(`${file.sourceId}-lines`)) map.removeSource(`${file.sourceId}-lines`);
                     }
                 });
@@ -445,7 +654,7 @@
             }
 
             function toggleVisibility(element) {
-                element.style.display = element.style.display === 'block' ? 'none' : 'block';
+                element.style.display = (element.style.display === 'block') ? 'none' : 'block';
             }
 
             function selectFromDevice() {
@@ -463,6 +672,14 @@
                 input.accept = '.kmz';
                 input.multiple = true;
                 input.onchange = handleMultipleFiles;
+                input.click();
+            }
+
+            function selectJSONFile() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.json';
+                input.onchange = handleJSONFile;
                 input.click();
             }
 
@@ -501,9 +718,13 @@
                             ? await parseKMZ(reader.result)
                             : toGeoJSON.kml(new DOMParser().parseFromString(reader.result, 'text/xml'));
                         addDataToMap(data, file.name);
+                        localStorage.setItem('lastSelectedFile', file.name);
+                        updateRecentFiles(file.name);
                         if (state.isDatabaseMode) {
                             await uploadKMZToSupabase(file.name, file, data);
                             await displayFileList();
+                        } else {
+                            displayFileList();
                         }
                     } catch (error) {
                         console.error('Erro ao processar arquivo:', error);
@@ -515,6 +736,27 @@
                 } else {
                     reader.readAsText(file);
                 }
+            }
+
+            async function handleJSONFile(event) {
+                const file = event.target.files[0];
+                if (!file || !file.name.endsWith('.json')) return;
+
+                const reader = new FileReader();
+                reader.onload = async () => {
+                    try {
+                        const data = JSON.parse(reader.result);
+                        if (data.type !== 'FeatureCollection') throw new Error('Arquivo JSON inválido. Deve ser um GeoJSON FeatureCollection.');
+                        addDataToMap(data, file.name);
+                        localStorage.setItem('lastSelectedFile', file.name);
+                        updateRecentFiles(file.name);
+                        displayFileList();
+                    } catch (error) {
+                        console.error('Erro ao processar JSON:', error);
+                        alert(`Erro ao processar ${file.name}: ${error.message}`);
+                    }
+                };
+                reader.readAsText(file);
             }
 
             async function parseKMZ(data) {
@@ -592,9 +834,12 @@
                 const sourceId = `source-${sanitizedFileName}`;
                 const markerLayerId = `marker-circles-${sourceId}`;
                 const labelLayerId = `marker-labels-${sourceId}`;
-                const lineLayerId = `line-${sourceId}`;
+                const lineLayerId = `lines-${sourceId}`;
 
-                if (state.files.find(file => file.name === fileName)) return;
+                if (state.files.find(file => file.name === fileName)) {
+                    alert(`O arquivo "${fileName}" já está carregado.`);
+                    return;
+                }
 
                 const pointFeaturesArray = [];
                 const lineFeaturesArray = [];
@@ -707,7 +952,7 @@
                 }
 
                 updateGroupMenu();
-                updateLoadedFilesList();
+                updateLoadedFilesList(fileName);
             }
 
             function updateGroupMenu() {
@@ -746,20 +991,17 @@
                 });
             }
 
-            function updateLoadedFilesList() {
-                loadedFilesList.innerHTML = '';
-                state.files.forEach(file => {
-                    const li = document.createElement('li');
-                    li.textContent = file.name;
-                    const removeBtn = document.createElement('button');
-                    removeBtn.textContent = 'Remover';
-                    removeBtn.addEventListener('click', () => {
-                        removeFileFromMap(file.name);
-                        li.remove();
-                    });
-                    li.appendChild(removeBtn);
-                    loadedFilesList.appendChild(li);
+            function updateLoadedFilesList(fileName) {
+                const li = document.createElement('li');
+                li.textContent = fileName;
+                const removeBtn = document.createElement('button');
+                removeBtn.textContent = 'Remover';
+                removeBtn.addEventListener('click', () => {
+                    removeFileFromMap(fileName);
+                    li.remove();
                 });
+                li.appendChild(removeBtn);
+                loadedFilesList.appendChild(li);
             }
 
             function removeFileFromMap(fileName) {
@@ -776,7 +1018,7 @@
                 }
 
                 if (file.hasLines) {
-                    if (map.getLayer(`line-${sourceId}`)) map.removeLayer(`line-${sourceId}`);
+                    if (map.getLayer(`lines-${sourceId}`)) map.removeLayer(`lines-${sourceId}`);
                     if (map.getSource(`${sourceId}-lines`)) map.removeSource(`${sourceId}-lines`);
                 }
 
@@ -792,7 +1034,7 @@
                 state.files.forEach(file => {
                     if (!file.hasLines || !file.groupingProperty) return;
                     const sourceId = file.sourceId;
-                    const lineLayerId = `line-${sourceId}`;
+                    const lineLayerId = `lines-${sourceId}`;
                     const groupingProperty = file.groupingProperty;
                     const selectedGroups = state.selectedGroups.get(sourceId);
 
@@ -876,7 +1118,7 @@
                 const visibility = state.linesVisible ? 'visible' : 'none';
                 state.files.forEach(file => {
                     if (file.hasLines) {
-                        if (map.getLayer(`line-${file.sourceId}`)) map.setLayoutProperty(`line-${file.sourceId}`, 'visibility', visibility);
+                        if (map.getLayer(`lines-${file.sourceId}`)) map.setLayoutProperty(`lines-${file.sourceId}`, 'visibility', visibility);
                     }
                 });
             }
@@ -885,42 +1127,128 @@
                 map.easeTo({ center: [-47.068847, -22.934973], zoom: 13 });
             }
 
+            let userLocationMarker;
             function goToCurrentLocation() {
                 if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(position => {
+                    navigator.geolocation.getCurrentPosition((position) => {
                         const userCoords = [position.coords.longitude, position.coords.latitude];
                         state.userLocation = userCoords;
                         map.flyTo({ center: userCoords, zoom: 16 });
-                        new maplibregl.Marker({ color: 'blue' }).setLngLat(userCoords).addTo(map);
-                    }, () => alert('Não foi possível obter sua localização.'));
+                        if (userLocationMarker) userLocationMarker.remove();
+                        userLocationMarker = new maplibregl.Marker({ color: 'blue' })
+                            .setLngLat(userCoords)
+                            .addTo(map);
+                    }, () => {
+                        alert('Não foi possível obter sua localização.');
+                    });
                 } else {
-                    alert('Geolocalização não suportada.');
+                    alert('Geolocalização não é suportada pelo seu navegador.');
                 }
             }
 
+            function getFeatureCenter(feature) {
+                let center;
+                if (feature.geometry.type === 'Point') {
+                    center = feature.geometry.coordinates;
+                } else {
+                    const coordinates = [];
+                    function extractCoords(coords) {
+                        if (typeof coords[0] === 'number') {
+                            coordinates.push(coords);
+                        } else {
+                            coords.forEach(c => extractCoords(c));
+                        }
+                    }
+                    extractCoords(feature.geometry.coordinates);
+                    const lons = coordinates.map(coord => coord[0]);
+                    const lats = coordinates.map(coord => coord[1]);
+                    const avgLon = lons.reduce((a, b) => a + b, 0) / lons.length;
+                    const avgLat = lats.reduce((a, b) => a + b, 0) / lats.length;
+                    center = [avgLon, avgLat];
+                }
+                return center;
+            }
+
+            function computeDistance(coord1, coord2) {
+                const toRad = (value) => value * Math.PI / 180;
+                const lat1 = coord1[1], lon1 = coord1[0], lat2 = coord2[1], lon2 = coord2[0];
+                const R = 6371e3;
+                const φ1 = toRad(lat1), φ2 = toRad(lat2);
+                const Δφ = toRad(lat2 - lat1), Δλ = toRad(lon2 - lon1);
+                const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                return R * c;
+            }
+
             async function searchFeatures() {
-                if (!state.isDatabaseMode) return alert('Busca não disponível no modo Online.');
                 const term = searchInput.value.toLowerCase().trim();
                 if (!term) return alert('Digite um termo para buscar.');
 
-                try {
-                    const { data, error } = await supabase
-                        .from('kmz_data')
-                        .select('id, file_name, geometry, properties')
-                        .or(`properties->>name.ilike.%${term}%,properties->>Alimentador.ilike.%${term}%`)
-                        .order('properties->>name', { ascending: true })
-                        .limit(50);
-                    if (error) throw error;
+                const matches = [];
+                if (state.isDatabaseMode) {
+                    try {
+                        const { data, error } = await supabase
+                            .from('kmz_data')
+                            .select('id, file_name, geometry, properties')
+                            .or(`properties->>name.ilike.%${term}%,properties->>Alimentador.ilike.%${term}%`)
+                            .order('properties->>name', { ascending: true })
+                            .limit(50);
+                        if (error) throw error;
 
-                    if (data.length === 0) {
-                        alert('Nenhum resultado encontrado.');
-                        document.getElementById('searchResults').innerHTML = '';
-                    } else {
-                        displaySearchResults(data);
+                        matches.push(...data.map(item => ({
+                            type: 'Feature',
+                            geometry: turf.fromWkt(item.geometry),
+                            properties: { ...item.properties, fileName: item.file_name }
+                        })));
+                    } catch (error) {
+                        console.error('Erro ao buscar no banco:', error);
+                        alert('Erro na busca.');
                     }
-                } catch (error) {
-                    console.error('Erro ao buscar:', error);
-                    alert('Erro na busca.');
+                } else {
+                    state.files.forEach(file => {
+                        if (file.hasMarkers) {
+                            const markerSource = map.getSource(`${file.sourceId}-markers`);
+                            if (markerSource && markerSource._data.features) {
+                                markerSource._data.features.forEach(feature => {
+                                    if (feature.properties && (
+                                        (feature.properties.name && feature.properties.name.toLowerCase().includes(term)) ||
+                                        (feature.properties.Alimentador && feature.properties.Alimentador.toLowerCase().includes(term))
+                                    )) {
+                                        matches.push({ ...feature, properties: { ...feature.properties, fileName: file.name } });
+                                    }
+                                });
+                            }
+                        }
+                        if (file.hasLines) {
+                            const lineSource = map.getSource(`${file.sourceId}-lines`);
+                            if (lineSource && lineSource._data.features) {
+                                lineSource._data.features.forEach(feature => {
+                                    if (feature.properties && (
+                                        (feature.properties.name && feature.properties.name.toLowerCase().includes(term)) ||
+                                        (feature.properties.Alimentador && feature.properties.Alimentador.toLowerCase().includes(term))
+                                    )) {
+                                        matches.push({ ...feature, properties: { ...feature.properties, fileName: file.name } });
+                                    }
+                                });
+                            }
+                        }
+                    });
+                }
+
+                const searchResultsDiv = document.getElementById('searchResults');
+                if (matches.length === 0) {
+                    alert('Nenhum resultado encontrado para a busca.');
+                    searchResultsDiv.innerHTML = '';
+                } else {
+                    let referencePoint = state.userLocation || map.getCenter().toArray();
+                    matches.forEach(feature => {
+                        const center = getFeatureCenter(feature);
+                        feature.properties.distance = computeDistance(referencePoint, center);
+                    });
+                    matches.sort((a, b) => a.properties.distance - b.properties.distance);
+                    const topResults = matches.slice(0, 5);
+                    displaySearchResults(topResults);
                 }
             }
 
@@ -929,62 +1257,35 @@
                 searchResultsDiv.innerHTML = '';
                 const ul = document.createElement('ul');
 
-                results.forEach(item => {
+                results.forEach(result => {
                     const li = document.createElement('li');
                     const nameSpan = document.createElement('span');
-                    const displayName = item.properties.name || item.properties.Alimentador || 'Sem nome';
-                    nameSpan.textContent = displayName;
+                    const displayName = result.properties.name || result.properties.Alimentador || 'Sem nome';
+                    nameSpan.textContent = `${displayName} (${(result.properties.distance / 1000).toFixed(2)} km)`;
 
                     const viewButton = document.createElement('button');
                     viewButton.textContent = 'Visualizar';
                     viewButton.onclick = () => {
-                        const geometry = turf.fromWkt(item.geometry);
-                        const center = getFeatureCenter(geometry);
+                        const center = getFeatureCenter(result);
                         map.flyTo({ center: center, zoom: 16 });
                         searchResultsDiv.innerHTML = '';
-                    }
+                    };
+
+                    const googleMapsButton = document.createElement('button');
+                    googleMapsButton.textContent = 'Google Maps';
+                    googleMapsButton.onclick = () => {
+                        const center = getFeatureCenter(result);
+                        const url = `https://www.google.com/maps?q=${center[1]},${center[0]}`;
+                        window.open(url, '_blank');
+                    };
 
                     li.appendChild(nameSpan);
                     li.appendChild(viewButton);
+                    li.appendChild(googleMapsButton);
                     ul.appendChild(li);
                 });
 
                 searchResultsDiv.appendChild(ul);
-            }
-
-            function getFeatureCenter(feature) {
-                if (feature.geometry.type === 'Point') {
-                    return feature.geometry.coordinates;
-                }
-                const coordinates = [];
-                function extractCoords(coords) {
-                    if (typeof coords[0] === 'number') {
-                        coordinates.push(coords);
-                    } else {
-                        coords.forEach(c => extractCoords(c));
-                    }
-                }
-                extractCoords(feature.geometry.coordinates);
-                const lons = coordinates.map(coord => coord[0]);
-                const lats = coordinates.map(coord => coord[1]);
-                return [
-                    lons.reduce((a, b) => a + b, 0) / lons.length,
-                    lats.reduce((a, b) => a + b, 0) / lats.length
-                ];
-            }
-
-            function displayStyleList() {
-                const styleList = document.getElementById('styleList');
-                styleList.innerHTML = '';
-                mapStyles.forEach(style => {
-                    const li = document.createElement('li');
-                    li.textContent = style.name;
-                    li.addEventListener('click', () => {
-                        changeMapStyle(style.url);
-                        styleMenu.style.display = 'none';
-                    });
-                    styleList.appendChild(li);
-                });
             }
 
             function changeMapStyle(newStyleUrl) {
@@ -1026,7 +1327,7 @@
                         if (file.hasLines) {
                             map.addSource(file.sourceId + '-lines', { type: 'geojson', data: file.lineFeatures });
                             map.addLayer({
-                                id: `line-${file.sourceId}`,
+                                id: `lines-${file.sourceId}`,
                                 type: 'line',
                                 source: file.sourceId + '-lines',
                                 paint: {
@@ -1040,6 +1341,40 @@
                     applyGroupFilter();
                 });
             }
+
+            function displayStyleList() {
+                const styleList = document.getElementById('styleList');
+                styleList.innerHTML = '';
+                mapStyles.forEach(style => {
+                    const li = document.createElement('li');
+                    li.textContent = style.name;
+                    li.addEventListener('click', () => {
+                        changeMapStyle(style.url);
+                        styleMenu.style.display = 'none';
+                    });
+                    styleList.appendChild(li);
+                });
+            }
+
+            const menuButtons = document.querySelectorAll('.menu button');
+            menuButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const legend = button.querySelector('.button-legend');
+                    if (legend) {
+                        legend.style.display = 'block';
+                        setTimeout(() => {
+                            legend.style.display = 'none';
+                        }, 3000);
+                    }
+                });
+            });
+
+            window.onload = function() {
+                setTimeout(() => {
+                    const legends = document.querySelectorAll('.button-legend');
+                    legends.forEach(legend => legend.style.display = 'none');
+                }, 5000);
+            };
         });
     </script>
 </body>
