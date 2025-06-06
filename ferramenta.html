@@ -1,295 +1,622 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Map Viewer with Supabase</title>
-    <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
-    <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/togeojson@5.0.0/dist/togeojson.umd.js"></script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Visualizador de Mapas</title>
     <style>
-        body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
-        #map { position: absolute; top: 0; bottom: 0; width: 100%; height: 100vh; }
-        .controls {
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            position: relative;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+
+        .menu {
             position: absolute;
-            top: 10px;
-            left: 10px;
-            background: white;
-            padding: 10px;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            top: 50%;
+            left: 20px;
+            transform: translateY(-50%);
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
             z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px 0;
         }
-        .controls input, .controls button, .controls select {
-            margin: 5px;
-            padding: 8px;
+
+        .menu button {
+            position: relative;
+            background-color: #ffffff;
+            border: none;
+            padding: 10px;
+            margin: 5px 0;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .menu button:hover {
+            background-color: #f0f0f0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .menu button img {
+            width: 20px;
+            height: 20px;
+        }
+
+        .button-legend {
+            position: absolute;
+            top: 50%;
+            left: 50px;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.9);
+            border-radius: 4px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            padding: 5px;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 2000;
+            display: none;
+        }
+
+        .search-bar {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 300px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            display: flex;
+            padding: 10px;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .search-bar input {
+            flex: 1;
+            border: none;
+            outline: none;
+            padding: 10px;
             font-size: 14px;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
         }
+
+        .search-bar button {
+            background-color: #4285F4;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .search-bar button:hover {
+            background-color: #357ae8;
+        }
+
         .search-results {
+            position: absolute;
+            top: 70px;
+            left: 20px;
+            width: 300px;
             max-height: 200px;
             overflow-y: auto;
-            margin-top: 10px;
-            background: white;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+        }
+
+        .search-results ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .search-results li {
             padding: 10px;
-            border-radius: 5px;
-        }
-        .search-results div {
-            padding: 5px;
+            border-bottom: 1px solid #f0f0f0;
             cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        .search-results div:hover {
-            background: #f0f0f0;
+
+        .search-results li:hover {
+            background-color: #f0f0f0;
+        }
+
+        .search-results button {
+            margin-left: 10px;
+            background-color: #4285F4;
+            color: white;
+            border: none;
+            padding: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .search-results button:hover {
+            background-color: #357ae8;
+        }
+
+        footer {
+            position: absolute;
+            bottom: 5px;
+            width: 100%;
+            text-align: center;
+            font-size: 10px;
+            color: #555;
         }
     </style>
+    <link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet" />
+    <script src="https://unpkg.com/maplibre-gl"></script>
+    <script src="https://unpkg.com/@tmcw/togeojson"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.6.0/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <div id="map"></div>
-    <div class="controls">
-        <input type="text" id="searchInput" placeholder="Search features...">
-        <button onclick="searchFeatures()">Search</button>
-        <button onclick="document.getElementById('fileInput').click()">Upload KMZ</button>
-        <input type="file" id="fileInput" accept=".kmz" style="display: none;">
-        <select id="fileSelect" onchange="loadFileFromSupabase(this.value)">
-            <option value="">Select a KMZ file</option>
-        </select>
-        <div id="searchResults" class="search-results" style="display: none;"></div>
+
+    <div class="menu">
+        <button id="btnKMZ">
+            <img src="https://img.icons8.com/ios-filled/50/000000/upload.png" alt="Upload">
+            <div class="button-legend">Carregar KMZ/KML</div>
+        </button>
+        <button id="btnMarkers">
+            <img src="https://img.icons8.com/material-outlined/24/000000/map-pin.png" alt="Marcadores">
+            <div class="button-legend">Exibir/Ocultar Marcadores</div>
+        </button>
+        <button id="btnNames">
+            <img src="https://img.icons8.com/material-outlined/24/000000/name.png" alt="Nomes">
+            <div class="button-legend">Exibir/Ocultar Nomes</div>
+        </button>
+        <button id="btnLines">
+            <img src="https://img.icons8.com/material-outlined/24/000000/polyline.png" alt="Linhas">
+            <div class="button-legend">Exibir/Ocultar Linhas</div>
+        </button>
+        <button id="btnReset">
+            <img src="https://img.icons8.com/material-outlined/24/000000/refresh.png" alt="Resetar">
+            <div class="button-legend">Resetar Visão</div>
+        </button>
+        <button id="btnLocation">
+            <img src="https://img.icons8.com/material-outlined/24/000000/compass.png" alt="Localização Atual">
+            <div class="button-legend">Minha Localização</div>
+        </button>
     </div>
 
-    <script>
-        // Initialize Supabase client
-        const supabase = Supabase.createClient(
-            'https://apwforodphfoorwhaqdo.supabase.co',
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFwd2Zvcm9kcGhmb29yd2hhcWRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwODQ5ODcsImV4cCI6MjA2NDY2MDk4N30.lmLDwaDpYPs32K5fL-aU8wgMJy5U8za0r91jJCiT9vc'
-        );
+    <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="Buscar no mapa..." />
+        <button id="btnSearch">Buscar</button>
+    </div>
 
-        // Initialize MapLibre
-        console.log('Initializing MapLibre...');
+    <div id="searchResults" class="search-results"></div>
+
+    <footer>
+        Todos direitos reservados a Lucas Teixeira.
+    </footer>
+
+    <script>
+        // Configuração do Supabase
+        const supabaseUrl = 'SUA_URL_SUPABASE';
+        const supabaseKey = 'SUA_CHAVE_API';
+        const supabase = Supabase.createClient(supabaseUrl, supabaseKey);
+
+        const state = {
+            markersVisible: true,
+            namesVisible: true,
+            linesVisible: true,
+            userLocation: null,
+            loadedFeatures: {}
+        };
+
         const map = new maplibregl.Map({
             container: 'map',
-            style: 'https://demotiles.maplibre.org/style.json', // Estilo confiável
+            style: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
             center: [-47.068847, -22.934973],
             zoom: 11
         });
 
-        // State to track loaded files
-        const state = {
-            files: [],
-            markersVisible: true
-        };
+        const searchInput = document.getElementById('searchInput');
 
-        // Load files from Supabase on page load
-        async function loadSupabaseFiles() {
-            console.log('Loading files from Supabase...');
-            try {
-                const { data, error } = await supabase
-                    .from('kmz_metadata')
-                    .select('file_name');
-                if (error) throw error;
-
-                const fileSelect = document.getElementById('fileSelect');
-                fileSelect.innerHTML = '<option value="">Select a KMZ file</option>';
-                data.forEach(item => {
-                    if (item.file_name.endsWith('.kmz')) {
-                        const option = document.createElement('option');
-                        option.value = item.file_name;
-                        option.textContent = item.file_name;
-                        fileSelect.appendChild(option);
-                    }
-                });
-                console.log('Files loaded:', data);
-            } catch (error) {
-                console.error('Error listing files:', error);
-                alert('Failed to load files from Supabase.');
-            }
-        }
-
-        // Load file from Supabase
-        async function loadFileFromSupabase(fileName) {
-            if (!fileName) return;
-            console.log('Loading file from Supabase:', fileName);
-
-            try {
-                const { data, error } = await supabase.storage
-                    .from('kmz-files')
-                    .download(`public/${fileName}`);
-                if (error) throw error;
-
-                const arrayBuffer = await data.arrayBuffer();
-                await handleFile(arrayBuffer, fileName);
-            } catch (error) {
-                console.error('Error downloading KMZ:', error);
-                alert('Failed to load KMZ file from Supabase.');
-            }
-        }
-
-        // Handle file upload
-        document.getElementById('fileInput').addEventListener('change', async (event) => {
-            const file = event.target.files[0];
-            if (!file) return;
-            console.log('Uploading file:', file.name);
-
-            try {
-                // Upload to Supabase Storage
-                const { data, error } = await supabase.storage
-                    .from('kmz-files')
-                    .upload(`public/${file.name}`, file, { upsert: true });
-                if (error) throw error;
-
-                // Insert metadata into kmz_metadata table
-                const { error: metadataError } = await supabase
-                    .from('kmz_metadata')
-                    .insert({
-                        file_name: file.name,
-                        bucket_path: `public/${file.name}`
-                    });
-                if (metadataError) throw metadataError;
-
-                // Process and display the uploaded file
-                await handleFile(file, file.name);
-                // Refresh file list
-                await loadSupabaseFiles();
-            } catch (error) {
-                console.error('Upload error:', error);
-                alert('Failed to upload KMZ file.');
-            }
+        map.on('load', () => {
+            loadMapData();
         });
 
-        // Process KMZ file
-        async function handleFile(file, fileName) {
-            console.log('Processing file:', fileName);
-            try {
-                const arrayBuffer = typeof file === 'object' ? await file.arrayBuffer() : file;
-                const zip = await JSZip.loadAsync(arrayBuffer);
-                const kmlFile = zip.file(/\.kml$/i)[0];
-                if (!kmlFile) throw new Error('No KML file found in KMZ.');
+        map.on('moveend', () => {
+            loadMapData();
+        });
 
-                const kmlContent = await kmlFile.async('string');
-                const geojson = toGeoJSON.kml(new DOMParser().parseFromString(kmlContent, 'text/xml'));
+        document.getElementById('btnKMZ').addEventListener('click', selectFromDevice);
+        document.getElementById('btnMarkers').addEventListener('click', toggleMarkers);
+        document.getElementById('btnNames').addEventListener('click', toggleNames);
+        document.getElementById('btnLines').addEventListener('click', toggleLines);
+        document.getElementById('btnReset').addEventListener('click', resetView);
+        document.getElementById('btnLocation').addEventListener('click', goToCurrentLocation);
+        document.getElementById('btnSearch').addEventListener('click', searchFeatures);
 
-                addDataToMap(geojson, fileName);
-            } catch (error) {
-                console.error('Error processing KMZ:', error);
-                alert('Failed to process KMZ file.');
-            }
+        async function loadMapData() {
+            const bounds = map.getBounds();
+            const sw = bounds.getSouthWest();
+            const ne = bounds.getNorthEast();
+            const bbox = `POLYGON((${sw.lng} ${sw.lat}, ${ne.lng} ${sw.lat}, ${ne.lng} ${ne.lat}, ${sw.lng} ${ne.lat}, ${sw.lng} ${sw.lat}))`;
+
+            // Limpar camadas existentes
+            clearMapLayers();
+
+            // Carregar marcadores
+            const { data: markers } = await supabase
+                .from('markers')
+                .select('id, name, description, coordinates')
+                .filter('coordinates', 'st_intersects', bbox);
+            addMarkersToMap(markers);
+
+            // Carregar linhas
+            const { data: lines } = await supabase
+                .from('lines')
+                .select('id, name, description, coordinates, color')
+                .filter('coordinates', 'st_intersects', bbox);
+            addLinesToMap(lines);
+
+            // Carregar polígonos
+            const { data: polygons } = await supabase
+                .from('polygons')
+                .select('id, name, description, coordinates, color')
+                .filter('coordinates', 'st_intersects', bbox);
+            addPolygonsToMap(polygons);
         }
 
-        // Add GeoJSON data to map
-        function addDataToMap(geojson, fileName) {
-            console.log('Adding data to map:', fileName);
-            const sourceId = `source-${fileName.replace(/[^a-zA-Z0-9]/g, '')}`;
-            const pointFeatures = { type: 'FeatureCollection', features: [] };
-            const lineFeatures = { type: 'FeatureCollection', features: [] };
+        function clearMapLayers() {
+            for (const [id, type] of Object.entries(state.loadedFeatures)) {
+                if (map.getLayer(id)) map.removeLayer(id);
+                if (map.getSource(id)) map.removeSource(id);
+            }
+            state.loadedFeatures = {};
+        }
 
-            // Separate points and lines
-            geojson.features.forEach(feature => {
-                if (feature.geometry.type === 'Point') {
-                    pointFeatures.features.push(feature);
-                } else if (['LineString', 'MultiLineString', 'Polygon', 'MultiPolygon'].includes(feature.geometry.type)) {
-                    feature.properties.color = feature.properties.color || '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
-                    lineFeatures.features.push(feature);
-                }
-            });
+        function addMarkersToMap(markers) {
+            if (!markers || markers.length === 0) return;
 
-            // Add sources and layers
-            if (pointFeatures.features.length > 0) {
-                map.addSource(sourceId + '-markers', { type: 'geojson', data: pointFeatures });
+            const geojson = {
+                type: 'FeatureCollection',
+                features: markers.map(marker => ({
+                    type: 'Feature',
+                    properties: { id: marker.id, name: marker.name, description: marker.description },
+                    geometry: marker.coordinates
+                }))
+            };
+
+            const sourceId = 'markers-source';
+            const markerLayerId = 'markers-layer';
+            const labelLayerId = 'labels-layer';
+
+            if (!map.getSource(sourceId)) {
+                map.addSource(sourceId, { type: 'geojson', data: geojson });
                 map.addLayer({
-                    id: sourceId + '-markers',
+                    id: markerLayerId,
                     type: 'circle',
-                    source: sourceId + '-markers',
+                    source: sourceId,
                     paint: {
                         'circle-radius': 6,
                         'circle-color': '#FF5722',
                         'circle-stroke-width': 2,
                         'circle-stroke-color': '#FFFFFF'
-                    }
+                    },
+                    layout: { 'visibility': state.markersVisible ? 'visible' : 'none' }
                 });
                 map.addLayer({
-                    id: sourceId + '-labels',
+                    id: labelLayerId,
                     type: 'symbol',
-                    source: sourceId + '-markers',
+                    source: sourceId,
                     layout: {
-                        'text-field': ['coalesce', ['get', 'name'], ['get', 'Alimentador'], ''],
+                        'text-field': ['get', 'name'],
                         'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
                         'text-size': 12,
-                        'text-offset': [0, 1.5]
+                        'text-offset': [0, 1.5],
+                        'visibility': state.namesVisible ? 'visible' : 'none'
+                    },
+                    paint: {
+                        'text-color': '#000000',
+                        'text-halo-color': '#FFFFFF',
+                        'text-halo-width': 1
                     }
                 });
+                state.loadedFeatures[markerLayerId] = 'marker';
+                state.loadedFeatures[labelLayerId] = 'label';
+                state.loadedFeatures[sourceId] = 'source';
+            } else {
+                map.getSource(sourceId).setData(geojson);
             }
+        }
 
-            if (lineFeatures.features.length > 0) {
-                map.addSource(sourceId + '-lines', { type: 'geojson', data: lineFeatures });
+        function addLinesToMap(lines) {
+            if (!lines || lines.length === 0) return;
+
+            const geojson = {
+                type: 'FeatureCollection',
+                features: lines.map(line => ({
+                    type: 'Feature',
+                    properties: { id: line.id, name: line.name, description: line.description, color: line.color },
+                    geometry: line.coordinates
+                }))
+            };
+
+            const sourceId = 'lines-source';
+            const lineLayerId = 'lines-layer';
+
+            if (!map.getSource(sourceId)) {
+                map.addSource(sourceId, { type: 'geojson', data: geojson });
                 map.addLayer({
-                    id: sourceId + '-lines',
+                    id: lineLayerId,
                     type: 'line',
-                    source: sourceId + '-lines',
+                    source: sourceId,
                     paint: {
                         'line-color': ['get', 'color'],
                         'line-width': 4
-                    }
+                    },
+                    layout: { 'visibility': state.linesVisible ? 'visible' : 'none' }
                 });
+                state.loadedFeatures[lineLayerId] = 'line';
+                state.loadedFeatures[sourceId] = 'source';
+            } else {
+                map.getSource(sourceId).setData(geojson);
             }
-
-            // Store file info
-            state.files.push({ name: fileName, sourceId, hasMarkers: pointFeatures.features.length > 0, hasLines: lineFeatures.features.length > 0 });
         }
 
-        // Search features
-        function searchFeatures() {
-            console.log('Searching features...');
-            const term = document.getElementById('searchInput').value.toLowerCase();
-            const resultsDiv = document.getElementById('searchResults');
-            resultsDiv.innerHTML = '';
-            resultsDiv.style.display = 'none';
+        function addPolygonsToMap(polygons) {
+            if (!polygons || polygons.length === 0) return;
 
-            const matches = [];
-            state.files.forEach(file => {
-                const markerSource = map.getSource(file.sourceId + '-markers');
-                if (markerSource) {
-                    markerSource._data.features.forEach(feature => {
-                        if (feature.properties && (
-                            (feature.properties.name && feature.properties.name.toLowerCase().includes(term)) ||
-                            (feature.properties.Alimentador && feature.properties.Alimentador.toLowerCase().includes(term))
-                        )) {
-                            matches.push({ feature, fileName: file.name });
-                        }
-                    });
+            const geojson = {
+                type: 'FeatureCollection',
+                features: polygons.map(polygon => ({
+                    type: 'Feature',
+                    properties: { id: polygon.id, name: polygon.name, description: polygon.description, color: polygon.color },
+                    geometry: polygon.coordinates
+                }))
+            };
+
+            const sourceId = 'polygons-source';
+            const polygonLayerId = 'polygons-layer';
+
+            if (!map.getSource(sourceId)) {
+                map.addSource(sourceId, { type: 'geojson', data: geojson });
+                map.addLayer({
+                    id: polygonLayerId,
+                    type: 'fill',
+                    source: sourceId,
+                    paint: {
+                        'fill-color': ['get', 'color'],
+                        'fill-opacity': 0.5
+                    },
+                    layout: { 'visibility': state.linesVisible ? 'visible' : 'none' }
+                });
+                state.loadedFeatures[polygonLayerId] = 'polygon';
+                state.loadedFeatures[sourceId] = 'source';
+            } else {
+                map.getSource(sourceId).setData(geojson);
+            }
+        }
+
+        function selectFromDevice() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.kml,.kmz';
+            input.onchange = handleFileUpload;
+            input.click();
+        }
+
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async () => {
+                try {
+                    let geojson;
+                    if (file.name.endsWith('.kmz')) {
+                        const zip = await JSZip.loadAsync(reader.result);
+                        const kmlFile = zip.file(/\.kml$/i)[0];
+                        const kmlContent = await kmlFile.async('string');
+                        geojson = toGeoJSON.kml(new DOMParser().parseFromString(kmlContent, 'text/xml'));
+                    } else {
+                        geojson = toGeoJSON.kml(new DOMParser().parseFromString(reader.result, 'text/xml'));
+                    }
+                    await uploadToSupabase(geojson, file.name);
+                    loadMapData();
+                } catch (error) {
+                    console.error('Erro ao processar o arquivo:', error);
+                    alert('Erro ao processar o arquivo KML/KMZ.');
                 }
-            });
+            };
+            if (file.name.endsWith('.kmz')) {
+                reader.readAsArrayBuffer(file);
+            } else {
+                reader.readAsText(file);
+            }
+        }
 
-            if (matches.length > 0) {
-                resultsDiv.style.display = 'block';
-                matches.forEach(match => {
-                    const div = document.createElement('div');
-                    div.textContent = match.feature.properties.name || match.feature.properties.Alimentador || 'Unnamed';
-                    div.addEventListener('click', () => {
-                        const [lng, lat] = match.feature.geometry.coordinates;
-                        map.flyTo({ center: [lng, lat], zoom: 16 });
-                        resultsDiv.style.display = 'none';
-                    });
-                    resultsDiv.appendChild(div);
+        async function uploadToSupabase(geojson, fileName) {
+            const { data: kmzFile } = await supabase
+                .from('kmz_files')
+                .insert([{ name: fileName }])
+                .select()
+                .single();
+
+            for (const feature of geojson.features) {
+                if (feature.geometry.type === 'Point') {
+                    await supabase.from('markers').insert([{
+                        kmz_file_id: kmzFile.id,
+                        name: feature.properties.name,
+                        description: feature.properties.description,
+                        coordinates: feature.geometry
+                    }]);
+                } else if (feature.geometry.type === 'LineString') {
+                    await supabase.from('lines').insert([{
+                        kmz_file_id: kmzFile.id,
+                        name: feature.properties.name,
+                        description: feature.properties.description,
+                        coordinates: feature.geometry,
+                        color: feature.properties.color || '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')
+                    }]);
+                } else if (feature.geometry.type === 'Polygon') {
+                    await supabase.from('polygons').insert([{
+                        kmz_file_id: kmzFile.id,
+                        name: feature.properties.name,
+                        description: feature.properties.description,
+                        coordinates: feature.geometry,
+                        color: feature.properties.color || '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')
+                    }]);
+                }
+            }
+        }
+
+        function toggleMarkers() {
+            state.markersVisible = !state.markersVisible;
+            const visibility = state.markersVisible ? 'visible' : 'none';
+            if (map.getLayer('markers-layer')) map.setLayoutProperty('markers-layer', 'visibility', visibility);
+        }
+
+        function toggleNames() {
+            state.namesVisible = !state.namesVisible;
+            const visibility = state.namesVisible ? 'visible' : 'none';
+            if (map.getLayer('labels-layer')) map.setLayoutProperty('labels-layer', 'visibility', visibility);
+        }
+
+        function toggleLines() {
+            state.linesVisible = !state.linesVisible;
+            const visibility = state.linesVisible ? 'visible' : 'none';
+            if (map.getLayer('lines-layer')) map.setLayoutProperty('lines-layer', 'visibility', visibility);
+            if (map.getLayer('polygons-layer')) map.setLayoutProperty('polygons-layer', 'visibility', visibility);
+        }
+
+        function resetView() {
+            map.easeTo({ center: [-47.068847, -22.934973], zoom: 13 });
+        }
+
+        let userLocationMarker;
+        function goToCurrentLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition((position) => {
+                    const userCoords = [position.coords.longitude, position.coords.latitude];
+                    state.userLocation = userCoords;
+                    map.flyTo({ center: userCoords, zoom: 16 });
+                    if (userLocationMarker) userLocationMarker.remove();
+                    userLocationMarker = new maplibregl.Marker({ color: 'blue' })
+                        .setLngLat(userCoords)
+                        .addTo(map);
+                }, () => {
+                    alert('Não foi possível obter sua localização.');
                 });
             } else {
-                resultsDiv.innerHTML = '<div>No results found</div>';
-                resultsDiv.style.display = 'block';
+                alert('Geolocalização não é suportada pelo seu navegador.');
             }
         }
 
-        // Load map and initialize
-        map.on('load', () => {
-            console.log('Map loaded successfully');
-            document.fonts.load('12px Open Sans Semibold').then(() => {
-                console.log('Fonts loaded');
+        async function searchFeatures() {
+            const term = searchInput.value.toLowerCase();
+            if (!term) return alert('Digite um termo para buscar.');
+
+            const { data: markers } = await supabase
+                .from('markers')
+                .select('id, name, coordinates')
+                .ilike('name', `%${term}%`);
+
+            if (markers && markers.length > 0) {
+                const searchResultsDiv = document.getElementById('searchResults');
+                searchResultsDiv.innerHTML = '';
+                const ul = document.createElement('ul');
+
+                markers.forEach(marker => {
+                    const li = document.createElement('li');
+                    const nameSpan = document.createElement('span');
+                    nameSpan.textContent = marker.name || 'Sem nome';
+
+                    const viewButton = document.createElement('button');
+                    viewButton.textContent = 'Visualizar';
+                    viewButton.onclick = async () => {
+                        const coords = marker.coordinates.coordinates;
+                        map.flyTo({ center: coords, zoom: 16 });
+                        await loadNearbyFeatures(marker.id, coords);
+                        searchResultsDiv.innerHTML = '';
+                    };
+
+                    li.appendChild(nameSpan);
+                    li.appendChild(viewButton);
+                    ul.appendChild(li);
+                });
+
+                searchResultsDiv.appendChild(ul);
+            } else {
+                alert('Nenhum resultado encontrado.');
+            }
+        }
+
+        async function loadNearbyFeatures(markerId, coords) {
+            const radius = 1000; // 1 km
+            const { data: nearbyMarkers } = await supabase
+                .from('markers')
+                .select('id, name, description, coordinates')
+                .neq('id', markerId)
+                .filter('coordinates', 'st_dwithin', `(${coords}, ${radius})`);
+
+            const { data: nearbyLines } = await supabase
+                .from('lines')
+                .select('id, name, description, coordinates, color')
+                .filter('coordinates', 'st_dwithin', `(${coords}, ${radius})`);
+
+            const { data: nearbyPolygons } = await supabase
+                .from('polygons')
+                .select('id, name, description, coordinates, color')
+                .filter('coordinates', 'st_dwithin', `(${coords}, ${radius})`);
+
+            clearMapLayers();
+            addMarkersToMap(nearbyMarkers);
+            addLinesToMap(nearbyLines);
+            addPolygonsToMap(nearbyPolygons);
+        }
+
+        const menuButtons = document.querySelectorAll('.menu button');
+        menuButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const legend = button.querySelector('.button-legend');
+                if (legend) {
+                    legend.style.display = 'block';
+                    setTimeout(() => {
+                        legend.style.display = 'none';
+                    }, 5000);
+                }
             });
-            loadSupabaseFiles();
         });
 
-        map.on('error', (e) => {
-            console.error('Map error:', e.error);
-            alert('Failed to load map: ' + e.error.message);
-        });
+        window.onload = function() {
+            setTimeout(() => {
+                const legends = document.querySelectorAll('.button-legend');
+                legends.forEach(legend => legend.style.display = 'none');
+            }, 10000);
+        };
     </script>
 </body>
 </html>
