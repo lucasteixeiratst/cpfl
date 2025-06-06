@@ -344,6 +344,7 @@
     <script src="https://unpkg.com/maplibre-gl"></script>
     <script src="https://unpkg.com/@tmcw/togeojson"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.6.0/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <div id="map"></div>
@@ -352,6 +353,10 @@
         <button id="btnKMZ">
             <img src="https://img.icons8.com/ios-filled/50/000000/upload.png" alt="Upload">
             <div class="button-legend">Carregar KMZ/KML</div>
+        </button>
+        <button id="btnUploadToDB">
+            <img src="https://img.icons8.com/material-outlined/24/000000/upload-to-cloud.png" alt="Upload para DB">
+            <div class="button-legend">Upload para Banco de Dados</div>
         </button>
         <button id="btnMarkers">
             <img src="https://img.icons8.com/material-outlined/24/000000/map-pin.png" alt="Marcadores">
@@ -423,6 +428,10 @@
     </footer>
 
     <script>
+        const supabaseUrl = 'https://apwforodphfoorwhaqdo.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFwd2Zvcm9kcGhmb29yd2hhcWRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwODQ5ODcsImV4cCI6MjA2NDY2MDk4N30.lmLDwaDpYPs32K5fL-aU8wgMJy5U8za0r91jJCiT9vc';
+        const supabase = Supabase.createClient(supabaseUrl, supabaseKey);
+
         const state = {
             markersVisible: true,
             namesVisible: true,
@@ -616,9 +625,11 @@
                 const file = predefinedFiles.find(f => f.name === lastFile);
                 if (file) loadKMZFromURL(file.url, file.name);
             }
+            loadDataFromSupabase();
         });
 
         document.getElementById('btnKMZ').addEventListener('click', () => toggleVisibility(kmzMenu));
+        document.getElementById('btnUploadToDB').addEventListener('click', selectFileForUpload);
         document.getElementById('btnMarkers').addEventListener('click', toggleMarkers);
         document.getElementById('btnNames').addEventListener('click', toggleNames);
         document.getElementById('btnLines').addEventListener('click', toggleLines);
@@ -652,6 +663,174 @@
             input.accept = '.kml,.kmz';
             input.onchange = handleFile;
             input.click();
+        }
+
+        function selectFileForUpload() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.kml,.kmz';
+            input.onchange = handleFileForUpload;
+            input.click();
+        }
+
+        async function handleFileForUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            try {
+                let geojson;
+                if (file.name.endsWith('.kmz')) {
+                    const arrayBuffer = await file.arrayBuffer();
+                    geojson = await parseKMZ(arrayBuffer);
+                } else {
+                    const text = await file.text();
+                    geojson = toGeoJSON.kml(new DOMParser().parseFromString(text, 'text/xml'));
+                }
+                await uploadToSupabase(geojson, file.name);
+                loadDataFromSupabase();
+            } catch (error) {
+                console.error('Erro ao processar o arquivo:', error);
+                alert('Erro ao processar o arquivo KML/KMZ.');
+            }
+        }
+
+        async function uploadToSupabase(geojson, fileName) {
+            const { data: kmzFile, error: fileError } = await supabase
+                .from('kmz_files')
+                .insert([{ name: fileName }])
+                .select()
+                .single();
+            if (fileError) throw fileError;
+
+            for (const feature of geojson.features) {
+                if (feature.geometry.type === 'Point') {
+                    const { error } = await supabase.from('markers').insert([{
+                        kmz_file_id: kmzFile.id,
+                        name: feature.properties.name,
+                        description: feature.properties.description,
+                        coordinates: feature.geometry
+                    }]);
+                    if (error) throw error;
+                } else if (feature.geometry.type === 'LineString') {
+                    const { error } = await supabase.from('lines').insert([{
+                        kmz_file_id: kmzFile.id,
+                        name: feature.properties.name,
+                        description: feature.properties.description,
+                        coordinates: feature.geometry,
+                        color: feature.properties.color || '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')
+                    }]);
+                    if (error) throw error;
+                } else if (feature.geometry.type === 'Polygon') {
+                    const { error } = await supabase.from('polygons').insert([{
+                        kmz_file_id: kmzFile.id,
+                        name: feature.properties.name,
+                        description: feature.properties.description,
+                        coordinates: feature.geometry,
+                        color: feature.properties.color || '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')
+                    }]);
+                    if (error) throw error;
+                }
+            }
+        }
+
+        async function loadDataFromSupabase() {
+            const bounds = map.getBounds();
+            const sw = bounds.getSouthWest();
+            const ne = bounds.getNorthEast();
+            const bbox = `POLYGON((${sw.lng} ${sw.lat}, ${ne.lng} ${sw.lat}, ${ne.lng} ${ne.lat}, ${sw.lng} ${ne.lat}, ${sw.lng} ${sw.lat}))`;
+
+            const { data: markers, error: markersError } = await supabase
+                .from('markers')
+                .select('id, name, description, coordinates')
+                .filter('coordinates', 'st_intersects', bbox);
+            if (markersError) throw markersError;
+            addMarkersToMap(markers);
+
+            const { data: lines, error: linesError } = await supabase
+                .from('lines')
+                .select('id, name, description, coordinates, color')
+                .filter('coordinates', 'st_intersects', bbox);
+            if (linesError) throw linesError;
+            addLinesToMap(lines);
+
+            const { data: polygons, error: polygonsError } = await supabase
+                .from('polygons')
+                .select('id, name, description, coordinates, color')
+                .filter('coordinates', 'st_intersects', bbox);
+            if (polygonsError) throw polygonsError;
+            addPolygonsToMap(polygons);
+        }
+
+        function addMarkersToMap(markers) {
+            const geojson = {
+                type: 'FeatureCollection',
+                features: markers.map(marker => ({
+                    type: 'Feature',
+                    properties: { id: marker.id, name: marker.name, description: marker.description },
+                    geometry: marker.coordinates
+                }))
+            };
+            if (map.getSource('markers')) map.getSource('markers').setData(geojson);
+            else {
+                map.addSource('markers', { type: 'geojson', data: geojson });
+                map.addLayer({
+                    id: 'markers',
+                    type: 'circle',
+                    source: 'markers',
+                    paint: {
+                        'circle-radius': 6,
+                        'circle-color': '#FF5722'
+                    }
+                });
+            }
+        }
+
+        function addLinesToMap(lines) {
+            const geojson = {
+                type: 'FeatureCollection',
+                features: lines.map(line => ({
+                    type: 'Feature',
+                    properties: { id: line.id, name: line.name, description: line.description, color: line.color },
+                    geometry: line.coordinates
+                }))
+            };
+            if (map.getSource('lines')) map.getSource('lines').setData(geojson);
+            else {
+                map.addSource('lines', { type: 'geojson', data: geojson });
+                map.addLayer({
+                    id: 'lines',
+                    type: 'line',
+                    source: 'lines',
+                    paint: {
+                        'line-color': ['get', 'color'],
+                        'line-width': 4
+                    }
+                });
+            }
+        }
+
+        function addPolygonsToMap(polygons) {
+            const geojson = {
+                type: 'FeatureCollection',
+                features: polygons.map(polygon => ({
+                    type: 'Feature',
+                    properties: { id: polygon.id, name: polygon.name, description: polygon.description, color: polygon.color },
+                    geometry: polygon.coordinates
+                }))
+            };
+            if (map.getSource('polygons')) map.getSource('polygons').setData(geojson);
+            else {
+                map.addSource('polygons', { type: 'geojson', data: geojson });
+                map.addLayer({
+                    id: 'polygons',
+                    type: 'fill',
+                    source: 'polygons',
+                    paint: {
+                        'fill-color': ['get', 'color'],
+                        'fill-opacity': 0.5
+                    }
+                });
+            }
         }
 
         async function loadKMZFromURL(url, fileName) {
