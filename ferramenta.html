@@ -254,14 +254,17 @@
                     .from('kmz_data')
                     .select('file_name')
                     .distinct('file_name');
-                if (error) return [];
-                return data.map(item => ({ name: item.file_name, url: `./${item.file_name}` }));
+                if (error) {
+                    console.error('Erro ao buscar KMZ:', error);
+                    return [];
+                }
+                return data.map(item => ({ name: item.file_name }));
             }
 
             async function displayFileList() {
                 kmzList.innerHTML = '';
                 const predefinedFiles = await fetchKMZFiles();
-                predefinedFiles.forEach(file => {
+                predefinedFiles.sort((a, b) => a.name.localeCompare(b.name)).forEach(file => {
                     const li = document.createElement('li');
                     li.textContent = file.name;
                     li.addEventListener('click', () => {
@@ -305,9 +308,10 @@
                         .from('kmz_data')
                         .select('id, file_name, feature_type, geometry, properties')
                         .filter('geom', 'st_intersects', bbox)
-                        .limit(1000);
+                        .limit(2000);
                     if (error) throw error;
 
+                    // Limpa camadas existentes
                     state.files.forEach(file => {
                         if (file.hasMarkers) {
                             if (map.getLayer(`marker-circles-${file.sourceId}`)) map.removeLayer(`marker-circles-${file.sourceId}`);
@@ -320,13 +324,16 @@
                         }
                     });
                     state.files = [];
+                    state.selectedGroups.clear();
 
+                    // Agrupa dados por file_name
                     const groupedData = data.reduce((acc, item) => {
                         if (!acc[item.file_name]) acc[item.file_name] = [];
                         acc[item.file_name].push(item);
                         return acc;
                     }, {});
 
+                    // Adiciona ao mapa
                     for (const fileName in groupedData) {
                         const features = groupedData[fileName].map(item => ({
                             type: 'Feature',
@@ -421,7 +428,7 @@
                 try {
                     const { error: storageError } = await supabase.storage
                         .from('kmz-files')
-                        .upload(fileName, file, { contentType: 'application/vnd.google-earth.kmz' });
+                        .upload(fileName, file, { contentType: 'application/vnd.google-earth.kmz', upsert: true });
                     if (storageError) throw storageError;
 
                     const metadata = geojson.features.map(feature => ({
@@ -438,8 +445,10 @@
                         const { error: dbError } = await supabase.from('kmz_data').insert(batch);
                         if (dbError) throw dbError;
                     }
+                    alert(`Arquivo ${fileName} carregado com sucesso no banco de dados!`);
                 } catch (error) {
                     console.error(`Erro no upload de ${fileName}:`, error);
+                    alert(`Erro ao carregar ${fileName}: ${error.message}`);
                 }
             }
 
@@ -677,7 +686,7 @@
                     } else if (selectedGroups.size === getTotalGroups(sourceId, groupingProperty)) {
                         map.setFilter(lineLayerId, null);
                     } else {
-                        map.setFilter(lineLayerId, ['in', groupingProperty, ...Array.from(selectedGroups)]);
+                        map.setFilter(lineLayerId, ['in', ['get', groupingProperty], ...Array.from(selectedGroups)]);
                     }
                 });
             }
@@ -912,7 +921,6 @@
                             });
                         }
                     });
-                    applyGroupFilter();
                 });
             }
         });
