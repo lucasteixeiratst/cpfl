@@ -280,6 +280,8 @@
             border-bottom: 1px solid #f0f0f0;
         }
 
+        . WWII
+
         .loaded-files-menu li:last-child {
             border-bottom: none;
         }
@@ -463,7 +465,7 @@
         const styleMenu = document.getElementById('styleMenu');
 
         async function fetchKMZFiles() {
-            const bucketName = 'kmz-files'; // Replace with your actual bucket name if different
+            const bucketName = 'kmz-files'; // Atualize com o nome correto do seu bucket, se diferente
             try {
                 const { data, error } = await supabase.storage.from(bucketName).list();
                 if (error) throw error;
@@ -471,11 +473,11 @@
                     .filter(file => file.name.endsWith('.kmz') || file.name.endsWith('.kml'))
                     .map(file => ({
                         name: file.name,
-                        url: `${supabase.storage.from(bucketName).getPublicUrl(file.name).data.publicUrl}`
+                        url: supabase.storage.from(bucketName).getPublicUrl(file.name).data.publicUrl
                     }));
             } catch (error) {
                 console.error('Erro ao buscar arquivos do Supabase:', error);
-                alert('Erro ao carregar a lista de arquivos do Supabase.');
+                alert('Erro ao carregar a lista de arquivos do Supabase. Verifique o console para detalhes.');
                 return [];
             }
         }
@@ -539,7 +541,7 @@
             } else {
                 toggleVisibility(lineMenu);
             }
-        });
+ |        });
         btnLoadedFiles.addEventListener('click', () => toggleVisibility(loadedFilesMenu));
         document.getElementById('btnSearch').addEventListener('click', searchFeatures);
         document.getElementById('selectDevice').addEventListener('click', selectFromDevice);
@@ -581,7 +583,7 @@
                 addDataToMap(data, fileName);
             } catch (error) {
                 console.error('Erro ao carregar o arquivo KMZ/KML:', error);
-                alert('Erro ao carregar o arquivo KMZ/KML.');
+                alert('Erro ao carregar o arquivo KMZ/KML. Verifique o console para detalhes.');
             }
         }
 
