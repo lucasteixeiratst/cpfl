@@ -1,95 +1,433 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Map Viewer</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Visualizador de Mapas</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            position: relative;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+
+        .menu {
+            position: absolute;
+            top: 50%;
+            left: 20px;
+            transform: translateY(-50%);
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px 0;
+        }
+
+        .menu button {
+            position: relative;
+            background-color: #ffffff;
+            border: none;
+            padding: 10px;
+            margin: 5px 0;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .menu button:hover {
+            background-color: #f0f0f0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .menu button img {
+            width: 20px;
+            height: 20px;
+        }
+
+        .button-legend {
+            position: absolute;
+            top: 50%;
+            left: 50px;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.9);
+            border-radius: 4px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            padding: 5px;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 2000;
+            display: none;
+        }
+
+        .search-bar {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 300px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            display: flex;
+            padding: 10px;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .search-bar input {
+            flex: 1;
+            border: none;
+            outline: none;
+            padding: 10px;
+            font-size: 14px;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-bar button {
+            background-color: #4285F4;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .search-bar button:hover {
+            background-color: #357ae8;
+        }
+
+        .search-results {
+            position: absolute;
+            top: 70px;
+            left: 20px;
+            width: 300px;
+            max-height: 200px;
+            overflow-y: auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+        }
+
+        .search-results ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .search-results li {
+            padding: 10px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .search-results li:hover {
+            background-color: #f0f0f0;
+        }
+
+        .search-results button {
+            margin-left: 10px;
+            background-color: #4285F4;
+            color: white;
+            border: none;
+            padding: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .search-results button:hover {
+            background-color: #357ae8;
+        }
+
+        .kmz-menu {
+            position: absolute;
+            top: 80px;
+            left: 80px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            z-index: 2000;
+            padding: 10px;
+            display: none;
+            width: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .kmz-menu ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .kmz-menu li {
+            padding: 8px 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .kmz-menu li:hover {
+            background-color: #f0f0f0;
+        }
+
+        .kmz-menu li:last-child {
+            border-bottom: none;
+        }
+
+        .line-menu {
+            position: absolute;
+            top: 80px;  
+            left: 100px; 
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            z-index: 2000;
+            padding: 10px;
+            display: none;
+        }
+
+        .line-menu ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .line-menu li {
+            padding: 8px 10px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .line-menu li:last-child {
+            border-bottom: none;
+        }
+
+        .line-menu li label {
+            cursor: pointer;
+        }
+
+        .line-menu button {
+            background-color: #4285F4;
+            color: #fff;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px 0;
+        }
+
+        .line-menu button:hover {
+            background-color: #357ae8;
+        }
+
+        .loaded-files-menu {
+            position: absolute;
+            top: 80px;
+            left: 120px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            z-index: 2000;
+            padding: 10px;
+            display: none;
+            width: 220px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .loaded-files-menu h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            text-align: center;
+        }
+
+        .loaded-files-menu ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .loaded-files-menu li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .loaded-files-menu li:last-child {
+            border-bottom: none;
+        }
+
+        .loaded-files-menu li button {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 3px 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 10px;
+        }
+
+        .loaded-files-menu li button:hover {
+            background-color: #c0392b;
+        }
+
+        .style-menu {
+            position: absolute;
+            top: 80px;
+            left: 140px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            z-index: 2000;
+            padding: 10px;
+            display: none;
+            width: 200px;
+        }
+
+        .style-menu ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .style-menu li {
+            padding: 8px 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .style-menu li:hover {
+            background-color: #f0f0f0;
+        }
+
+        .style-menu li:last-child {
+            border-bottom: none;
+        }
+
+        footer {
+            position: absolute;
+            bottom: 5px;
+            width: 100%;
+            text-align: center;
+            font-size: 10px;
+            color: #555;
+        }
+    </style>
     <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
     <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
     <script src="https://unpkg.com/@tmcw/togeojson@5.8.2/dist/togeojson.umd.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/wellknown@0.5.0/wellknown.min.js"></script>
-    <style>
-        body { margin: 0; font-family: Arial, sans-serif; }
-        #map { width: 100vw; height: 100vh; }
-        .menu { position: absolute; top: 10px; left: 10px; z-index: 1; }
-        .menu button {
-            display: block; margin-bottom: 5px; padding: 8px; width: 40px; height: 40px; border: none;
-            background: url('https://img.icons8.com/material-outlined/24/000000/menu.png') no-repeat center;
-            background-size: cover; cursor: pointer; position: relative;
-        }
-        .button-legend {
-            display: none; position: absolute; left: 45px; top: 0; background: rgba(255, 255, 255, 0.9);
-            padding: 5px 10px; border-radius: 3px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            white-space: nowrap; font-size: 12px;
-        }
-        #kmzMenu, #lineMenu, #loadedFilesMenu, #styleMenu {
-            display: none; position: absolute; left: 45px; top: 0; background: white;
-            padding: 10px; border-radius: 3px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            max-height: 300px; overflow-y: auto; width: 200px;
-        }
-        #kmzList, #lineGroupsList, #loadedFilesList, #styleList {
-            list-style: none; padding: 0; margin: 0;
-        }
-        #kmzList li, #lineGroupsList li, #loadedFilesList li, #styleList li {
-            padding: 5px; cursor: pointer;
-        }
-        #kmzList li:hover, #lineGroupsList li:hover, #loadedFilesList li:hover, #styleList li:hover {
-            background: #f0f0f0;
-        }
-        #searchContainer {
-            position: absolute; top: 10px; right: 10px; z-index: 1; display: flex;
-        }
-        #searchInput { padding: 8px; width: 200px; border: 1px solid #ccc; border-radius: 3px 0 0 3px; }
-        #btnSearch {
-            padding: 8px; border: 1px solid #ccc; border-left: none; border-radius: 0 3px 3px 0;
-            background: #007bff; color: white; cursor: pointer;
-        }
-        #searchResults {
-            position: absolute; top: 50px; right: 10px; background: white; padding: 10px;
-            border-radius: 3px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); max-height: 300px; overflow-y: auto;
-            width: 250px;
-        }
-        #searchResults ul { list-style: none; padding: 0; margin: 0; }
-        #searchResults li { padding: 5px; display: flex; justify-content: space-between; align-items: center; }
-        #searchResults button { margin-left: 5px; padding: 5px; font-size: 12px; cursor: pointer; }
-    </style>
 </head>
 <body>
     <div id="map"></div>
+
     <div class="menu">
-        <button id="btnKMZ"><div class="button-legend">Carregar KMZ/KML</div></button>
-        <button id="btnUploadToSupabase"><div class="button-legend">Upload para Supabase</div></button>
-        <button id="btnMarkers"><div class="button-legend">Alternar Marcadores</div></button>
-        <button id="btnNames"><div class="button-legend">Alternar Nomes</div></button>
-        <button id="btnLines"><div class="button-legend">Alternar Linhas</div></button>
-        <button id="btnReset"><div class="button-legend">Resetar Visão</div></button>
-        <button id="btnLocation"><div class="button-legend">Localização Atual</div></button>
-        <button id="btnLineGroups"><div class="button-legend">Grupos de Linhas</div></button>
-        <button id="btnLoadedFiles"><div class="button-legend">Arquivos Carregados</div></button>
-        <button id="btnStyles"><div class="button-legend">Estilos do Mapa</div></button>
+        <button id="btnKMZ">
+            <img src="https://img.icons8.com/ios-filled/50/000000/upload.png" alt="Upload">
+            <div class="button-legend">Carregar KMZ/KML</div>
+        </button>
+        <button id="btnUploadToSupabase">
+            <img src="https://img.icons8.com/material-outlined/24/000000/upload-to-cloud.png" alt="Upload Supabase">
+            <div class="button-legend">Upload para Supabase</div>
+        </button>
+        <button id="btnMarkers">
+            <img src="https://img.icons8.com/material-outlined/24/000000/map-pin.png" alt="Marcadores">
+            <div class="button-legend">Exibir/Ocultar Marcadores</div>
+        </button>
+        <button id="btnNames">
+            <img src="https://img.icons8.com/material-outlined/24/000000/name.png" alt="Nomes">
+            <div class="button-legend">Exibir/Ocultar Nomes</div>
+        </button>
+        <button id="btnLines">
+            <img src="https://img.icons8.com/material-outlined/24/000000/polyline.png" alt="Linhas">
+            <div class="button-legend">Exibir/Ocultar Linhas</div>
+        </button>
+        <button id="btnReset">
+            <img src="https://img.icons8.com/material-outlined/24/000000/refresh.png" alt="Resetar">
+            <div class="button-legend">Resetar Visão</div>
+        </button>
+        <button id="btnLocation">
+            <img src="https://img.icons8.com/material-outlined/24/000000/compass.png" alt="Localização Atual">
+            <div class="button-legend">Minha Localização</div>
+        </button>
+        <button id="btnLineGroups">
+            <img src="https://img.icons8.com/material-outlined/24/000000/layers.png" alt="Grupos de Linhas">
+            <div class="button-legend">Grupos de Linhas</div>
+        </button>
+        <button id="btnLoadedFiles">
+            <img src="https://img.icons8.com/material-outlined/24/000000/folder-invoices.png" alt="Arquivos Carregados">
+            <div class="button-legend">Arquivos Carregados</div>
+        </button>
+        <button id="btnStyles">
+            <img src="https://img.icons8.com/material-outlined/24/000000/paint.png" alt="Estilos">
+            <div class="button-legend">Estilos do Mapa</div>
+        </button>
     </div>
-    <div id="kmzMenu">
-        <ul id="kmzList"></ul>
-        <div id="selectDevice" style="padding: 5px; cursor: pointer;">Selecionar do dispositivo</div>
-    </div>
-    <div id="lineMenu">
-        <button id="hideAll">Ocultar Todas</button>
-        <button id="showAll">Exibir Todas</button>
-        <ul id="lineGroupsList"></ul>
-    </div>
-    <div id="loadedFilesMenu">
-        <ul id="loadedFilesList"></ul>
-    </div>
-    <div id="styleMenu">
-        <ul id="styleList"></ul>
-    </div>
-    <div id="searchContainer">
-        <input type="text" id="searchInput" placeholder="Buscar por nome ou alimentador">
+
+    <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="Buscar no mapa..." />
         <button id="btnSearch">Buscar</button>
     </div>
-    <div id="searchResults"></div>
+
+    <div id="searchResults" class="search-results"></div>
+
+    <div class="kmz-menu" id="kmzMenu">
+        <ul id="kmzList"></ul>
+        <ul>
+            <li id="selectDevice">Selecionar do dispositivo...</li>
+        </ul>
+    </div>
+
+    <div class="line-menu" id="lineMenu">
+        <div style="display:flex; gap:10px; margin-bottom:10px;">
+            <button id="hideAll">Ocultar Todas</button>
+            <button id="showAll">Exibir Todas</button>
+        </div>
+        <ul id="lineGroupsList"></ul>
+    </div>
+
+    <div class="loaded-files-menu" id="loadedFilesMenu">
+        <h3>Arquivos Carregados</h3>
+        <ul id="loadedFilesList"></ul>
+    </div>
+
+    <div class="style-menu" id="styleMenu">
+        <ul id="styleList"></ul>
+    </div>
+
+    <footer>
+        Todos direitos reservados a Lucas Teixeira.
+    </footer>
+
     <script>
         // Initialize Supabase client
         const supabaseUrl = 'https://apwforodphfoorwhaqdo.supabase.co';
@@ -106,17 +444,15 @@
             selectedGroups: new Map(),
         };
 
-        // Map styles limited to Positron, Dark Matter, and Voyager
         const mapStyles = [
             { name: 'Positron', url: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json' },
             { name: 'Dark Matter', url: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json' },
             { name: 'Voyager', url: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json' }
         ];
 
-        // Initialize map with Positron style
         const map = new maplibregl.Map({
             container: 'map',
-            style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+            style: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
             center: [-47.068847, -22.934973],
             zoom: 11
         });
@@ -124,16 +460,6 @@
         map.on('load', async () => {
             console.log('Mapa carregado com sucesso');
             await fetchDataFromSupabase();
-            const lastFile = localStorage.getItem('lastSelectedFile');
-            if (lastFile) {
-                const file = predefinedFiles.find(f => f.name === lastFile);
-                if (file) loadKMZFromURL(file.url, file.name);
-            }
-        });
-
-        map.on('error', (error) => {
-            console.error('Erro ao carregar o mapa:', error);
-            alert('Erro ao carregar o mapa. Verifique o console para detalhes.');
         });
 
         const searchInput = document.getElementById('searchInput');
@@ -143,6 +469,7 @@
         const lineGroupsList = document.getElementById('lineGroupsList');
         const loadedFilesMenu = document.getElementById('loadedFilesMenu');
         const loadedFilesList = document.getElementById('loadedFilesList');
+        const btnLoadedFiles = document.getElementById('btnLoadedFiles');
         const styleMenu = document.getElementById('styleMenu');
 
         const predefinedFiles = [
@@ -261,8 +588,24 @@
             { name: 'UIRAPURU.kmz', url: './UIRAPURU.kmz' },
             { name: 'VALINHOS.kmz', url: './VALINHOS.kmz' },
             { name: 'VALPARAISO.kmz', url: './VALPARAISO.kmz' },
-            { name: 'VIRADOURO.kmz', url: './VIRADOURO.kmz' },
+            { name: 'VIRADOURO.kmz', url: './VIRADOURO.kmz' }
         ];
+
+        function displayFileList() {
+            kmzList.innerHTML = '';
+            const sortedFiles = predefinedFiles.sort((a, b) => a.name.localeCompare(b.name));
+            sortedFiles.forEach((file) => {
+                const li = document.createElement('li');
+                li.textContent = file.name;
+                li.addEventListener('click', () => {
+                    loadKMZFromURL(file.url, file.name);
+                    kmzMenu.style.display = 'none';
+                });
+                kmzList.appendChild(li);
+            });
+        }
+
+        displayFileList();
 
         async function fetchDataFromSupabase() {
             try {
@@ -299,7 +642,8 @@
                             description: elem.description,
                             styleUrl: `#${elem.style_id}`,
                             color: style.line_color || style.poly_color || '#000000',
-                            icon: style.icon_href ? { href: style.icon_href } : null
+                            icon: style.icon_href ? { href: style.icon_href } : null,
+                            Alimentador: elem.name
                         }
                     });
                 });
@@ -319,50 +663,81 @@
             }
         }
 
-        function updateRecentFiles(fileName) {
-            let recentFiles = JSON.parse(localStorage.getItem('recentFiles') || '[]');
-            recentFiles = recentFiles.filter(f => f !== fileName);
-            recentFiles.unshift(fileName);
-            recentFiles = recentFiles.slice(0, 5);
-            localStorage.setItem('recentFiles', JSON.stringify(recentFiles));
+        async function fetchNearbyDataFromSupabase(center) {
+            const [lon, lat] = center;
+            try {
+                const { data: elements, error: elementsError } = await supabase
+                    .rpc('get_elements_within_radius', {
+                        lon: lon,
+                        lat: lat,
+                        radius_meters: 25000 // 25 km
+                    });
+                if (elementsError) throw elementsError;
+
+                const styleIds = [...new Set(elements.map(e => e.style_id))];
+                const { data: styles, error: stylesError } = await supabase
+                    .from('styles')
+                    .select('style_id, icon_href, line_color, line_width, poly_color')
+                    .in('style_id', styleIds);
+                if (stylesError) throw stylesError;
+
+                const stylesMap = new Map(styles.map(s => [s.style_id, s]));
+                const filesMap = new Map();
+
+                elements.forEach(elem => {
+                    const fileName = elem.file_name || `Nearby_${elem.id}`;
+                    if (!filesMap.has(fileName)) {
+                        filesMap.set(fileName, {
+                            features: [],
+                            name: fileName
+                        });
+                    }
+                    const geometry = wellknown.parse(elem.geom);
+                    if (!geometry) return;
+
+                    const style = stylesMap.get(elem.style_id) || {};
+                    filesMap.get(fileName).features.push({
+                        type: 'Feature',
+                        geometry,
+                        properties: {
+                            id: elem.id,
+                            name: elem.name,
+                            description: elem.description,
+                            styleUrl: `#${elem.style_id}`,
+                            color: style.line_color || style.poly_color || '#000000',
+                            icon: style.icon_href ? { href: style.icon_href } : null,
+                            Alimentador: elem.name
+                        }
+                    });
+                });
+
+                const nearbyFiles = Array.from(filesMap.values()).map(file => ({
+                    ...file,
+                    type: 'FeatureCollection'
+                }));
+
+                state.supabaseFiles.forEach(file => {
+                    removeFileFromMap(file.name);
+                });
+                state.supabaseFiles = nearbyFiles;
+
+                nearbyFiles.forEach(file => {
+                    addDataToMap(file, file.name);
+                });
+
+            } catch (error) {
+                console.error('Erro ao buscar dados próximos do Supabase:', error);
+                alert(`Erro ao carregar dados próximos: ${error.message}`);
+            }
         }
-
-        function displayFileList() {
-            kmzList.innerHTML = '';
-            const recentFiles = JSON.parse(localStorage.getItem('recentFiles') || '[]');
-            const recentFileSet = new Set(recentFiles);
-
-            const recent = predefinedFiles.filter(file => recentFileSet.has(file.name));
-            const others = predefinedFiles.filter(file => !recentFileSet.has(file.name));
-
-            const sortedRecent = recent.sort((a, b) => recentFiles.indexOf(a.name) - recentFiles.indexOf(b.name));
-            const sortedOthers = others.sort((a, b) => a.name.localeCompare(b.name));
-            const sortedFiles = [...sortedRecent, ...sortedOthers];
-
-            sortedFiles.forEach((file) => {
-                const li = document.createElement('li');
-                li.textContent = file.name;
-                li.onclick = () => {
-                    loadKMZFromURL(file.url, file.name);
-                    localStorage.setItem('lastSelectedFile', file.name);
-                    updateRecentFiles(file.name);
-                    displayFileList();
-                    kmzMenu.style.display = 'none';
-                };
-                kmzList.appendChild(li);
-            });
-        }
-
-        displayFileList();
 
         function addDataToMap(geojson, fileName) {
-            const sanitizedFileName = fileName.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9\-_]/g, '');
+            const sanitizedFileName = fileName.replace(/\s+/g, '_').replace(/[^\w\-]/g, '');
             const sourceId = `source-${sanitizedFileName}`;
             const markerLayerId = `marker-circles-${sourceId}`;
             const labelLayerId = `marker-labels-${sourceId}`;
             const lineLayerId = `lines-${sourceId}`;
-            
-            // Verifica se o arquivo já está carregado
+
             if (state.files.find(file => file.name === fileName)) {
                 return;
             }
@@ -480,78 +855,6 @@
             updateGroupMenu();
             updateLoadedFilesList(fileName);
         }
-    </script>
-    <script>
-        async function fetchNearbyDataFromSupabase(center) {
-            const [lon, lat] = center;
-            try {
-                // Consulta PostGIS para elementos dentro de 25 km
-                const { data: elements, error: elementsError } = await supabase
-                    .rpc('get_elements_within_radius', {
-                        lon: lon,
-                        lat: lat,
-                        radius_meters: 25000 // 25 km
-                    });
-                if (elementsError) throw elementsError;
-
-                const styleIds = [...new Set(elements.map(e => e.style_id))];
-                const { data: styles, error: stylesError } = await supabase
-                    .from('styles')
-                    .select('style_id, icon_href, line_color, line_width, poly_color')
-                    .in('style_id', styleIds);
-                if (stylesError) throw stylesError;
-
-                const stylesMap = new Map(styles.map(s => [s.style_id, s]));
-                const filesMap = new Map();
-
-                elements.forEach(elem => {
-                    const fileName = elem.file_name || `Nearby_${elem.id}`;
-                    if (!filesMap.has(fileName)) {
-                        filesMap.set(fileName, {
-                            features: [],
-                            name: fileName
-                        });
-                    }
-                    const geometry = wellknown.parse(elem.geom);
-                    if (!geometry) return;
-
-                    const style = stylesMap.get(elem.style_id) || {};
-                    filesMap.get(fileName).features.push({
-                        type: 'Feature',
-                        geometry,
-                        properties: {
-                            id: elem.id,
-                            name: elem.name,
-                            description: elem.description,
-                            styleUrl: `#${elem.style_id}`,
-                            color: style.line_color || style.poly_color || '#000000',
-                            icon: style.icon_href ? { href: style.icon_href } : null,
-                            Alimentador: elem.name
-                        }
-                    });
-                });
-
-                const nearbyFiles = Array.from(filesMap.values()).map(file => ({
-                    ...file,
-                    type: 'FeatureCollection'
-                }));
-
-                // Remove arquivos Supabase anteriores para evitar duplicatas
-                state.supabaseFiles.forEach(file => {
-                    removeFileFromMap(file.name);
-                });
-                state.supabaseFiles = nearbyFiles;
-
-                // Adiciona novos arquivos ao mapa
-                nearbyFiles.forEach(file => {
-                    addDataToMap(file, file.name);
-                });
-
-            } catch (error) {
-                console.error('Erro ao buscar dados próximos do Supabase:', error);
-                alert(`Erro ao carregar dados próximos: ${error.message}`);
-            }
-        }
 
         function updateGroupMenu() {
             lineGroupsList.innerHTML = '';
@@ -565,23 +868,23 @@
                     lineGroupsList.appendChild(fileHeader);
 
                     const sortedGroups = Array.from(groups).sort((a, b) => a.localeCompare(b));
-                    sortedGroups.forEach(group => {
+                    sortedGroups.forEach(grp => {
                         const li = document.createElement('li');
                         const lbl = document.createElement('label');
                         const chk = document.createElement('input');
                         chk.type = 'checkbox';
-                        chk.value = group;
+                        chk.value = grp;
                         chk.checked = true;
                         chk.onchange = () => {
                             if (chk.checked) {
-                                state.selectedGroups.get(file.sourceId).add(group);
+                                state.selectedGroups.get(file.sourceId).add(grp);
                             } else {
-                                state.selectedGroups.get(file.sourceId).delete(group);
+                                state.selectedGroups.get(file.sourceId).delete(grp);
                             }
                             applyGroupFilter();
                         };
                         lbl.appendChild(chk);
-                        lbl.appendChild(document.createTextNode(' ' + group));
+                        lbl.appendChild(document.createTextNode(' ' + grp));
                         li.appendChild(lbl);
                         lineGroupsList.appendChild(li);
                     });
@@ -594,33 +897,12 @@
             li.textContent = fileName;
             const removeBtn = document.createElement('button');
             removeBtn.textContent = 'Remover';
-            removeBtn.onclick = () => {
+            removeBtn.addEventListener('click', () => {
                 removeFileFromMap(fileName);
                 li.remove();
-            };
+            });
             li.appendChild(removeBtn);
             loadedFilesList.appendChild(li);
-        }
-
-        async function parseKMZ(data) {
-            const zip = await JSZip.loadAsync(data);
-            const kmlFile = zip.file(/\.kml$/i)[0];
-            if (!kmlFile) throw new Error('Arquivo KML não encontrado dentro do KMZ.');
-            const kmlContent = await kmlFile.async('string');
-            return toGeoJSON.kml(new DOMParser().parseFromString(kmlContent, 'text/xml'));
-        }
-
-        async function loadKMZFromURL(url, fileName) {
-            try {
-                const response = await fetch(url);
-                if (!response.ok) throw new Error(`Erro ao carregar KMZ: ${response.status}`);
-                const arrayBuffer = await response.arrayBuffer();
-                const geojson = await parseKMZ(arrayBuffer);
-                addDataToMap(geojson, fileName);
-            } catch (error) {
-                console.error('Erro ao carregar arquivo KMZ:', error);
-                alert(`Erro ao carregar ${fileName}: ${error.message}`);
-            }
         }
 
         function removeFileFromMap(fileName) {
@@ -661,11 +943,11 @@
                 const selectedGroups = state.selectedGroups.get(sourceId);
 
                 if (!selectedGroups || selectedGroups.size === 0) {
-                    map.setFilter(lineLayerId, ["==", ["get", groupingProperty], ""]);
+                    map.setFilter(lineLayerId, ["==", ["get", groupingProperty], "___no_match___"]);
                 } else if (selectedGroups.size === getTotalGroups(sourceId, groupingProperty)) {
                     map.setFilter(lineLayerId, null);
                 } else {
-                    map.setFilter(lineLayerId, ["in", ["get", groupingProperty], ...selectedGroups]);
+                    map.setFilter(lineLayerId, ["in", ["get", groupingProperty], ...Array.from(selectedGroups)]);
                 }
             });
         }
@@ -682,6 +964,36 @@
                 return allGroups.size;
             }
             return 0;
+        }
+
+        async function parseKMZ(data) {
+            const zip = await JSZip.loadAsync(data);
+            const kmlFile = zip.file(/\.kml$/i)[0];
+            if (!kmlFile) throw new Error('Arquivo KML não encontrado dentro do KMZ.');
+            const kmlContent = await kmlFile.async('string');
+            return toGeoJSON.kml(new DOMParser().parseFromString(kmlContent, 'text/xml'));
+        }
+
+        async function loadKMZFromURL(url, fileName) {
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const contentType = response.headers.get("content-type");
+                let data;
+                if (contentType.includes("application/vnd.google-earth.kmz")) {
+                    const arrayBuffer = await response.arrayBuffer();
+                    data = await parseKMZ(arrayBuffer);
+                } else if (contentType.includes("application/vnd.google-earth.kml+xml")) {
+                    const text = await response.text();
+                    data = toGeoJSON.kml(new DOMParser().parseFromString(text, 'text/xml'));
+                } else {
+                    throw new Error('Formato de arquivo não suportado.');
+                }
+                addDataToMap(data, fileName);
+            } catch (error) {
+                console.error('Erro ao carregar o arquivo KMZ/KML:', error);
+                alert('Erro ao carregar o arquivo KMZ/KML.');
+            }
         }
 
         async function uploadToSupabase() {
@@ -758,39 +1070,24 @@
                         const stylesToInsert = Array.from(stylesToInsertMap.values());
 
                         if (stylesToInsert.length > 0) {
-                            console.log('Inserindo estilos:', stylesToInsert);
                             const { error: styleError } = await supabase
                                 .from('styles')
                                 .upsert(stylesToInsert, { onConflict: 'style_id' });
-                            if (styleError) {
-                                console.error('Erro ao inserir estilos:', styleError);
-                                alert(`Erro ao inserir estilos no Supabase: ${styleError.message}`);
-                                return;
-                            }
-                            console.log('Estilos inseridos com sucesso');
+                            if (styleError) throw styleError;
                         }
 
                         const batchSize = 50;
                         for (let i = 0; i < elementsToInsert.length; i += batchSize) {
                             const batch = elementsToInsert.slice(i, i + batchSize);
-                            console.log(`Inserindo lote de ${batch.length} elementos`);
                             const { error } = await supabase
                                 .from('kml_elements')
                                 .insert(batch);
-                            if (error) {
-                                console.error('Erro ao inserir elementos:', error);
-                                alert(`Erro ao enviar dados para o Supabase: ${error.message}`);
-                                return;
-                            }
-                            console.log(`Lote de ${batch.length} elementos inserido com sucesso`);
+                            if (error) throw error;
                         }
 
                         alert('Dados enviados com sucesso para o servidor!');
                         state.supabaseFiles = [];
                         await fetchDataFromSupabase();
-                        localStorage.setItem('lastSelectedFile', file.name);
-                        updateRecentFiles(file.name);
-                        displayFileList();
                     } catch (error) {
                         console.error('Erro ao processar o arquivo:', error);
                         alert(`Erro ao carregar o arquivo: ${error.message}`);
@@ -804,8 +1101,7 @@
             };
             input.click();
         }
-    </script>
-    <script>
+
         function selectFromDevice() {
             kmzMenu.style.display = 'none';
             const input = document.createElement('input');
@@ -815,26 +1111,20 @@
             input.click();
         }
 
-        async function handleFile(event) {
+        function handleFile(event) {
             const file = event.target.files[0];
             if (!file) return;
 
             const reader = new FileReader();
             reader.onload = async () => {
                 try {
-                    let geojson;
-                    if (file.name.endsWith('.kmz')) {
-                        geojson = await parseKMZ(reader.result);
-                    } else {
-                        geojson = toGeoJSON.kml(new DOMParser().parseFromString(reader.result, 'text/xml'));
-                    }
-                    addDataToMap(geojson, file.name);
-                    localStorage.setItem('lastSelectedFile', file.name);
-                    updateRecentFiles(file.name);
-                    displayFileList();
+                    const data = file.name.endsWith('.kmz')
+                        ? await parseKMZ(reader.result)
+                        : toGeoJSON.kml(new DOMParser().parseFromString(reader.result, 'text/xml'));
+                    addDataToMap(data, file.name);
                 } catch (error) {
                     console.error('Erro ao processar o arquivo:', error);
-                    alert('Erro ao processar o arquivo KML/KMZ: ' + error.message);
+                    alert('Erro ao processar o arquivo KML/KMZ.');
                 }
             };
             if (file.name.endsWith('.kmz')) {
@@ -918,7 +1208,7 @@
         let userLocationMarker;
         function goToCurrentLocation() {
             if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(position => {
+                navigator.geolocation.getCurrentPosition((position) => {
                     const userCoords = [position.coords.longitude, position.coords.latitude];
                     state.userLocation = userCoords;
                     map.flyTo({ center: userCoords, zoom: 16 });
@@ -940,14 +1230,14 @@
                 center = feature.geometry.coordinates;
             } else {
                 const coordinates = [];
-                function extractCoordinates(coords) {
+                function extractCoords(coords) {
                     if (typeof coords[0] === 'number') {
                         coordinates.push(coords);
                     } else {
-                        coords.forEach(c => extractCoordinates(c));
+                        coords.forEach(c => extractCoords(c));
                     }
                 }
-                extractCoordinates(feature.geometry?.coordinates || []);
+                extractCoords(feature.geometry?.coordinates || []);
                 const lons = coordinates.map(coord => coord[0]);
                 const lats = coordinates.map(coord => coord[1]);
                 const avgLon = lons.reduce((a, b) => a + b, 0) / lons.length;
@@ -958,21 +1248,15 @@
         }
 
         function computeDistance(coord1, coord2) {
-            try {
-                const toRad = value => value * Math.PI / 180;
-                const lat1 = coord1[1], lon1 = coord1[0], lat2 = coord2[1], lon2 = coord2[0];
-                const R = 6371e3; // Raio da Terra em metros
-                const φ1 = toRad(lat1), φ2 = toRad(lat2);
-                const Δφ = toRad(lat2 - lat1);
-                const Δλ = toRad(lon2 - lon1);
-                const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-                    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-                return R * c; // Distância em metros
-            } catch (error) {
-                console.error('Erro ao calcular distância:', error);
-                return Infinity;
-            }
+            const toRad = (value) => value * Math.PI / 180;
+            const lat1 = coord1[1], lon1 = coord1[0], lat2 = coord2[1], lon2 = coord2[0];
+            const R = 6371e3;
+            const φ1 = toRad(lat1), φ2 = toRad(lat2);
+            const Δφ = toRad(lat2 - lat1), Δλ = toRad(lon2 - lon1);
+            const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
         }
 
         function searchFeatures() {
@@ -981,9 +1265,8 @@
 
             const matches = [];
 
-            // Busca em arquivos locais
             state.files.forEach(file => {
-                if (file.hasMarkers)) {
+                if (file.hasMarkers) {
                     const markerSource = map.getSource(`${file.sourceId}-markers`);
                     if (markerSource && markerSource._data.features) {
                         markerSource._data.features.forEach(feature => {
@@ -999,7 +1282,7 @@
                 if (file.hasLines) {
                     const lineSource = map.getSource(`${file.sourceId}-lines`);
                     if (lineSource && lineSource._data.features) {
-                        lineSource._data.forEach(feature => {
+                        lineSource._data.features.forEach(feature => {
                             if (feature.properties && (
                                 (feature.properties.name && feature.properties.name.toLowerCase().includes(term)) ||
                                 (feature.properties.Alimentador && feature.properties.Alimentador.toLowerCase().includes(term))
@@ -1011,7 +1294,6 @@
                 }
             });
 
-            // Busca em arquivos do Supabase
             state.supabaseFiles.forEach(file => {
                 file.features.forEach(feature => {
                     if (feature.properties && (
@@ -1050,13 +1332,13 @@
             const ul = document.createElement('ul');
 
             results.forEach(result => {
-                const { feature } = result;
+                const { feature, source } = result;
                 const li = document.createElement('li');
                 const nameSpan = document.createElement('span');
                 const displayName = feature.properties.name || feature.properties.Alimentador || 'Sem nome';
                 nameSpan.textContent = `${displayName} (${(feature.properties.distance / 1000)?.toFixed(2)} km)` || displayName;
 
-                const viewButton = createElement('button');
+                const viewButton = document.createElement('button');
                 viewButton.textContent = 'Visualizar';
                 viewButton.onclick = async () => {
                     const center = getFeatureCenter(feature);
@@ -1078,7 +1360,7 @@
                         window.open(url, '_blank');
                     } else {
                         alert('Não foi possível determinar o centro da feição.');
-                    } 
+                    }
                 };
 
                 li.appendChild(nameSpan);
@@ -1150,10 +1432,10 @@
             mapStyles.forEach(style => {
                 const li = document.createElement('li');
                 li.textContent = style.name;
-                li.onclick = () => {
+                li.addEventListener('click', () => {
                     changeMapStyle(style.url);
                     styleMenu.style.display = 'none';
-                };
+                });
                 styleList.appendChild(li);
             });
         }
@@ -1168,11 +1450,11 @@
         document.getElementById('btnLineGroups').addEventListener('click', () => {
             if (state.selectedGroups.size === 0) {
                 alert('Não há grupos de linhas para filtrar.');
-                return;
+            } else {
+                toggleVisibility(lineMenu);
             }
-            toggleVisibility(lineMenu);
         });
-        document.getElementById('btnLoadedFiles').addEventListener('click', () => toggleVisibility(loadedFilesMenu));
+        btnLoadedFiles.addEventListener('click', () => toggleVisibility(loadedFilesMenu));
         document.getElementById('btnSearch').addEventListener('click', searchFeatures);
         document.getElementById('selectDevice').addEventListener('click', selectFromDevice);
         document.getElementById('hideAll').addEventListener('click', hideAllGroups);
@@ -1183,7 +1465,7 @@
         });
 
         function toggleVisibility(element) {
-            element.style.display = element.style.display === 'block' ? 'none' : 'block';
+            element.style.display = (element.style.display === 'block') ? 'none' : 'block';
         }
 
         const menuButtons = document.querySelectorAll('.menu button');
@@ -1199,12 +1481,10 @@
             });
         });
 
-        window.onload = () => {
+        window.onload = function() {
             setTimeout(() => {
                 const legends = document.querySelectorAll('.button-legend');
-                legends.forEach(legend => {
-                    legend.style.display = 'none';
-                });
+                legends.forEach(legend => legend.style.display = 'none');
             }, 10000);
         };
     </script>
