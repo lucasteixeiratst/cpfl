@@ -163,6 +163,22 @@
             background-color: #357ae8;
         }
 
+        .error-message {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #f44336;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            z-index: 2000;
+            display: none;
+            font-size: 14px;
+            max-width: 80%;
+            text-align: center;
+        }
+
         footer {
             position: absolute;
             bottom: 5px;
@@ -172,14 +188,15 @@
             color: #555;
         }
     </style>
-    <link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet" />
-    <script src="https://unpkg.com/maplibre-gl"></script>
-    <script src="https://unpkg.com/@tmcw/togeojson"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.6.0/jszip.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://unpkg.com/maplibre-gl@4.7.0/dist/maplibre-gl.css" rel="stylesheet" />
+    <script src="https://unpkg.com/maplibre-gl@4.7.0/dist/maplibre-gl.js"></script>
+    <script src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 </head>
 <body>
     <div id="map"></div>
+    <div id="error-message" class="error-message"></div>
 
     <div class="menu">
         <button id="btnKMZ">
@@ -220,11 +237,28 @@
     </footer>
 
     <script>
+        // Função para exibir mensagens de erro
+        function showError(message, error = {}) {
+            const errorDiv = document.getElementById('error-message');
+            errorDiv.textContent = `${message}: ${error.message || 'Erro desconhecido'}`;
+            errorDiv.style.display = 'block';
+            setTimeout(() => { errorDiv.style.display = 'none'; }, 5000);
+            console.error(message, error);
+        }
+
         // Configuração do Supabase
         const supabaseUrl = 'https://apwforodphfoorwhaqdo.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFwd2Zvcm9kcGhmb29yd2hhcWRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwODQ5ODcsImV4cCI6MjA2NDY2MDk4N30.lmLDwaDpYPs32K5fL-aU8wgMJy5U8za0r91jJCiT9vc';
-        const supabase = Supabase.createClient(supabaseUrl, supabaseKey);
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
+        // Testar conexão com Supabase
+        supabase.from('kmz_files').select('name').then(({ data, error }) => {
+            console.log('Teste Supabase - Dados:', data);
+            console.log('Teste Supabase - Erro:', error);
+            if (error) showError('Erro ao conectar com Supabase', error);
+        });
+
+        // Estado da aplicação
         const state = {
             markersVisible: true,
             namesVisible: true,
@@ -233,62 +267,88 @@
             loadedFeatures: {}
         };
 
+        // Inicialização do MapLibre
+        console.log('Inicializando MapLibre GL JS...');
         const map = new maplibregl.Map({
             container: 'map',
-            style: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
+            style: 'https://demotiles.maplibre.org/style.json',
             center: [-47.068847, -22.934973],
             zoom: 11
         });
 
-        const searchInput = document.getElementById('searchInput');
-
+        // Manipuladores de eventos do mapa
         map.on('load', () => {
-            loadMapData();
+            console.log('Mapa carregado com sucesso');
+            loadMapData().catch(error => showError('Erro inicial ao carregar dados', error));
         });
 
         map.on('moveend', () => {
-            loadMapData();
+            loadMapData().catch(error => showError('Erro ao atualizar dados', error));
         });
 
+        map.on('error', (e) => {
+            showError('Erro no MapLibre', e.error);
+        });
+
+        map.on('style.load', () => {
+            console.log('Estilo do mapa carregado com sucesso');
+        });
+
+        // Seletores de elementos
+        const searchInput = document.getElementById('searchInput');
+
+        // Manipuladores de eventos dos botões
         document.getElementById('btnKMZ').addEventListener('click', selectFromDevice);
         document.getElementById('btnMarkers').addEventListener('click', toggleMarkers);
         document.getElementById('btnNames').addEventListener('click', toggleNames);
         document.getElementById('btnLines').addEventListener('click', toggleLines);
         document.getElementById('btnReset').addEventListener('click', resetView);
         document.getElementById('btnLocation').addEventListener('click', goToCurrentLocation);
-        document.getElementById('btnSearch').addEventListener('click', searchFeatures);
+        document.getElementById('btnSearch').addEventListener('click', () => {
+            searchFeatures().catch(error => showError('Erro ao buscar', error));
+        });
 
+        // Função para carregar dados do Supabase
         async function loadMapData() {
-            const bounds = map.getBounds();
-            const sw = bounds.getSouthWest();
-            const ne = bounds.getNorthEast();
-            const bbox = `POLYGON((${sw.lng} ${sw.lat}, ${ne.lng} ${sw.lat}, ${ne.lng} ${ne.lat}, ${sw.lng} ${ne.lat}, ${sw.lng} ${sw.lat}))`;
+            try {
+                console.log('Iniciando carregamento de dados...');
+                const bounds = map.getBounds();
+                const sw = bounds.getSouthWest();
+                const ne = bounds.getNorthEast();
+                const bboxWKT = `POLYGON((${sw.lng} ${sw.lat}, ${ne.lng} ${sw.lat}, ${ne.lng} ${ne.lat}, ${sw.lng} ${ne.lat}, ${sw.lng} ${sw.lat}))`;
 
-            // Limpar camadas existentes
-            clearMapLayers();
+                // Limpar camadas existentes
+                clearMapLayers();
 
-            // Carregar marcadores
-            const { data: markers } = await supabase
-                .from('markers')
-                .select('id, name, description, coordinates')
-                .filter('coordinates', 'st_intersects', bbox);
-            addMarkersToMap(markers);
+                // Carregar marcadores
+                const { data: markers, error: markersError } = await supabase
+                    .rpc('get_features_in_bbox', { bbox: bboxWKT })
+                    .select('id, name, description, coordinates');
+                console.log('Marcadores:', markers, 'Erro:', markersError);
+                if (markersError) throw new Error('Erro ao carregar marcadores: ' + markersError.message);
+                addMarkersToMap(markers || []);
 
-            // Carregar linhas
-            const { data: lines } = await supabase
-                .from('lines')
-                .select('id, name, description, coordinates, color')
-                .filter('coordinates', 'st_intersects', bbox);
-            addLinesToMap(lines);
+                // Carregar linhas
+                const { data: lines, error: linesError } = await supabase
+                    .rpc('get_lines_in_bbox', { bbox: bboxWKT })
+                    .select('id, name, description, coordinates, color');
+                console.log('Linhas:', lines, 'Erro:', linesError);
+                if (linesError) throw new Error('Erro ao carregar linhas: ' + linesError.message);
+                addLinesToMap(lines || []);
 
-            // Carregar polígonos
-            const { data: polygons } = await supabase
-                .from('polygons')
-                .select('id, name, description, coordinates, color')
-                .filter('coordinates', 'st_intersects', bbox);
-            addPolygonsToMap(polygons);
+                // Carregar polígonos
+                const { data: polygons, error: polygonsError } = await supabase
+                    .rpc('get_polygons_in_bbox', { bbox: bboxWKT })
+                    .select('id, name, description, coordinates, color');
+                console.log('Polígonos:', polygons, 'Erro:', polygonsError);
+                if (polygonsError) throw new Error('Erro ao carregar polígonos: ' + polygonsError.message);
+                addPolygonsToMap(polygons || []);
+            } catch (error) {
+                showError('Erro ao carregar dados do mapa', error);
+            }
         }
 
+        // Função para limpar camadas do mapa
         function clearMapLayers() {
             for (const [id, type] of Object.entries(state.loadedFeatures)) {
                 if (map.getLayer(id)) map.removeLayer(id);
@@ -297,214 +357,298 @@
             state.loadedFeatures = {};
         }
 
+        // Função para adicionar marcadores
         function addMarkersToMap(markers) {
-            if (!markers || markers.length === 0) return;
+            if (!markers || markers.length === 0) {
+                console.log('Nenhum marcador para adicionar');
+                return;
+            }
 
             const geojson = {
                 type: 'FeatureCollection',
-                features: markers.map(marker => ({
-                    type: 'Feature',
-                    properties: { id: marker.id, name: marker.name, description: marker.description },
-                    geometry: marker.coordinates
-                }))
+                features: markers.map(marker => {
+                    if (!marker.coordinates || !marker.coordinates.coordinates) {
+                        console.warn('Marcador inválido:', marker);
+                        return null;
+                    }
+                    return {
+                        type: 'Feature',
+                        properties: { id: marker.id, name: marker.name, description: marker.description },
+                        geometry: {
+                            type: 'Point',
+                            coordinates: marker.coordinates.coordinates
+                        }
+                    };
+                }).filter(feature => feature !== null)
             };
 
             const sourceId = 'markers-source';
             const markerLayerId = 'markers-layer';
             const labelLayerId = 'labels-layer';
 
-            if (!map.getSource(sourceId)) {
-                map.addSource(sourceId, { type: 'geojson', data: geojson });
-                map.addLayer({
-                    id: markerLayerId,
-                    type: 'circle',
-                    source: sourceId,
-                    paint: {
-                        'circle-radius': 6,
-                        'circle-color': '#FF5722',
-                        'circle-stroke-width': 2,
-                        'circle-stroke-color': '#FFFFFF'
-                    },
-                    layout: { 'visibility': state.markersVisible ? 'visible' : 'none' }
-                });
-                map.addLayer({
-                    id: labelLayerId,
-                    type: 'symbol',
-                    source: sourceId,
-                    layout: {
-                        'text-field': ['get', 'name'],
-                        'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
-                        'text-size': 12,
-                        'text-offset': [0, 1.5],
-                        'visibility': state.namesVisible ? 'visible' : 'none'
-                    },
-                    paint: {
-                        'text-color': '#000000',
-                        'text-halo-color': '#FFFFFF',
-                        'text-halo-width': 1
-                    }
-                });
-                state.loadedFeatures[markerLayerId] = 'marker';
-                state.loadedFeatures[labelLayerId] = 'label';
-                state.loadedFeatures[sourceId] = 'source';
-            } else {
-                map.getSource(sourceId).setData(geojson);
+            try {
+                if (!map.getSource(sourceId)) {
+                    map.addSource(sourceId, { type: 'geojson', data: geojson });
+                    map.addLayer({
+                        id: markerLayerId,
+                        type: 'circle',
+                        source: sourceId,
+                        paint: {
+                            'circle-radius': 6,
+                            'circle-color': '#FF5722',
+                            'circle-stroke-width': 2,
+                            'circle-stroke-color': '#FFFFFF'
+                        },
+                        layout: { 'visibility': state.markersVisible ? 'visible' : 'none' }
+                    });
+                    map.addLayer({
+                        id: labelLayerId,
+                        type: 'symbol',
+                        source: sourceId,
+                        layout: {
+                            'text-field': ['get', 'name'],
+                            'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
+                            'text-size': 12,
+                            'text-offset': [0, 1.5],
+                            'visibility': state.namesVisible ? 'visible' : 'none'
+                        },
+                        paint: {
+                            'text-color': '#000000',
+                            'text-halo-color': '#FFFFFF',
+                            'text-halo-width': 1
+                        }
+                    });
+                    state.loadedFeatures[markerLayerId] = 'marker';
+                    state.loadedFeatures[labelLayerId] = 'label';
+                    state.loadedFeatures[sourceId] = 'source';
+                } else {
+                    map.getSource(sourceId).setData(geojson);
+                }
+                console.log('Marcadores adicionados ao mapa');
+            } catch (error) {
+                showError('Erro ao adicionar marcadores ao mapa', error);
             }
         }
 
+        // Função para adicionar linhas
         function addLinesToMap(lines) {
-            if (!lines || lines.length === 0) return;
+            if (!lines || lines.length === 0) {
+                console.log('Nenhuma linha para adicionar');
+                return;
+            }
 
             const geojson = {
                 type: 'FeatureCollection',
-                features: lines.map(line => ({
-                    type: 'Feature',
-                    properties: { id: line.id, name: line.name, description: line.description, color: line.color },
-                    geometry: line.coordinates
-                }))
+                features: lines.map(line => {
+                    if (!line.coordinates || !line.coordinates.coordinates) {
+                        console.warn('Linha inválida:', line);
+                        return null;
+                    }
+                    return {
+                        type: 'Feature',
+                        properties: { id: line.id, name: line.name, description: line.description, color: line.color || '#FF5722' },
+                        geometry: {
+                            type: 'LineString',
+                            coordinates: line.coordinates.coordinates
+                        }
+                    };
+                }).filter(feature => feature !== null)
             };
 
             const sourceId = 'lines-source';
             const lineLayerId = 'lines-layer';
 
-            if (!map.getSource(sourceId)) {
-                map.addSource(sourceId, { type: 'geojson', data: geojson });
-                map.addLayer({
-                    id: lineLayerId,
-                    type: 'line',
-                    source: sourceId,
-                    paint: {
-                        'line-color': ['get', 'color'],
-                        'line-width': 4
-                    },
-                    layout: { 'visibility': state.linesVisible ? 'visible' : 'none' }
-                });
-                state.loadedFeatures[lineLayerId] = 'line';
-                state.loadedFeatures[sourceId] = 'source';
-            } else {
-                map.getSource(sourceId).setData(geojson);
+            try {
+                if (!map.getSource(sourceId)) {
+                    map.addSource(sourceId, { type: 'geojson', data: geojson });
+                    map.addLayer({
+                        id: lineLayerId,
+                        type: 'line',
+                        source: sourceId,
+                        paint: {
+                            'line-color': ['get', 'color'],
+                            'line-width': 4
+                        },
+                        layout: { 'visibility': state.linesVisible ? 'visible' : 'none' }
+                    });
+                    state.loadedFeatures[lineLayerId] = 'line';
+                    state.loadedFeatures[sourceId] = 'source';
+                } else {
+                    map.getSource(sourceId).setData(geojson);
+                }
+                console.log('Linhas adicionadas ao mapa');
+            } catch (error) {
+                showError('Erro ao adicionar linhas ao mapa', error);
             }
         }
 
+        // Função para adicionar polígonos
         function addPolygonsToMap(polygons) {
-            if (!polygons || polygons.length === 0) return;
+            if (!polygons || polygons.length === 0) {
+                console.log('Nenhum polígono para adicionar');
+                return;
+            }
 
             const geojson = {
                 type: 'FeatureCollection',
-                features: polygons.map(polygon => ({
-                    type: 'Feature',
-                    properties: { id: polygon.id, name: polygon.name, description: polygon.description, color: polygon.color },
-                    geometry: polygon.coordinates
-                }))
+                features: polygons.map(polygon => {
+                    if (!polygon.coordinates || !polygon.coordinates.coordinates) {
+                        console.warn('Polígono inválido:', polygon);
+                        return null;
+                    }
+                    return {
+                        type: 'Feature',
+                        properties: { id: polygon.id, name: polygon.name, description: polygon.description, color: polygon.color || '#FF5722' },
+                        geometry: {
+                            type: 'Polygon',
+                            coordinates: polygon.coordinates.coordinates
+                        }
+                    };
+                }).filter(feature => feature !== null)
             };
 
             const sourceId = 'polygons-source';
             const polygonLayerId = 'polygons-layer';
 
-            if (!map.getSource(sourceId)) {
-                map.addSource(sourceId, { type: 'geojson', data: geojson });
-                map.addLayer({
-                    id: polygonLayerId,
-                    type: 'fill',
-                    source: sourceId,
-                    paint: {
-                        'fill-color': ['get', 'color'],
-                        'fill-opacity': 0.5
-                    },
-                    layout: { 'visibility': state.linesVisible ? 'visible' : 'none' }
-                });
-                state.loadedFeatures[polygonLayerId] = 'polygon';
-                state.loadedFeatures[sourceId] = 'source';
-            } else {
-                map.getSource(sourceId).setData(geojson);
+            try {
+                if (!map.getSource(sourceId)) {
+                    map.addSource(sourceId, { type: 'geojson', data: geojson });
+                    map.addLayer({
+                        id: polygonLayerId,
+                        type: 'fill',
+                        source: sourceId,
+                        paint: {
+                            'fill-color': ['get', 'color'],
+                            'fill-opacity': 0.5
+                        },
+                        layout: { 'visibility': state.linesVisible ? 'visible' : 'none' }
+                    });
+                    state.loadedFeatures[polygonLayerId] = 'polygon';
+                    state.loadedFeatures[sourceId] = 'source';
+                } else {
+                    map.getSource(sourceId).setData(geojson);
+                }
+                console.log('Polígonos adicionados ao mapa');
+            } catch (error) {
+                showError('Erro ao adicionar polígonos ao mapa', error);
             }
         }
 
+        // Função para selecionar arquivo
         function selectFromDevice() {
             const input = document.createElement('input');
             input.type = 'file';
             input.accept = '.kml,.kmz';
-            input.onchange = handleFileUpload;
+            input.onchange = e => handleFileUpload(e).catch(error => showError('Erro ao fazer upload do arquivo', error));
             input.click();
         }
 
+        // Função para processar upload de arquivo
         async function handleFileUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
 
             const reader = new FileReader();
-            reader.onload = async () => {
-                try {
-                    let geojson;
-                    if (file.name.endsWith('.kmz')) {
-                        const zip = await JSZip.loadAsync(reader.result);
-                        const kmlFile = zip.file(/\.kml$/i)[0];
-                        const kmlContent = await kmlFile.async('string');
-                        geojson = toGeoJSON.kml(new DOMParser().parseFromString(kmlContent, 'text/xml'));
-                    } else {
-                        geojson = toGeoJSON.kml(new DOMParser().parseFromString(reader.result, 'text/xml'));
+            return new Promise((resolve, reject) => {
+                reader.onload = async () => {
+                    try {
+                        let geojson;
+                        if (file.name.endsWith('.kmz')) {
+                            const zip = await JSZip.loadAsync(reader.result);
+                            const kmlFile = zip.file(/\.kml$/i)[0];
+                            if (!kmlFile) throw new Error('Arquivo KML não encontrado no KMZ');
+                            const kmlContent = await kmlFile.async('string');
+                            geojson = toGeoJSON.kml(new DOMParser().parseFromString(kmlContent, 'text/xml'));
+                        } else {
+                            geojson = toGeoJSON.kml(new DOMParser().parseFromString(reader.result, 'text/xml'));
+                        }
+                        await uploadToSupabase(geojson, file.name);
+                        await loadMapData();
+                        resolve();
+                    } catch (error) {
+                        reject(error);
                     }
-                    await uploadToSupabase(geojson, file.name);
-                    loadMapData();
-                } catch (error) {
-                    console.error('Erro ao processar o arquivo:', error);
-                    alert('Erro ao processar o arquivo KML/KMZ.');
+                };
+                if (file.name.endsWith('.kmz')) {
+                    reader.readAsArrayBuffer(file);
+                } else {
+                    reader.readAsText(file);
                 }
-            };
-            if (file.name.endsWith('.kmz')) {
-                reader.readAsArrayBuffer(file);
-            } else {
-                reader.readAsText(file);
-            }
+            });
         }
 
+        // Função para fazer upload para o Supabase
         async function uploadToSupabase(geojson, fileName) {
-            const { data: kmzFile } = await supabase
-                .from('kmz_files')
-                .insert([{ name: fileName }])
-                .select()
-                .single();
+            try {
+                const { data: kmzFile, error: fileError } = await supabase
+                    .from('kmz_files')
+                    .insert([{ name: fileName }])
+                    .select()
+                    .single();
+                if (fileError) throw new Error('Erro ao inserir arquivo KMZ: ' + fileError.message);
 
-            for (const feature of geojson.features) {
-                if (feature.geometry.type === 'Point') {
-                    await supabase.from('markers').insert([{
-                        kmz_file_id: kmzFile.id,
-                        name: feature.properties.name,
-                        description: feature.properties.description,
-                        coordinates: feature.geometry
-                    }]);
-                } else if (feature.geometry.type === 'LineString') {
-                    await supabase.from('lines').insert([{
-                        kmz_file_id: kmzFile.id,
-                        name: feature.properties.name,
-                        description: feature.properties.description,
-                        coordinates: feature.geometry,
-                        color: feature.properties.color || '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')
-                    }]);
-                } else if (feature.geometry.type === 'Polygon') {
-                    await supabase.from('polygons').insert([{
-                        kmz_file_id: kmzFile.id,
-                        name: feature.properties.name,
-                        description: feature.properties.description,
-                        coordinates: feature.geometry,
-                        color: feature.properties.color || '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')
-                    }]);
+                for (const feature of geojson.features) {
+                    const props = feature.properties || {};
+                    const color = props.color || '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+
+                    if (feature.geometry.type === 'Point') {
+                        const { error } = await supabase.from('markers').insert([{
+                            kmz_file_id: kmzFile.id,
+                            name: props.name || props.Alimentador,
+                            description: props.description,
+                            coordinates: {
+                                type: 'Point',
+                                coordinates: feature.geometry.coordinates
+                            }
+                        }]);
+                        if (error) throw new Error('Erro ao inserir marcador: ' + error.message);
+                    } else if (feature.geometry.type === 'LineString') {
+                        const { error } = await supabase.from('lines').insert([{
+                            kmz_file_id: kmzFile.id,
+                            name: props.name || props.Alimentador,
+                            description: props.description,
+                            coordinates: {
+                                type: 'LineString',
+                                coordinates: feature.geometry.coordinates
+                            },
+                            color: color
+                        }]);
+                        if (error) throw new Error('Erro ao inserir linha: ' + error.message);
+                    } else if (feature.geometry.type === 'Polygon') {
+                        const { error } = await supabase.from('polygons').insert([{
+                            kmz_file_id: kmzFile.id,
+                            name: props.name || props.Alimentador,
+                            description: props.description,
+                            coordinates: {
+                                type: 'Polygon',
+                                coordinates: feature.geometry.coordinates
+                            },
+                            color: color
+                        }]);
+                        if (error) throw new Error('Erro ao inserir polígono: ' + error.message);
+                    }
                 }
+                console.log(`Upload concluído para o arquivo: ${fileName}`);
+            } catch (error) {
+                throw new Error('Erro ao fazer upload para o Supabase: ' + error.message);
             }
         }
 
+        // Função para alternar visibilidade de marcadores
         function toggleMarkers() {
             state.markersVisible = !state.markersVisible;
             const visibility = state.markersVisible ? 'visible' : 'none';
             if (map.getLayer('markers-layer')) map.setLayoutProperty('markers-layer', 'visibility', visibility);
         }
 
+        // Função para alternar visibilidade de nomes
         function toggleNames() {
             state.namesVisible = !state.namesVisible;
             const visibility = state.namesVisible ? 'visible' : 'none';
             if (map.getLayer('labels-layer')) map.setLayoutProperty('labels-layer', 'visibility', visibility);
         }
 
+        // Função para alternar visibilidade de linhas
         function toggleLines() {
             state.linesVisible = !state.linesVisible;
             const visibility = state.linesVisible ? 'visible' : 'none';
@@ -512,10 +656,12 @@
             if (map.getLayer('polygons-layer')) map.setLayoutProperty('polygons-layer', 'visibility', visibility);
         }
 
+        // Função para resetar a visão do mapa
         function resetView() {
             map.easeTo({ center: [-47.068847, -22.934973], zoom: 13 });
         }
 
+        // Função para ir à localização atual
         let userLocationMarker;
         function goToCurrentLocation() {
             if (navigator.geolocation) {
@@ -527,94 +673,121 @@
                     userLocationMarker = new maplibregl.Marker({ color: 'blue' })
                         .setLngLat(userCoords)
                         .addTo(map);
-                }, () => {
-                    alert('Não foi possível obter sua localização.');
+                }, (error) => {
+                    showError('Não foi possível obter sua localização', error);
                 });
             } else {
-                alert('Geolocalização não é suportada pelo seu navegador.');
+                showError('Geolocalização não suportada pelo navegador');
             }
         }
 
+        // Função para buscar features
         async function searchFeatures() {
-            const term = searchInput.value.toLowerCase();
-            if (!term) return alert('Digite um termo para buscar.');
+            try {
+                const term = searchInput.value.toLowerCase();
+                if (!term) throw new Error('Digite um termo para buscar');
 
-            const { data: markers } = await supabase
-                .from('markers')
-                .select('id, name, coordinates')
-                .ilike('name', `%${term}%`);
+                const { data: markers, error: markersError } = await supabase
+                    .from('markers')
+                    .select('id, name, coordinates')
+                    .ilike('name', `%${term}%`);
+                console.log('Busca - Marcadores:', markers, 'Erro:', markersError);
+                if (markersError) throw new Error('Erro ao buscar marcadores: ' + markersError.message);
 
-            if (markers && markers.length > 0) {
                 const searchResultsDiv = document.getElementById('searchResults');
                 searchResultsDiv.innerHTML = '';
-                const ul = document.createElement('ul');
 
-                markers.forEach(marker => {
-                    const li = document.createElement('li');
-                    const nameSpan = document.createElement('span');
-                    nameSpan.textContent = marker.name || 'Sem nome';
+                if (markers && markers.length > 0) {
+                    const ul = document.createElement('ul');
+                    markers.forEach(marker => {
+                        const li = document.createElement('li');
+                        const nameSpan = document.createElement('span');
+                        nameSpan.textContent = marker.name || 'Sem nome';
 
-                    const viewButton = document.createElement('button');
-                    viewButton.textContent = 'Visualizar';
-                    viewButton.onclick = async () => {
-                        const coords = marker.coordinates.coordinates;
-                        map.flyTo({ center: coords, zoom: 16 });
-                        await loadNearbyFeatures(marker.id, coords);
-                        searchResultsDiv.innerHTML = '';
-                    };
+                        const viewButton = document.createElement('button');
+                        viewButton.textContent = 'Visualizar';
+                        viewButton.onclick = async () => {
+                            try {
+                                const coords = marker.coordinates.coordinates;
+                                map.flyTo({ center: coords, zoom: 16 });
+                                await loadNearbyFeatures(marker.id, coords);
+                                searchResultsDiv.innerHTML = '';
+                            } catch (error) {
+                                showError('Erro ao visualizar marcador', error);
+                            }
+                        };
 
-                    li.appendChild(nameSpan);
-                    li.appendChild(viewButton);
-                    ul.appendChild(li);
-                });
-
-                searchResultsDiv.appendChild(ul);
-            } else {
-                alert('Nenhum resultado encontrado.');
+                        li.appendChild(nameSpan);
+                        li.appendChild(viewButton);
+                        ul.appendChild(li);
+                    });
+                    searchResultsDiv.appendChild(ul);
+                } else {
+                    searchResultsDiv.innerHTML = '<p>Nenhum resultado encontrado.</p>';
+                }
+            } catch (error) {
+                showError('Erro ao realizar busca', error);
             }
         }
 
+        // Função para carregar features próximas
         async function loadNearbyFeatures(markerId, coords) {
-            const radius = 1000; // 1 km
-            const { data: nearbyMarkers } = await supabase
-                .from('markers')
-                .select('id, name, description, coordinates')
-                .neq('id', markerId)
-                .filter('coordinates', 'st_dwithin', `(${coords}, ${radius})`);
+            try {
+                const radius = 1000; // 1 km
+                const pointWKT = `POINT(${coords[0]} ${coords[1]})`;
 
-            const { data: nearbyLines } = await supabase
-                .from('lines')
-                .select('id, name, description, coordinates, color')
-                .filter('coordinates', 'st_dwithin', `(${coords}, ${radius})`);
+                const { data: nearbyMarkers, error: markersError } = await supabase
+                    .rpc('get_features_within_radius', { point: pointWKT, radius: radius })
+                    .select('id, name, description, coordinates')
+                    .neq('id', markerId);
+                console.log('Marcadores próximos:', nearbyMarkers, 'Erro:', markersError);
+                if (markersError) throw new Error('Erro ao carregar marcadores próximos: ' + markersError.message);
 
-            const { data: nearbyPolygons } = await supabase
-                .from('polygons')
-                .select('id, name, description, coordinates, color')
-                .filter('coordinates', 'st_dwithin', `(${coords}, ${radius})`);
+                const { data: nearbyLines, error: linesError } = await supabase
+                    .rpc('get_lines_within_radius', { point: pointWKT, radius: radius })
+                    .select('id, name, description, coordinates, color');
+                console.log('Linhas próximas:', nearbyLines, 'Erro:', linesError);
+                if (linesError) throw new Error('Erro ao carregar linhas próximas: ' + linesError.message);
 
-            clearMapLayers();
-            addMarkersToMap(nearbyMarkers);
-            addLinesToMap(nearbyLines);
-            addPolygonsToMap(nearbyPolygons);
+                const { data: nearbyPolygons, error: polygonsError } = await supabase
+                    .rpc('get_polygons_within_radius', { point: pointWKT, radius: radius })
+                    .select('id, name, description, coordinates, color');
+                console.log('Polígonos próximos:', nearbyPolygons, 'Erro:', polygonsError);
+                if (polygonsError) throw new Error('Erro ao carregar polígonos próximos: ' + polygonsError.message);
+
+                clearMapLayers();
+                addMarkersToMap(nearbyMarkers || []);
+                addLinesToMap(nearbyLines || []);
+                addPolygonsToMap(nearbyPolygons || []);
+
+                // Adicionar o marcador pesquisado
+                addMarkersToMap([{
+                    id: markerId,
+                    name: 'Marcador Selecionado',
+                    coordinates: { type: 'Point', coordinates: coords }
+                }]);
+            } catch (error) {
+                throw new Error('Erro ao carregar features próximas: ' + error.message);
+            }
         }
 
+        // Manipuladores de eventos do menu
         const menuButtons = document.querySelectorAll('.menu button');
         menuButtons.forEach(button => {
             button.addEventListener('click', () => {
                 const legend = button.querySelector('.button-legend');
                 if (legend) {
                     legend.style.display = 'block';
-                    setTimeout(() => {
-                        legend.style.display = 'none';
-                    }, 5000);
+                    setTimeout(() => { legend.style.display = 'none'; }, 5000);
                 }
             });
         });
 
-        window.onload = function() {
+        window.onload = () => {
             setTimeout(() => {
-                const legends = document.querySelectorAll('.button-legend');
-                legends.forEach(legend => legend.style.display = 'none');
+                document.querySelectorAll('.button-legend').forEach(legend => {
+                    legend.style.display = 'none';
+                });
             }, 10000);
         };
     </script>
