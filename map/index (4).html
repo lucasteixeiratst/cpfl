@@ -1,0 +1,131 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualizador de Mapas</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet">
+</head>
+<body>
+    <div id="map" role="region" aria-label="Mapa interativo"></div>
+
+    <nav class="menu" aria-label="Menu de navegação">
+        <button id="btnKMZ" aria-label="Carregar KMZ/KML">
+            <img src="https://img.icons8.com/ios-filled/50/000000/upload.png" alt="">
+            <div class="button-legend">Carregar KMZ/KML</div>
+        </button>
+        <button id="btnMarkers" aria-label="Exibir/Ocultar Marcadores">
+            <img src="https://img.icons8.com/material-outlined/24/000000/map-pin.png" alt="">
+            <div class="button-legend">Exibir/Ocultar Marcadores</div>
+        </button>
+        <button id="btnNames" aria-label="Exibir/Ocultar Nomes">
+            <img src="https://img.icons8.com/material-outlined/24/000000/name.png" alt="">
+            <div class="button-legend">Exibir/Ocultar Nomes</div>
+        </button>
+        <button id="btnLines" aria-label="Exibir/Ocultar Linhas">
+            <img src="https://img.icons8.com/material-outlined/24/000000/polyline.png" alt="">
+            <div class="button-legend">Exibir/Ocultar Linhas</div>
+        </button>
+        <button id="btnReset" aria-label="Resetar Visão">
+            <img src="https://img.icons8.com/material-outlined/24/000000/refresh.png" alt="">
+            <div class="button-legend">Resetar Visão</div>
+        </button>
+        <button id="btnLocation" aria-label="Minha Localização">
+            <img src="https://img.icons8.com/material-outlined/24/000000/compass.png" alt="">
+            <div class="button-legend">Minha Localização</div>
+        </button>
+        <button id="btnLineGroups" aria-label="Grupos de Linhas">
+            <img src="https://img.icons8.com/material-outlined/24/000000/layers.png" alt="">
+            <div class="button-legend">Grupos de Linhas</div>
+        </button>
+        <button id="btnLoadedFiles" aria-label="Arquivos Carregados">
+            <img src="https://img.icons8.com/material-outlined/24/000000/folder-invoices.png" alt="">
+            <div class="button-legend">Arquivos Carregados</div>
+        </button>
+        <button id="btnStyles" aria-label="Estilos do Mapa">
+            <img src="https://img.icons8.com/material-outlined/24/000000/paint.png" alt="">
+            <div class="button-legend">Estilos do Mapa</div>
+        </button>
+    </nav>
+
+    <div class="search-bar" role="search">
+        <input type="text" id="searchInput" placeholder="Buscar no mapa..." aria-label="Buscar no mapa">
+        <button id="btnSearch" aria-label="Iniciar busca">Buscar</button>
+    </div>
+
+    <div id="searchResults" class="search-results" aria-live="polite"></div>
+
+    <div class="kmz-menu" id="kmzMenu" role="menu">
+        <ul id="kmzList" aria-label="Lista de arquivos KMZ/KML"></ul>
+        <ul>
+            <li id="selectDevice" role="menuitem">Selecionar do dispositivo...</li>
+        </ul>
+    </div>
+
+    <div class="line-menu" id="lineMenu" role="menu">
+        <div class="menu-controls">
+            <button id="hideAll" aria-label="Ocultar todas as linhas">Ocultar Todas</button>
+            <button id="showAll" aria-label="Exibir todas as linhas">Exibir Todas</button>
+        </div>
+        <ul id="lineGroupsList" aria-label="Lista de grupos de linhas"></ul>
+    </div>
+
+    <div class="loaded-files-menu" id="loadedFilesMenu" role="menu">
+        <h3>Arquivos Carregados</h3>
+        <ul id="loadedFilesList" aria-label="Lista de arquivos carregados"></ul>
+    </div>
+
+    <div class="style-menu" id="styleMenu" role="menu">
+        <ul id="styleList" aria-label="Lista de estilos de mapa"></ul>
+    </div>
+
+    <footer aria-label="Rodapé">
+        Todos direitos reservados a Lucas Teixeira.
+    </footer>
+
+    <script src="https://unpkg.com/maplibre-gl"></script>
+    <script src="https://unpkg.com/@tmcw/togeojson"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.6.0/jszip.min.js"></script>
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,297 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+    position: relative;
+}
+
+#map {
+    height: 100%;
+    width: 100%;
+}
+
+.menu {
+    position: absolute;
+    top: 50%;
+    left: 20px;
+    transform: translateY(-50%);
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 0;
+}
+
+.menu button {
+    position: relative;
+    background-color: #ffffff;
+    border: none;
+    padding: 10px;
+    margin: 5px 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.menu button:hover, .menu button:focus {
+    background-color: #f0f0f0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    outline: 2px solid #4285F4;
+}
+
+.menu button img {
+    width: 20px;
+    height: 20px;
+}
+
+.button-legend {
+    position: absolute;
+    top: 50%;
+    left: 50px;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 4px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    padding: 5px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 2000;
+    display: none;
+}
+
+.search-bar {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    max-width: 90%;
+    width: 300px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    display: flex;
+    padding: 10px;
+    align-items: center;
+    gap: 10px;
+}
+
+.search-bar input {
+    flex: 1;
+    border: none;
+    outline: none;
+    padding: 10px;
+    font-size: 14px;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.search-bar input:focus {
+    outline: 2px solid #4285F4;
+}
+
+.search-bar button {
+    background-color: #4285F4;
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.search-bar button:hover, .search-bar button:focus {
+    background-color: #357ae8;
+    outline: 2px solid #ffffff;
+}
+
+.search-results {
+    position: absolute;
+    top: 70px;
+    left: 20px;
+    width: 300px;
+    max-width: 90%;
+    max-height: 200px;
+    overflow-y: auto;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+}
+
+.search-results ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.search-results li {
+    padding: 10px;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.search-results li:hover, .search-results li:focus {
+    background-color: #f0f0f0;
+}
+
+.search-results button {
+    margin-left: 10px;
+    background-color: #4285F4;
+    color: white;
+    border: none;
+    padding: 5px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.search-results button:hover, .search-results button:focus {
+    background-color: #357ae8;
+}
+
+.kmz-menu, .line-menu, .loaded-files-menu, .style-menu {
+    position: absolute;
+    top: 80px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    z-index: 2000;
+    padding: 10px;
+    display: none;
+    max-width: 90%;
+}
+
+.kmz-menu {
+    left: 80px;
+    width: 300px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.line-menu {
+    left: 100px;
+    max-height: 300px;
+}
+
+.line-menu .menu-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.loaded-files-menu {
+    left: 120px;
+    width: 220px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.loaded-files-menu h3 {
+    margin: 0 0 10px 0;
+    font-size: 16px;
+    text-align: center;
+}
+
+.style-menu {
+    left: 140px;
+    width: 200px;
+}
+
+.kmz-menu ul, .line-menu ul, .loaded-files-menu ul, .style-menu ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.kmz-menu li, .line-menu li, .loaded-files-menu li, .style-menu li {
+    padding: 8px 10px;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+}
+
+.kmz-menu li:hover, .line-menu li:hover, .loaded-files-menu li:hover, .style-menu li:hover {
+    background-color: #f0f0f0;
+}
+
+.kmz-menu li:last-child, .line-menu li:last-child, .loaded-files-menu li:last-child, .style-menu li:last-child {
+    border-bottom: none;
+}
+
+.line-menu li label {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+.line-menu button, .loaded-files-menu li button {
+    background-color: #4285F4;
+    color: #fff;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin: 5px 0;
+}
+
+.line-menu button:hover, .line-menu button:focus, .loaded-files-menu li button:hover, .loaded-files-menu li button:focus {
+    background-color: #357ae8;
+}
+
+.loaded-files-menu li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.loaded-files-menu li button {
+    background-color: #e74c3c;
+    padding: 3px 6px;
+    font-size: 10px;
+}
+
+.loaded-files-menu li button:hover, .loaded-files-menu li button:focus {
+    background-color: #c0392b;
+}
+
+footer {
+    position: absolute;
+    bottom: 5px;
+    width: 100%;
+    text-align: center;
+    font-size: 10px;
+    color: #555;
+}
+
+@media (max-width: 600px) {
+    .menu {
+        left: 10px;
+        padding: 5px 0;
+    }
+    .search-bar {
+        width: 90%;
+        left: 10px;
+    }
+    .search-results {
+        width: 90%;
+        left: 10px;
+    }
+    .kmz-menu, .line-menu, .loaded-files-menu, .style-menu {
+        left: 10px;
+        width: 90%;
+    }
+}
