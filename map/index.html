@@ -1,69 +1,81 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+    <!-- Metadados -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Visualizador de mapas interativo com suporte a arquivos KMZ/KML">
     <title>Visualizador de Mapas</title>
+
+    <!-- Estilos -->
     <link rel="stylesheet" href="css/styles.css">
-    <link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet">
+    <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" integrity="sha384-DHac3ypb3c1zT4y1dW0Rd2Nk8eF5A2iGZTz2zBzg7+Um3Kzfvtw4wB+zML+Ey5xM" crossorigin="anonymous">
 </head>
 <body>
-    <div id="map" role="region" aria-label="Mapa interativo"></div>
+    <!-- Mapa principal -->
+    <main>
+        <div id="map" role="region" aria-label="Mapa interativo"></div>
+    </main>
 
-    <nav class="menu" aria-label="Menu de navegação">
-        <button id="btnKMZ" aria-label="Carregar KMZ/KML">
-            <img src="https://img.icons8.com/ios-filled/50/000000/upload.png" alt="">
-            <div class="button-legend">Carregar KMZ/KML</div>
+    <!-- Menu de navegação -->
+    <nav class="menu" aria-label="Menu de navegação principal">
+        <button id="btnKMZ" aria-label="Carregar arquivos KMZ ou KML">
+            <img src="https://img.icons8.com/ios-filled/50/upload.png" alt="">
+            <span class="button-legend">Carregar KMZ/KML</span>
         </button>
-        <button id="btnMarkers" aria-label="Exibir/Ocultar Marcadores">
-            <img src="https://img.icons8.com/material-outlined/24/000000/map-pin.png" alt="">
-            <div class="button-legend">Exibir/Ocultar Marcadores</div>
+        <button id="btnMarkers" aria-label="Exibir ou ocultar marcadores no mapa">
+            <img src="https://img.icons8.com/material-outlined/24/map-pin.png" alt="">
+            <span class="button-legend">Exibir/Ocultar Marcadores</span>
         </button>
-        <button id="btnNames" aria-label="Exibir/Ocultar Nomes">
-            <img src="https://img.icons8.com/material-outlined/24/000000/name.png" alt="">
-            <div class="button-legend">Exibir/Ocultar Nomes</div>
+        <button id="btnNames" aria-label="Exibir ou ocultar nomes dos marcadores">
+            <img src="https://img.icons8.com/material-outlined/24/name.png" alt="">
+            <span class="button-legend">Exibir/Ocultar Nomes</span>
         </button>
-        <button id="btnLines" aria-label="Exibir/Ocultar Linhas">
-            <img src="https://img.icons8.com/material-outlined/24/000000/polyline.png" alt="">
-            <div class="button-legend">Exibir/Ocultar Linhas</div>
+        <button id="btnLines" aria-label="Exibir ou ocultar linhas no mapa">
+            <img src="https://img.icons8.com/material-outlined/24/polyline.png" alt="">
+            <span class="button-legend">Exibir/Ocultar Linhas</span>
         </button>
-        <button id="btnReset" aria-label="Resetar Visão">
-            <img src="https://img.icons8.com/material-outlined/24/000000/refresh.png" alt="">
-            <div class="button-legend">Resetar Visão</div>
+        <button id="btnReset" aria-label="Resetar a visão do mapa">
+            <img src="https://img.icons8.com/material-outlined/24/refresh.png" alt="">
+            <span class="button-legend">Resetar Visão</span>
         </button>
-        <button id="btnLocation" aria-label="Minha Localização">
-            <img src="https://img.icons8.com/material-outlined/24/000000/compass.png" alt="">
-            <div class="button-legend">Minha Localização</div>
+        <button id="btnLocation" aria-label="Ir para a localização atual do usuário">
+            <img src="https://img.icons8.com/material-outlined/24/compass.png" alt="">
+            <span class="button-legend">Minha Localização</span>
         </button>
-        <button id="btnLineGroups" aria-label="Grupos de Linhas">
-            <img src="https://img.icons8.com/material-outlined/24/000000/layers.png" alt="">
-            <div class="button-legend">Grupos de Linhas</div>
+        <button id="btnLineGroups" aria-label="Filtrar grupos de linhas">
+            <img src="https://img.icons8.com/material-outlined/24/layers.png" alt="">
+            <span class="button-legend">Grupos de Linhas</span>
         </button>
-        <button id="btnLoadedFiles" aria-label="Arquivos Carregados">
-            <img src="https://img.icons8.com/material-outlined/24/000000/folder-invoices.png" alt="">
-            <div class="button-legend">Arquivos Carregados</div>
+        <button id="btnLoadedFiles" aria-label="Visualizar arquivos carregados">
+            <img src="https://img.icons8.com/material-outlined/24/folder-invoices.png" alt="">
+            <span class="button-legend">Arquivos Carregados</span>
         </button>
-        <button id="btnStyles" aria-label="Estilos do Mapa">
-            <img src="https://img.icons8.com/material-outlined/24/000000/paint.png" alt="">
-            <div class="button-legend">Estilos do Mapa</div>
+        <button id="btnStyles" aria-label="Alterar estilos do mapa">
+            <img src="https://img.icons8.com/material-outlined/24/paint.png" alt="">
+            <span class="button-legend">Estilos do Mapa</span>
         </button>
     </nav>
 
+    <!-- Barra de busca -->
     <div class="search-bar" role="search">
         <input type="text" id="searchInput" placeholder="Buscar no mapa..." aria-label="Buscar no mapa">
         <button id="btnSearch" aria-label="Iniciar busca">Buscar</button>
     </div>
 
+    <!-- Resultados da busca -->
     <div id="searchResults" class="search-results" aria-live="polite"></div>
 
-    <div class="kmz-menu" id="kmzMenu" role="menu">
-        <ul id="kmzList" aria-label="Lista de arquivos KMZ/KML"></ul>
+    <!-- Menu de arquivos KMZ/KML -->
+    <div class="kmz-menu" id="kmzMenu" role="menu" aria-label="Menu de seleção de arquivos KMZ/KML">
+        <ul id="kmzList" aria-label="Lista de arquivos KMZ/KML disponíveis"></ul>
         <ul>
-            <li id="selectDevice" role="menuitem">Selecionar do dispositivo...</li>
+            <li id="selectDevice" role="menuitem" tabindex="0">Selecionar do dispositivo...</li>
         </ul>
     </div>
 
-    <div class="line-menu" id="lineMenu" role="menu">
+    <!-- Menu de grupos de linhas -->
+    <div class="line-menu" id="lineMenu" role="menu" aria-label="Menu de filtros de grupos de linhas">
         <div class="menu-controls">
             <button id="hideAll" aria-label="Ocultar todas as linhas">Ocultar Todas</button>
             <button id="showAll" aria-label="Exibir todas as linhas">Exibir Todas</button>
@@ -71,22 +83,26 @@
         <ul id="lineGroupsList" aria-label="Lista de grupos de linhas"></ul>
     </div>
 
-    <div class="loaded-files-menu" id="loadedFilesMenu" role="menu">
+    <!-- Menu de arquivos carregados -->
+    <div class="loaded-files-menu" id="loadedFilesMenu" role="menu" aria-label="Menu de arquivos carregados">
         <h3>Arquivos Carregados</h3>
         <ul id="loadedFilesList" aria-label="Lista de arquivos carregados"></ul>
     </div>
 
-    <div class="style-menu" id="styleMenu" role="menu">
-        <ul id="styleList" aria-label="Lista de estilos de mapa"></ul>
+    <!-- Menu de estilos do mapa -->
+    <div class="style-menu" id="styleMenu" role="menu" aria-label="Menu de seleção de estilos de mapa">
+        <ul id="styleList" aria-label="Lista de estilos de mapa disponíveis"></ul>
     </div>
 
+    <!-- Rodapé -->
     <footer aria-label="Rodapé">
         Todos direitos reservados a Lucas Teixeira.
     </footer>
 
-    <script src="https://unpkg.com/maplibre-gl"></script>
-    <script src="https://unpkg.com/@tmcw/togeojson"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.6.0/jszip.min.js"></script>
+    <!-- Scripts -->
+    <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js" integrity="sha384-cxH0sW3z63i1o3D6IfbT40D+xq7T5+OuT1zKnMI0tOCCj8iHLTKXOH2qS3S9JOVZ" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/@tmcw/togeojson@6.0.2/dist/togeojson.umd.js" integrity="sha384-+kL+wzI3+jzO9cghzPwU7UGT6o9vXR4H6zM3l0Y8fS0gP1C5i2+1oUjG8L7uH1H2" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha512-XMVd28F1oH/O71fzwBnV7HucLxVwtxf26XV8P4wPk26EDxuGZ91N8bsOttmnomcCD3CS5ZMRL50H0GgOHvegtg==" crossorigin="anonymous"></script>
     <script type="module" src="js/main.js"></script>
 </body>
 </html>
