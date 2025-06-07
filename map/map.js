@@ -1,5 +1,5 @@
 import { state, mapStyles } from './main.js';
-import { applyGroupFilter } from './fileProcessor.js';
+import { applyGroupFilter, updateGroupMenu, updateLoadedFilesList } from './fileProcessor.js';
 
 // Inicializar mapa
 export function initMap() {
@@ -7,8 +7,9 @@ export function initMap() {
         container: 'map',
         style: mapStyles[2].url, // Voyager
         center: [-47.068847, -22.934973],
-        zoom: 11
-    });
+        zoom: 11,
+        attributionControl: false // Desativa atribuição padrão para personalização futura
+    }).addControl(new maplibregl.NavigationControl(), 'top-right'); // Adiciona controles de zoom
 }
 
 // Adicionar dados ao mapa
@@ -19,11 +20,13 @@ export function addDataToMap(geojson, fileName, map) {
     const labelLayerId = `marker-labels-${sourceId}`;
     const lineLayerId = `lines-${sourceId}`;
 
+    // Verificar se o arquivo já está carregado
     if (state.files.find(file => file.name === fileName)) {
         alert(`O arquivo "${fileName}" já está carregado.`);
         return;
     }
 
+    // Separar features em pontos e linhas
     const pointFeaturesArray = [];
     const lineFeaturesArray = [];
 
@@ -58,6 +61,7 @@ export function addDataToMap(geojson, fileName, map) {
     const pointFeatures = { type: 'FeatureCollection', features: pointFeaturesArray };
     const lineFeatures = { type: 'FeatureCollection', features: lineFeaturesArray };
 
+    // Identificar propriedade de agrupamento
     let groupingProperty = null;
     const exampleLine = lineFeatures.features.find(f => f.properties && (f.properties.Alimentador || f.properties.name));
     if (exampleLine) {
@@ -77,6 +81,7 @@ export function addDataToMap(geojson, fileName, map) {
         state.selectedGroups.set(sourceId, new Set(groupsSet));
     }
 
+    // Adicionar arquivo ao estado
     state.files.push({
         name: fileName,
         sourceId: sourceId,
@@ -87,6 +92,7 @@ export function addDataToMap(geojson, fileName, map) {
         lineFeatures: lineFeatures
     });
 
+    // Adicionar marcadores
     if (pointFeatures.features.length > 0) {
         map.addSource(sourceId + '-markers', { type: 'geojson', data: pointFeatures });
         map.addLayer({
@@ -121,6 +127,7 @@ export function addDataToMap(geojson, fileName, map) {
         });
     }
 
+    // Adicionar linhas
     if (lineFeatures.features.length > 0) {
         map.addSource(sourceId + '-lines', { type: 'geojson', data: lineFeatures });
         map.addLayer({
@@ -134,31 +141,48 @@ export function addDataToMap(geojson, fileName, map) {
             layout: { 'visibility': state.linesVisible ? 'visible' : 'none' }
         });
     }
+
+    // Atualizar interface
+    updateGroupMenu(map);
+    updateLoadedFilesList(fileName, map);
 }
 
 // Resetar visão do mapa
 export function resetView(map) {
-    map.easeTo({ center: [-47.068847, -22.934973], zoom: 13 });
+    map.easeTo({
+        center: [-47.068847, -22.934973],
+        zoom: 13,
+        duration: 1000 // Suavizar transição
+    });
 }
 
 // Ir para localização atual
 let userLocationMarker;
 export function goToCurrentLocation(map) {
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition((position) => {
+    if (!navigator.geolocation) {
+        alert('Geolocalização não é suportada pelo seu navegador.');
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
             const userCoords = [position.coords.longitude, position.coords.latitude];
             state.userLocation = userCoords;
-            map.flyTo({ center: userCoords, zoom: 16 });
+            map.flyTo({
+                center: userCoords,
+                zoom: 16,
+                duration: 1000
+            });
             if (userLocationMarker) userLocationMarker.remove();
-            userLocationMarker = new maplibregl.Marker({ color: 'blue' })
+            userLocationMarker = new maplibregl.Marker({ color: '#4285F4' })
                 .setLngLat(userCoords)
                 .addTo(map);
-        }, () => {
+        },
+        () => {
             alert('Não foi possível obter sua localização.');
-        });
-    } else {
-        alert('Geolocalização não é suportada pelo seu navegador.');
-    }
+        },
+        { enableHighAccuracy: true }
+    );
 }
 
 // Trocar estilo do mapa
@@ -224,8 +248,12 @@ export function toggleMarkers(map) {
         if (file.hasMarkers) {
             const markerLayerId = `marker-circles-${file.sourceId}`;
             const labelLayerId = `marker-labels-${file.sourceId}`;
-            if (map.getLayer(markerLayerId)) map.setLayoutProperty(markerLayerId, 'visibility', visibility);
-            if (map.getLayer(labelLayerId)) map.setLayoutProperty(labelLayerId, 'visibility', visibility);
+            if (map.getLayer(markerLayerId)) {
+                map.setLayoutProperty(markerLayerId, 'visibility', visibility);
+            }
+            if (map.getLayer(labelLayerId)) {
+                map.setLayoutProperty(labelLayerId, 'visibility', visibility);
+            }
         }
     });
 }
@@ -237,7 +265,9 @@ export function toggleNames(map) {
     state.files.forEach(file => {
         if (file.hasMarkers) {
             const labelLayerId = `marker-labels-${file.sourceId}`;
-            if (map.getLayer(labelLayerId)) map.setLayoutProperty(labelLayerId, 'visibility', visibility);
+            if (map.getLayer(labelLayerId)) {
+                map.setLayoutProperty(labelLayerId, 'visibility', visibility);
+            }
         }
     });
 }
@@ -249,7 +279,9 @@ export function toggleLines(map) {
     state.files.forEach(file => {
         if (file.hasLines) {
             const lineLayerId = `lines-${file.sourceId}`;
-            if (map.getLayer(lineLayerId)) map.setLayoutProperty(lineLayerId, 'visibility', visibility);
+            if (map.getLayer(lineLayerId)) {
+                map.setLayoutProperty(lineLayerId, 'visibility', visibility);
+            }
         }
     });
 }
