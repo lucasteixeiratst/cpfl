@@ -570,7 +570,7 @@
             { name: 'MONTE MOR.kmz', url: './MONTE MOR.kmz' },
             { name: 'MORRO AGUDO.kmz', url: './MORRO AGUDO.kmz' },
             { name: 'MORRO DO CIPO.kmz', url: './MORRO DO CIPO.kmz' },
-            { name: 'NOVA GRANADA.kmz', url: './NOVA GRANADA.kmz' },
+            { name: 'NOVA GRANDA.kmz', url: './NOVA GRANDA.kmz' },
             { name: 'OCAUCU.kmz', url: './OCAUCU.kmz' },
             { name: 'OLIMPIA.kmz', url: './OLIMPIA.kmz' },
             { name: 'ORLANDIA.kmz', url: './ORLANDIA.kmz' },
@@ -788,8 +788,8 @@
             const input = document.createElement('input');
             input.type = 'file';
             input.accept = '.kml,.kmz';
-            input.onchange = async () => {
-                const file = input.files[0];
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
                 if (!file) return;
 
                 const reader = new FileReader();
@@ -822,10 +822,11 @@
                                     const coords = f.geometry.coordinates[0].map(c => `${c[0]} ${c[1]}`).join(',');
                                     wkt = `POLYGON((${coords}))`;
                                 } else if (f.geometry.type === 'MultiPolygon') {
-                                    const polygons = f.geometry.coordinates.map(polygon =>
-                                        `(${polygon[0].map(c => `${c[0]} ${c[1]}`).join(',')})`
-                                    ).join(',');
-                                    wkt = `MULTIPOLYGON(${polygons})`;
+                                    const polygons = f.geometry.coordinates.map(polygon => {
+                                        const rings = polygon.map(ring => `(${ring.map(c => `${c[0]} ${c[1]}`).join(',')})`);
+                                        return `(${rings.join(',')})`;
+                                    });
+                                    wkt = `MULTIPOLYGON(${polygons.join(',')})`;
                                 }
 
                                 if (wkt) {
@@ -1113,7 +1114,7 @@
 
         function getTotalGroups(sourceId, groupingProperty) {
             const lineSource = map.getSource(`${sourceId}-lines`);
-            if (lineSource && lineSource._data.features) {
+            if (lineSource && lineSource._data && lineSource._data.features) {
                 const allGroups = new Set();
                 lineSource._data.features.forEach(feature => {
                     if (feature.properties && feature.properties[groupingProperty]) {
@@ -1139,10 +1140,10 @@
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const contentType = response.headers.get("content-type");
                 let data;
-                if (contentType.includes("application/vnd.google-earth.kmz")) {
+                if (contentType && contentType.includes("application/vnd.google-earth.kmz")) {
                     const arrayBuffer = await response.arrayBuffer();
                     data = await parseKMZ(arrayBuffer);
-                } else if (contentType.includes("application/vnd.google-earth.kml+xml")) {
+                } else if (contentType && contentType.includes("application/vnd.google-earth.kml+xml")) {
                     const text = await response.text();
                     data = toGeoJSON.kml(new DOMParser().parseFromString(text, 'text/xml'));
                 } else {
@@ -1160,7 +1161,7 @@
             const input = document.createElement('input');
             input.type = 'file';
             input.accept = '.kml,.kmz';
-            input.onchange = handleFile;
+            input.onchange = (e) => handleFile(e);
             input.click();
         }
 
@@ -1171,9 +1172,12 @@
             const reader = new FileReader();
             reader.onload = async () => {
                 try {
-                    const data = file.name.endsWith('.kmz')
-                        ? await parseKMZ(reader.result)
-                        : toGeoJSON.kml(new DOMParser().parseFromString(reader.result, 'text/xml'));
+                    let data;
+                    if (file.name.endsWith('.kmz')) {
+                        data = await parseKMZ(reader.result);
+                    } else {
+                        data = toGeoJSON.kml(new DOMParser().parseFromString(reader.result, 'text/xml'));
+                    }
                     addDataToMap(data, file.name);
                 } catch (error) {
                     console.error('Erro ao processar o arquivo:', error);
@@ -1202,7 +1206,7 @@
                     const sourceId = file.sourceId;
                     const groupingProperty = file.groupingProperty;
                     const lineSource = map.getSource(`${sourceId}-lines`);
-                    if (lineSource && lineSource._data.features) {
+                    if (lineSource && lineSource._data && lineSource._data.features) {
                         const allGroups = new Set();
                         lineSource._data.features.forEach(feature => {
                             if (feature.properties && feature.properties[groupingProperty]) {
@@ -1278,27 +1282,41 @@
         }
 
         function getFeatureCenter(feature) {
-            let center;
-            if (feature.geometry?.type === 'Point') {
-                center = feature.geometry.coordinates;
-            } else {
-                const coordinates = [];
-                function extractCoords(coords) {
-                    if (typeof coords[0] === 'number') {
-                        coordinates.push(coords);
-                    } else {
-                        coords.forEach(c => extractCoords(c));
+            if (!feature.geometry) return null;
+
+            let coordinates;
+            switch (feature.geometry.type) {
+                case 'Point':
+                    return feature.geometry.coordinates;
+                case 'LineString':
+                case 'MultiPoint':
+                    coordinates = feature.geometry.coordinates;
+                    break;
+                case 'Polygon':
+                case 'MultiLineString':
+                    coordinates = feature.geometry.coordinates.flat();
+                    break;
+                case 'MultiPolygon':
+                    coordinates = feature.geometry.coordinates.flat(2);
+                    break;
+                case 'GeometryCollection':
+                    // Vamos pegar a primeira geometria que tiver coordenadas
+                    for (const geom of feature.geometry.geometries) {
+                        const center = getFeatureCenter({ geometry: geom });
+                        if (center) return center;
                     }
-                }
-                extractCoords(feature.geometry?.coordinates || []);
-                if (!coordinates.length) return null;
-                const lons = coordinates.map(c => c[0]);
-                const lats = coordinates.map(c => c[1]);
-                const avgLon = lons.reduce((a, b) => a + b, 0) / lons.length;
-                const avgLat = lats.reduce((a, b) => a + b, 0) / lats.length;
-                center = [avgLon, avgLat];
+                    return null;
+                default:
+                    return null;
             }
-            return center;
+
+            if (!coordinates || coordinates.length === 0) return null;
+
+            const lons = coordinates.map(c => c[0]);
+            const lats = coordinates.map(c => c[1]);
+            const avgLon = lons.reduce((a, b) => a + b, 0) / lons.length;
+            const avgLat = lats.reduce((a, b) => a + b, 0) / lats.length;
+            return [avgLon, avgLat];
         }
 
         function computeDistance(coord1, coord2) {
@@ -1322,28 +1340,28 @@
             state.files.forEach(file => {
                 if (file.hasMarkers) {
                     const markerSource = map.getSource(`${file.sourceId}-markers`);
-                    if (markerSource && markerSource._data.features) {
-                        markerSource._data.forEach(feature => {
+                    if (markerSource && markerSource._data && markerSource._data.features) {
+                        markerSource._data.features.forEach(feature => {
                             if (feature.properties && (
                                 (feature.properties.name && feature.properties.name.toLowerCase().includes(term)) ||
                                 (feature.properties.Alimentador && feature.properties.Alimentador.toLowerCase().includes(term))
                             )) {
                                 matches.push({ feature, source: 'local' });
-                            });
-                        }
+                            }
+                        });
                     }
                 }
                 if (file.hasLines) {
                     const lineSource = map.getSource(`${file.sourceId}-lines`);
-                    if (lineSource && lineSource._data.features) {
+                    if (lineSource && lineSource._data && lineSource._data.features) {
                         lineSource._data.features.forEach(feature => {
                             if (feature.properties && (
                                 (feature.properties.name && feature.properties.name.toLowerCase().includes(term)) ||
                                 (feature.properties.Alimentador && feature.properties.Alimentador.toLowerCase().includes(term))
                             )) {
                                 matches.push({ feature, source: 'local' });
-                            });
-                        }
+                            }
+                        });
                     }
                 }
             });
@@ -1388,19 +1406,22 @@
             const ul = document.createElement('ul');
 
             results.forEach(result => {
-                const { feature, source } = result;
+                const { feature } = result;
                 const li = document.createElement('li');
-                const nameSpan = li.document.createElement('span');
+                const nameSpan = document.createElement('span');
                 const displayName = feature.properties.name || feature.properties.Alimentador || 'Sem nome';
-                nameSpan.textContent = `${displayName} (${(feature.properties?.distance / 1000)?.toFixed(2)} km)` || displayName;
+                const distance = feature.properties.distance ? `(${(feature.properties.distance / 1000).toFixed(2)} km)` : '';
+                nameSpan.textContent = `${displayName} ${distance}`;
 
                 const viewButton = document.createElement('button');
                 viewButton.textContent = 'Visualizar';
                 viewButton.onclick = async () => {
                     const center = getFeatureCenter(feature);
                     if (center) {
-                        await if fetchNearbyDataFromSupabase(state.useSupabase, center && center);
-                        map.setCenter(center, { zoom: 16 });
+                        if (state.useSupabase) {
+                            await fetchNearbyDataFromSupabase(center);
+                        }
+                        map.flyTo({ center, zoom: 16 });
                         searchResultsDiv.innerHTML = '';
                     } else {
                         alert('Não foi possível determinar o centro da feição.');
@@ -1541,13 +1562,17 @@
 
         const menuButtons = document.querySelectorAll('.menu button');
         menuButtons.forEach(button => {
-            button.addEventListener('click', () => {
+            button.addEventListener('mouseenter', () => {
                 const legend = button.querySelector('.button-legend');
                 if (legend) {
                     legend.style.display = 'block';
-                    setTimeout(() => {
-                        legend.style.display = 'none';
-                    }, 5000);
+                }
+            });
+            
+            button.addEventListener('mouseleave', () => {
+                const legend = button.querySelector('.button-legend');
+                if (legend) {
+                    legend.style.display = 'none';
                 }
             });
         });
