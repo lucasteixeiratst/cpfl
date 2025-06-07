@@ -1,23 +1,17 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <!-- Metadados -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Visualizador de mapas interativo com suporte a arquivos KMZ/KML">
     <title>Visualizador de Mapas</title>
-
-    <!-- Estilos -->
-    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="styles.css">
     <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" integrity="sha384-DHac3ypb3c1zT4y1dW0Rd2Nk8eF5A2iGZTz2zBzg7+Um3Kzfvtw4wB+zML+Ey5xM" crossorigin="anonymous">
 </head>
 <body>
-    <!-- Mapa principal -->
     <main>
         <div id="map" role="region" aria-label="Mapa interativo"></div>
     </main>
-
-    <!-- Menu de navegação -->
     <nav class="menu" aria-label="Menu de navegação principal">
         <button id="btnKMZ" aria-label="Carregar arquivos KMZ ou KML">
             <img src="https://img.icons8.com/ios-filled/50/upload.png" alt="">
@@ -56,25 +50,17 @@
             <span class="button-legend">Estilos do Mapa</span>
         </button>
     </nav>
-
-    <!-- Barra de busca -->
     <div class="search-bar" role="search">
         <input type="text" id="searchInput" placeholder="Buscar no mapa..." aria-label="Buscar no mapa">
         <button id="btnSearch" aria-label="Iniciar busca">Buscar</button>
     </div>
-
-    <!-- Resultados da busca -->
     <div id="searchResults" class="search-results" aria-live="polite"></div>
-
-    <!-- Menu de arquivos KMZ/KML -->
     <div class="kmz-menu" id="kmzMenu" role="menu" aria-label="Menu de seleção de arquivos KMZ/KML">
         <ul id="kmzList" aria-label="Lista de arquivos KMZ/KML disponíveis"></ul>
         <ul>
             <li id="selectDevice" role="menuitem" tabindex="0">Selecionar do dispositivo...</li>
         </ul>
     </div>
-
-    <!-- Menu de grupos de linhas -->
     <div class="line-menu" id="lineMenu" role="menu" aria-label="Menu de filtros de grupos de linhas">
         <div class="menu-controls">
             <button id="hideAll" aria-label="Ocultar todas as linhas">Ocultar Todas</button>
@@ -82,27 +68,19 @@
         </div>
         <ul id="lineGroupsList" aria-label="Lista de grupos de linhas"></ul>
     </div>
-
-    <!-- Menu de arquivos carregados -->
     <div class="loaded-files-menu" id="loadedFilesMenu" role="menu" aria-label="Menu de arquivos carregados">
         <h3>Arquivos Carregados</h3>
         <ul id="loadedFilesList" aria-label="Lista de arquivos carregados"></ul>
     </div>
-
-    <!-- Menu de estilos do mapa -->
     <div class="style-menu" id="styleMenu" role="menu" aria-label="Menu de seleção de estilos de mapa">
         <ul id="styleList" aria-label="Lista de estilos de mapa disponíveis"></ul>
     </div>
-
-    <!-- Rodapé -->
     <footer aria-label="Rodapé">
         Todos direitos reservados a Lucas Teixeira.
     </footer>
-
-    <!-- Scripts -->
     <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js" integrity="sha384-cxH0sW3z63i1o3D6IfbT40D+xq7T5+OuT1zKnMI0tOCCj8iHLTKXOH2qS3S9JOVZ" crossorigin="anonymous"></script>
     <script src="https://unpkg.com/@tmcw/togeojson@6.0.2/dist/togeojson.umd.js" integrity="sha384-+kL+wzI3+jzO9cghzPwU7UGT6o9vXR4H6zM3l0Y8fS0gP1C5i2+1oUjG8L7uH1H2" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha512-XMVd28F1oH/O71fzwBnV7HucLxVwtxf26XV8P4wPk26EDxuGZ91N8bsOttmnomcCD3CS5ZMRL50H0GgOHvegtg==" crossorigin="anonymous"></script>
-    <script type="module" src="js/main.js"></script>
+    <script type="module" src="main.js"></script>
 </body>
 </html>
