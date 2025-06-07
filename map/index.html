@@ -11,16 +11,151 @@
             padding: 0;
             height: 100%;
             overflow: hidden;
+            font-family: Arial, sans-serif;
         }
         #map {
             height: 100%;
             width: 100%;
             border: 2px solid red; /* Para depuração */
         }
+        .menu {
+            position: absolute;
+            top: 50%;
+            left: 20px;
+            transform: translateY(-50%);
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            padding: 10px 0;
+        }
+        .menu button {
+            background-color: #ffffff;
+            border: none;
+            padding: 10px;
+            margin: 5px 0;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+        }
+        .menu button img {
+            width: 20px;
+            height: 20px;
+        }
+        .button-legend {
+            display: none;
+            position: absolute;
+            left: 50px;
+            background: rgba(255,255,255,0.9);
+            padding: 5px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .search-bar {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 300px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            display: flex;
+            gap: 10px;
+        }
+        .search-bar input {
+            flex: 1;
+            border: none;
+            outline: none;
+            padding: 10px;
+            font-size: 14px;
+        }
+        .search-bar button {
+            background-color: #4285F4;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .kmz-menu, .line-menu, .loaded-files-menu, .style-menu {
+            position: absolute;
+            top: 80px;
+            left: 80px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            padding: 10px;
+            display: none;
+        }
     </style>
 </head>
 <body>
     <div id="map"></div>
+    <nav class="menu">
+        <button id="btnKMZ">
+            <img src="https://img.icons8.com/ios-filled/50/upload.png" alt="">
+            <span class="button-legend">Carregar KMZ/KML</span>
+        </button>
+        <button id="btnMarkers">
+            <img src="https://img.icons8.com/material-outlined/24/map-pin.png" alt="">
+            <span class="button-legend">Exibir/Ocultar Marcadores</span>
+        </button>
+        <button id="btnNames">
+            <img src="https://img.icons8.com/material-outlined/24/name.png" alt="">
+            <span class="button-legend">Exibir/Ocultar Nomes</span>
+        </button>
+        <button id="btnLines">
+            <img src="https://img.icons8.com/material-outlined/24/polyline.png" alt="">
+            <span class="button-legend">Exibir/Ocultar Linhas</span>
+        </button>
+        <button id="btnReset">
+            <img src="https://img.icons8.com/material-outlined/24/refresh.png" alt="">
+            <span class="button-legend">Resetar Visão</span>
+        </button>
+        <button id="btnLocation">
+            <img src="https://img.icons8.com/material-outlined/24/compass.png" alt="">
+            <span class="button-legend">Minha Localização</span>
+        </button>
+        <button id="btnLineGroups">
+            <img src="https://img.icons8.com/material-outlined/24/layers.png" alt="">
+            <span class="button-legend">Grupos de Linhas</span>
+        </button>
+        <button id="btnLoadedFiles">
+            <img src="https://img.icons8.com/material-outlined/24/folder-invoices.png" alt="">
+            <span class="button-legend">Arquivos Carregados</span>
+        </button>
+        <button id="btnStyles">
+            <img src="https://img.icons8.com/material-outlined/24/paint.png" alt="">
+            <span class="button-legend">Estilos do Mapa</span>
+        </button>
+    </nav>
+    <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="Buscar no mapa...">
+        <button id="btnSearch">Buscar</button>
+    </div>
+    <div class="kmz-menu" id="kmzMenu">
+        <ul id="kmzList"></ul>
+        <ul><li id="selectDevice">Selecionar do dispositivo...</li></ul>
+    </div>
+    <div class="line-menu" id="lineMenu">
+        <div class="menu-controls">
+            <button id="hideAll">Ocultar Todas</button>
+            <button id="showAll">Exibir Todas</button>
+        </div>
+        <ul id="lineGroupsList"></ul>
+    </div>
+    <div class="loaded-files-menu" id="loadedFilesMenu">
+        <h3>Arquivos Carregados</h3>
+        <ul id="loadedFilesList"></ul>
+    </div>
+    <div class="style-menu" id="styleMenu">
+        <ul id="styleList"></ul>
+    </div>
     <script src="maplibre-gl.js"></script>
     <script src="togeojson.umd.js"></script>
     <script src="jszip.min.js"></script>
