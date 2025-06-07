@@ -200,8 +200,8 @@
 
         .line-menu {
             position: absolute;
-            top: 80px;
-            left: 100px;
+            top: 80px;  
+            left: 100px; 
             background: #fff;
             border-radius: 8px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.2);
@@ -354,6 +354,10 @@
             <img src="https://img.icons8.com/ios-filled/50/000000/upload.png" alt="Upload">
             <div class="button-legend">Carregar KMZ/KML</div>
         </button>
+        <button id="btnUploadToSupabase">
+            <img src="https://img.icons8.com/material-outlined/24/000000/database.png" alt="Upload to Supabase">
+            <div class="button-legend">Enviar para Supabase</div>
+        </button>
         <button id="btnMarkers">
             <img src="https://img.icons8.com/material-outlined/24/000000/map-pin.png" alt="Marcadores">
             <div class="button-legend">Exibir/Ocultar Marcadores</div>
@@ -425,8 +429,8 @@
 
     <script>
         // Initialize Supabase client
-        const supabaseUrl = 'YOUR_SUPABASE_URL'; // Replace with your Supabase URL
-        const supabaseKey = 'YOUR_SUPABASE_ANON_KEY'; // Replace with your Supabase Anon Key
+        const supabaseUrl = 'YOUR_SUPABASE_URL'; // Replace with your Supabase Project URL
+        const supabaseKey = 'YOUR_SUPABASE_ANON_KEY'; // Replace with your Supabase Anon Public Key
         const supabase = Supabase.createClient(supabaseUrl, supabaseKey);
 
         const state = {
@@ -461,22 +465,126 @@
         const btnLoadedFiles = document.getElementById('btnLoadedFiles');
         const styleMenu = document.getElementById('styleMenu');
 
-        async function fetchFilesFromSupabase() {
-            const { data, error } = await supabase
-                .from('files')
-                .select('name');
-            if (error) {
-                console.error('Erro ao buscar arquivos do Supabase:', error);
-                alert('Erro ao carregar a lista de arquivos.');
-                return [];
-            }
-            return data.map(file => ({
-                name: file.name,
-                url: `${supabaseUrl}/storage/v1/object/public/kmz-files/${file.name}`
-            }));
-        }
+        const predefinedFiles = [
+            { name: 'AGUAS DE LINDOIA.kmz', url: './AGUAS DE LINDOIA.kmz' },
+            { name: 'AGUDOS.kmz', url: './AGUDOS.kmz' },
+            { name: 'ALTINOPOLIS.kmz', url: './ALTINOPOLIS.kmz' },
+            { name: 'AMERICANA.kmz', url: './AMERICANA.kmz' },
+            { name: 'AMPARO.kmz', url: './AMPARO.kmz' },
+            { name: 'ARACATUBA.kmz', url: './ARACATUBA.kmz' },
+            { name: 'ARARAQUARA.kmz', url: './ARARAQUARA.kmz' },
+            { name: 'BARIRI.kmz', url: './BARIRI.kmz' },
+            { name: 'BARRA BONITA.kmz', url: './BARRA BONITA.kmz' },
+            { name: 'BARRETOS.kmz', url: './BARRETOS.kmz' },
+            { name: 'BATATAIS.kmz', url: './BATATAIS.kmz' },
+            { name: 'BAURU.kmz', url: './BAURU.kmz' },
+            { name: 'BEBEDOURO.kmz', url: './BEBEDOURO.kmz' },
+            { name: 'BIRIGUI.kmz', url: './BIRIGUI.kmz' },
+            { name: 'BOA ESPERANCA DO SUL.kmz', url: './BOA ESPERANCA DO SUL.kmz' },
+            { name: 'BOTUCATU.kmz', url: './BOTUCATU.kmz' },
+            { name: 'BRAUNA.kmz', url: './BRAUNA.kmz' },
+            { name: 'BROTAS.kmz', url: './BROTAS.kmz' },
+            { name: 'CAFELANDIA.kmz', url: './CAFELANDIA.kmz' },
+            { name: 'CAJOBI.kmz', url: './CAJOBI.kmz' },
+            { name: 'CAJURU.kmz', url: './CAJURU.kmz' },
+            { name: 'CAMPINAS BARAO GERALDO-1.kmz', url: './CAMPINAS BARAO GERALDO-1.kmz' },
+            { name: 'CAMPINAS CAMPO GRANDE-1.kmz', url: './CAMPINAS CAMPO GRANDE-1.kmz' },
+            { name: 'CAMPINAS CENTRO-1.kmz', url: './CAMPINAS CENTRO-1.kmz' },
+            { name: 'CAMPINAS SOUZAS-1.kmz', url: './CAMPINAS SOUZAS-1.kmz' },
+            { name: 'CAMPINAS TREVO-1.kmz', url: './CAMPINAS TREVO-1.kmz' },
+            { name: 'CAPIVARI.kmz', url: './CAPIVARI.kmz' },
+            { name: 'CONGONHAS.kmz', url: './CONGONHAS.kmz' },
+            { name: 'COSMOPOLIS.kmz', url: './COSMOPOLIS.kmz' },
+            { name: 'CRAVINHOS.kmz', url: './CRAVINHOS.kmz' },
+            { name: 'DESCALVADO.kmz', url: './DESCALVADO.kmz' },
+            { name: 'DOIS CORREGOS.kmz', url: './DOIS CORREGOS.kmz' },
+            { name: 'DOURADO.kmz', url: './DOURADO.kmz' },
+            { name: 'DUARTINA.kmz', url: './DUARTINA.kmz' },
+            { name: 'ESPIRITO SANTO DO PINHAL.kmz', url: './ESPIRITO SANTO DO PINHAL.kmz' },
+            { name: 'FRANCA.kmz', url: './FRANCA.kmz' },
+            { name: 'GARCA.kmz', url: './GARCA.kmz' },
+            { name: 'GAVIAO PEIXOTO.kmz', url: './GAVIAO PEIXOTO.kmz' },
+            { name: 'GETULINA.kmz', url: './GETULINA.kmz' },
+            { name: 'GUAIRA.kmz', url: './GUAIRA.kmz' },
+            { name: 'GUANABARA.kmz', url: './GUANABARA.kmz' },
+            { name: 'GUARARAPES.kmz', url: './GUARARAPES.kmz' },
+            { name: 'GUARIBA.kmz', url: './GUARIBA.kmz' },
+            { name: 'HIPODROMO.kmz', url: './HIPODROMO.kmz' },
+            { name: 'HORTOLANDIA.kmz', url: './HORTOLANDIA.kmz' },
+            { name: 'IACANGA.kmz', url: './IACANGA.kmz' },
+            { name: 'IBIRA.kmz', url: './IBIRA.kmz' },
+            { name: 'IBITINGA.kmz', url: './IBITINGA.kmz' },
+            { name: 'IGARAPAVA.kmz', url: './IGARAPAVA.kmz' },
+            { name: 'IPUA.kmz', url: './IPUA.kmz' },
+            { name: 'ITAPIRA.kmz', url: './ITAPIRA.kmz' },
+            { name: 'ITAPOLIS.kmz', url: './ITAPOLIS.kmz' },
+            { name: 'ITATIBA.kmz', url: './ITATIBA.kmz' },
+            { name: 'ITATINGA.kmz', url: './ITATINGA.kmz' },
+            { name: 'ITUVERAVA.kmz', url: './ITUVERAVA.kmz' },
+            { name: 'JABOTICABAL.kmz', url: './JABOTICABAL.kmz' },
+            { name: 'JARDINOPOLIS.kmz', url: './JARDINOPOLIS.kmz' },
+            { name: 'JAU.kmz', url: './JAU.kmz' },
+            { name: 'JOSE BONIFACIO.kmz', url: './JOSE BONIFACIO.kmz' },
+            { name: 'LENCOIS PAULISTA.kmz', url: './LENCOIS PAULISTA.kmz' },
+            { name: 'LINS.kmz', url: './LINS.kmz' },
+            { name: 'MARILIA.kmz', url: './MARILIA.kmz' },
+            { name: 'MATAO.kmz', url: './MATAO.kmz' },
+            { name: 'METROPOLITANA.kmz', url: './METROPOLITANA.kmz' },
+            { name: 'MIGUELOPOLIS.kmz', url: './MIGUELOPOLIS.kmz' },
+            { name: 'MIRASSOL.kmz', url: './MIRASSOL.kmz' },
+            { name: 'MONTE ALTO.kmz', url: './MONTE ALTO.kmz' },
+            { name: 'MONTE APRAZIVEL.kmz', url: './MONTE APRAZIVEL.kmz' },
+            { name: 'MONTE MOR.kmz', url: './MONTE MOR.kmz' },
+            { name: 'MORRO AGUDO.kmz', url: './MORRO AGUDO.kmz' },
+            { name: 'MORRO DO CIPO.kmz', url: './MORRO DO CIPO.kmz' },
+            { name: 'NOVA GRANADA.kmz', url: './NOVA GRANADA.kmz' },
+            { name: 'OCAUCU.kmz', url: './OCAUCU.kmz' },
+            { name: 'OLIMPIA.kmz', url: './OLIMPIA.kmz' },
+            { name: 'ORLANDIA.kmz', url: './ORLANDIA.kmz' },
+            { name: 'PARAISO.kmz', url: './PARAISO.kmz' },
+            { name: 'PARDINHO.kmz', url: './PARDINHO.kmz' },
+            { name: 'PAULINIA.kmz', url: './PAULINIA.kmz' },
+            { name: 'PEDERNEIRAS.kmz', url: './PEDERNEIRAS.kmz' },
+            { name: 'PEDREGULHO.kmz', url: './PEDREGULHO.kmz' },
+            { name: 'PENAPOLIS.kmz', url: './PENAPOLIS.kmz' },
+            { name: 'PIACATU.kmz', url: './PIACATU.kmz' },
+            { name: 'PIRACICABA SANTA CECILIA.kmz', url: './PIRACICABA SANTA CECILIA.kmz' },
+            { name: 'PIRACICABA SANTA TEREZINHA.kmz', url: './PIRACICABA SANTA TEREZINHA.kmz' },
+            { name: 'PIRACICABA.kmz', url: './PIRACICABA.kmz' },
+            { name: 'PIRAJUI - EA.kmz', url: './PIRAJUI - EA.kmz' },
+            { name: 'PIRANGI.kmz', url: './PIRANGI.kmz' },
+            { name: 'PITANGUEIRAS.kmz', url: './PITANGUEIRAS.kmz' },
+            { name: 'POMPEIA.kmz', url: './POMPEIA.kmz' },
+            { name: 'PRESIDENTE ALVES.kmz', url: './PRESIDENTE ALVES.kmz' },
+            { name: 'PROMISSAO.kmz', url: './PROMISSAO.kmz' },
+            { name: 'RESTINGA.kmz', url: './RESTINGA.kmz' },
+            { name: 'RIBEIRAO PRETO NORTE.kmz', url: './RIBEIRAO PRETO NORTE.kmz' },
+            { name: 'RIBEIRAO PRETO SUL.kmz', url: './RIBEIRAO PRETO SUL.kmz' },
+            { name: 'RINCAO.kmz', url: './RINCAO.kmz' },
+            { name: 'SANTA ADELIA.kmz', url: './SANTA ADELIA.kmz' },
+            { name: 'SANTA BARBARA DOESTE.kmz', url: './SANTA BARBARA DOESTE.kmz' },
+            { name: 'SANTA ROSA DE VITERBO.kmz', url: './SANTA ROSA DE VITERBO.kmz' },
+            { name: 'SANTO ANTONIO ARACANGUA.kmz', url: './SANTO ANTONIO ARACANGUA.kmz' },
+            { name: 'SAO CARLOS.kmz', url: './SAO CARLOS.kmz' },
+            { name: 'SAO JOAQUIM DA BARRA.kmz', url: './SAO JOAQUIM DA BARRA.kmz' },
+            { name: 'SAO JOSE RIO PRETO.kmz', url: './SAO JOSE RIO PRETO.kmz' },
+            { name: 'SAO MANUEL.kmz', url: './SAO MANUEL.kmz' },
+            { name: 'SAO PEDRO.kmz', url: './SAO PEDRO.kmz' },
+            { name: 'SAO SIMAO.kmz', url: './SAO SIMAO.kmz' },
+            { name: 'SERRA NEGRA.kmz', url: './SERRA NEGRA.kmz' },
+            { name: 'SERRANA.kmz', url: './SERRANA.kmz' },
+            { name: 'SERTAOZINHO.kmz', url: './SERTAOZINHO.kmz' },
+            { name: 'SOCORRO.kmz', url: './SOCORRO.kmz' },
+            { name: 'SUMARE.kmz', url: './SUMARE.kmz' },
+            { name: 'TANABI.kmz', url: './TANABI.kmz' },
+            { name: 'TAQUARITINGA.kmz', url: './TAQUARITINGA.kmz' },
+            { name: 'UIRAPURU.kmz', url: './UIRAPURU.kmz' },
+            { name: 'VALINHOS.kmz', url: './VALINHOS.kmz' },
+            { name: 'VALPARAISO.kmz', url: './VALPARAISO.kmz' },
+            { name: ' "“VIRADOURO.kmz', url: './VIRADOURO.kmz' }
+        ];
 
-        async function updateRecentFiles(fileName) {
+        function updateRecentFiles(fileName) {
             let recentFiles = JSON.parse(localStorage.getItem('recentFiles') || '[]');
             recentFiles = recentFiles.filter(f => f !== fileName);
             recentFiles.unshift(fileName);
@@ -484,9 +592,8 @@
             localStorage.setItem('recentFiles', JSON.stringify(recentFiles));
         }
 
-        async function displayFileList() {
+        function displayFileList() {
             kmzList.innerHTML = '';
-            const predefinedFiles = await fetchFilesFromSupabase();
             const recentFiles = JSON.parse(localStorage.getItem('recentFiles') || '[]');
             const recentFileSet = new Set(recentFiles);
 
@@ -516,14 +623,13 @@
         map.on('load', () => {
             const lastFile = localStorage.getItem('lastSelectedFile');
             if (lastFile) {
-                fetchFilesFromSupabase().then(files => {
-                    const file = files.find(f => f.name === lastFile);
-                    if (file) loadKMZFromURL(file.url, file.name);
-                });
+                const file = predefinedFiles.find(f => f.name === lastFile);
+                if (file) loadKMZFromURL(file.url, file.name);
             }
         });
 
         document.getElementById('btnKMZ').addEventListener('click', () => toggleVisibility(kmzMenu));
+        document.getElementById('btnUploadToSupabase').addEventListener('click', uploadToSupabase);
         document.getElementById('btnMarkers').addEventListener('click', toggleMarkers);
         document.getElementById('btnNames').addEventListener('click', toggleNames);
         document.getElementById('btnLines').addEventListener('click', toggleLines);
@@ -536,7 +642,7 @@
                 toggleVisibility(lineMenu);
             }
         });
-        btnLoadedFiles.addEventListener('click', () => toggleVisibility(loadedFilesMenu));
+        document.getElementById('btnLoadedFiles').addEventListener('click', () => toggleVisibility(loadedFilesMenu));
         document.getElementById('btnSearch').addEventListener('click', searchFeatures);
         document.getElementById('selectDevice').addEventListener('click', selectFromDevice);
         document.getElementById('hideAll').addEventListener('click', hideAllGroups);
@@ -550,42 +656,12 @@
             element.style.display = (element.style.display === 'block') ? 'none' : 'block';
         }
 
-        async function selectFromDevice() {
+        function selectFromDevice() {
             kmzMenu.style.display = 'none';
             const input = document.createElement('input');
             input.type = 'file';
             input.accept = '.kml,.kmz';
-            input.onchange = async (event) => {
-                const file = event.target.files[0];
-                if (!file) return;
-
-                // Upload file to Supabase Storage
-                const { error: uploadError } = await supabase.storage
-                    .from('kmz-files')
-                    .upload(file.name, file, {
-                        upsert: true
-                    });
-
-                if (uploadError) {
-                    console.error('Erro ao fazer upload do arquivo:', uploadError);
-                    alert('Erro ao fazer upload do arquivo para o Supabase.');
-                    return;
-                }
-
-                // Add file metadata to Supabase database
-                const { error: dbError } = await supabase
-                    .from('files')
-                    .upsert([{ name: file.name }]);
-
-                if (dbError) {
-                    console.error('Erro ao salvar metadados do arquivo:', dbError);
-                    alert('Erro ao salvar metadados do arquivo.');
-                    return;
-                }
-
-                // Process and load the file
-                handleFile(event);
-            };
+            input.onchange = handleFile;
             input.click();
         }
 
@@ -611,7 +687,7 @@
             }
         }
 
-        function handleFile(event) {
+        async function handleFile(event) {
             const file = event.target.files[0];
             if (!file) return;
 
@@ -643,6 +719,103 @@
             if (!kmlFile) throw new Error('Arquivo KML não encontrado dentro do KMZ.');
             const kmlContent = await kmlFile.async('string');
             return toGeoJSON.kml(new DOMParser().parseFromString(kmlContent, 'text/xml'));
+        }
+
+        async function uploadToSupabase() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.kml,.kmz';
+            input.onchange = async (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = async () => {
+                    try {
+                        let geojson;
+                        if (file.name.endsWith('.kmz')) {
+                            geojson = await parseKMZ(reader.result);
+                        } else {
+                            geojson = toGeoJSON.kml(new DOMParser().parseFromString(reader.result, 'text/xml'));
+                        }
+
+                        // Prepare data for Supabase
+                        const elementsToInsert = [];
+                        geojson.features.forEach(feature => {
+                            const geometries = feature.geometry.type === 'GeometryCollection'
+                                ? feature.geometry.geometries.map(geom => ({ ...feature, geometry: geom }))
+                                : [feature];
+
+                            geometries.forEach(f => {
+                                let wkt;
+                                if (f.geometry.type === 'Point') {
+                                    const [lon, lat] = f.geometry.coordinates;
+                                    wkt = `POINT(${lon} ${lat})`;
+                                } else if (f.geometry.type === 'LineString') {
+                                    const coords = f.geometry.coordinates.map(c => `${c[0]} ${c[1]}`).join(',');
+                                    wkt = `LINESTRING(${coords})`;
+                                } else if (f.geometry.type === 'Polygon') {
+                                    const coords = f.geometry.coordinates[0].map(c => `${c[0]} ${c[1]}`).join(',');
+                                    wkt = `POLYGON((${coords}))`;
+                                }
+
+                                if (wkt) {
+                                    elementsToInsert.push({
+                                        name: f.properties?.name || f.properties?.Alimentador || '',
+                                        description: f.properties?.description || '',
+                                        geom: wkt,
+                                        style_id: f.properties?.styleUrl || `style_${Math.random().toString(36).substr(2, 9)}`,
+                                        file_name: file.name
+                                    });
+
+                                    // Insert style if it exists
+                                    if (f.properties?.styleUrl) {
+                                        const styleData = {
+                                            style_id: f.properties.styleUrl,
+                                            icon_href: f.properties?.icon?.href || null,
+                                            line_color: f.properties?.color || null,
+                                            line_width: f.geometry.type === 'LineString' ? 3 : null,
+                                            poly_color: f.geometry.type === 'Polygon' ? f.properties?.color || null : null
+                                        };
+                                        supabase.from('styles').upsert([styleData], { onConflict: 'style_id' }).then(({ error }) => {
+                                            if (error) console.error('Error inserting style:', error);
+                                        });
+                                    }
+                                }
+                            });
+                        });
+
+                        // Insert elements into Supabase
+                        const { error } = await supabase.from('kml_elements').insert(elementsToInsert.map(elem => ({
+                            name: elem.name,
+                            description: elem.description,
+                            geom: elem.geom,
+                            style_id: elem.style_id,
+                            file_name: elem.file_name
+                        })));
+
+                        if (error) {
+                            console.error('Error uploading to Supabase:', error);
+                            alert('Erro ao enviar dados para o Supabase.');
+                        } else {
+                            alert('Dados enviados com sucesso para o Supabase!');
+                            addDataToMap(geojson, file.name); // Add to map after successful upload
+                            localStorage.setItem('lastSelectedFile', file.name);
+                            updateRecentFiles(file.name);
+                            displayFileList();
+                        }
+                    } catch (error) {
+                        console.error('Erro ao processar o arquivo:', error);
+                        alert('Erro ao processar o arquivo KML/KMZ.');
+                    }
+                };
+                if (file.name.endsWith('.kmz')) {
+                    reader.readAsArrayBuffer(file);
+                } else {
+                    reader.readAsText(file);
+                }
+            };
+            input.click();
         }
 
         function addDataToMap(geojson, fileName) {
@@ -813,31 +986,9 @@
             li.textContent = fileName;
             const removeBtn = document.createElement('button');
             removeBtn.textContent = 'Remover';
-            removeBtn.addEventListener('click', async () => {
-                // Remove file from Supabase Storage
-                const { error: storageError } = await supabase.storage
-                    .from('kmz-files')
-                    .remove([fileName]);
-                if (storageError) {
-                    console.error('Erro ao remover arquivo do Supabase:', storageError);
-                    alert('Erro ao remover arquivo do Supabase.');
-                    return;
-                }
-
-                // Remove file metadata from Supabase database
-                const { error: dbError } = await supabase
-                    .from('files')
-                    .delete()
-                    .eq('name', fileName);
-                if (dbError) {
-                    console.error('Erro ao remover metadados do arquivo:', dbError);
-                    alert('Erro ao remover metadados do arquivo.');
-                    return;
-                }
-
+            removeBtn.addEventListener('click', () => {
                 removeFileFromMap(fileName);
                 li.remove();
-                displayFileList();
             });
             li.appendChild(removeBtn);
             loadedFilesList.appendChild(li);
