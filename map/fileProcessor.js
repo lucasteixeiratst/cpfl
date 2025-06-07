@@ -29,15 +29,21 @@ export function displayFileList() {
     const sortedOthers = others.sort((a, b) => a.name.localeCompare(b.name));
     const sortedFiles = [...sortedRecent, ...sortedOthers];
 
-    sortedFiles.forEach((file) => {
+    sortedFiles.forEach(file => {
         const li = document.createElement('li');
         li.textContent = file.name;
+        li.tabIndex = 0; // Acessibilidade para teclado
         li.addEventListener('click', () => {
-            loadKMZFromURL(file.url, file.name);
+            loadKMZFromURL(file.url, file.name, map);
             localStorage.setItem('lastSelectedFile', file.name);
             updateRecentFiles(file.name);
             displayFileList();
-            document.getElementById('kmzMenu').style.display = 'none';
+            toggleVisibility(document.getElementById('kmzMenu'));
+        });
+        li.addEventListener('keydown', e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                li.click();
+            }
         });
         kmzList.appendChild(li);
     });
@@ -45,31 +51,33 @@ export function displayFileList() {
 
 // Selecionar arquivo do dispositivo
 export function selectFromDevice() {
-    document.getElementById('kmzMenu').style.display = 'none';
+    toggleVisibility(document.getElementById('kmzMenu'));
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.kml,.kmz';
-    input.onchange = handleFile;
+    input.onchange = e => handleFile(e, map);
     input.click();
 }
 
 // Carregar KMZ de URL
-async function loadKMZFromURL(url, fileName, map) {
+export async function loadKMZFromURL(url, fileName, map) {
     try {
         const response = await fetch(url);
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const contentType = response.headers.get("content-type");
+        const contentType = response.headers.get('content-type');
         let data;
-        if (contentType.includes("application/vnd.google-earth.kmz")) {
+        if (contentType.includes('application/vnd.google-earth.kmz')) {
             const arrayBuffer = await response.arrayBuffer();
             data = await parseKMZ(arrayBuffer);
-        } else if (contentType.includes("application/vnd.google-earth.kml+xml")) {
+        } else if (contentType.includes('application/vnd.google-earth.kml+xml')) {
             const text = await response.text();
             data = toGeoJSON.kml(new DOMParser().parseFromString(text, 'text/xml'));
         } else {
             throw new Error('Formato de arquivo não suportado.');
         }
         addDataToMap(data, fileName, map);
+        updateRecentFiles(fileName);
+        updateLoadedFilesList(fileName, map);
     } catch (error) {
         console.error('Erro ao carregar o arquivo KMZ/KML:', error);
         alert('Erro ao carregar o arquivo KMZ/KML.');
@@ -91,6 +99,7 @@ function handleFile(event, map) {
             localStorage.setItem('lastSelectedFile', file.name);
             updateRecentFiles(file.name);
             displayFileList();
+            updateLoadedFilesList(file.name, map);
         } catch (error) {
             console.error('Erro ao processar o arquivo:', error);
             alert('Erro ao processar o arquivo KML/KMZ.');
@@ -106,9 +115,9 @@ function handleFile(event, map) {
 // Parsear KMZ
 async function parseKMZ(data) {
     const zip = await JSZip.loadAsync(data);
-    const kmlFile = zip.file(/\.kml$/i)[0];
+    const kmlFile = Object.keys(zip.files).find(name => name.match(/\.kml$/i));
     if (!kmlFile) throw new Error('Arquivo KML não encontrado dentro do KMZ.');
-    const kmlContent = await kmlFile.async('string');
+    const kmlContent = await zip.file(kmlFile).async('string');
     return toGeoJSON.kml(new DOMParser().parseFromString(kmlContent, 'text/xml'));
 }
 
@@ -122,28 +131,29 @@ export function updateGroupMenu(map) {
             const fileHeader = document.createElement('div');
             fileHeader.style.fontWeight = 'bold';
             fileHeader.style.marginTop = '10px';
-            fileHeader.textContent = `Arquivo: "${file.name}"`;
+            fileHeader.textContent = `Arquivo: ${file.name}`;
             lineGroupsList.appendChild(fileHeader);
 
             const sortedGroups = Array.from(groups).sort((a, b) => a.localeCompare(b));
-            sortedGroups.forEach(grp => {
+            sortedGroups.forEach(group => {
                 const li = document.createElement('li');
-                const lbl = document.createElement('label');
-                const chk = document.createElement('input');
-                chk.type = 'checkbox';
-                chk.value = grp;
-                chk.checked = true;
-                chk.onchange = () => {
-                    if (chk.checked) {
-                        state.selectedGroups.get(file.sourceId).add(grp);
+                const label = document.createElement('label');
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = group;
+                checkbox.checked = true;
+                checkbox.addEventListener('change', () => {
+                    const selectedGroups = state.selectedGroups.get(file.sourceId);
+                    if (checkbox.checked) {
+                        selectedGroups.add(group);
                     } else {
-                        state.selectedGroups.get(file.sourceId).delete(grp);
+                        selectedGroups.delete(group);
                     }
                     applyGroupFilter(map);
-                };
-                lbl.appendChild(chk);
-                lbl.appendChild(document.createTextNode(' ' + grp));
-                li.appendChild(lbl);
+                });
+                label.appendChild(checkbox);
+                label.appendChild(document.createTextNode(` ${group}`));
+                li.appendChild(label);
                 lineGroupsList.appendChild(li);
             });
         }
@@ -153,6 +163,9 @@ export function updateGroupMenu(map) {
 // Atualizar lista de arquivos carregados
 export function updateLoadedFilesList(fileName, map) {
     const loadedFilesList = document.getElementById('loadedFilesList');
+    const existingItem = Array.from(loadedFilesList.children).find(li => li.textContent.includes(fileName));
+    if (existingItem) return;
+
     const li = document.createElement('li');
     li.textContent = fileName;
     const removeBtn = document.createElement('button');
@@ -187,12 +200,9 @@ function removeFileFromMap(fileName, map) {
         if (map.getSource(sourceId + '-lines')) map.removeSource(sourceId + '-lines');
     }
 
-    if (file.hasLines && file.groupingProperty && state.selectedGroups.has(sourceId)) {
-        state.selectedGroups.delete(sourceId);
-        updateGroupMenu();
-    }
-
+    state.selectedGroups.delete(sourceId);
     state.files.splice(fileIndex, 1);
+    updateGroupMenu(map);
 }
 
 // Aplicar filtro de grupos
@@ -205,114 +215,103 @@ export function applyGroupFilter(map) {
         const selectedGroups = state.selectedGroups.get(sourceId);
 
         if (!selectedGroups || selectedGroups.size === 0) {
-            map.setFilter(lineLayerId, ["==", ["get", groupingProperty], "___no_match___"]);
-        } else if (selectedGroups.size === getTotalGroups(sourceId, groupingProperty)) {
-            map.setFilter(lineLayerId, null);
+            map.setFilter(lineLayerId, ['==', ['get', groupingProperty], '']);
         } else {
-            map.setFilter(lineLayerId, ["in", ['get', groupingProperty], ...Array.from(selectedGroups)]);
+            const allGroups = new Set(
+                file.lineFeatures.features
+                    .filter(f => f.properties && f.properties[groupingProperty])
+                    .map(f => f.properties[groupingProperty])
+            );
+            if (selectedGroups.size === allGroups.size) {
+                map.setFilter(lineLayerId, null);
+            } else {
+                map.setFilter(lineLayerId, ['in', ['get', groupingProperty], ...Array.from(selectedGroups)]);
+            }
         }
     });
-}
-
-function getTotalGroups(sourceId, map) {
-    const lineSource = map.getSource(`${sourceId}-lines`);
-    if (lineSource && lineSource._data.features) {
-        const allGroups = new Set();
-        lineSource._data.features.forEach(feature => {
-            if (feature.properties && feature.properties[groupingProperty]) {
-                allGroups.add(feature.properties[groupingProperty]);
-            }
-        });
-        return allGroups.size;
-    }
-    return 0;
 }
 
 // Ocultar todos os grupos
 export function hideAllGroups(map) {
     state.selectedGroups.forEach((groups, sourceId) => {
-        state.selectedGroups.set(sourceId, new Set());
+        groups.clear();
     });
-    const checkboxes = document.querySelectorAll('#lineGroupsList input[type=checkbox]');
-    checkboxes.forEach(chk => chk.checked = false);
+    document.querySelectorAll('#lineGroupsList input[type=checkbox]').forEach(chk => {
+        chk.checked = false;
+    });
     applyGroupFilter(map);
 }
 
 // Exibir todos os grupos
 export function showAllGroups(map) {
     state.files.forEach(file => {
-        if (file.hasLines && file.groupingProperty && state.selectedGroups.has(file.sourceId)) {
+        if (file.hasLines && file.groupingProperty) {
             const sourceId = file.sourceId;
-            const groupingProperty = file.groupingProperty;
-            const lineSource = map.getSource(`${file.sourceId}-lines`);
-            if (lineSource && lineSource._data.features) {
-                const allGroups = new Set();
-                lineSource._data.features.forEach(feature => {
-                    if (feature.properties && feature.properties[groupingProperty]) {
-                        allGroups.add(feature.properties[groupingProperty]);
-                    }
-                });
-                state.selectedGroups.set(sourceId, new Set(allGroups));
-            }
+            const allGroups = new Set(
+                file.lineFeatures.features
+                    .filter(f => f.properties && f.properties[groupingProperty])
+                    .map(f => f.properties[groupingProperty])
+            );
+            state.selectedGroups.set(sourceId, new Set(allGroups));
         }
     });
-    const checkboxes = document.querySelectorAll('#lineGroupsList input[type=checkbox]');
-    checkboxes.forEach(chk => chk.checked = true);
+    document.querySelectorAll('#lineGroupsList input[type=checkbox]').forEach(chk => {
+        chk.checked = true;
+    });
     applyGroupFilter(map);
-    updateGroupMenu();
+    updateGroupMenu(map);
 }
 
 // Buscar características
 export function searchFeatures(map) {
-    const term = document.getElementById('searchInput').value.toLowerCase();
-    if (!term) return alert('Digite um termo para buscar.');
+    const term = document.getElementById('searchInput').value.trim().toLowerCase();
+    if (!term) {
+        alert('Digite um termo para buscar.');
+        document.getElementById('searchResults').innerHTML = '';
+        return;
+    }
 
     const matches = [];
     state.files.forEach(file => {
         if (file.hasMarkers) {
-            const markerSource = map.getSource(`${file.sourceId}-markers`);
-            if (markerSource && markerSource._data.features) {
-                markerSource._data.features.forEach(feature => {
-                    if (feature.properties && (
-                        (feature.properties.name && feature.properties.name.toLowerCase().includes(term)) ||
-                        (feature.properties.Alimentador && feature.properties.Alimentador.toLowerCase().includes(term))
-                    )) {
-                        matches.push(feature);
-                    }
-                });
-            }
+            file.pointFeatures.features.forEach(feature => {
+                if (
+                    feature.properties &&
+                    ((feature.properties.name && feature.properties.name.toLowerCase().includes(term)) ||
+                     (feature.properties.Alimentador && feature.properties.Alimentador.toLowerCase().includes(term)))
+                ) {
+                    matches.push({ feature, file });
+                }
+            });
         }
         if (file.hasLines) {
-            const lineSource = map.getSource(`${file.sourceId}-lines`);
-            if (lineSource && lineSource._data.features) {
-                lineSource._data.features.forEach(feature => {
-                    if (feature.properties && (
-                        (feature.properties.name && feature.properties.name.toLowerCase().includes(term)) ||
-                        (feature.properties.Alimentador && feature.properties.Alimentador.toLowerCase().includes(term))
-                    )) {
-                        matches.push(feature);
-                    }
-                });
-            }
+            file.lineFeatures.features.forEach(feature => {
+                if (
+                    feature.properties &&
+                    ((feature.properties.name && feature.properties.name.toLowerCase().includes(term)) ||
+                     (feature.properties.Alimentador && feature.properties.Alimentador.toLowerCase().includes(term)))
+                ) {
+                    matches.push({ feature, file });
+                }
+            });
         }
     });
 
     const searchResultsDiv = document.getElementById('searchResults');
     if (matches.length === 0) {
-        alert('Nenhum resultado encontrado para a busca.');
+        alert('Nenhum resultado encontrado.');
         searchResultsDiv.innerHTML = '';
         return;
     }
 
-    let referencePoint = state.userLocation || map.getCenter().toArray();
-    matches.forEach(feature => {
-        const center = getFeatureCenter(feature);
-        feature.properties.distance = computeDistance(referencePoint);
-        center, feature;
+    const referencePoint = state.userLocation || map.getCenter().toArray();
+    matches.forEach(match => {
+        const center = getFeatureCenter(match.feature);
+        match.distance = computeDistance(referencePoint, center);
     });
-    matches.sort((a, b) => a.properties.distance - b.properties.distance);
-    const topResults = matches.slice(0, 5);
-    displaySearchResults(topResults);
+
+    matches.sort((a, b) => a.distance - b.distance);
+    displaySearchResults(matches.slice(0, 5), map);
 }
 
 // Exibir resultados da busca
@@ -321,27 +320,26 @@ function displaySearchResults(results, map) {
     searchResultsDiv.innerHTML = '';
     const ul = document.createElement('ul');
 
-    results.forEach(result => {
+    results.forEach(({ feature, file, distance }) => {
         const li = document.createElement('li');
         const nameSpan = document.createElement('span');
-        const displayName = result.properties.name || result.properties.Alimentador || 'Sem nome';
-        nameSpan.textContent = `${displayName} (${(result.properties.distance / 1000).toFixed(2)} km)`;
+        const displayName = feature.properties.name || feature.properties.Alimentador || 'Sem nome';
+        nameSpan.textContent = `${displayName} (${(distance / 1000).toFixed(2)} km)`;
 
         const viewButton = document.createElement('button');
         viewButton.textContent = 'Visualizar';
-        viewButton.onclick = () => {
-            const center = getFeatureCenter(result);
-            map.flyTo({ center: center, zoom: 16 });
+        viewButton.addEventListener('click', () => {
+            const center = getFeatureCenter(feature);
+            map.flyTo({ center, zoom: 16, duration: 1000 });
             searchResultsDiv.innerHTML = '';
-        };
+        });
 
         const googleMapsButton = document.createElement('button');
         googleMapsButton.textContent = 'Google Maps';
-        googleMapsButton.onclick = () => {
-            const center = getFeatureCenter(result);
-            const url = `https://www.google.com/maps?q=${center[1]},${center[0]}`;
-            window.open(url, '_blank');
-        };
+        googleMapsButton.addEventListener('click', () => {
+            const center = getFeatureCenter(feature);
+            window.open(`https://www.google.com/maps?q=${center[1]},${center[0]}`, '_blank');
+        });
 
         li.appendChild(nameSpan);
         li.appendChild(viewButton);
@@ -354,53 +352,57 @@ function displaySearchResults(results, map) {
 
 // Obter centro da feature
 function getFeatureCenter(feature) {
-    let center;
     if (feature.geometry.type === 'Point') {
-        center = feature.geometry.coordinates;
-    } else {
-        const coordinates = [];
-        function extractCoords(coords) {
-            if (typeof coords[0] === 'number') {
-                coordinates.push(coords);
-            } else {
-                coords.forEach(c => extractCoords(c));
-            }
-        }
-        extractCoords(feature.geometry.coordinates);
-        const lons = coordinates.map(coord => coord[0]);
-        const lats = coordinates.map(coord => coord[1]);
-        const avgLon = lons.reduce((a, b) => a + b, 0) / lons.length;
-        const avgLat = latlats.reduce((a, b) => a + b, 0) / lats.length;
-        center = [avgLon, avgLat];
+        return feature.geometry.coordinates;
     }
-    return center;
+
+    const coordinates = [];
+    function extractCoords(coords) {
+        if (typeof coords[0] === 'number') {
+            coordinates.push(coords);
+        } else {
+            coords.forEach(c => extractCoords(c));
+        }
+    }
+    extractCoords(feature.geometry.coordinates);
+    const lons = coordinates.map(coord => coord[0]);
+    const lats = coordinates.map(coord => coord[1]);
+    const avgLon = lons.reduce((a, b) => a + b, 0) / lons.length;
+    const avgLat = lats.reduce((a, b) => a + b, 0) / lats.length;
+    return [avgLon, avgLat];
 }
 
 // Calcular distância
 function computeDistance(coord1, coord2) {
-    const toRad = (value => value * Math.PI / 180);
+    const toRad = value => value * Math.PI / 180;
     const lat1 = coord1[1], lon1 = coord1[0], lat2 = coord2[1], lon2 = coord2[0];
-    const R = 6371e3;
-    const φ1 = toRad(lat1), lat2;
-    const φ2 = toRad(lat2), coord2[1];
+    const R = 6371e3; // Raio da Terra em metros
+    const φ1 = toRad(lat1);
+    const φ2 = toRad(lat2);
     const Δφ = toRad(lat2 - lat1);
     const Δλ = toRad(lon2 - lon1);
     const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-        Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+              Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
 }
 
 // Exibir lista de estilos
 export function displayStyleList(map) {
-    const styleList = document.getElement.getElementById('styleList');
+    const styleList = document.getElementById('styleList');
     styleList.innerHTML = '';
     mapStyles.forEach(style => {
-        const li = styleList.createElement('li');
+        const li = document.createElement('li');
         li.textContent = style.name;
+        li.tabIndex = 0;
         li.addEventListener('click', () => {
-            changeMapStyle(style.url, style);
-            document.styleMenu.getElementById('styleMenu').style.display = 'none';
+            changeMapStyle(style.url, map);
+            toggleVisibility(document.getElementById('styleMenu'));
+        });
+        li.addEventListener('keydown', e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                li.click();
+            }
         });
         styleList.appendChild(li);
     });
