@@ -474,9 +474,9 @@
         const kmzMenu = document.getElementById('kmzMenu');
         const kmzList = document.getElementById('kmzList');
         const lineMenu = document.getElementById('lineMenu');
-        const lineGroupsList = document.getElementById('lineGroupsList');
+        const lineGroupsList = document.getElementsById('lineGroupsList');
         const loadedFilesMenu = document.getElementById('loadedFilesMenu');
-        const loadedFilesList = document.getElementById('loadedFilesList');
+        const loadedFilesList = document.getElementsById('loadedFilesList');
         const btnLoadedFiles = document.getElementById('btnLoadedFiles');
         const styleMenu = document.getElementById('styleMenu');
 
@@ -488,115 +488,115 @@
             { name: 'AMPARO.kmz', url: './AMPARO.kmz' },
             { name: 'ARACATUBA.kmz', url: './ARACATUBA.kmz' },
             { name: 'ARARAQUARA.kmz', url: './ARARAQUARA.kmz' },
-            { name: 'BARIRI.kmz', url: './BARIRI.kmz' },
-            { name: 'BARRA BONITA.kmz', url: './BARRA BONITA.kmz' },
-            { name: 'BARRETOS.kmz', url: './BARRETOS.kmz' },
-            { name: 'BATATAIS.kmz', url: './BATATAIS.kmz' },
-            { name: 'BAURU.kmz', url: './BAURU.kmz' },
-            { name: 'BEBEDOURO.kmz', url: './BEBEDOURO.kmz' },
-            { name: 'BIRIGUI.kmz', url: './BIRIGUI.kmz' },
-            { name: 'BOA ESPERANCA DO SUL.kmz', url: './BOA ESPERANCA DO SUL.kmz' },
-            { name: 'BOTUCATU.kmz', url: './BOTUCATU.kmz' },
-            { name: 'BRAUNA.kmz', url: './BRAUNA.kmz' },
-            { name: 'BROTAS.kmz', url: './BROTAS.kmz' },
-            { name: 'CAFELANDIA.kmz', url: './CAFELANDIA.kmz' },
-            { name: 'CAJOBI.kmz', url: './CAJOBI.kmz' },
-            { name: 'CAJURU.kmz', url: './CAJURU.kmz' },
-            { name: 'CAMPINAS BARAO GERALDO-1.kmz', url: './CAMPINAS BARAO GERALDO-1.kmz' },
-            { name: 'CAMPINAS CAMPO GRANDE-1.kmz', url: './CAMPINAS CAMPO GRANDE-1.kmz' },
-            { name: 'CAMPINAS CENTRO-1.kmz', url: './CAMPINAS CENTRO-1.kmz' },
-            { name: 'CAMPINAS SOUZAS-1.kmz', url: './CAMPINAS SOUZAS-1.kmz' },
-            { name: 'CAMPINAS TREVO-1.kmz', url: './CAMPINAS TREVO-1.kmz' },
-            { name: 'CAPIVARI.kmz', url: './CAPIVARI.kmz' },
-            { name: 'CONGONHAS.kmz', url: './CONGONHAS.kmz' },
-            { name: 'COSMOPOLIS.kmz', url: './COSMOPOLIS.kmz' },
-            { name: 'CRAVINHOS.kmz', url: './CRAVINHOS.kmz' },
-            { name: 'DESCALVADO.kmz', url: './DESCALVADO.kmz' },
-            { name: 'DOIS CORREGOS.kmz', url: './DOIS CORREGOS.kmz' },
-            { name: 'DOURADO.kmz', url: './DOURADO.kmz' },
-            { name: 'DUARTINA.kmz', url: './DUARTINA.kmz' },
-            { name: 'ESPIRITO SANTO DO PINHAL.kmz', url: './ESPIRITO SANTO DO PINHAL.kmz' },
-            { name: 'FRANCA.kmz', url: './FRANCA.kmz' },
-            { name: 'GARCA.kmz', url: './GARCA.kmz' },
-            { name: 'GAVIAO PEIXOTO.kmz', url: './GAVIAO PEIXOTO.kmz' },
-            { name: 'GETULINA.kmz', url: './GETULINA.kmz' },
-            { name: 'GUAIRA.kmz', url: './GUAIRA.kmz' },
-            { name: 'GUANABARA.kmz', url: './GUANABARA.kmz' },
-            { name: 'GUARARAPES.kmz', url: './GUARARAPES.kmz' },
-            { name: 'GUARIBA.kmz', url: './GUARIBA.kmz' },
-            { name: 'HIPODROMO.kmz', url: './HIPODROMO.kmz' },
-            { name: 'HORTOLANDIA.kmz', url: './HORTOLANDIA.kmz' },
-            { name: 'IACANGA.kmz', url: './IACANGA.kmz' },
-            { name: 'IBIRA.kmz', url: './IBIRA.kmz' },
-            { name: 'IBITINGA.kmz', url: './IBITINGA.kmz' },
-            { name: 'IGARAPAVA.kmz', url: './IGARAPAVA.kmz' },
-            { name: 'IPUA.kmz', url: './IPUA.kmz' },
-            { name: 'ITAPIRA.kmz', url: './ITAPIRA.kmz' },
-            { name: 'ITAPOLIS.kmz', url: './ITAPOLIS.kmz' },
-            { name: 'ITATIBA.kmz', url: './ITATIBA.kmz' },
-            { name: 'ITATINGA.kmz', url: './ITATINGA.kmz' },
-            { name: 'ITUVERAVA.kmz', url: './ITUVERAVA.kmz' },
-            { name: 'JABOTICABAL.kmz', url: './JABOTICABAL.kmz' },
-            { name: 'JARDINOPOLIS.kmz', url: './JARDINOPOLIS.kmz' },
-            { name: 'JAU.kmz', url: './JAU.kmz' },
-            { name: 'JOSE BONIFACIO.kmz', url: './JOSE BONIFACIO.kmz' },
-            { name: 'LENCOIS PAULISTA.kmz', url: './LENCOIS PAULISTA.kmz' },
-            { name: 'LINS.kmz', url: './LINS.kmz' },
-            { name: 'MARILIA.kmz', url: './MARILIA.kmz' },
-            { name: 'MATAO.kmz', url: './MATAO.kmz' },
-            { name: 'METROPOLITANA.kmz', url: './METROPOLITANA.kmz' },
-            { name: 'MIGUELOPOLIS.kmz', url: './MIGUELOPOLIS.kmz' },
-            { name: 'MIRASSOL.kmz', url: './MIRASSOL.kmz' },
-            { name: 'MONTE ALTO.kmz', url: './MONTE ALTO.kmz' },
-            { name: 'MONTE APRAZIVEL.kmz', url: './MONTE APRAZIVEL.kmz' },
-            { name: 'MONTE MOR.kmz', url: './MONTE MOR.kmz' },
-            { name: 'MORRO AGUDO.kmz', url: './MORRO AGUDO.kmz' },
-            { name: 'MORRO DO CIPO.kmz', url: './MORRO DO CIPO.kmz' },
-            { name: 'NOVA GRANADA.kmz', url: './NOVA GRANADA.kmz' },
-            { name: 'OCAUCU.kmz', url: './OCAUCU.kmz' },
-            { name: 'OLIMPIA.kmz', url: './OLIMPIA.kmz' },
-            { name: 'ORLANDIA.kmz', url: './ORLANDIA.kmz' },
-            { name: 'PARAISO.kmz', url: './PARAISO.kmz' },
-            { name: 'PARDINHO.kmz', url: './PARDINHO.kmz' },
-            { name: 'PAULINIA.kmz', url: './PAULINIA.kmz' },
-            { name: 'PEDERNEIRAS.kmz', url: './PEDERNEIRAS.kmz' },
-            { name: 'PEDREGULHO.kmz', url: './PEDREGULHO.kmz' },
-            { name: 'PENAPOLIS.kmz', url: './PENAPOLIS.kmz' },
-            { name: 'PIACATU.kmz', url: './PIACATU.kmz' },
-            { name: 'PIRACICABA SANTA CECILIA.kmz', url: './PIRACICABA SANTA CECILIA.kmz' },
-            { name: 'PIRACICABA SANTA TEREZINHA.kmz', url: './PIRACICABA SANTA TEREZINHA.kmz' },
-            { name: 'PIRACICABA.kmz', url: './PIRACICABA.kmz' },
-            { name: 'PIRAJUI - EA.kmz', url: './PIRAJUI - EA.kmz' },
-            { name: 'PIRANGI.kmz', url: './PIRANGI.kmz' },
-            { name: 'PITANGUEIRAS.kmz', url: './PITANGUEIRAS.kmz' },
-            { name: 'POMPEIA.kmz', url: './POMPEIA.kmz' },
-            { name: 'PRESIDENTE ALVES.kmz', url: './PRESIDENTE ALVES.kmz' },
-            { name: 'PROMISSAO.kmz', url: './PROMISSAO.kmz' },
-            { name: 'RESTINGA.kmz', url: './RESTINGA.kmz' },
-            { name: 'RIBEIRAO PRETO NORTE.kmz', url: './RIBEIRAO PRETO NORTE.kmz' },
-            { name: 'RIBEIRAO PRETO SUL.kmz', url: './RIBEIRAO PRETO SUL.kmz' },
-            { name: 'RINCAO.kmz', url: './RINCAO.kmz' },
-            { name: 'SANTA ADELIA.kmz', url: './SANTA ADELIA.kmz' },
-            { name: 'SANTA BARBARA DOESTE.kmz', url: './SANTA BARBARA DOESTE.kmz' },
-            { name: 'SANTA ROSA DE VITERBO.kmz', url: './SANTA ROSA DE VITERBO.kmz' },
-            { name: 'SANTO ANTONIO ARACANGUA.kmz', url: './SANTO ANTONIO ARACANGUA.kmz' },
-            { name: 'SAO CARLOS.kmz', url: './SAO CARLOS.kmz' },
-            { name: 'SAO JOAQUIM DA BARRA.kmz', url: './SAO JOAQUIM DA BARRA.kmz' },
-            { name: 'SAO JOSE RIO PRETO.kmz', url: './SAO JOSE RIO PRETO.kmz' },
-            { name: 'SAO MANUEL.kmz', url: './SAO MANUEL.kmz' },
-            { name: 'SAO PEDRO.kmz', url: './SAO PEDRO.kmz' },
-            { name: 'SAO SIMAO.kmz', url: './SAO SIMAO.kmz' },
-            { name: 'SERRA NEGRA.kmz', url: './SERRA NEGRA.kmz' },
-            { name: 'SERRANA.kmz', url: './SERRANA.kmz' },
-            { name: 'SERTAOZINHO.kmz', url: './SERTAOZINHO.kmz' },
-            { name: 'SOCORRO.kmz', url: './SOCORRO.kmz' },
-            { name: 'SUMARE.kmz', url: './SUMARE.kmz' },
-            { name: 'TANABI.kmz', url: './TANABI.kmz' },
-            { name: 'TAQUARITINGA.kmz', url: './TAQUARITINGA.kmz' },
-            { name: 'UIRAPURU.kmz', url: './UIRAPURU.kmz' },
-            { name: 'VALINHOS.kmz', url: './VALINHOS.kmz' },
-            { name: 'VALPARAISO.kmz', url: './VALPARAISO.kmz' },
-            { name: 'VIRADOURO.kmz', url: './VIRADOURO.kmz' }
+            { name: 'BARIRI.kmz', url: './BARIRI.kmz', },
+            { name: 'BARRA BONITA.kmz', url: './BARRA BONITA.kmz', },
+            { name: 'BARRETOS.kmz', url: './BARRETOS.kmz', },
+            { name: 'BATATAIS.kmz', },
+            { name: 'BAURU.kmz', url: './BAURU.kmz', },
+            { name: 'BEBEDOURO.kmz', url: './BEBEDOURO.kmz', },
+            { name: 'BIRIGUI.kmz', url: './BIRIGUI.kmz', },
+            { name: 'BOA ESPERANCA DO SUL.kmz', url: './BOA ESPERANCA DO SUL.kmz', },
+            { name: 'BOTUCATU.kmz', url: './BOTUCATU.kmz', },
+            { name: 'BRAUNA.kmz', url: './BRAUNA.mz', },
+            { name: 'BROTAS.kmz', url: './BROTAS.kmz', },
+            { name: 'CAFELANDIA.kmz', url: './CAFELANDIA.kmz', },
+            { name: 'CAJOBI.kmz', url: './CAJOBI.kmz', },
+            { name: 'CAJURU.kmz', url: './CAJURU.kmz', },
+            { name: 'CAMPINAS BARAO GERALDO-1.kmz', url: './CAMPINAS BARAO GERALDO-1.kmz', },
+            { name: 'CAMPINAS CAMPO GRANDE-1.kmz', url: './CAMPINAS CAMPO GRANDE-1.kmz', },
+            { name: 'CAMPINAAS CENTRO-1.kmz', url: './CAMPINAS CENTRO-1.kmz', },
+            { name: 'CAMPINAS SOUZAAS-1.kmz', url: './CAMPINAS SOUZAS-1.kmz', },
+            { name: 'CAMPINASA TREVO-1.kmz', url: './CAMPINAS TREVO-1.kmz', },
+            { name: 'CAPIVARI.kmz', url: './CAPIVARI.kmz', },
+            { name: 'CONGONHAS.kmz', url: './CONGONHAS.kmz', },
+            { name: 'COSMOPOLIS.kmz', url: './COSMOPOLIS.kmz', },
+            { name: 'CRAVINHOS.kmz', url: './CRAVINHOS.kmz', },
+            { name: 'DESCALVADO.kmz', url: './DESCALVADO.kmz', },
+            { name: 'DOIS CORREGOS.kmz', url: './DOIS CORREGOS.kmz', },
+            { name: 'DOURADO.kmz', url: './DOURADO.kmz', },
+            { name: 'DUARTINA.kmz', url: './DUARTINA.kmz', },
+            { name: 'ESPIRITO SANTO DO PINHAL.kmz', url: './ESPIRITO SANTO DO PINHAL.kmz', },
+            { name: 'FRANCA.kmz', url: './FRANCA.kmz', },
+            { name: 'GARCA.kmz', url: './GARCA.kmz', },
+            { name: 'GAVIAO PEIXOTO.kmz', url: './GAVIAO PEIXOTO.kmz', },
+            { name: 'GETULINA.kmz', url: './GETULINA.kmz', },
+            { name: 'GUAIRA.kmz', url: './GUAIRA.kmz', },
+            { name: 'GUANABARA.kmz', url: './GUANABARA.kmz', },
+            { name: 'GUARARAPES.kmz', url: './GUARARAPES.kmz', },
+            { name: 'GUARIBA.kmz', url: './GUARIBA.kmz', },
+            { name: 'HIPODROMO.kmz', url: './HIPODROMO.kmz', },
+            { name: 'HORTOLANDIA.kmz', url: './HORTOLANDIA.kmz', },
+            { name: 'IACANGA.kmz', url: './IACANGA.kmz', },
+            { name: 'IBIRA.kmz', url: './IBIRA.kmz', },
+            { name: 'IBITINGA.kmz', url: './IBITINGA.kmz', },
+            { name: 'IGARAPAVA.kmz', url: './IGARAPAVA.kmz', },
+            { name: 'IPUA.kmz', url: './IPUA.kmz', },
+            { name: 'ITAPIRA.kmz', url: './ITAPIRA.kmz', },
+            { name: 'ITAPOLIS.kmz', url: './ITAPOLIS.kmz', },
+            { name: 'ITATIBA.kmz', url: './ITATIBA.kmz', },
+            { name: 'ITATINGA.kmz', url: './ITATINGA.kmz', },
+            { name: 'ITUVERAVA.kmz', url: './ITUVERAVA.kmz', },
+            { name: 'JABOTICABAL.kmz', url: './JABOTICABAL.kmz', },
+            { name: 'JARDINOPOLIS.kmz', url: './JARDINOPOLISS.kmz', },
+            { name: 'JAU.kmz', url: './JAU.kmz', },
+            { name: 'JOSE BONIFACIO.kmz', url: './JOSE BONIFACIO.kmz', },
+            { name: 'LENCOIS PAULISTA.kmz', url: './LENCOIS PAULISTA.kmz', },
+            { name: 'LINS.kmz', url: './LINS.kmz', },
+            { name: 'MARILIA.kmz', url: './MARILIA.kmz', },
+            { name: 'MATAO.kmz', url: './MATAO.kmz', },
+            { name: 'METROPOLITANA.kmz', url: './METROPOLITANA.kmz', },
+            { name: 'MIGUELOPOLIS.kmz', url: './MIGUELOPOLIS.kmz', },
+            { name: 'MIRASSOL.kmz', url: './MIRASSOL.kmz', },
+            { name: 'MONTE ALTO.kmz', url: './MONTE ALTO.kmz', },
+            { name: 'MONTE APRAZIVEL.kmz', url: './MONTE APRAZIVEL.kmz', },
+            { name: 'MONTE MOR.kmz', url: './MONTE MOR.kmz', },
+            { name: 'MORRO AGUDO.kmz', url: './MORRO AGUDO.kmz', },
+            { name: 'MORRO DO CIPO.kmz', url: './MORRO DO CIPO.kmz', },
+            { name: 'NOVA GRANADA.kmz', url: './NOVA GRANADA.kmz', },
+            { name: 'OCAUCU.kmz', url: './OCAUCU.kmz', },
+            { name: 'OLIMPIA.kmz', url: './OLIMPIA.kmz', },
+            { name: 'ORLANDIA.kmz', url: './ORLANDIA.kmz', },
+            { name: 'PARAISO.kmz', url: './PARAISO.kmz', },
+            { name: 'PARDINHO.kmz', url: './PARDINHO.kmz', },
+            { name: 'PAULINIA.kmz', url: './PAULINIA.kmz', },
+            { name: 'PEDERNEIRAS.kmz', url: './PEDERNEIRAS.kmz', },
+            { name: 'PEDREGULHO.kmz', url: './PEDREGULHO.kmz', },
+            { name: 'PENAPOLIS.kmz', url: './PENAPOLIS.kmz', },
+            { name: 'PIACATU.kmz', url: './PIACATU.kmz', },
+            { name: 'PIRACICABA SANTA CECILIA.kmz', url: './PIRACICABA SANTA CECILIA.kmz', },
+            { name: 'PIRACICABA SANTA TEREZINHA.kmz', url: './PIRACICABA SANTA TEREZINHA.kmz', },
+            { name: 'PIRACICABA.kmz', url: './PIRACICABA.kmz', },
+            { name: 'PIRAJUI - EA.kmz', url: './PIRAJUI - EA.kmz', },
+            { name: 'PIRANGI.kmz', url: './PIRANGI.kmz', },
+            { name: 'PITANGUEIRAS.kmz', url: './PITANGUEIRAS.kmz', },
+            { name: 'POMPEIA.kmz', url: './POMPEIA.kmz', },
+            { name: 'PRESIDENTE ALVES.kmz', url: './PRESIDENTE ALVES.kmz', },
+            { name: 'PROMISSAO.kmz', url: './PROMISSAO.kmz', },
+            { name: 'RESTINGA.kmz', url: './RESTINGA.kmz', },
+            { name: 'RIBEIRAO PRETO NORTE.kmz', url: './RIBEIRAO PRETO NORTE.kmz', },
+            { name: 'RIBEIRAO PRETO SUL.kmz', url: './RIBEIRAO PRETO SUL.kmz', },
+            { name: 'RINCAO.kmz', url: './RINCAO.kmz', },
+            { name: 'SANTA ADELIA.kmz', url: './SANTA ADELIA.kmz', },
+            { name: 'SANTA BARBARA DOESTE.kmz', url: './SANTA BARBARA DOESTE.kmz', },
+            { name: 'SANTA ROSA DE VITERBO.kmz', url: './SANTA ROSA DE VITERBO.kmz', },
+            { name: 'SANTO ANTONIO ARACANGUA.kmz', url: './SANTO ANTONIO ARACANGUA.kmz', },
+            { name: 'SAO CARLOS.kmz', url: './SAO CARLOS.kmz', },
+            { name: 'SAO JOAQUIM DA BARRA.kmz', url: './SAO JOAQUIM DA BARRA.kmz', },
+            { name: 'SAO JOSE RIO PRETO.kmz', url: './SAO JOSE RIO PRETO.kmz', },
+            { name: 'SAO MANUEL.kmz', url: './SAO MANUEL.kmz', },
+            { name: 'SAO PEDRO.kmz', url: './SAO PEDRO.kmz', },
+            { name: 'SAO SIMAO.kmz', url: './SAO SIMAO.kmz', },
+            { name: 'SERRA NEGRA.kmz', url: './SERRA NEGRA.kmz', },
+            { name: 'SERRANA.kmz', url: './SERRANA.kmz', },
+            { name: 'SERTAOZINHO.kmz', url: './SERTAOZINHO.kmz', },
+            { name: 'SOCORRO.kmz', url: './SOCORRO.kmz', },
+            { name: 'SUMARE.kmz', url: './SUMARE.kmz', },
+            { name: 'TANABI.kmz', url: './TANABI.kmz', },
+            { name: 'TAQUARITINGA.kmz', url: './TAQUARITINGA.kmz', },
+            { name: 'UIRAPURU.kmz', url: './UIRAPURU.kmz', },
+            { name: 'VALINHOS.kmz', url: './VALINHOS.kmz', },
+            { name: 'VALPARAISO.kmz', url: './VALPARAISO.kmz', },
+            { name: 'VIRADOURO.kmz', url: './VIRADOURO.kmz', }
         ];
 
         function updateRecentFiles(fileName) {
@@ -747,7 +747,8 @@
                         }
 
                         const elementsToInsert = [];
-                        const stylesToInsert = [];
+                        const stylesToInsertMap = new Map(); // Usar Map para evitar duplicatas de style_id
+
                         geojson.features.forEach(feature => {
                             const geometries = feature.geometry.type === 'GeometryCollection'
                                 ? feature.geometry.geometries.map(geom => ({ ...feature, geometry: geom }))
@@ -772,7 +773,13 @@
                                 }
 
                                 if (wkt) {
-                                    const styleId = f.properties?.styleUrl || `style_${Math.random().toString(36).substr(2, 9)}`;
+                                    // Gerar style_id, removendo # se presente
+                                    let styleId = f.properties?.styleUrl || `style_${Math.random().toString(36).substr(2, 9)}`;
+                                    if (styleId.startsWith('#')) {
+                                        styleId = styleId.substring(1);
+                                    }
+
+                                    // Adicionar elemento para kml_elements
                                     elementsToInsert.push({
                                         name: f.properties?.name || f.properties?.Alimentador || '',
                                         description: f.properties?.description || '',
@@ -781,35 +788,43 @@
                                         file_name: file.name
                                     });
 
-                                    if (f.properties?.styleUrl) {
-                                        stylesToInsert.push({
+                                    // Adicionar estilo correspondente, se ainda não estiver no Map
+                                    if (!stylesToInsertMap.has(styleId)) {
+                                        stylesToInsertMap.set(styleId, {
                                             style_id: styleId,
                                             icon_href: f.properties?.icon?.href || null,
-                                            line_color: f.properties?.color || null,
+                                            line_color: f.properties?.color || '#000000', // Cor padrão se não definida
                                             line_width: f.geometry.type === 'LineString' ? 3 : null,
-                                            poly_color: f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon' ? f.properties?.color || null : null
+                                            poly_color: (f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon')
+                                                ? f.properties?.color || '#000000' // Cor padrão se não definida
+                                                : null
                                         });
                                     }
                                 }
                             });
                         });
 
-                        // Insert styles
+                        const stylesToInsert = Array.from(stylesToInsertMap.values());
+
+                        // Inserir estilos primeiro
                         if (stylesToInsert.length > 0) {
+                            console.log('Inserindo estilos:', stylesToInsert);
                             const { error: styleError } = await supabase
                                 .from('styles')
                                 .upsert(stylesToInsert, { onConflict: 'style_id' });
                             if (styleError) {
                                 console.error('Erro ao inserir estilos:', styleError);
-                                alert('Erro ao inserir estilos no Supabase.');
+                                alert(`Erro ao inserir estilos no Supabase: ${styleError.message}`);
                                 return;
                             }
+                            console.log('Estilos inseridos com sucesso');
                         }
 
-                        // Insert elements in batches to avoid timeouts
+                        // Inserir elementos em lotes
                         const batchSize = 100;
                         for (let i = 0; i < elementsToInsert.length; i += batchSize) {
                             const batch = elementsToInsert.slice(i, i + batchSize);
+                            console.log(`Inserindo lote de ${batch.length} elementos`);
                             const { error } = await supabase
                                 .from('kml_elements')
                                 .insert(batch.map(elem => ({
@@ -821,9 +836,10 @@
                                 })));
                             if (error) {
                                 console.error('Erro ao inserir elementos:', error);
-                                alert('Erro ao enviar dados para o Supabase: ' + error.message);
+                                alert(`Erro ao enviar dados para o Supabase: ${error.message}`);
                                 return;
                             }
+                            console.log(`Lote de ${batch.length} elementos inserido com sucesso`);
                         }
 
                         alert('Dados enviados com sucesso para o Supabase!');
@@ -833,7 +849,7 @@
                         displayFileList();
                     } catch (error) {
                         console.error('Erro ao processar o arquivo:', error);
-                        alert('Erro ao processar o arquivo KML/KMZ: ' + error.message);
+                        alert(`Erro ao processar o arquivo KML/KMZ: ${error.message}`);
                     }
                 };
                 if (file.name.endsWith('.kmz')) {
