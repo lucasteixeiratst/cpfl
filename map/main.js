@@ -1,5 +1,5 @@
-import { initMap, resetView, goToCurrentLocation, changeMapStyle } from './map.js';
-import { displayFileList, toggleVisibility, selectFromDevice, searchFeatures, updateGroupMenu, hideAllGroups, showAllGroups, displayStyleList } from './fileProcessor.js';
+import { initMap, resetView, goToCurrentLocation, changeMapStyle, toggleMarkers, toggleNames, toggleLines } from './map.js';
+import { displayFileList, toggleVisibility, selectFromDevice, searchFeatures, updateGroupMenu, hideAllGroups, showAllGroups, displayStyleList, loadKMZFromURL } from './fileProcessor.js';
 
 // Estado global
 export const state = {
@@ -20,8 +20,9 @@ export const mapStyles = [
 
 export const predefinedFiles = [
     { name: 'AGUAS DE LINDOIA.kmz', url: './data/AGUAS DE LINDOIA.kmz' },
-    // Outros arquivos KMZ conforme necessário
-    // Exemplo: { name: 'AGUDOS.kmz', url: './data/AGUDOS.kmz' }
+    { name: 'AGUDOS.kmz', url: './data/AGUDOS.kmz' },
+    { name: 'ALTINOPOLIS.kmz', url: './data/ALTINOPOLIS.kmz' },
+    // Adicione outros arquivos conforme necessário
 ];
 
 // Inicialização
@@ -36,14 +37,17 @@ const elements = {
 
 // Eventos
 document.getElementById('btnKMZ').addEventListener('click', () => toggleVisibility(elements.kmzMenu));
-document.getElementById('btnReset').addEventListener('click', resetView);
-document.getElementById('btnLocation').addEventListener('click', goToCurrentLocation);
-document.getElementById('btnSearch').addEventListener('click', searchFeatures);
+document.getElementById('btnMarkers').addEventListener('click', () => toggleMarkers(map));
+document.getElementById('btnNames').addEventListener('click', () => toggleNames(map));
+document.getElementById('btnLines').addEventListener('click', () => toggleLines(map));
+document.getElementById('btnReset').addEventListener('click', () => resetView(map));
+document.getElementById('btnLocation').addEventListener('click', () => goToCurrentLocation(map));
+document.getElementById('btnSearch').addEventListener('click', () => searchFeatures(map));
 document.getElementById('selectDevice').addEventListener('click', selectFromDevice);
-document.getElementById('hideAll').addEventListener('click', hideAllGroups);
-document.getElementById('showAll').addEventListener('click', showAllGroups);
+document.getElementById('hideAll').addEventListener('click', () => hideAllGroups(map));
+document.getElementById('showAll').addEventListener('click', () => showAllGroups(map));
 document.getElementById('btnStyles').addEventListener('click', () => {
-    displayStyleList();
+    displayStyleList(map);
     toggleVisibility(elements.styleMenu);
 });
 document.getElementById('btnLineGroups').addEventListener('click', () => {
@@ -63,7 +67,7 @@ map.on('load', () => {
     const lastFile = localStorage.getItem('lastSelectedFile');
     if (lastFile) {
         const file = predefinedFiles.find(f => f.name === lastFile);
-        if (file) loadKMZFromURL(file.url, file.name);
+        if (file) loadKMZFromURL(file.url, file.name, map);
     }
 });
 
