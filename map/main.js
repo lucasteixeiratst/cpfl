@@ -19,10 +19,9 @@ export const mapStyles = [
 ];
 
 export const predefinedFiles = [
-    { name: 'AGUAS DE LINDOIA.kmz', url: './data/AGUAS DE LINDOIA.kmz' },
-    { name: 'AGUDOS.kmz', url: './data/AGUDOS.kmz' },
-    { name: 'ALTINOPOLIS.kmz', url: './data/ALTINOPOLIS.kmz' },
-    // Adicione outros arquivos conforme necessário
+    { name: 'AGUAS DE LINDOIA.kmz', url: './AGUAS DE LINDOIA.kmz' },
+    { name: 'AGUDOS.kmz', url: './AGUDOS.kmz' },
+    { name: 'ALTINOPOLIS.kmz', url: './ALTINOPOLIS.kmz' },
 ];
 
 // Inicialização
