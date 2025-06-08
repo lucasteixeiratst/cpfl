@@ -1,0 +1,215 @@
+// ---------------------------------------------------------------------------------------
+// UI.JS - Funções de manipulação da interface do usuário
+// Última atualização: 2025-06-08 20:18:41
+// Autor: lucasteixeiratst
+// ---------------------------------------------------------------------------------------
+
+import { MAP_CONFIG, state, updateState } from './config.js';
+import mapController from './map.js';
+import { debounce, formatters } from './utils.js';
+
+// Exibição de carregamento
+export function showLoading(msg = 'Carregando...') {
+    let overlay = document.getElementById('loading-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'loading-overlay';
+        overlay.innerHTML = `<div class="loading-spinner"></div><div style="margin-top:15px;">${msg}</div>`;
+        document.body.appendChild(overlay);
+    }
+    overlay.style.display = 'flex';
+    if (msg) {
+        overlay.querySelector('div:last-child').textContent = msg;
+    }
+}
+export function hideLoading() {
+    const overlay = document.getElementById('loading-overlay');
+    if (overlay) overlay.style.display = 'none';
+}
+
+// Mensagens de status
+export function showStatus(msg, type = 'success', timeout = 3000) {
+    let indicator = document.getElementById('status-indicator');
+    if (!indicator) {
+        indicator = document.createElement('div');
+        indicator.id = 'status-indicator';
+        indicator.className = 'status-indicator';
+        document.body.appendChild(indicator);
+    }
+    indicator.textContent = msg;
+    indicator.className = `status-indicator ${type}`;
+    indicator.style.display = 'block';
+    setTimeout(() => {
+        indicator.style.display = 'none';
+    }, timeout);
+}
+
+// Exibe lista de estilos
+export function displayStyleList() {
+    const styleMenu = document.getElementById('styleMenu');
+    const styleList = document.getElementById('styleList');
+    styleList.innerHTML = '';
+    MAP_CONFIG.styles.forEach(style => {
+        const li = document.createElement('li');
+        li.textContent = style.name;
+        li.onclick = () => {
+            updateState({ currentStyle: style.name });
+            mapController.getMap().setStyle(style.url);
+            styleMenu.style.display = 'none';
+            showStatus(`Estilo alterado para ${style.name}`, 'success');
+        };
+        styleList.appendChild(li);
+    });
+}
+
+// Exibe resultados de busca
+export function displaySearchResults(results) {
+    const searchResultsDiv = document.getElementById('searchResults');
+    searchResultsDiv.innerHTML = '';
+    if (!results || results.length === 0) {
+        searchResultsDiv.innerHTML = '<div style="padding:12px;">Nenhum resultado encontrado.</div>';
+        return;
+    }
+    const ul = document.createElement('ul');
+    results.forEach(result => {
+        const li = document.createElement('li');
+        const nameSpan = document.createElement('span');
+        const displayName = result.properties?.name || result.properties?.Alimentador || 'Sem nome';
+        nameSpan.textContent = `${displayName} ${result.properties?.distance !== undefined ? '(' + formatters.distance(result.properties.distance) + ')' : ''}`;
+        li.appendChild(nameSpan);
+
+        // Visualizar no mapa
+        const viewButton = document.createElement('button');
+        viewButton.textContent = 'Visualizar';
+        viewButton.onclick = () => {
+            const center = result.geometry && result.geometry.coordinates
+                ? (result.geometry.type === 'Point'
+                    ? result.geometry.coordinates
+                    : (Array.isArray(result.geometry.coordinates[0])
+                        ? result.geometry.coordinates[0]
+                        : result.geometry.coordinates))
+                : null;
+            if (center) {
+                mapController.flyToLocation(center);
+            }
+            searchResultsDiv.innerHTML = '';
+        };
+        li.appendChild(viewButton);
+
+        // Google Maps
+        const googleButton = document.createElement('button');
+        googleButton.textContent = 'Google Maps';
+        googleButton.onclick = () => {
+            const center = result.geometry && result.geometry.coordinates
+                ? (result.geometry.type === 'Point'
+                    ? result.geometry.coordinates
+                    : (Array.isArray(result.geometry.coordinates[0])
+                        ? result.geometry.coordinates[0]
+                        : result.geometry.coordinates))
+                : null;
+            if (center) {
+                window.open(`https://www.google.com/maps?q=${center[1]},${center[0]}`, '_blank');
+            }
+        };
+        li.appendChild(googleButton);
+
+        ul.appendChild(li);
+    });
+    searchResultsDiv.appendChild(ul);
+}
+
+// Exibe/oculta menus
+export function toggleVisibility(element) {
+    if (!element) return;
+    element.style.display = (element.style.display === 'block') ? 'none' : 'block';
+}
+
+// Gerenciamento de menus laterais
+export function setupMenuToggles() {
+    document.getElementById('btnLoadedFiles').onclick = () => {
+        toggleVisibility(document.getElementById('loadedFilesMenu'));
+    };
+    document.getElementById('btnLineGroups').onclick = () => {
+        toggleVisibility(document.getElementById('lineMenu'));
+    };
+    document.getElementById('btnStyles').onclick = () => {
+        displayStyleList();
+        toggleVisibility(document.getElementById('styleMenu'));
+    };
+    document.getElementById('btnKMZ').onclick = () => {
+        toggleVisibility(document.getElementById('kmzMenu'));
+    };
+}
+
+// Recentes
+export function updateRecentFiles(fileName) {
+    let recentFiles = JSON.parse(localStorage.getItem('recentFiles') || '[]');
+    recentFiles = recentFiles.filter(f => f !== fileName);
+    recentFiles.unshift(fileName);
+    recentFiles = recentFiles.slice(0, 5);
+    localStorage.setItem('recentFiles', JSON.stringify(recentFiles));
+}
+
+// Exibe arquivos carregados
+export function updateLoadedFilesList() {
+    const loadedFilesList = document.getElementById('loadedFilesList');
+    loadedFilesList.innerHTML = '';
+    state.files.forEach(file => {
+        const li = document.createElement('li');
+        li.textContent = file.name;
+        const removeBtn = document.createElement('button');
+        removeBtn.textContent = 'Remover';
+        removeBtn.onclick = () => {
+            // Lógica para remover camada do mapa e do estado
+            const idx = state.files.findIndex(f => f.name === file.name);
+            if (idx >= 0) state.files.splice(idx, 1);
+            // Remoção das camadas reais do maplibre fica para o map.js
+            li.remove();
+        };
+        li.appendChild(removeBtn);
+        loadedFilesList.appendChild(li);
+    });
+}
+
+// Atualiza grupos de linhas
+export function updateGroupMenu(groups) {
+    const lineGroupsList = document.getElementById('lineGroupsList');
+    lineGroupsList.innerHTML = '';
+    if (!groups) return;
+    groups.forEach(grp => {
+        const li = document.createElement('li');
+        const lbl = document.createElement('label');
+        const chk = document.createElement('input');
+        chk.type = 'checkbox';
+        chk.value = grp;
+        chk.checked = true;
+        chk.onchange = () => {
+            // Implementar lógica de filtro de grupos
+        };
+        lbl.appendChild(chk);
+        lbl.appendChild(document.createTextNode(' ' + grp));
+        li.appendChild(lbl);
+        lineGroupsList.appendChild(li);
+    });
+}
+
+// Debounced search
+export const setupSearchInput = (searchHandler) => {
+    const searchInput = document.getElementById('searchInput');
+    if (!searchInput) return;
+    searchInput.oninput = debounce(searchHandler, 350);
+};
+
+export default {
+    showLoading,
+    hideLoading,
+    showStatus,
+    displayStyleList,
+    displaySearchResults,
+    toggleVisibility,
+    setupMenuToggles,
+    updateRecentFiles,
+    updateLoadedFilesList,
+    updateGroupMenu,
+    setupSearchInput
+};
