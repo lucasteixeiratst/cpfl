@@ -1,12 +1,12 @@
 // ---------------------------------------------------------------------------------------
 // APP.JS - Inicialização e integração de toda a aplicação
-// Última atualização: 2025-06-08 20:19:55
+// Última atualização: 2025-06-08 21:45:00
 // Autor: lucasteixeiratst
 // ---------------------------------------------------------------------------------------
 
 import { state, updateState, loadStateFromCache, ERROR_MESSAGES } from './config.js';
 import mapController, { initMap } from './map.js';
-import dataManager, { uploadToSupabase, searchFeatures } from './data.js';
+import dataManager, { uploadToSupabase, searchFeatures, fetchFeatures } from './data.js';
 import ui, { showLoading, hideLoading, showStatus, displaySearchResults, setupMenuToggles, setupSearchInput, updateLoadedFilesList } from './ui.js';
 
 // Inicialização principal
@@ -15,6 +15,12 @@ export async function initializeApp() {
         showLoading('Inicializando mapa...');
         loadStateFromCache();
         await initMap();
+
+        // Carrega features do banco automaticamente
+        showLoading('Carregando dados do banco...');
+        await fetchFeatures();
+        hideLoading();
+        updateLoadedFilesList();
 
         // Configura Menus e Botões
         setupMenuToggles();
@@ -50,7 +56,6 @@ export async function initializeApp() {
         if (btnCarregarProximos) {
             btnCarregarProximos.onclick = async () => {
                 showLoading('Buscando arquivos próximos...');
-                // Sugestão: implementar a lógica de carregar arquivos próximos aqui
                 setTimeout(() => {
                     hideLoading();
                     showStatus('Função de carregar arquivos próximos ainda não implementada.', 'warning');
@@ -91,9 +96,6 @@ export async function initializeApp() {
             };
         }
 
-        // Inicializa menus de arquivos carregados, etc.
-        updateLoadedFilesList();
-
         hideLoading();
         showStatus('Mapa pronto!', 'success', 1200);
 
@@ -123,6 +125,4 @@ async function onSearchInput() {
     }
 }
 
-export default {
-    initializeApp
-};
+export default { initializeApp };
