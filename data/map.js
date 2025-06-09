@@ -1,5 +1,5 @@
 // MAP.JS - Funções de controle e manipulação do mapa
-// Última atualização: 2025-06-09 10:30
+// Última atualização: 2025-06-09 18:17
 // Autor: lucasteixeiratst
 
 import { MAP_CONFIG, FEATURE_CONFIG, state, updateState } from './config.js';
