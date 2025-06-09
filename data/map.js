@@ -1,5 +1,5 @@
 // MAP.JS - Funções de controle e manipulação do mapa
-// Última atualização: 2025-06-09 09:40
+// Última atualização: 2025-06-09 10:30
 // Autor: lucasteixeiratst
 
 import { MAP_CONFIG, FEATURE_CONFIG, state, updateState } from './config.js';
@@ -13,6 +13,10 @@ let isProcessingQueue = false;
 export async function initMap() {
     return new Promise((resolve, reject) => {
         try {
+            if (!document.getElementById('map')) {
+                reject(new AppError('Elemento #map não encontrado no DOM', 'MAP_CONTAINER_ERROR'));
+                return;
+            }
             map = new maplibregl.Map({
                 container: 'map',
                 style: MAP_CONFIG.styles.find(s => s.name === state.currentStyle)?.url || MAP_CONFIG.styles[0].url,
@@ -24,7 +28,7 @@ export async function initMap() {
 
             map.on('load', () => {
                 console.log('Mapa inicializado com sucesso');
-                document.getElementById('loading-overlay').style.display = 'none';
+                document.getElementById('loading-overlay')?.style.display = 'none';
                 resolve(map);
             });
 
@@ -100,7 +104,6 @@ export function addLayerToMap(geojson, fileName) {
                 },
                 layout: { 'visibility': state.linesVisible ? 'visible' : 'none' }
             });
-            // Adiciona rótulos para alimentadores nas linhas
             map.addLayer({
                 id: `line-labels-${sourceId}`,
                 type: 'symbol',
