@@ -1,6 +1,6 @@
 // ---------------------------------------------------------------------------------------
 // DATA.JS - Gerenciamento de dados e interação com Supabase
-// Última atualização: 2025-06-08 22:25
+// Última atualização: 2025-06-09 09:40
 // Autor: lucasteixeiratst
 // ---------------------------------------------------------------------------------------
 
@@ -162,7 +162,6 @@ export async function fetchFeatures() {
             }))
         };
 
-        // Agrupa por arquivo_nome para carregar como camadas separadas
         const files = {};
         data.forEach(f => {
             if (!files[f.arquivo_nome]) files[f.arquivo_nome] = { features: [] };
