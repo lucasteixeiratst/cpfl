@@ -1,50 +1,3 @@
-// ---------------------------------------------------------------------------------------
-// MAP.JS - Funções de controle e manipulação do mapa
-// Última atualização: 2025-06-08 17:38:00
-// Autor: lucasteixeiratst
-// ---------------------------------------------------------------------------------------
-
-import { MAP_CONFIG, FEATURE_CONFIG, state, updateState } from './config.js';
-import { AppError, computeDistance, getFeatureCenter, generateRandomColor } from './utils.js';
-
-let map = null;
-let loadingQueue = [];
-let isProcessingQueue = false;
-
-// Inicialização do Mapa
-export async function initMap() {
-    return new Promise((resolve, reject) => {
-        try {
-            map = new maplibregl.Map({
-                container: 'map',
-                style: MAP_CONFIG.styles.find(s => s.name === state.currentStyle)?.url || MAP_CONFIG.styles[0].url,
-                center: MAP_CONFIG.initialView.center,
-                zoom: MAP_CONFIG.initialView.zoom,
-                minZoom: MAP_CONFIG.initialView.minZoom,
-                maxZoom: MAP_CONFIG.initialView.maxZoom
-            });
-
-            map.on('load', () => {
-                console.log('Mapa inicializado com sucesso');
-                document.getElementById('loading-overlay').style.display = 'none';
-                resolve(map);
-            });
-
-            map.on('error', (error) => {
-                console.error('Erro na inicialização do mapa:', error);
-                reject(new AppError('Falha ao inicializar o mapa', 'MAP_INIT_ERROR', error));
-            });
-
-            map.addControl(new maplibregl.NavigationControl(), 'top-right');
-            map.addControl(new maplibregl.ScaleControl(), 'bottom-right');
-        } catch (error) {
-            console.error('Erro crítico na inicialização do mapa:', error);
-            reject(new AppError('Erro crítico na inicialização do mapa', 'CRITICAL_MAP_ERROR', error));
-        }
-    });
-}
-
-// Gerenciamento de Camadas
 export function addLayerToMap(geojson, fileName) {
     const sourceId = `source-${fileName.replace(/\s+/g, '_')}`;
     
@@ -54,8 +7,8 @@ export function addLayerToMap(geojson, fileName) {
 
     try {
         const pointFeatures = { type: 'FeatureCollection', features: geojson.features.filter(f => f.geometry.type === 'Point') };
-        const lineFeatures = { type: 'FeatureCollection', features: geojson.features.filter(f => 
-            ['LineString', 'MultiLineString', 'Polygon', 'MultiPolygon'].includes(f.geometry.type)) };
+        const lineFeatures = { type: 'FeatureCollection', features: geojson.features.filter(f => f.geometry.type === 'LineString' || f.geometry.type === 'MultiLineString') };
+        const polygonFeatures = { type: 'FeatureCollection', features: geojson.features.filter(f => f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon') };
 
         if (pointFeatures.features.length > 0) {
             map.addSource(`${sourceId}-markers`, { type: 'geojson', data: pointFeatures });
@@ -91,9 +44,6 @@ export function addLayerToMap(geojson, fileName) {
         }
 
         if (lineFeatures.features.length > 0) {
-            lineFeatures.features.forEach(feature => {
-                if (!feature.properties.color) feature.properties.color = generateRandomColor();
-            });
             map.addSource(`${sourceId}-lines`, { type: 'geojson', data: lineFeatures });
             map.addLayer({
                 id: `lines-${sourceId}`,
@@ -107,13 +57,39 @@ export function addLayerToMap(geojson, fileName) {
             });
         }
 
+        if (polygonFeatures.features.length > 0) {
+            map.addSource(`${sourceId}-polygons`, { type: 'geojson', data: polygonFeatures });
+            map.addLayer({
+                id: `polygons-${sourceId}`,
+                type: 'fill',
+                source: `${sourceId}-polygons`,
+                paint: {
+                    'fill-color': ['get', 'color'],
+                    'fill-opacity': 0.5
+                },
+                layout: { 'visibility': state.linesVisible ? 'visible' : 'none' }
+            });
+            map.addLayer({
+                id: `polygon-outlines-${sourceId}`,
+                type: 'line',
+                source: `${sourceId}-polygons`,
+                paint: {
+                    'line-color': '#000',
+                    'line-width': 1
+                },
+                layout: { 'visibility': state.linesVisible ? 'visible' : 'none' }
+            });
+        }
+
         state.files.push({
             name: fileName,
             sourceId,
             hasMarkers: pointFeatures.features.length > 0,
             hasLines: lineFeatures.features.length > 0,
+            hasPolygons: polygonFeatures.features.length > 0,
             pointFeatures,
-            lineFeatures
+            lineFeatures,
+            polygonFeatures
         });
 
         return true;
@@ -122,65 +98,3 @@ export function addLayerToMap(geojson, fileName) {
         throw new AppError('Falha ao adicionar camada ao mapa', 'LAYER_ADD_ERROR', error);
     }
 }
-
-// Controle de Visibilidade
-export function toggleLayerVisibility(layerId, visible) {
-    if (map.getLayer(layerId)) {
-        map.setLayoutProperty(layerId, 'visibility', visible ? 'visible' : 'none');
-        return true;
-    }
-    return false;
-}
-
-// Navegação
-export function flyToLocation(coordinates, zoom = 16) {
-    if (!Array.isArray(coordinates) || coordinates.length !== 2) {
-        throw new AppError('Coordenadas inválidas', 'INVALID_COORDINATES');
-    }
-    map.flyTo({ center: coordinates, zoom, essential: true });
-}
-
-// Gerenciamento de Marcadores
-export function addUserLocationMarker(coordinates) {
-    if (state.userLocationMarker) state.userLocationMarker.remove();
-    state.userLocationMarker = new maplibregl.Marker({ color: '#0088ff', scale: 1.2 })
-        .setLngLat(coordinates)
-        .addTo(map);
-    return state.userLocationMarker;
-}
-
-// Fila de Carregamento
-async function processLoadingQueue() {
-    if (isProcessingQueue || loadingQueue.length === 0) return;
-    isProcessingQueue = true;
-
-    while (loadingQueue.length > 0 && loadingQueue.length <= state.maxConcurrentLoads) {
-        const { geojson, fileName, resolve, reject } = loadingQueue.shift();
-        try {
-            await addLayerToMap(geojson, fileName);
-            resolve(true);
-        } catch (error) {
-            reject(error);
-        }
-        await new Promise(r => setTimeout(r, 100));
-    }
-    isProcessingQueue = false;
-}
-
-export default {
-    initMap,
-    addLayerToMap,
-    toggleLayerVisibility,
-    flyToLocation,
-    addUserLocationMarker,
-    getMap: () => map,
-    getLoadingQueueSize: () => loadingQueue.length,
-    queueLayer: (geojson, fileName) => new Promise((resolve, reject) => {
-        loadingQueue.push({ geojson, fileName, resolve, reject });
-        processLoadingQueue();
-    }),
-    clearLoadingQueue: () => {
-        loadingQueue = [];
-        isProcessingQueue = false;
-    }
-};
