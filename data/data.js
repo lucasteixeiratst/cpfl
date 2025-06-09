@@ -1,6 +1,6 @@
 // ---------------------------------------------------------------------------------------
 // DATA.JS - Gerenciamento de dados e interação com Supabase
-// Última atualização: 2025-06-08 17:38:00
+// Última atualização: 2025-06-08 21:45:00
 // Autor: lucasteixeiratst
 // ---------------------------------------------------------------------------------------
 
@@ -130,6 +130,51 @@ export async function searchFeatures(term, options = {}) {
     }
 }
 
+export async function fetchFeatures() {
+    try {
+        const { data, error } = await supabase
+            .from('features')
+            .select('*');
+
+        if (error) throw new AppError('Erro ao buscar features', 'FETCH_ERROR', error);
+
+        const geojson = {
+            type: 'FeatureCollection',
+            features: data.map(f => ({
+                type: 'Feature',
+                geometry: {
+                    type: f.tipo === 'marker' ? 'Point' : 'LineString',
+                    coordinates: f.tipo === 'marker' ? [f.lng, f.lat] : JSON.parse(f.coords)
+                },
+                properties: {
+                    name: f.name,
+                    Alimentador: f.alimentador,
+                    color: generateRandomColor() // Garante cor para linhas
+                }
+            }))
+        };
+
+        // Agrupa por arquivo_nome para carregar como camadas separadas
+        const files = {};
+        data.forEach(f => {
+            if (!files[f.arquivo_nome]) files[f.arquivo_nome] = { features: [] };
+            files[f.arquivo_nome].features.push(geojson.features.find(feat => feat.geometry.coordinates.toString() === (f.tipo === 'marker' ? [f.lng, f.lat].toString() : JSON.parse(f.coords).toString())));
+        });
+
+        for (const [fileName, { features }] of Object.entries(files)) {
+            const fileGeojson = { type: 'FeatureCollection', features };
+            await mapController.queueLayer(fileGeojson, fileName);
+            if (!state.files.find(f => f.name === fileName)) {
+                state.files.push({ name: fileName, sourceId: `source-${fileName.replace(/\s+/g, '_')}`, hasLines: features.some(f => f.geometry.type !== 'Point'), hasMarkers: features.some(f => f.geometry.type === 'Point'), pointFeatures: { features: features.filter(f => f.geometry.type === 'Point') }, lineFeatures: { features: features.filter(f => f.geometry.type !== 'Point') } });
+            }
+        }
+
+        return { success: true, data: geojson };
+    } catch (error) {
+        throw new AppError('Falha ao carregar features do banco', 'FETCH_FEATURES_ERROR', error);
+    }
+}
+
 function searchLocalFeatures(term) {
     const results = [];
     const termLower = term.toLowerCase();
@@ -155,7 +200,7 @@ async function searchRemoteFeatures(term) {
         .or(`name.ilike.%${term}%,alimentador.ilike.%${term}%`)
         .limit(SEARCH_CONFIG.maxResults);
 
-    if (error) throw new AppError(ERROR_MESSAGES.SEARCH_FAILED, 'REMOTE_SEARCH_ERROR', error);
+    if (error) throw new AppError('Erro na busca remota', 'REMOTE_SEARCH_ERROR', error);
 
     return data.map(f => ({
         type: 'Feature',
@@ -189,4 +234,4 @@ export function updateRecentFiles(fileName) {
     localStorage.setItem('recentFiles', JSON.stringify(recentFiles));
 }
 
-export default { uploadToSupabase, searchFeatures, cache };
+export default { uploadToSupabase, searchFeatures, fetchFeatures, cache };
