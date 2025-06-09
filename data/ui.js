@@ -1,8 +1,6 @@
-// ---------------------------------------------------------------------------------------
 // UI.JS - Funções de manipulação da interface do usuário
-// Última atualização: 2025-06-09 08:30
+// Última atualização: 2025-06-09 18:17
 // Autor: lucasteixeiratst
-// ---------------------------------------------------------------------------------------
 
 import { MAP_CONFIG, state, updateState } from './config.js';
 import mapController from './map.js';
@@ -14,7 +12,7 @@ export function showLoading(msg = 'Carregando...') {
     if (!overlay) {
         overlay = document.createElement('div');
         overlay.id = 'loading-overlay';
-        overlay.className = 'loading'; // Adiciona classe para estilo
+        overlay.className = 'loading';
         overlay.innerHTML = `<div class="loading-spinner"></div><div class="loading-text">${msg}</div>`;
         document.body.appendChild(overlay);
     } else {
