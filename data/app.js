@@ -1,5 +1,5 @@
 // APP.JS - Inicialização e integração de toda a aplicação
-// Última atualização: 2025-06-08 22:25
+// Última atualização: 2025-06-09 10:30
 // Autor: lucasteixeiratst
 
 import { state, updateState, loadStateFromCache, ERROR_MESSAGES } from './config.js';
@@ -12,9 +12,10 @@ export async function initializeApp() {
     try {
         showLoading('Inicializando mapa...');
         loadStateFromCache();
-        await initMap();
 
-        // Carrega features do banco automaticamente
+        const mapInstance = await initMap();
+        if (!mapInstance) throw new Error('Falha ao inicializar o mapa');
+
         showLoading('Carregando dados do banco...');
         try {
             await fetchFeatures();
@@ -25,11 +26,9 @@ export async function initializeApp() {
         hideLoading();
         updateLoadedFilesList();
 
-        // Configura Menus e Botões
         setupMenuToggles();
         setupSearchInput(onSearchInput);
 
-        // Botão upload para Supabase
         const btnUploadSupabase = document.getElementById('btnUploadSupabase');
         if (btnUploadSupabase) {
             btnUploadSupabase.onclick = () => {
@@ -54,7 +53,6 @@ export async function initializeApp() {
             };
         }
 
-        // Botão carregar próximos
         const btnCarregarProximos = document.getElementById('btnCarregarProximos');
         if (btnCarregarProximos) {
             btnCarregarProximos.onclick = async () => {
@@ -66,13 +64,11 @@ export async function initializeApp() {
             };
         }
 
-        // Botão buscar
         const btnSearch = document.getElementById('btnSearch');
         if (btnSearch) {
             btnSearch.onclick = onSearchInput;
         }
 
-        // Botão reset view
         const btnReset = document.getElementById('btnReset');
         if (btnReset) {
             btnReset.onclick = () => {
@@ -80,7 +76,6 @@ export async function initializeApp() {
             };
         }
 
-        // Botão localização
         const btnLocation = document.getElementById('btnLocation');
         if (btnLocation) {
             btnLocation.onclick = () => {
