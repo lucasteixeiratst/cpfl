@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mapa CPFL</title>
     <link href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="styles.css">
     <script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -15,23 +16,23 @@
 
     <!-- Menu Principal -->
     <div class="menu">
-        <button id="btnKMZ" title="Carregar KMZ/KML"><img src="icons/upload.svg" alt="Upload"></button>
-        <button id="btnUploadSupabase" title="Upload Supabase"><img src="icons/cloud-upload.svg" alt="Upload Supabase"></button>
-        <button id="btnCarregarProximos" title="Carregar em 20km"><img src="icons/nearby.svg" alt="Carregar Próximos"></button>
-        <button id="btnToggleMarkers" title="Exibir/Ocultar Marcadores"><img src="icons/marker.svg" alt="Marcadores"></button>
-        <button id="btnToggleNames" title="Exibir/Ocultar Nomes"><img src="icons/label.svg" alt="Nomes"></button>
-        <button id="btnToggleLines" title="Exibir/Ocultar Linhas"><img src="icons/line.svg" alt="Linhas"></button>
-        <button id="btnReset" title="Resetar Visão"><img src="icons/reset.svg" alt="Reset"></button>
-        <button id="btnLocation" title="Minha Localização"><img src="icons/location.svg" alt="Localização"></button>
-        <button id="btnLineGroups" title="Grupos de Linhas"><img src="icons/layers.svg" alt="Grupos"></button>
-        <button id="btnLoadedFiles" title="Arquivos Carregados"><img src="icons/files.svg" alt="Arquivos"></button>
-        <button id="btnStyles" title="Estilos do Mapa"><img src="icons/style.svg" alt="Estilos"></button>
+        <button id="btnKMZ" title="Carregar KMZ/KML"><i class="fas fa-upload"></i></button>
+        <button id="btnUploadSupabase" title="Upload Supabase"><i class="fas fa-cloud-upload-alt"></i></button>
+        <button id="btnCarregarProximos" title="Carregar em 20km"><i class="fas fa-map-marker-alt"></i></button>
+        <button id="btnToggleMarkers" title="Exibir/Ocultar Marcadores"><i class="fas fa-map-pin"></i></button>
+        <button id="btnToggleNames" title="Exibir/Ocultar Nomes"><i class="fas fa-font"></i></button>
+        <button id="btnToggleLines" title="Exibir/Ocultar Linhas"><i class="fas fa-slash"></i></button>
+        <button id="btnReset" title="Resetar Visão"><i class="fas fa-redo"></i></button>
+        <button id="btnLocation" title="Minha Localização"><i class="fas fa-location-arrow"></i></button>
+        <button id="btnLineGroups" title="Grupos de Linhas"><i class="fas fa-layer-group"></i></button>
+        <button id="btnLoadedFiles" title="Arquivos Carregados"><i class="fas fa-file-alt"></i></button>
+        <button id="btnStyles" title="Estilos do Mapa"><i class="fas fa-paint-brush"></i></button>
     </div>
 
     <!-- Barra de Busca -->
     <div class="search-bar">
         <input type="text" id="searchInput" placeholder="Buscar no mapa...">
-        <button id="btnSearch">Buscar</button>
+        <button id="btnSearch"><i class="fas fa-search"></i></button>
     </div>
 
     <!-- Resultados da Busca -->
@@ -60,12 +61,18 @@
     <!-- Footer -->
     <footer>
         Todos direitos reservados a Lucas Teixeira<br>
-        <span id="last-update">Última atualização: 2025-06-08 20:10:21</span>
+        <span id="last-update">Última atualização: 2025-06-09 10:29</span>
     </footer>
 
     <script type="module">
         import { initializeApp } from './app.js';
-        window.addEventListener('DOMContentLoaded', () => { initializeApp(); });
+        window.addEventListener('DOMContentLoaded', () => {
+            if (typeof maplibregl !== 'undefined') {
+                initializeApp();
+            } else {
+                console.error('maplibregl não carregado. Verifique a conexão ou CDNs.');
+            }
+        });
     </script>
 </body>
 </html>
