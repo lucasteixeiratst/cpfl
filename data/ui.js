@@ -1,6 +1,6 @@
 // ---------------------------------------------------------------------------------------
 // UI.JS - Funções de manipulação da interface do usuário
-// Última atualização: 2025-06-08 20:18:41
+// Última atualização: 2025-06-09 08:30
 // Autor: lucasteixeiratst
 // ---------------------------------------------------------------------------------------
 
@@ -14,14 +14,16 @@ export function showLoading(msg = 'Carregando...') {
     if (!overlay) {
         overlay = document.createElement('div');
         overlay.id = 'loading-overlay';
-        overlay.innerHTML = `<div class="loading-spinner"></div><div style="margin-top:15px;">${msg}</div>`;
+        overlay.className = 'loading'; // Adiciona classe para estilo
+        overlay.innerHTML = `<div class="loading-spinner"></div><div class="loading-text">${msg}</div>`;
         document.body.appendChild(overlay);
+    } else {
+        const textElement = overlay.querySelector('.loading-text');
+        if (textElement) textElement.textContent = msg;
     }
     overlay.style.display = 'flex';
-    if (msg) {
-        overlay.querySelector('div:last-child').textContent = msg;
-    }
 }
+
 export function hideLoading() {
     const overlay = document.getElementById('loading-overlay');
     if (overlay) overlay.style.display = 'none';
@@ -48,6 +50,7 @@ export function showStatus(msg, type = 'success', timeout = 3000) {
 export function displayStyleList() {
     const styleMenu = document.getElementById('styleMenu');
     const styleList = document.getElementById('styleList');
+    if (!styleMenu || !styleList) return;
     styleList.innerHTML = '';
     MAP_CONFIG.styles.forEach(style => {
         const li = document.createElement('li');
@@ -65,6 +68,7 @@ export function displayStyleList() {
 // Exibe resultados de busca
 export function displaySearchResults(results) {
     const searchResultsDiv = document.getElementById('searchResults');
+    if (!searchResultsDiv) return;
     searchResultsDiv.innerHTML = '';
     if (!results || results.length === 0) {
         searchResultsDiv.innerHTML = '<div style="padding:12px;">Nenhum resultado encontrado.</div>';
@@ -78,7 +82,6 @@ export function displaySearchResults(results) {
         nameSpan.textContent = `${displayName} ${result.properties?.distance !== undefined ? '(' + formatters.distance(result.properties.distance) + ')' : ''}`;
         li.appendChild(nameSpan);
 
-        // Visualizar no mapa
         const viewButton = document.createElement('button');
         viewButton.textContent = 'Visualizar';
         viewButton.onclick = () => {
@@ -96,7 +99,6 @@ export function displaySearchResults(results) {
         };
         li.appendChild(viewButton);
 
-        // Google Maps
         const googleButton = document.createElement('button');
         googleButton.textContent = 'Google Maps';
         googleButton.onclick = () => {
@@ -126,17 +128,17 @@ export function toggleVisibility(element) {
 
 // Gerenciamento de menus laterais
 export function setupMenuToggles() {
-    document.getElementById('btnLoadedFiles').onclick = () => {
+    document.getElementById('btnLoadedFiles')?.onclick = () => {
         toggleVisibility(document.getElementById('loadedFilesMenu'));
     };
-    document.getElementById('btnLineGroups').onclick = () => {
+    document.getElementById('btnLineGroups')?.onclick = () => {
         toggleVisibility(document.getElementById('lineMenu'));
     };
-    document.getElementById('btnStyles').onclick = () => {
+    document.getElementById('btnStyles')?.onclick = () => {
         displayStyleList();
         toggleVisibility(document.getElementById('styleMenu'));
     };
-    document.getElementById('btnKMZ').onclick = () => {
+    document.getElementById('btnKMZ')?.onclick = () => {
         toggleVisibility(document.getElementById('kmzMenu'));
     };
 }
@@ -153,6 +155,7 @@ export function updateRecentFiles(fileName) {
 // Exibe arquivos carregados
 export function updateLoadedFilesList() {
     const loadedFilesList = document.getElementById('loadedFilesList');
+    if (!loadedFilesList) return;
     loadedFilesList.innerHTML = '';
     state.files.forEach(file => {
         const li = document.createElement('li');
@@ -160,10 +163,8 @@ export function updateLoadedFilesList() {
         const removeBtn = document.createElement('button');
         removeBtn.textContent = 'Remover';
         removeBtn.onclick = () => {
-            // Lógica para remover camada do mapa e do estado
             const idx = state.files.findIndex(f => f.name === file.name);
             if (idx >= 0) state.files.splice(idx, 1);
-            // Remoção das camadas reais do maplibre fica para o map.js
             li.remove();
         };
         li.appendChild(removeBtn);
@@ -174,6 +175,7 @@ export function updateLoadedFilesList() {
 // Atualiza grupos de linhas
 export function updateGroupMenu(groups) {
     const lineGroupsList = document.getElementById('lineGroupsList');
+    if (!lineGroupsList) return;
     lineGroupsList.innerHTML = '';
     if (!groups) return;
     groups.forEach(grp => {
