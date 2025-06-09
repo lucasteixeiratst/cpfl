@@ -1,5 +1,5 @@
 // MAP.JS - Funções de controle e manipulação do mapa
-// Última atualização: 2025-06-08 22:01
+// Última atualização: 2025-06-09 09:40
 // Autor: lucasteixeiratst
 
 import { MAP_CONFIG, FEATURE_CONFIG, state, updateState } from './config.js';
@@ -99,6 +99,25 @@ export function addLayerToMap(geojson, fileName) {
                     'line-width': FEATURE_CONFIG.lines.width
                 },
                 layout: { 'visibility': state.linesVisible ? 'visible' : 'none' }
+            });
+            // Adiciona rótulos para alimentadores nas linhas
+            map.addLayer({
+                id: `line-labels-${sourceId}`,
+                type: 'symbol',
+                source: `${sourceId}-lines`,
+                layout: {
+                    'text-field': ['get', 'Alimentador'],
+                    'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
+                    'text-size': 10,
+                    'text-offset': [0, 1],
+                    'text-allow-overlap': true,
+                    'visibility': state.namesVisible ? 'visible' : 'none'
+                },
+                paint: {
+                    'text-color': '#000000',
+                    'text-halo-color': '#FFFFFF',
+                    'text-halo-width': 1
+                }
             });
         }
 
