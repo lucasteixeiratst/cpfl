@@ -1,105 +1,71 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Visualizador de Mapas</title>
-    <link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet" />
-    <script src="https://unpkg.com/maplibre-gl"></script>
-    <script src="https://unpkg.com/@tmcw/togeojson"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.6.0/jszip.min.js"></script>
-    <link rel="stylesheet" href="styles.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa CPFL</title>
+    <link href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://unpkg.com/@tmcw/togeojson@4.2.0/dist/togeojson.umd.js"></script>
 </head>
 <body>
     <div id="map"></div>
-    <div id="loading-overlay" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.1); justify-content: center; align-items: center; flex-direction: column; z-index: 3000;"></div>
 
-    <div class="menu" aria-label="Menu de Controle">
-        <button id="btnKMZ" aria-label="Carregar KMZ/KML">
-            <img src="https://img.icons8.com/ios-filled/50/000000/upload.png" alt="Upload" />
-            <div class="button-legend">Carregar KMZ/KML</div>
-        </button>
-        <button id="btnUploadSupabase" aria-label="Upload Supabase">
-            <img src="https://img.icons8.com/ios-filled/50/000000/cloud-upload.png" alt="Upload Cloud" />
-            <div class="button-legend">Upload Supabase</div>
-        </button>
-        <button id="btnCarregarProximos" aria-label="Carregar em 20km">
-            <img src="https://img.icons8.com/ios-filled/50/000000/radius.png" alt="Carregar Próximos" />
-            <div class="button-legend">Carregar em 20km</div>
-        </button>
-        <button id="btnMarkers" aria-label="Exibir/Ocultar Marcadores">
-            <img src="https://img.icons8.com/material-outlined/24/000000/map-pin.png" alt="Marcadores" />
-            <div class="button-legend">Exibir/Ocultar Marcadores</div>
-        </button>
-        <button id="btnNames" aria-label="Exibir/Ocultar Nomes">
-            <img src="https://img.icons8.com/material-outlined/24/000000/name.png" alt="Nomes" />
-            <div class="button-legend">Exibir/Ocultar Nomes</div>
-        </button>
-        <button id="btnLines" aria-label="Exibir/Ocultar Linhas">
-            <img src="https://img.icons8.com/material-outlined/24/000000/polyline.png" alt="Linhas" />
-            <div class="button-legend">Exibir/Ocultar Linhas</div>
-        </button>
-        <button id="btnReset" aria-label="Resetar Visão">
-            <img src="https://img.icons8.com/material-outlined/24/000000/refresh.png" alt="Resetar" />
-            <div class="button-legend">Resetar Visão</div>
-        </button>
-        <button id="btnLocation" aria-label="Minha Localização">
-            <img src="https://img.icons8.com/material-outlined/24/000000/compass.png" alt="Localização Atual" />
-            <div class="button-legend">Minha Localização</div>
-        </button>
-        <button id="btnLineGroups" aria-label="Grupos de Linhas">
-            <img src="https://img.icons8.com/material-outlined/24/000000/layers.png" alt="Grupos de Linhas" />
-            <div class="button-legend">Grupos de Linhas</div>
-        </button>
-        <button id="btnLoadedFiles" aria-label="Arquivos Carregados">
-            <img src="https://img.icons8.com/material-outlined/24/000000/folder-invoices.png" alt="Arquivos Carregados" />
-            <div class="button-legend">Arquivos Carregados</div>
-        </button>
-        <button id="btnStyles" aria-label="Estilos do Mapa">
-            <img src="https://img.icons8.com/material-outlined/24/000000/paint.png" alt="Estilos" />
-            <div class="button-legend">Estilos do Mapa</div>
-        </button>
+    <!-- Menu Principal -->
+    <div class="menu">
+        <button id="btnKMZ" title="Carregar KMZ/KML"><img src="icons/upload.svg" alt="Upload"></button>
+        <button id="btnUploadSupabase" title="Upload Supabase"><img src="icons/cloud-upload.svg" alt="Upload Supabase"></button>
+        <button id="btnCarregarProximos" title="Carregar em 20km"><img src="icons/nearby.svg" alt="Carregar Próximos"></button>
+        <button id="btnToggleMarkers" title="Exibir/Ocultar Marcadores"><img src="icons/marker.svg" alt="Marcadores"></button>
+        <button id="btnToggleNames" title="Exibir/Ocultar Nomes"><img src="icons/label.svg" alt="Nomes"></button>
+        <button id="btnToggleLines" title="Exibir/Ocultar Linhas"><img src="icons/line.svg" alt="Linhas"></button>
+        <button id="btnReset" title="Resetar Visão"><img src="icons/reset.svg" alt="Reset"></button>
+        <button id="btnLocation" title="Minha Localização"><img src="icons/location.svg" alt="Localização"></button>
+        <button id="btnLineGroups" title="Grupos de Linhas"><img src="icons/layers.svg" alt="Grupos"></button>
+        <button id="btnLoadedFiles" title="Arquivos Carregados"><img src="icons/files.svg" alt="Arquivos"></button>
+        <button id="btnStyles" title="Estilos do Mapa"><img src="icons/style.svg" alt="Estilos"></button>
     </div>
 
-    <div class="search-bar" role="search">
-        <input type="text" id="searchInput" placeholder="Buscar no mapa..." aria-label="Barra de busca" />
-        <button id="btnSearch" aria-label="Executar busca">Buscar</button>
+    <!-- Barra de Busca -->
+    <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="Buscar no mapa...">
+        <button id="btnSearch">Buscar</button>
     </div>
 
-    <div id="searchResults" class="search-results" role="region" aria-live="polite"></div>
+    <!-- Resultados da Busca -->
+    <div id="searchResults" class="search-results"></div>
 
-    <div class="kmz-menu" id="kmzMenu" role="menu">
-        <ul id="kmzList" role="menu"></ul>
-        <ul>
-            <li id="selectDevice" role="menuitem">Selecionar do dispositivo...</li>
+    <!-- Menus -->
+    <div id="kmzMenu" class="kmz-menu">
+        <ul id="kmzList">
+            <li><input type="file" id="kmzInput" accept=".kml,.kmz" onchange="document.getElementById('kmzForm').submit()">Selecionar do dispositivo...</li>
         </ul>
     </div>
-
-    <div class="line-menu" id="lineMenu" role="menu">
+    <div id="lineMenu" class="line-menu">
         <div class="line-menu-header">
-            <button id="hideAll" aria-label="Ocultar todas as linhas">Ocultar Todas</button>
-            <button id="showAll" aria-label="Exibir todas as linhas">Exibir Todas</button>
+            <button>Ocultar Todas</button>
+            <button>Exibir Todas</button>
         </div>
-        <ul id="lineGroupsList" role="menu"></ul>
+        <ul id="lineGroupsList"></ul>
+    </div>
+    <div id="loadedFilesMenu" class="loaded-files-menu">
+        <ul id="loadedFilesList"></ul>
+    </div>
+    <div id="styleMenu" class="style-menu">
+        <ul id="styleList"></ul>
     </div>
 
-    <div class="loaded-files-menu" id="loadedFilesMenu" role="menu">
-        <h3>Arquivos Carregados</h3>
-        <ul id="loadedFilesList" role="menu"></ul>
-    </div>
-
-    <div class="style-menu" id="styleMenu" role="menu">
-        <ul id="styleList" role="menu"></ul>
-    </div>
-
+    <!-- Footer -->
     <footer>
-        Todos direitos reservados a Lucas Teixeira
-        <div id="last-update">Última atualização: 2025-06-08 20:10:21</div>
+        Todos direitos reservados a Lucas Teixeira<br>
+        <span id="last-update">Última atualização: 2025-06-08 20:10:21</span>
     </footer>
 
     <script type="module">
         import { initializeApp } from './app.js';
-        initializeApp();
+        window.addEventListener('DOMContentLoaded', () => { initializeApp(); });
     </script>
 </body>
 </html>
