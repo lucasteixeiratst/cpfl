@@ -1,5 +1,5 @@
 // APP.JS - Inicialização e integração de toda a aplicação
-// Última atualização: 2025-06-08 22:01
+// Última atualização: 2025-06-08 22:25
 // Autor: lucasteixeiratst
 
 import { state, updateState, loadStateFromCache, ERROR_MESSAGES } from './config.js';
@@ -16,7 +16,12 @@ export async function initializeApp() {
 
         // Carrega features do banco automaticamente
         showLoading('Carregando dados do banco...');
-        await fetchFeatures();
+        try {
+            await fetchFeatures();
+        } catch (error) {
+            showStatus('Falha ao carregar dados do banco, verifique a conexão.', 'warning');
+            console.error('Erro ao carregar features:', error);
+        }
         hideLoading();
         updateLoadedFilesList();
 
