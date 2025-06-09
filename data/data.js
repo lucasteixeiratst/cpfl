@@ -1,8 +1,6 @@
-// ---------------------------------------------------------------------------------------
 // DATA.JS - Gerenciamento de dados e interação com Supabase
-// Última atualização: 2025-06-09 09:40
+// Última atualização: 2025-06-09 18:17
 // Autor: lucasteixeiratst
-// ---------------------------------------------------------------------------------------
 
 import { supabase, state, SEARCH_CONFIG } from './config.js';
 import { AppError, computeDistance, getFeatureCenter, validators, generateRandomColor } from './utils.js';
