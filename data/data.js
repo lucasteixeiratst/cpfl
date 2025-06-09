@@ -1,6 +1,8 @@
+// ---------------------------------------------------------------------------------------
 // DATA.JS - Gerenciamento de dados e interação com Supabase
-// Última atualização: 2025-06-08 22:01
+// Última atualização: 2025-06-08 22:25
 // Autor: lucasteixeiratst
+// ---------------------------------------------------------------------------------------
 
 import { supabase, state, SEARCH_CONFIG } from './config.js';
 import { AppError, computeDistance, getFeatureCenter, validators, generateRandomColor } from './utils.js';
@@ -84,25 +86,29 @@ async function processFile(file) {
 }
 
 function extractFeatures(geojson) {
-    const markers = [];
-    const lines = [];
-    const polygons = [];
+    const featuresData = [];
     let center = null;
 
     geojson.features.forEach(feature => {
+        let featureObj = {
+            name: feature.properties?.name || '',
+            alimentador: feature.properties?.Alimentador || '',
+            geometry_type: feature.geometry.type
+        };
+
         if (feature.geometry.type === 'Point') {
-            markers.push({ tipo: 'marker', name: feature.properties?.name || '', alimentador: feature.properties?.Alimentador || '', lat: feature.geometry.coordinates[1], lng: feature.geometry.coordinates[0], geometry_type: 'Point' });
-            if (!center) center = feature.geometry.coordinates;
-        } else if (['LineString', 'MultiLineString'].includes(feature.geometry.type)) {
-            lines.push({ tipo: 'line', name: feature.properties?.name || '', alimentador: feature.properties?.Alimentador || '', coords: JSON.stringify(feature.geometry.coordinates), geometry_type: feature.geometry.type });
-            if (!center) center = calculateGeometryCenter(feature.geometry);
-        } else if (['Polygon', 'MultiPolygon'].includes(feature.geometry.type)) {
-            polygons.push({ tipo: 'polygon', name: feature.properties?.name || '', alimentador: feature.properties?.Alimentador || '', coords: JSON.stringify(feature.geometry.coordinates), geometry_type: feature.geometry.type });
-            if (!center) center = calculateGeometryCenter(feature.geometry);
+            featureObj.lat = feature.geometry.coordinates[1];
+            featureObj.lng = feature.geometry.coordinates[0];
+            featureObj.coords = JSON.stringify([feature.geometry.coordinates]);
+        } else if (['LineString', 'MultiLineString', 'Polygon', 'MultiPolygon'].includes(feature.geometry.type)) {
+            featureObj.coords = JSON.stringify(feature.geometry.coordinates);
         }
+
+        featuresData.push(featureObj);
+        if (!center) center = calculateGeometryCenter(feature.geometry);
     });
 
-    return { data: [...markers, ...lines, ...polygons], centro: center, total: markers.length + lines.length + polygons.length };
+    return { data: featuresData, centro: center, total: featuresData.length };
 }
 
 export async function searchFeatures(term, options = {}) {
@@ -140,16 +146,9 @@ export async function fetchFeatures() {
 
         if (error) throw new AppError('Erro ao buscar features', 'FETCH_ERROR', error);
 
-        // Agrupa features por arquivo_nome
-        const filesData = {};
-        data.forEach(f => {
-            if (!filesData[f.arquivo_nome]) {
-                filesData[f.arquivo_nome] = {
-                    name: f.arquivo_nome,
-                    features: []
-                };
-            }
-            const feature = {
+        const geojson = {
+            type: 'FeatureCollection',
+            features: data.map(f => ({
                 type: 'Feature',
                 geometry: {
                     type: f.geometry_type,
@@ -160,33 +159,32 @@ export async function fetchFeatures() {
                     Alimentador: f.alimentador,
                     color: generateRandomColor()
                 }
-            };
-            filesData[f.arquivo_nome].features.push(feature);
+            }))
+        };
+
+        // Agrupa por arquivo_nome para carregar como camadas separadas
+        const files = {};
+        data.forEach(f => {
+            if (!files[f.arquivo_nome]) files[f.arquivo_nome] = { features: [] };
+            files[f.arquivo_nome].features.push(geojson.features.find(feat => JSON.stringify(feat.geometry.coordinates) === f.coords));
         });
 
-        // Carrega cada conjunto de features no mapa
-        for (const fileName in filesData) {
-            const fileGeojson = {
-                type: 'FeatureCollection',
-                features: filesData[fileName].features
-            };
+        for (const [fileName, { features }] of Object.entries(files)) {
+            const fileGeojson = { type: 'FeatureCollection', features };
             await mapController.queueLayer(fileGeojson, fileName);
-            // Atualiza state.files se não estiver presente
             if (!state.files.find(f => f.name === fileName)) {
                 state.files.push({
                     name: fileName,
                     sourceId: `source-${fileName.replace(/\s+/g, '_')}`,
-                    hasMarkers: filesData[fileName].features.some(f => f.geometry.type === 'Point'),
-                    hasLines: filesData[fileName].features.some(f => f.geometry.type === 'LineString' || f.geometry.type === 'MultiLineString'),
-                    hasPolygons: filesData[fileName].features.some(f => f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon'),
-                    pointFeatures: { features: filesData[fileName].features.filter(f => f.geometry.type === 'Point') },
-                    lineFeatures: { features: filesData[fileName].features.filter(f => f.geometry.type === 'LineString' || f.geometry.type === 'MultiLineString') },
-                    polygonFeatures: { features: filesData[fileName].features.filter(f => f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon') }
+                    hasLines: features.some(f => f.geometry.type !== 'Point'),
+                    hasMarkers: features.some(f => f.geometry.type === 'Point'),
+                    pointFeatures: { features: features.filter(f => f.geometry.type === 'Point') },
+                    lineFeatures: { features: features.filter(f => f.geometry.type !== 'Point') }
                 });
             }
         }
 
-        return { success: true, data: data };
+        return { success: true, data: geojson };
     } catch (error) {
         throw new AppError('Falha ao carregar features do banco', 'FETCH_FEATURES_ERROR', error);
     }
@@ -205,10 +203,6 @@ function searchLocalFeatures(term) {
             const lineSource = mapController.getMap().getSource(`${file.sourceId}-lines`);
             if (lineSource?._data?.features) lineSource._data.features.forEach(feature => featureMatchesTerm(feature, termLower) && results.push(feature));
         }
-        if (file.hasPolygons) {
-            const polygonSource = mapController.getMap().getSource(`${file.sourceId}-polygons`);
-            if (polygonSource?._data?.features) polygonSource._data.features.forEach(feature => featureMatchesTerm(feature, termLower) && results.push(feature));
-        }
     });
 
     return results;
@@ -226,7 +220,7 @@ async function searchRemoteFeatures(term) {
     return data.map(f => ({
         type: 'Feature',
         geometry: { type: f.geometry_type, coordinates: JSON.parse(f.coords) },
-        properties: { name: f.name, Alimentador: f.alimentador, distance: state.userLocation ? computeDistance(state.userLocation, [f.lng, f.lat]) : 0 }
+        properties: { name: f.name, Alimentador: f.alimentador, distance: state.userLocation ? computeDistance(state.userLocation, f.lat ? [f.lng, f.lat] : getFeatureCenter({ geometry: { type: f.geometry_type, coordinates: JSON.parse(f.coords) } })) : 0 }
     }));
 }
 
