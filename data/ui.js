@@ -1,9 +1,13 @@
-// ui.js - melhorias de interface e controle de menus
+// UI.JS - Funções de manipulação da interface do usuário
+// Última atualização: 2025-06-09 23:29
+// Autor: lucasteixeiratst
+
 import { MAP_CONFIG, state, updateState } from './config.js';
 import mapController from './map.js';
 import { debounce, formatters } from './utils.js';
+import { updateRecentFiles } from './data.js'; // Importação da função corrigida
 
-// Exibe sobreposição de carregamento
+// Exibição de carregamento
 export function showLoading(msg = 'Carregando...') {
     let overlay = document.getElementById('loading-overlay');
     if (!overlay) {
@@ -24,6 +28,7 @@ export function hideLoading() {
     if (overlay) overlay.style.display = 'none';
 }
 
+// Mensagens de status
 export function showStatus(msg, type = 'success', timeout = 3000) {
     let indicator = document.getElementById('status-indicator');
     if (!indicator) {
@@ -40,11 +45,11 @@ export function showStatus(msg, type = 'success', timeout = 3000) {
     }, timeout);
 }
 
+// Exibe lista de estilos
 export function displayStyleList() {
     const styleMenu = document.getElementById('styleMenu');
     const styleList = document.getElementById('styleList');
     if (!styleMenu || !styleList) return;
-
     styleList.innerHTML = '';
     MAP_CONFIG.styles.forEach(style => {
         const li = document.createElement('li');
@@ -59,17 +64,15 @@ export function displayStyleList() {
     });
 }
 
+// Exibe resultados de busca
 export function displaySearchResults(results) {
     const searchResultsDiv = document.getElementById('searchResults');
     if (!searchResultsDiv) return;
-
     searchResultsDiv.innerHTML = '';
     if (!results || results.length === 0) {
         searchResultsDiv.innerHTML = '<div style="padding:12px;">Nenhum resultado encontrado.</div>';
-        searchResultsDiv.style.display = 'block';
         return;
     }
-
     const ul = document.createElement('ul');
     results.forEach(result => {
         const li = document.createElement('li');
@@ -91,7 +94,7 @@ export function displaySearchResults(results) {
             if (center) {
                 mapController.flyToLocation(center);
             }
-            searchResultsDiv.style.display = 'none';
+            searchResultsDiv.innerHTML = '';
         };
         li.appendChild(viewButton);
 
@@ -114,34 +117,35 @@ export function displaySearchResults(results) {
         ul.appendChild(li);
     });
     searchResultsDiv.appendChild(ul);
-    searchResultsDiv.style.display = 'block';
 }
 
+// Exibe/oculta menus
 export function toggleVisibility(element) {
     if (!element) return;
     element.style.display = (element.style.display === 'block') ? 'none' : 'block';
 }
 
+// Gerenciamento de menus laterais
 export function setupMenuToggles() {
-    document.getElementById('btnLoadedFiles')?.addEventListener('click', () => toggleVisibility(document.getElementById('loadedFilesMenu')));
-    document.getElementById('btnLineGroups')?.addEventListener('click', () => toggleVisibility(document.getElementById('lineMenu')));
-    document.getElementById('btnStyles')?.addEventListener('click', () => {
+    document.getElementById('btnLoadedFiles')?.onclick = () => {
+        toggleVisibility(document.getElementById('loadedFilesMenu'));
+    };
+    document.getElementById('btnLineGroups')?.onclick = () => {
+        toggleVisibility(document.getElementById('lineMenu'));
+    };
+    document.getElementById('btnStyles')?.onclick = () => {
         displayStyleList();
         toggleVisibility(document.getElementById('styleMenu'));
-    });
-    document.getElementById('btnKMZ')?.addEventListener('click', () => toggleVisibility(document.getElementById('kmzMenu')));
+    };
+    document.getElementById('btnKMZ')?.onclick = () => {
+        toggleVisibility(document.getElementById('kmzMenu'));
+    };
 }
 
-export function updateRecentFiles(fileName) {
-    let recentFiles = JSON.parse(localStorage.getItem('recentFiles') || '[]');
-    recentFiles = [fileName, ...recentFiles.filter(f => f !== fileName)].slice(0, 5);
-    localStorage.setItem('recentFiles', JSON.stringify(recentFiles));
-}
-
+// Exibe arquivos carregados
 export function updateLoadedFilesList() {
     const loadedFilesList = document.getElementById('loadedFilesList');
     if (!loadedFilesList) return;
-
     loadedFilesList.innerHTML = '';
     state.files.forEach(file => {
         const li = document.createElement('li');
@@ -158,13 +162,12 @@ export function updateLoadedFilesList() {
     });
 }
 
+// Atualiza grupos de linhas
 export function updateGroupMenu(groups) {
     const lineGroupsList = document.getElementById('lineGroupsList');
     if (!lineGroupsList) return;
-
     lineGroupsList.innerHTML = '';
     if (!groups) return;
-
     groups.forEach(grp => {
         const li = document.createElement('li');
         const lbl = document.createElement('label');
@@ -173,7 +176,7 @@ export function updateGroupMenu(groups) {
         chk.value = grp;
         chk.checked = true;
         chk.onchange = () => {
-            // lógica de filtro de grupos pode ser implementada aqui
+            // Implementar lógica de filtro de grupos
         };
         lbl.appendChild(chk);
         lbl.appendChild(document.createTextNode(' ' + grp));
@@ -182,6 +185,7 @@ export function updateGroupMenu(groups) {
     });
 }
 
+// Debounced search
 export const setupSearchInput = (searchHandler) => {
     const searchInput = document.getElementById('searchInput');
     if (!searchInput) return;
@@ -196,7 +200,7 @@ export default {
     displaySearchResults,
     toggleVisibility,
     setupMenuToggles,
-    updateRecentFiles,
+    updateRecentFiles, // Mantida como exportação, mas agora importada de data.js
     updateLoadedFilesList,
     updateGroupMenu,
     setupSearchInput
