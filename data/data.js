@@ -1,4 +1,7 @@
-// data.js - melhorias em upload e busca
+// DATA.JS - Gerenciamento de dados e interação com Supabase
+// Última atualização: 2025-06-09 23:29
+// Autor: lucasteixeiratst
+
 import { supabase, state, SEARCH_CONFIG } from './config.js';
 import { AppError, computeDistance, getFeatureCenter, validators, generateRandomColor } from './utils.js';
 import mapController from './map.js';
@@ -11,20 +14,20 @@ const cache = {
 
 export async function uploadToSupabase(file) {
     if (!validators.isValidFileName(file.name) || (!validators.isKMZFile(file.name) && !validators.isKMLFile(file.name))) {
-        throw new AppError('Tipo de arquivo inválido.', 'INVALID_FILE_TYPE');
+        throw new AppError(ERROR_MESSAGES.INVALID_FILE, 'INVALID_FILE_TYPE');
     }
 
     try {
-        const geojson = await processFile(file);
+        let geojson = await processFile(file);
         const features = extractFeatures(geojson);
-        const coords = await getCurrentLocation().catch(() => null);
+        let coords = await getCurrentLocation().catch(() => null);
 
         const { error: uploadError } = await supabase.storage
             .from('arquivos')
             .upload(file.name, file, { upsert: true });
 
-        if (uploadError && !uploadError.message.includes('already exists')) {
-            throw new AppError('Erro ao enviar para o armazenamento.', 'UPLOAD_ERROR', uploadError);
+        if (uploadError && !uploadError.message.includes('The resource already exists')) {
+            throw new AppError(ERROR_MESSAGES.UPLOAD_FAILED, 'UPLOAD_ERROR', uploadError);
         }
 
         const { data: publicUrlData } = supabase.storage
@@ -34,8 +37,8 @@ export async function uploadToSupabase(file) {
         const meta = {
             nome: file.name,
             url: publicUrlData.publicUrl,
-            lat: coords?.latitude || features.centro?.[1] || null,
-            lng: coords?.longitude || features.centro?.[0] || null,
+            lat: coords ? coords.latitude : (features.centro ? features.centro[1] : null),
+            lng: coords ? coords.longitude : (features.centro ? features.centro[0] : null),
             criado_em: new Date().toISOString(),
             criado_por: 'lucasteixeiratst',
             tamanho: file.size,
@@ -53,16 +56,12 @@ export async function uploadToSupabase(file) {
 
         cache.files.set(file.name, { meta, features: features.data, lastUpdate: Date.now() });
 
-        await mapController.queueLayer(geojson, file.name);
-        updateRecentFiles(file.name);
+        await mapController.queueLayer(geojson, fileName);
+        updateRecentFiles(fileName);
 
-        return {
-            success: true,
-            message: 'Arquivo e dados enviados com sucesso!',
-            data: { file: meta, featuresCount: features.data.length }
-        };
+        return { success: true, message: "Arquivo e dados enviados com sucesso!", data: { file: meta, featuresCount: features.data.length } };
     } catch (error) {
-        throw new AppError('Erro no processamento de upload.', 'UPLOAD_PROCESS_ERROR', error);
+        throw new AppError(ERROR_MESSAGES.UPLOAD_FAILED, 'UPLOAD_PROCESS_ERROR', error);
     }
 }
 
@@ -72,7 +71,7 @@ async function processFile(file) {
             const arrayBuffer = await file.arrayBuffer();
             const zip = await JSZip.loadAsync(arrayBuffer);
             const kmlFile = zip.file(/\.kml$/i)[0];
-            if (!kmlFile) throw new AppError('Arquivo KMZ sem KML válido.', 'INVALID_KMZ');
+            if (!kmlFile) throw new AppError(ERROR_MESSAGES.INVALID_FILE, 'INVALID_KMZ');
             const kmlContent = await kmlFile.async('string');
             return toGeoJSON.kml(new DOMParser().parseFromString(kmlContent, 'text/xml'));
         } else {
@@ -80,7 +79,7 @@ async function processFile(file) {
             return toGeoJSON.kml(new DOMParser().parseFromString(text, 'text/xml'));
         }
     } catch (error) {
-        throw new AppError('Erro ao ler arquivo.', 'FILE_PROCESSING_ERROR', error);
+        throw new AppError(ERROR_MESSAGES.LOAD_FAILED, 'FILE_PROCESSING_ERROR', error);
     }
 }
 
@@ -89,7 +88,7 @@ function extractFeatures(geojson) {
     let center = null;
 
     geojson.features.forEach(feature => {
-        const featureObj = {
+        let featureObj = {
             name: feature.properties?.name || '',
             alimentador: feature.properties?.Alimentador || '',
             geometry_type: feature.geometry.type
@@ -99,7 +98,7 @@ function extractFeatures(geojson) {
             featureObj.lat = feature.geometry.coordinates[1];
             featureObj.lng = feature.geometry.coordinates[0];
             featureObj.coords = JSON.stringify([feature.geometry.coordinates]);
-        } else {
+        } else if (['LineString', 'MultiLineString', 'Polygon', 'MultiPolygon'].includes(feature.geometry.type)) {
             featureObj.coords = JSON.stringify(feature.geometry.coordinates);
         }
 
@@ -108,23 +107,6 @@ function extractFeatures(geojson) {
     });
 
     return { data: featuresData, centro: center, total: featuresData.length };
-}
-
-function calculateGeometryCenter(geometry) {
-    const coords = [];
-    (function extract(c) {
-        if (typeof c[0] === 'number') coords.push(c);
-        else c.forEach(extract);
-    })(geometry.coordinates);
-    const lons = coords.map(c => c[0]), lats = coords.map(c => c[1]);
-    return [lons.reduce((a, b) => a + b, 0) / lons.length, lats.reduce((a, b) => a + b, 0) / lats.length];
-}
-
-async function getCurrentLocation() {
-    return new Promise((resolve, reject) => {
-        if (!navigator.geolocation) reject(new Error('Geolocalização não suportada.'));
-        navigator.geolocation.getCurrentPosition(resolve, reject);
-    });
 }
 
 export async function searchFeatures(term, options = {}) {
@@ -150,7 +132,58 @@ export async function searchFeatures(term, options = {}) {
         results.total = allResults.length;
         return allResults;
     } catch (error) {
-        throw new AppError('Erro ao buscar dados.', 'SEARCH_ERROR', error);
+        throw new AppError(ERROR_MESSAGES.SEARCH_FAILED, 'SEARCH_ERROR', error);
+    }
+}
+
+export async function fetchFeatures() {
+    try {
+        const { data, error } = await supabase
+            .from('features')
+            .select('*');
+
+        if (error) throw new AppError('Erro ao buscar features', 'FETCH_ERROR', error);
+
+        const geojson = {
+            type: 'FeatureCollection',
+            features: data.map(f => ({
+                type: 'Feature',
+                geometry: {
+                    type: f.geometry_type,
+                    coordinates: JSON.parse(f.coords)
+                },
+                properties: {
+                    name: f.name,
+                    Alimentador: f.alimentador,
+                    color: generateRandomColor()
+                }
+            }))
+        };
+
+        const files = {};
+        data.forEach(f => {
+            if (!files[f.arquivo_nome]) files[f.arquivo_nome] = { features: [] };
+            files[f.arquivo_nome].features.push(geojson.features.find(feat => JSON.stringify(feat.geometry.coordinates) === f.coords));
+        });
+
+        for (const [fileName, { features }] of Object.entries(files)) {
+            const fileGeojson = { type: 'FeatureCollection', features };
+            await mapController.queueLayer(fileGeojson, fileName);
+            if (!state.files.find(f => f.name === fileName)) {
+                state.files.push({
+                    name: fileName,
+                    sourceId: `source-${fileName.replace(/\s+/g, '_')}`,
+                    hasLines: features.some(f => f.geometry.type !== 'Point'),
+                    hasMarkers: features.some(f => f.geometry.type === 'Point'),
+                    pointFeatures: { features: features.filter(f => f.geometry.type === 'Point') },
+                    lineFeatures: { features: features.filter(f => f.geometry.type !== 'Point') }
+                });
+            }
+        }
+
+        return { success: true, data: geojson };
+    } catch (error) {
+        throw new AppError('Falha ao carregar features do banco', 'FETCH_FEATURES_ERROR', error);
     }
 }
 
@@ -161,15 +194,11 @@ function searchLocalFeatures(term) {
     state.files.forEach(file => {
         if (file.hasMarkers) {
             const markerSource = mapController.getMap().getSource(`${file.sourceId}-markers`);
-            markerSource?._data?.features?.forEach(feature => {
-                if (featureMatchesTerm(feature, termLower)) results.push(feature);
-            });
+            if (markerSource?._data?.features) markerSource._data.features.forEach(feature => featureMatchesTerm(feature, termLower) && results.push(feature));
         }
         if (file.hasLines) {
             const lineSource = mapController.getMap().getSource(`${file.sourceId}-lines`);
-            lineSource?._data?.features?.forEach(feature => {
-                if (featureMatchesTerm(feature, termLower)) results.push(feature);
-            });
+            if (lineSource?._data?.features) lineSource._data.features.forEach(feature => featureMatchesTerm(feature, termLower) && results.push(feature));
         }
     });
 
@@ -183,19 +212,12 @@ async function searchRemoteFeatures(term) {
         .or(`name.ilike.%${term}%,alimentador.ilike.%${term}%`)
         .limit(SEARCH_CONFIG.maxResults);
 
-    if (error) throw new AppError('Erro na busca remota.', 'REMOTE_SEARCH_ERROR', error);
+    if (error) throw new AppError('Erro na busca remota', 'REMOTE_SEARCH_ERROR', error);
 
     return data.map(f => ({
         type: 'Feature',
-        geometry: {
-            type: f.geometry_type,
-            coordinates: JSON.parse(f.coords)
-        },
-        properties: {
-            name: f.name,
-            Alimentador: f.alimentador,
-            distance: state.userLocation ? computeDistance(state.userLocation, f.lat ? [f.lng, f.lat] : getFeatureCenter({ geometry: { type: f.geometry_type, coordinates: JSON.parse(f.coords) } })) : 0
-        }
+        geometry: { type: f.geometry_type, coordinates: JSON.parse(f.coords) },
+        properties: { name: f.name, Alimentador: f.alimentador, distance: state.userLocation ? computeDistance(state.userLocation, f.lat ? [f.lng, f.lat] : getFeatureCenter({ geometry: { type: f.geometry_type, coordinates: JSON.parse(f.coords) } })) : 0 }
     }));
 }
 
@@ -203,14 +225,27 @@ function featureMatchesTerm(feature, term) {
     return (feature.properties?.name?.toLowerCase().includes(term) || feature.properties?.Alimentador?.toLowerCase().includes(term));
 }
 
+function calculateGeometryCenter(geometry) {
+    const coords = [];
+    function extractCoords(c) { if (typeof c[0] === 'number') coords.push(c); else c.forEach(extractCoords); }
+    extractCoords(geometry.coordinates);
+    const lons = coords.map(c => c[0]), lats = coords.map(c => c[1]);
+    return [lons.reduce((a, b) => a + b, 0) / lons.length, lats.reduce((a, b) => a + b, 0) / lats.length];
+}
+
+async function getCurrentLocation() {
+    return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) reject(new Error(ERROR_MESSAGES.GEOLOCATION_UNSUPPORTED));
+        navigator.geolocation.getCurrentPosition(resolve, reject);
+    });
+}
+
 export function updateRecentFiles(fileName) {
     let recentFiles = JSON.parse(localStorage.getItem('recentFiles') || '[]');
-    recentFiles = [fileName, ...recentFiles.filter(f => f !== fileName)].slice(0, 5);
+    recentFiles = recentFiles.filter(f => f !== fileName);
+    recentFiles.unshift(fileName);
+    recentFiles = recentFiles.slice(0, 5);
     localStorage.setItem('recentFiles', JSON.stringify(recentFiles));
 }
 
-export default {
-    uploadToSupabase,
-    searchFeatures,
-    cache
-};
+export default { uploadToSupabase, searchFeatures, fetchFeatures, cache };
