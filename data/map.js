@@ -1,22 +1,26 @@
-// MAP.JS - Funções de controle e manipulação do mapa
-// Última atualização: 2025-06-09 18:17
-// Autor: lucasteixeiratst
-
+// map.js - atualizado com melhorias básicas de funcionamento
 import { MAP_CONFIG, FEATURE_CONFIG, state, updateState } from './config.js';
 import { AppError, computeDistance, getFeatureCenter, generateRandomColor } from './utils.js';
+
+const maplibregl = window.maplibregl; // Garante acesso ao objeto global
 
 let map = null;
 let loadingQueue = [];
 let isProcessingQueue = false;
 
-// Inicialização do Mapa
 export async function initMap() {
     return new Promise((resolve, reject) => {
         try {
-            if (!document.getElementById('map')) {
+            if (typeof maplibregl === 'undefined') {
+                reject(new AppError('MapLibre não foi carregado corretamente.', 'MAPLIBRE_MISSING'));
+                return;
+            }
+            const mapElement = document.getElementById('map');
+            if (!mapElement) {
                 reject(new AppError('Elemento #map não encontrado no DOM', 'MAP_CONTAINER_ERROR'));
                 return;
             }
+
             map = new maplibregl.Map({
                 container: 'map',
                 style: MAP_CONFIG.styles.find(s => s.name === state.currentStyle)?.url || MAP_CONFIG.styles[0].url,
@@ -39,6 +43,7 @@ export async function initMap() {
 
             map.addControl(new maplibregl.NavigationControl(), 'top-right');
             map.addControl(new maplibregl.ScaleControl(), 'bottom-right');
+            map.addControl(new maplibregl.AttributionControl({ compact: true })); // Boa prática
         } catch (error) {
             console.error('Erro crítico na inicialização do mapa:', error);
             reject(new AppError('Erro crítico na inicialização do mapa', 'CRITICAL_MAP_ERROR', error));
@@ -46,10 +51,9 @@ export async function initMap() {
     });
 }
 
-// Gerenciamento de Camadas
 export function addLayerToMap(geojson, fileName) {
     const sourceId = `source-${fileName.replace(/\s+/g, '_')}`;
-    
+
     if (state.files.find(file => file.name === fileName)) {
         throw new AppError(`O arquivo "${fileName}" já está carregado.`, 'DUPLICATE_FILE');
     }
@@ -166,7 +170,6 @@ export function addLayerToMap(geojson, fileName) {
     }
 }
 
-// Controle de Visibilidade
 export function toggleLayerVisibility(layerId, visible) {
     if (map.getLayer(layerId)) {
         map.setLayoutProperty(layerId, 'visibility', visible ? 'visible' : 'none');
@@ -175,7 +178,6 @@ export function toggleLayerVisibility(layerId, visible) {
     return false;
 }
 
-// Navegação
 export function flyToLocation(coordinates, zoom = 16) {
     if (!Array.isArray(coordinates) || coordinates.length !== 2) {
         throw new AppError('Coordenadas inválidas', 'INVALID_COORDINATES');
@@ -183,7 +185,6 @@ export function flyToLocation(coordinates, zoom = 16) {
     map.flyTo({ center: coordinates, zoom, essential: true });
 }
 
-// Gerenciamento de Marcadores
 export function addUserLocationMarker(coordinates) {
     if (state.userLocationMarker) state.userLocationMarker.remove();
     state.userLocationMarker = new maplibregl.Marker({ color: '#0088ff', scale: 1.2 })
@@ -192,7 +193,6 @@ export function addUserLocationMarker(coordinates) {
     return state.userLocationMarker;
 }
 
-// Fila de Carregamento
 async function processLoadingQueue() {
     if (isProcessingQueue || loadingQueue.length === 0) return;
     isProcessingQueue = true;
