@@ -1,11 +1,16 @@
-// APP.JS - Inicialização e integração de toda a aplicação
-// Última atualização: 2025-06-09 18:17
-// Autor: lucasteixeiratst
-
+// app.js - atualizado com melhorias de inicialização e feedback
 import { state, updateState, loadStateFromCache, ERROR_MESSAGES } from './config.js';
 import mapController, { initMap } from './map.js';
 import dataManager, { uploadToSupabase, searchFeatures, fetchFeatures } from './data.js';
-import ui, { showLoading, hideLoading, showStatus, displaySearchResults, setupMenuToggles, setupSearchInput, updateLoadedFilesList } from './ui.js';
+import ui, {
+    showLoading,
+    hideLoading,
+    showStatus,
+    displaySearchResults,
+    setupMenuToggles,
+    setupSearchInput,
+    updateLoadedFilesList
+} from './ui.js';
 
 // Inicialização principal
 export async function initializeApp() {
@@ -20,8 +25,8 @@ export async function initializeApp() {
         try {
             await fetchFeatures();
         } catch (error) {
+            console.warn('Erro ao carregar features:', error);
             showStatus('Falha ao carregar dados do banco, verifique a conexão.', 'warning');
-            console.error('Erro ao carregar features:', error);
         }
         hideLoading();
         updateLoadedFilesList();
@@ -43,10 +48,11 @@ export async function initializeApp() {
                         const result = await uploadToSupabase(file);
                         showStatus(result.message, 'success');
                         updateLoadedFilesList();
-                        hideLoading();
                     } catch (error) {
-                        hideLoading();
+                        console.error('Erro ao enviar arquivo:', error);
                         showStatus(error.message || ERROR_MESSAGES.UPLOAD_FAILED, 'error');
+                    } finally {
+                        hideLoading();
                     }
                 };
                 input.click();
@@ -72,7 +78,11 @@ export async function initializeApp() {
         const btnReset = document.getElementById('btnReset');
         if (btnReset) {
             btnReset.onclick = () => {
-                mapController.getMap().easeTo({ center: [-47.068847, -22.934973], zoom: 13 });
+                mapController.getMap().easeTo({
+                    center: MAP_CONFIG.initialView.center,
+                    zoom: MAP_CONFIG.initialView.zoom
+                });
+                showStatus('Visão resetada.', 'success', 1200);
             };
         }
 
@@ -95,12 +105,12 @@ export async function initializeApp() {
         }
 
         hideLoading();
-        showStatus('Mapa pronto!', 'success', 1200);
+        showStatus('Mapa pronto!', 'success', 1500);
 
     } catch (error) {
+        console.error('Erro na inicialização da aplicação:', error);
         hideLoading();
         showStatus(error.message || ERROR_MESSAGES.INITIALIZATION_FAILED, 'error');
-        console.error('Erro na inicialização da aplicação:', error);
     }
 }
 
@@ -116,6 +126,7 @@ async function onSearchInput() {
         const results = await searchFeatures(input.value.trim());
         displaySearchResults(results);
     } catch (error) {
+        console.error('Erro na busca:', error);
         showStatus(error.message || ERROR_MESSAGES.SEARCH_FAILED, 'error');
         displaySearchResults([]);
     } finally {
