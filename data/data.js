@@ -1,5 +1,5 @@
 // DATA.JS - Gerenciamento de dados e interação com Supabase
-// Última atualização: 2025-06-09 23:29
+// Última atualização: 2025-06-09 23:50
 // Autor: lucasteixeiratst
 
 import { supabase, state, SEARCH_CONFIG } from './config.js';
@@ -57,7 +57,6 @@ export async function uploadToSupabase(file) {
         cache.files.set(file.name, { meta, features: features.data, lastUpdate: Date.now() });
 
         await mapController.queueLayer(geojson, fileName);
-        updateRecentFiles(fileName);
 
         return { success: true, message: "Arquivo e dados enviados com sucesso!", data: { file: meta, featuresCount: features.data.length } };
     } catch (error) {
@@ -238,14 +237,6 @@ async function getCurrentLocation() {
         if (!navigator.geolocation) reject(new Error(ERROR_MESSAGES.GEOLOCATION_UNSUPPORTED));
         navigator.geolocation.getCurrentPosition(resolve, reject);
     });
-}
-
-export function updateRecentFiles(fileName) {
-    let recentFiles = JSON.parse(localStorage.getItem('recentFiles') || '[]');
-    recentFiles = recentFiles.filter(f => f !== fileName);
-    recentFiles.unshift(fileName);
-    recentFiles = recentFiles.slice(0, 5);
-    localStorage.setItem('recentFiles', JSON.stringify(recentFiles));
 }
 
 export default { uploadToSupabase, searchFeatures, fetchFeatures, cache };
