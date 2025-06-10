@@ -1,126 +1,93 @@
-// APP.JS - Inicialização e integração de toda a aplicação
-// Última atualização: 2025-06-09 18:17
-// Autor: lucasteixeiratst
+// config.js - Configurações e estado global com melhorias
 
-import { state, updateState, loadStateFromCache, ERROR_MESSAGES } from './config.js';
-import mapController, { initMap } from './map.js';
-import dataManager, { uploadToSupabase, searchFeatures, fetchFeatures } from './data.js';
-import ui, { showLoading, hideLoading, showStatus, displaySearchResults, setupMenuToggles, setupSearchInput, updateLoadedFilesList } from './ui.js';
+import { createClient } from '@supabase/supabase-js';
 
-// Inicialização principal
-export async function initializeApp() {
-    try {
-        showLoading('Inicializando mapa...');
-        loadStateFromCache();
+// Configuração do Supabase
+export const supabase = createClient(
+    'https://sua-instancia.supabase.co',
+    'chave-publica-ou-secreta'
+);
 
-        const mapInstance = await initMap();
-        if (!mapInstance) throw new Error('Falha ao inicializar o mapa');
+// Estado global da aplicação
+export const state = {
+    files: [],
+    userLocation: null,
+    userLocationMarker: null,
+    markersVisible: true,
+    namesVisible: true,
+    linesVisible: true,
+    currentStyle: localStorage.getItem('mapStyle') || 'Streets',
+    maxConcurrentLoads: 3,
+    searchRadius: 20000 // metros
+};
 
-        showLoading('Carregando dados do banco...');
-        try {
-            await fetchFeatures();
-        } catch (error) {
-            showStatus('Falha ao carregar dados do banco, verifique a conexão.', 'warning');
-            console.error('Erro ao carregar features:', error);
-        }
-        hideLoading();
-        updateLoadedFilesList();
-
-        setupMenuToggles();
-        setupSearchInput(onSearchInput);
-
-        const btnUploadSupabase = document.getElementById('btnUploadSupabase');
-        if (btnUploadSupabase) {
-            btnUploadSupabase.onclick = () => {
-                const input = document.createElement('input');
-                input.type = 'file';
-                input.accept = '.kml,.kmz';
-                input.onchange = async (e) => {
-                    const file = e.target.files[0];
-                    if (!file) return;
-                    try {
-                        showLoading('Enviando arquivo para Supabase...');
-                        const result = await uploadToSupabase(file);
-                        showStatus(result.message, 'success');
-                        updateLoadedFilesList();
-                        hideLoading();
-                    } catch (error) {
-                        hideLoading();
-                        showStatus(error.message || ERROR_MESSAGES.UPLOAD_FAILED, 'error');
-                    }
-                };
-                input.click();
-            };
-        }
-
-        const btnCarregarProximos = document.getElementById('btnCarregarProximos');
-        if (btnCarregarProximos) {
-            btnCarregarProximos.onclick = async () => {
-                showLoading('Buscando arquivos próximos...');
-                setTimeout(() => {
-                    hideLoading();
-                    showStatus('Função de carregar arquivos próximos ainda não implementada.', 'warning');
-                }, 1000);
-            };
-        }
-
-        const btnSearch = document.getElementById('btnSearch');
-        if (btnSearch) {
-            btnSearch.onclick = onSearchInput;
-        }
-
-        const btnReset = document.getElementById('btnReset');
-        if (btnReset) {
-            btnReset.onclick = () => {
-                mapController.getMap().easeTo({ center: [-47.068847, -22.934973], zoom: 13 });
-            };
-        }
-
-        const btnLocation = document.getElementById('btnLocation');
-        if (btnLocation) {
-            btnLocation.onclick = () => {
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition((position) => {
-                        const userCoords = [position.coords.longitude, position.coords.latitude];
-                        updateState({ userLocation: userCoords });
-                        mapController.flyToLocation(userCoords);
-                        mapController.addUserLocationMarker(userCoords);
-                    }, () => {
-                        showStatus(ERROR_MESSAGES.GEOLOCATION_FAILED, 'error');
-                    });
-                } else {
-                    showStatus(ERROR_MESSAGES.GEOLOCATION_UNSUPPORTED, 'error');
-                }
-            };
-        }
-
-        hideLoading();
-        showStatus('Mapa pronto!', 'success', 1200);
-
-    } catch (error) {
-        hideLoading();
-        showStatus(error.message || ERROR_MESSAGES.INITIALIZATION_FAILED, 'error');
-        console.error('Erro na inicialização da aplicação:', error);
+// Atualização do estado
+export function updateState(newValues) {
+    Object.assign(state, newValues);
+    if (newValues.currentStyle) {
+        localStorage.setItem('mapStyle', newValues.currentStyle);
     }
 }
 
-// Handler da barra de busca
-async function onSearchInput() {
-    const input = document.getElementById('searchInput');
-    if (!input || input.value.trim().length < 2) {
-        displaySearchResults([]);
-        return;
-    }
-    showLoading('Buscando...');
-    try {
-        const results = await searchFeatures(input.value.trim());
-        displaySearchResults(results);
-    } catch (error) {
-        showStatus(error.message || ERROR_MESSAGES.SEARCH_FAILED, 'error');
-        displaySearchResults([]);
-    } finally {
-        hideLoading();
+// Carrega estado salvo em cache/localStorage
+export function loadStateFromCache() {
+    const savedStyle = localStorage.getItem('mapStyle');
+    if (savedStyle) {
+        state.currentStyle = savedStyle;
     }
 }
 
-export default { initializeApp };
+// Configurações de estilo e visualização do mapa
+export const MAP_CONFIG = {
+    initialView: {
+        center: [-47.068847, -22.934973],
+        zoom: 13,
+        minZoom: 5,
+        maxZoom: 20
+    },
+    styles: [
+        { name: 'Streets', url: 'https://demotiles.maplibre.org/style.json' },
+        { name: 'Dark', url: 'https://tiles.stadiamaps.com/styles/alidade_dark.json' },
+        { name: 'Light', url: 'https://tiles.stadiamaps.com/styles/alidade_smooth.json' }
+    ]
+};
+
+export const FEATURE_CONFIG = {
+    markers: {
+        radius: 6,
+        color: '#FF0000',
+        strokeWidth: 1,
+        strokeColor: '#FFFFFF'
+    },
+    labels: {
+        size: 12,
+        offset: [0, 1.2],
+        color: '#333333',
+        haloColor: '#FFFFFF',
+        haloWidth: 1
+    },
+    lines: {
+        width: 3
+    }
+};
+
+// Configurações de busca
+export const SEARCH_CONFIG = {
+    searchTypes: {
+        LOCAL: 'local',
+        REMOTE: 'remote',
+        BOTH: 'both'
+    },
+    maxResults: 50
+};
+
+// Mensagens de erro padronizadas
+export const ERROR_MESSAGES = {
+    INITIALIZATION_FAILED: 'Erro na inicialização da aplicação.',
+    UPLOAD_FAILED: 'Falha ao enviar arquivo.',
+    SEARCH_FAILED: 'Erro durante a busca.',
+    GEOLOCATION_FAILED: 'Falha ao obter localização.',
+    GEOLOCATION_UNSUPPORTED: 'Geolocalização não suportada.',
+    LOAD_FAILED: 'Erro ao carregar o arquivo.',
+    INVALID_FILE: 'Arquivo inválido.'
+};
