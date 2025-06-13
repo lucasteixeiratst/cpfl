@@ -7,19 +7,10 @@ const state = {
     selectedGroups: new Map(),
 };
 
-// Paleta de 40 cores distintas e recomendadas para visualização de dados
-const paletaRecomendada = [
-  '#d73027', '#f46d43', '#fdae61', '#fee090',
-  '#ffffbf', '#e0f3f8', '#abd9e9', '#74add1',
-  '#4575b4', '#313695', '#40004b', '#762a83',
-  '#9970ab', '#c2a5cf', '#e7d4e8', '#f7f7f7',
-  '#d9f0d3', '#a6dba0', '#5aae61', '#1b7837',
-  '#00441b', '#8c510a', '#bf812d', '#dfc27d',
-  '#f6e8c3', '#f5f5f5', '#c7eae5', '#80cdc1',
-  '#35978f', '#01665e', '#003c30', '#fde0ef',
-  '#f1b6da', '#de77ae', '#c51b7d', '#8e0152',
-  '#b2182b', '#d6604d', '#fddbc7', '#d1e5f0'
-];
+// --- ALTERAÇÃO 1: Paleta de cores fixa foi removida ---
+// A paleta de 40 cores não é mais necessária, pois geraremos as cores dinamicamente.
+
+// O Map para guardar as cores continua sendo necessário para manter a consistência por grupo.
 const coresAtribuidasAosGrupos = new Map();
 
 const mapStyles = [
@@ -49,7 +40,7 @@ const loadingSpinner = document.getElementById('loading-spinner');
 let predefinedFiles = [];
 
 // ===================================================================
-// LÓGICA DO WEB WORKER (NOVA E CORRIGIDA)
+// LÓGICA DO WEB WORKER (Sem alterações nesta seção)
 // ===================================================================
 
 const parserWorker = new Worker('parser.worker.js');
@@ -126,18 +117,31 @@ function handleFile(event) {
 }
 
 // ===================================================================
-// LÓGICA DE INICIALIZAÇÃO E FUNÇÕES DE COR
+// LÓGICA DE INICIALIZAÇÃO E FUNÇÕES DE COR (COM ALTERAÇÕES)
 // ===================================================================
 
+/**
+ * ALTERAÇÃO 2: Nova função para gerar cores aleatórias de alta qualidade.
+ * Gera uma cor aleatória vibrante e com bom contraste usando o modelo HSL.
+ * @returns {string} Uma string de cor no formato "hsl(matiz, saturação, luminosidade)"
+ */
+function gerarCorAleatoriaDeQualidade() {
+  const matiz = Math.floor(Math.random() * 361); 
+  const saturacao = '90%';
+  const luminosidade = '50%';
+  return `hsl(${matiz}, ${saturacao}, ${luminosidade})`;
+}
+
+/**
+ * ALTERAÇÃO 3: Função principal de cores atualizada para usar o novo gerador.
+ */
 function obterCorParaGrupo(nomeDoGrupo) {
   if (coresAtribuidasAosGrupos.has(nomeDoGrupo)) {
     return coresAtribuidasAosGrupos.get(nomeDoGrupo);
   }
   
-  // Lógica de ciclo: pega a próxima cor da paleta, voltando ao início se necessário.
-  // Isso garante que as primeiras 40 grupos terão cores únicas.
-  const indice = coresAtribuidasAosGrupos.size % paletaRecomendada.length;
-  const novaCor = paletaRecomendada[indice];
+  // Em vez de pegar de uma lista, agora GERAMOS uma nova cor de qualidade.
+  const novaCor = gerarCorAleatoriaDeQualidade();
   
   coresAtribuidasAosGrupos.set(nomeDoGrupo, novaCor);
   return novaCor;
@@ -166,6 +170,8 @@ map.on('load', initializeApp);
 
 // ===================================================================
 // FUNÇÕES DE UI, FILTROS E LÓGICA GERAL
+// Nenhuma alteração daqui para baixo, pois as funções já usam a 
+// função 'obterCorParaGrupo' que foi modificada acima.
 // ===================================================================
 
 function updateRecentFiles(fileName) {
@@ -474,7 +480,7 @@ function removeFileFromMap(fileName) {
         state.selectedGroups.delete(sourceId);
     }
     
-    // Limpa a cor associada aos grupos do arquivo removido
+    // Limpa a cor associada aos grupos do arquivo removido para que possam ser reutilizadas
     const groupsInFile = new Set();
     file.lineFeatures.features.forEach(f => {
         const groupName = f.properties[file.groupingProperty];
