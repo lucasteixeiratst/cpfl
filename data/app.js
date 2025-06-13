@@ -108,7 +108,7 @@ function handleFile(event) {
 }
 
 // ===================================================================
-// LÓGICA DE CORES "INTELIGENTE" (HASH + HSL)
+// LÓGICA DE CORES "INTELIGENTE" (HASH + ÂNGULO DE OURO)
 // ===================================================================
 
 function stringToHash(str) {
@@ -124,7 +124,8 @@ function stringToHash(str) {
 
 function gerarCorPorNome(nome) {
   const hash = stringToHash(nome);
-  const matiz = hash % 360;
+  const ANGULO_DE_OURO = 137.5;
+  const matiz = (hash * ANGULO_DE_OURO) % 360;
   const saturacao = '90%';
   const luminosidade = '50%';
   return `hsl(${matiz}, ${saturacao}, ${luminosidade})`;
