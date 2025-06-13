@@ -124,9 +124,9 @@ function stringToHash(str) {
 
 function gerarCorPorNome(nome) {
   const hash = stringToHash(nome);
-  const ANGULO_DE_OURO = 137.5;
+  const ANGULO_DE_OURO = 100.5;
   const matiz = (hash * ANGULO_DE_OURO) % 360;
-  const saturacao = '90%';
+  const saturacao = '80%';
   const luminosidade = '50%';
   return `hsl(${matiz}, ${saturacao}, ${luminosidade})`;
 }
