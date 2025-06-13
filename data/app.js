@@ -7,12 +7,6 @@ const state = {
     selectedGroups: new Map(),
 };
 
-// --- ALTERAÇÃO 1: Paleta de cores fixa foi removida ---
-// A paleta de 40 cores não é mais necessária, pois geraremos as cores dinamicamente.
-
-// O Map para guardar as cores continua sendo necessário para manter a consistência por grupo.
-const coresAtribuidasAosGrupos = new Map();
-
 const mapStyles = [
     { name: 'Positron', url: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json' },
     { name: 'Dark Matter', url: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json' },
@@ -26,6 +20,7 @@ const map = new maplibregl.Map({
     zoom: 11
 });
 
+// --- Elementos do DOM ---
 const searchInput = document.getElementById('searchInput');
 const searchResults = document.getElementById('searchResults');
 const kmzMenu = document.getElementById('kmzMenu');
@@ -37,10 +32,11 @@ const loadedFilesList = document.getElementById('loadedFilesList');
 const styleMenu = document.getElementById('styleMenu');
 const loadingSpinner = document.getElementById('loading-spinner');
 
+// --- Variáveis Globais ---
 let predefinedFiles = [];
 
 // ===================================================================
-// LÓGICA DO WEB WORKER (Sem alterações nesta seção)
+// LÓGICA DE PROCESSAMENTO DE ARQUIVOS COM WEB WORKER
 // ===================================================================
 
 const parserWorker = new Worker('parser.worker.js');
@@ -64,7 +60,6 @@ parserWorker.onmessage = (event) => {
 
 async function processFile(fileDataSource, fileName) {
     loadingSpinner.style.display = 'block';
-
     try {
         if (fileName.endsWith('.kmz')) {
             if (typeof fileDataSource === 'string') {
@@ -74,9 +69,7 @@ async function processFile(fileDataSource, fileName) {
                 parserWorker.postMessage({ arrayBuffer: arrayBuffer, fileName: fileName });
             } else {
                 const reader = new FileReader();
-                reader.onload = () => {
-                    parserWorker.postMessage({ arrayBuffer: reader.result, fileName: fileName });
-                };
+                reader.onload = () => parserWorker.postMessage({ arrayBuffer: reader.result, fileName: fileName });
                 reader.readAsArrayBuffer(fileDataSource);
             }
         } else if (fileName.endsWith('.kml')) {
@@ -111,42 +104,39 @@ function loadKMZFromURL(url, fileName) {
 
 function handleFile(event) {
     const file = event.target.files[0];
-    if (file) {
-        processFile(file, file.name);
-    }
+    if (file) processFile(file, file.name);
 }
 
 // ===================================================================
-// LÓGICA DE INICIALIZAÇÃO E FUNÇÕES DE COR (COM ALTERAÇÕES)
+// LÓGICA DE CORES "INTELIGENTE" (HASH + HSL)
 // ===================================================================
 
-/**
- * ALTERAÇÃO 2: Nova função para gerar cores aleatórias de alta qualidade.
- * Gera uma cor aleatória vibrante e com bom contraste usando o modelo HSL.
- * @returns {string} Uma string de cor no formato "hsl(matiz, saturação, luminosidade)"
- */
-function gerarCorAleatoriaDeQualidade() {
-  const matiz = Math.floor(Math.random() * 361); 
+function stringToHash(str) {
+  let hash = 0;
+  if (str.length === 0) return hash;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash = hash & hash;
+  }
+  return Math.abs(hash);
+}
+
+function gerarCorPorNome(nome) {
+  const hash = stringToHash(nome);
+  const matiz = hash % 360;
   const saturacao = '90%';
   const luminosidade = '50%';
   return `hsl(${matiz}, ${saturacao}, ${luminosidade})`;
 }
 
-/**
- * ALTERAÇÃO 3: Função principal de cores atualizada para usar o novo gerador.
- */
 function obterCorParaGrupo(nomeDoGrupo) {
-  if (coresAtribuidasAosGrupos.has(nomeDoGrupo)) {
-    return coresAtribuidasAosGrupos.get(nomeDoGrupo);
-  }
-  
-  // Em vez de pegar de uma lista, agora GERAMOS uma nova cor de qualidade.
-  const novaCor = gerarCorAleatoriaDeQualidade();
-  
-  coresAtribuidasAosGrupos.set(nomeDoGrupo, novaCor);
-  return novaCor;
+  return gerarCorPorNome(nomeDoGrupo);
 }
 
+// ===================================================================
+// INICIALIZAÇÃO DA APLICAÇÃO
+// ===================================================================
 
 async function initializeApp() {
     try {
@@ -169,9 +159,7 @@ async function initializeApp() {
 map.on('load', initializeApp);
 
 // ===================================================================
-// FUNÇÕES DE UI, FILTROS E LÓGICA GERAL
-// Nenhuma alteração daqui para baixo, pois as funções já usam a 
-// função 'obterCorParaGrupo' que foi modificada acima.
+// FUNÇÕES DE UI, MAPA E LÓGICA GERAL
 // ===================================================================
 
 function updateRecentFiles(fileName) {
@@ -333,10 +321,8 @@ function addDataToMap(geojson, fileName) {
                 pointFeaturesArray.push(f);
             } else if (['LineString', 'MultiLineString', 'Polygon', 'MultiPolygon'].includes(f.geometry.type)) {
                 f.properties = f.properties || {};
-                
                 const nomeDoGrupo = f.properties.Alimentador || f.properties.name || 'grupo_sem_nome';
                 f.properties.corDaPaleta = obterCorParaGrupo(nomeDoGrupo);
-                
                 lineFeaturesArray.push(f);
             }
         });
@@ -398,8 +384,7 @@ function updateGroupMenu() {
         file.lineFeatures.features.forEach(f => {
             const props = f.properties;
             if (props && props[file.groupingProperty]) {
-                const groupName = props[file.groupingProperty];
-                groups.add(groupName);
+                groups.add(props[file.groupingProperty]);
             }
         });
 
@@ -423,18 +408,14 @@ function updateGroupMenu() {
             chk.onchange = () => {
                 const selectedGroupsSet = state.selectedGroups.get(file.sourceId);
                 if (selectedGroupsSet) {
-                    if (chk.checked) {
-                        selectedGroupsSet.add(grp);
-                    } else {
-                        selectedGroupsSet.delete(grp);
-                    }
+                    chk.checked ? selectedGroupsSet.add(grp) : selectedGroupsSet.delete(grp);
                 }
                 applyGroupFilter();
             };
 
             lbl.appendChild(chk);
             lbl.appendChild(document.createTextNode(' ' + grp));
-
+            
             const color = obterCorParaGrupo(grp);
             lbl.style.color = color;
             lbl.style.fontWeight = 'bold';
@@ -480,15 +461,6 @@ function removeFileFromMap(fileName) {
         state.selectedGroups.delete(sourceId);
     }
     
-    // Limpa a cor associada aos grupos do arquivo removido para que possam ser reutilizadas
-    const groupsInFile = new Set();
-    file.lineFeatures.features.forEach(f => {
-        const groupName = f.properties[file.groupingProperty];
-        if(groupName) groupsInFile.add(groupName);
-    });
-    groupsInFile.forEach(groupName => coresAtribuidasAosGrupos.delete(groupName));
-
-
     state.files.splice(fileIndex, 1);
     updateGroupMenu();
 }
@@ -508,14 +480,7 @@ function applyGroupFilter() {
             } else if (selectedGroups.size === getTotalGroupsForFile(file)) {
                 map.setFilter(lineLayerId, null);
             } else {
-                const filterExpression = [
-                    'match',
-                    ['get', groupingProperty],
-                    Array.from(selectedGroups),
-                    true,
-                    false
-                ];
-                map.setFilter(lineLayerId, filterExpression);
+                map.setFilter(lineLayerId, ['match', ['get', groupingProperty], Array.from(selectedGroups), true, false]);
             }
         }
     });
@@ -533,9 +498,7 @@ function getTotalGroupsForFile(file) {
 }
 
 function hideAllGroups() {
-    state.selectedGroups.forEach((groups) => {
-        groups.clear();
-    });
+    state.selectedGroups.forEach((groups) => groups.clear());
     document.querySelectorAll('#lineGroupsList input[type=checkbox]').forEach(chk => chk.checked = false);
     applyGroupFilter();
 }
@@ -611,9 +574,7 @@ function goToCurrentLocation() {
 
 function getFeatureCenter(feature) {
     if (!feature || !feature.geometry) return [0, 0];
-    if (feature.geometry.type === 'Point') {
-        return feature.geometry.coordinates;
-    }
+    if (feature.geometry.type === 'Point') return feature.geometry.coordinates;
     const coordinates = [];
     function extractCoords(coords) {
         if (typeof coords[0] === 'number' && typeof coords[1] === 'number') {
@@ -634,11 +595,10 @@ function getFeatureCenter(feature) {
 function computeDistance(coord1, coord2) {
     const toRad = (value) => value * Math.PI / 180;
     const lat1 = coord1[1], lon1 = coord1[0], lat2 = coord2[1], lon2 = coord2[0];
-    const R = 6371e3; // Radius of Earth in meters
+    const R = 6371e3;
     const φ1 = toRad(lat1), φ2 = toRad(lat2);
     const Δφ = toRad(lat2 - lat1), Δλ = toRad(lon2 - lon1);
-    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-        Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const a = Math.sin(Δφ / 2) ** 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
 }
@@ -646,23 +606,18 @@ function computeDistance(coord1, coord2) {
 function searchFeatures() {
     const term = searchInput.value.toLowerCase();
     searchResults.innerHTML = '';
-
     if (!term) {
         searchResults.innerHTML = '<ul style="padding: 10px; text-align: center;">Digite um termo.</ul>';
         return;
     }
-
     let matches = [];
     state.files.forEach(file => {
         const searchInFeatures = (features) => {
             features.forEach(feature => {
                 const props = feature.properties;
-                if (props && (
-                    (props.name && props.name.toLowerCase().includes(term)) ||
-                    (props.Alimentador && props.Alimentador.toLowerCase().includes(term))
-                )) {
-                    const existingMatch = matches.find(m => (m.properties.name || m.properties.Alimentador) === (props.name || props.Alimentador));
-                    if (!existingMatch) {
+                if (props && ((props.name && props.name.toLowerCase().includes(term)) || (props.Alimentador && props.Alimentador.toLowerCase().includes(term)))) {
+                    const displayName = props.name || props.Alimentador;
+                    if (!matches.some(m => (m.properties.name || m.properties.Alimentador) === displayName)) {
                         matches.push(feature);
                     }
                 }
@@ -675,37 +630,30 @@ function searchFeatures() {
     if (matches.length === 0) {
         searchResults.innerHTML = '<ul style="padding: 10px; text-align: center;">Nenhum resultado.</ul>';
     } else {
-        let referencePoint = state.userLocation || map.getCenter().toArray();
+        const referencePoint = state.userLocation || map.getCenter().toArray();
         matches.forEach(feature => {
-            const center = getFeatureCenter(feature);
-            feature.properties.distance = computeDistance(referencePoint, center);
+            feature.properties.distance = computeDistance(referencePoint, getFeatureCenter(feature));
         });
         matches.sort((a, b) => a.properties.distance - b.properties.distance);
-        const topResults = matches.slice(0, 10);
-        displaySearchResults(topResults);
+        displaySearchResults(matches.slice(0, 10));
     }
 }
 
 function displaySearchResults(results) {
     searchResults.innerHTML = '';
     const ul = document.createElement('ul');
-
     results.forEach(result => {
         const li = document.createElement('li');
         const nameSpan = document.createElement('span');
         const displayName = result.properties.name || result.properties.Alimentador || 'Sem nome';
         nameSpan.textContent = `${displayName} (${(result.properties.distance / 1000).toFixed(2)} km)`;
-
         const buttonContainer = document.createElement('div');
-
         const viewButton = document.createElement('button');
         viewButton.textContent = 'Visualizar';
         viewButton.onclick = () => {
-            const center = getFeatureCenter(result);
-            map.flyTo({ center: center, zoom: 16 });
+            map.flyTo({ center: getFeatureCenter(result), zoom: 16 });
             searchResults.innerHTML = '';
         };
-
         const googleMapsButton = document.createElement('button');
         googleMapsButton.textContent = 'Google Maps';
         googleMapsButton.onclick = () => {
@@ -713,14 +661,12 @@ function displaySearchResults(results) {
             const url = `https://www.google.com/maps?q=${center[1]},${center[0]}`;
             window.open(url, '_blank');
         };
-
         li.appendChild(nameSpan);
         buttonContainer.appendChild(viewButton);
         buttonContainer.appendChild(googleMapsButton);
         li.appendChild(buttonContainer);
         ul.appendChild(li);
     });
-
     searchResults.appendChild(ul);
 }
 
@@ -761,12 +707,10 @@ menuButtons.forEach(button => {
     button.addEventListener('click', (event) => {
         event.stopPropagation();
     });
-
     button.addEventListener('mouseenter', () => {
         const legend = button.querySelector('.button-legend');
         if (legend) legend.style.display = 'block';
     });
-
     button.addEventListener('mouseleave', () => {
         const legend = button.querySelector('.button-legend');
         if (legend) legend.style.display = 'none';
