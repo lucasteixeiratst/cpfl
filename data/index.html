@@ -1,1 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Visualizador de Mapas</title>
+    
+    <style>
+        #loading-spinner { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); border: 8px solid #f3f3f3; border-top: 8px solid #3498db; border-radius: 50%; width: 60px; height: 60px; animation: spin 1s linear infinite; z-index: 9999; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: Arial, sans-serif; position: relative; }
+        #map { height: 100%; width: 100%; }
+        .menu { position: absolute; top: 50%; left: 20px; transform: translateY(-50%); background-color: white; border-radius: 8px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2); z-index: 1000; display: flex; flex-direction: column; align-items: center; padding: 10px 0; }
+        .menu button { position: relative; background-color: #ffffff; border: none; padding: 10px; margin: 5px 0; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); cursor: pointer; transition: all 0.2s; }
+        .menu button:hover { background-color: #f0f0f0; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); }
+        .menu button img { width: 20px; height: 20px; }
+        .button-legend { position: absolute; top: 50%; left: 50px; transform: translateY(-50%); background: rgba(255,255,255,0.9); border-radius: 4px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); padding: 5px; font-size: 12px; white-space: nowrap; z-index: 2000; display: none; }
+        .search-bar { position: absolute; top: 20px; left: 20px; width: 300px; background-color: white; border-radius: 8px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2); z-index: 1000; display: flex; padding: 10px; align-items: center; gap: 10px; }
+        .search-bar input { flex: 1; border: none; outline: none; padding: 10px; font-size: 14px; border-radius: 8px; background-color: #f9f9f9; box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1); }
+        .search-bar button { background-color: #4285F4; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; transition: background-color 0.3s; }
+        .search-bar button:hover { background-color: #357ae8; }
+        .search-results { position: absolute; top: 70px; left: 20px; width: 300px; max-height: 200px; overflow-y: auto; background-color: white; border-radius: 8px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2); z-index: 1000; }
+        .search-results ul { list-style: none; margin: 0; padding: 0; }
+        .search-results li { padding: 10px; border-bottom: 1px solid #f0f0f0; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .search-results li:hover { background-color: #f0f0f0; }
+        .search-results button { margin-left: 10px; background-color: #4285F4; color: white; border: none; padding: 5px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        .search-results button:hover { background-color: #357ae8; }
+        .kmz-menu { position: absolute; top: 80px; left: 80px; background: #fff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); z-index: 2000; padding: 10px; display: none; width: 300px; max-height: 400px; overflow-y: auto; }
+        .kmz-menu ul { list-style: none; margin: 0; padding: 0; }
+        .kmz-menu li { padding: 8px 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0; }
+        .kmz-menu li:hover { background-color: #f0f0f0; }
+        .kmz-menu li:last-child { border-bottom: none; }
+        .line-menu { position: absolute; top: 80px; left: 100px; background: #fff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); z-index: 2000; padding: 10px; display: none; }
+        .line-menu ul { list-style: none; margin: 0; padding: 0; max-height: 200px; overflow-y: auto; }
+        .line-menu li { padding: 8px 10px; border-bottom: 1px solid #f0f0f0; }
+        .line-menu li:last-child { border-bottom: none; }
+        .line-menu li label { cursor: pointer; }
+        .line-menu button { background-color: #4285F4; color: #fff; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; margin: 5px 0; }
+        .line-menu button:hover { background-color: #357ae8; }
+        .loaded-files-menu { position: absolute; top: 80px; left: 120px; background: #fff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); z-index: 2000; padding: 10px; display: none; width: 220px; max-height: 300px; overflow-y: auto; }
+        .loaded-files-menu h3 { margin: 0 0 10px 0; font-size: 16px; text-align: center; }
+        .loaded-files-menu ul { list-style: none; margin: 0; padding: 0; }
+        .loaded-files-menu li { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #f0f0f0; }
+        .loaded-files-menu li:last-child { border-bottom: none; }
+        .loaded-files-menu li button { background-color: #e74c3c; color: white; border: none; padding: 3px 6px; border-radius: 4px; cursor: pointer; font-size: 10px; }
+        .loaded-files-menu li button:hover { background-color: #c0392b; }
+        .style-menu { position: absolute; top: 80px; left: 140px; background: #fff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); z-index: 2000; padding: 10px; display: none; width: 200px; }
+        .style-menu ul { list-style: none; margin: 0; padding: 0; }
+        .style-menu li { padding: 8px 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0; }
+        .style-menu li:hover { background-color: #f0f0f0; }
+        .style-menu li:last-child { border-bottom: none; }
+        footer { position: absolute; bottom: 5px; width: 100%; text-align: center; font-size: 10px; color: #555; }
+    </style>
+    
+    <link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet" />
 
+    <script src="https://unpkg.com/maplibre-gl" defer></script>
+    <script src="https://unpkg.com/@tmcw/togeojson" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.6.0/jszip.min.js" defer></script>
+    
+    <script src="app.js" defer></script>
+</head>
+<body>
+    <div id="map"></div>
+    <div id="loading-spinner"></div>
+
+    <div class="menu">
+        <button id="btnKMZ"> <img src="https://img.icons8.com/ios-filled/50/000000/upload.png" alt="Upload"> <div class="button-legend">Carregar KMZ/KML</div> </button>
+        <button id="btnMarkers"> <img src="https://img.icons8.com/material-outlined/24/000000/map-pin.png" alt="Marcadores"> <div class="button-legend">Exibir/Ocultar Marcadores</div> </button>
+        <button id="btnNames"> <img src="https://img.icons8.com/material-outlined/24/000000/name.png" alt="Nomes"> <div class="button-legend">Exibir/Ocultar Nomes</div> </button>
+        <button id="btnLines"> <img src="https://img.icons8.com/material-outlined/24/000000/polyline.png" alt="Linhas"> <div class="button-legend">Exibir/Ocultar Linhas</div> </button>
+        <button id="btnReset"> <img src="https://img.icons8.com/material-outlined/24/000000/refresh.png" alt="Resetar"> <div class="button-legend">Resetar Visão</div> </button>
+        <button id="btnLocation"> <img src="https://img.icons8.com/material-outlined/24/000000/compass.png" alt="Localização Atual"> <div class="button-legend">Minha Localização</div> </button>
+        <button id="btnLineGroups"> <img src="https://img.icons8.com/material-outlined/24/000000/layers.png" alt="Grupos de Linhas"> <div class="button-legend">Grupos de Linhas</div> </button>
+        <button id="btnLoadedFiles"> <img src="https://img.icons8.com/material-outlined/24/000000/folder-invoices.png" alt="Arquivos Carregados"> <div class="button-legend">Arquivos Carregados</div> </button>
+        <button id="btnStyles"> <img src="https://img.icons8.com/material-outlined/24/000000/paint.png" alt="Estilos"> <div class="button-legend">Estilos do Mapa</div> </button>
+    </div>
+    <div class="search-bar"> <input type="text" id="searchInput" placeholder="Buscar no mapa..." /> <button id="btnSearch">Buscar</button> </div>
+    <div id="searchResults" class="search-results"></div>
+    <div class="kmz-menu" id="kmzMenu"> <ul id="kmzList"></ul> <ul> <li id="selectDevice">Selecionar do dispositivo...</li> </ul> </div>
+    <div class="line-menu" id="lineMenu"> <div style="display:flex; gap:10px; margin-bottom:10px;"> <button id="hideAll">Ocultar Todas</button> <button id="showAll">Exibir Todas</button> </div> <ul id="lineGroupsList"></ul> </div>
+    <div class="loaded-files-menu" id="loadedFilesMenu"> <h3>Arquivos Carregados</h3> <ul id="loadedFilesList"></ul> </div>
+    <div class="style-menu" id="styleMenu"> <ul id="styleList"></ul> </div>
+    
+    <footer> Todos direitos reservados a Lucas Teixeira. </footer>
+</body>
+</html>
