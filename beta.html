@@ -664,6 +664,41 @@
              { name: 'VIRADOURO.kmz', url: './VIRADOURO.kmz' }
         ];
         
+        // NOVO: Funções de Gerenciamento de Cache
+        function cacheKMZData(fileName, geojson) {
+            try {
+                const key = 'kmz_cache_' + fileName;
+                const queueKey = 'cachedFilesQueue';
+                let queue = JSON.parse(localStorage.getItem(queueKey)) || [];
+                
+                queue = queue.filter(item => item !== fileName);
+                queue.unshift(fileName);
+
+                // ATUALIZADO: Limite alterado para 5
+                if (queue.length > 5) {
+                    const oldestFile = queue.pop();
+                    localStorage.removeItem('kmz_cache_' + oldestFile);
+                    console.log(`[Cache] Removido do cache: ${oldestFile}`);
+                }
+
+                localStorage.setItem(queueKey, JSON.stringify(queue));
+                localStorage.setItem(key, JSON.stringify(geojson));
+            } catch (e) {
+                console.error("[Cache] Erro ao salvar no localStorage. O cache pode estar cheio.", e);
+            }
+        }
+
+        function getKMZFromCache(fileName) {
+            const key = 'kmz_cache_' + fileName;
+            const data = localStorage.getItem(key);
+            if (data) {
+                console.log(`[Cache] Carregando "${fileName}" do cache local.`);
+                return JSON.parse(data);
+            }
+            return null;
+        }
+
+
         map.on('click', () => {
             kmzMenu.style.display = 'none';
             lineMenu.style.display = 'none';
@@ -770,6 +805,12 @@
         }
 
         async function loadKMZFromURL(url, fileName) {
+            const cachedData = getKMZFromCache(fileName);
+            if (cachedData) {
+                addDataToMap(cachedData, fileName);
+                return; 
+            }
+
             try {
                 const response = await fetch(url);
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -792,6 +833,15 @@
         function handleFile(event) {
             const file = event.target.files[0];
             if (!file) return;
+
+            const cachedData = getKMZFromCache(file.name);
+            if (cachedData) {
+                addDataToMap(cachedData, file.name);
+                localStorage.setItem('lastSelectedFile', file.name);
+                updateRecentFiles(file.name);
+                displayFileList();
+                return;
+            }
 
             const reader = new FileReader();
             reader.onload = async () => {
@@ -831,7 +881,6 @@
             const lineLayerId = `lines-${sourceId}`;
 
             if (state.files.find(file => file.name === fileName)) {
-                alert(`O arquivo "${fileName}" já está carregado.`);
                 return;
             }
 
@@ -962,6 +1011,8 @@
 
             updateGroupMenu();
             updateLoadedFilesList(fileName);
+
+            cacheKMZData(fileName, geojson);
         }
         
         function updateMarkerGroupMenu() {
