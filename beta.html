@@ -332,6 +332,62 @@
             border-bottom: none;
         }
 
+        .marker-group-menu {
+            position: absolute;
+            top: 80px;
+            left: 160px; 
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            z-index: 2000;
+            padding: 10px;
+            display: none;
+            width: 240px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .marker-group-menu h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            text-align: center;
+        }
+        .marker-group-menu ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        .marker-group-menu li {
+            padding: 8px 10px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .marker-group-menu li:last-child {
+            border-bottom: none;
+        }
+        .marker-group-menu li label {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            font-weight: bold;
+        }
+        .marker-group-menu .color-box {
+            width: 15px;
+            height: 15px;
+            margin-right: 10px;
+            border: 1px solid #ccc;
+        }
+        .marker-group-menu button {
+            background-color: #4285F4;
+            color: #fff;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px 0;
+        }
+        .marker-group-menu button:hover {
+            background-color: #357ae8;
+        }
+
         footer {
             position: absolute;
             bottom: 5px;
@@ -365,6 +421,10 @@
         <button id="btnLines">
             <img src="https://img.icons8.com/material-outlined/24/000000/polyline.png" alt="Linhas">
             <div class="button-legend">Exibir/Ocultar Linhas</div>
+        </button>
+        <button id="btnMarkerGroups">
+            <img src="https://img.icons8.com/material-outlined/24/000000/filter--v1.png" alt="Grupos de Postos">
+            <div class="button-legend">Grupos de Postos</div>
         </button>
         <button id="btnReset">
             <img src="https://img.icons8.com/material-outlined/24/000000/refresh.png" alt="Resetar">
@@ -419,6 +479,15 @@
         <ul id="styleList"></ul>
     </div>
 
+    <div class="marker-group-menu" id="markerGroupMenu">
+        <h3>Grupos de Postos</h3>
+        <div style="display:flex; gap:10px; margin-bottom:10px;">
+            <button id="hideAllMarkerGroups">Ocultar Todos</button>
+            <button id="showAllMarkerGroups">Exibir Todos</button>
+        </div>
+        <ul id="markerGroupsList"></ul>
+    </div>
+
     <footer>
         Todos direitos reservados a Lucas Teixeira.
     </footer>
@@ -431,6 +500,13 @@
             userLocation: null,
             files: [],
             selectedGroups: new Map(),
+            markerGroups: {
+                '-FU': { color: 'red', visible: true },
+                '-FA': { color: 'yellow', visible: true }, 
+                '-RE': { color: 'green', visible: true },
+                'KVA': { color: 'blue', visible: true },   
+                'default': { color: '#FF5722', visible: true }
+            }
         };
 
         const mapStyles = [
@@ -466,133 +542,135 @@
         const loadedFilesList = document.getElementById('loadedFilesList');
         const btnLoadedFiles = document.getElementById('btnLoadedFiles');
         const styleMenu = document.getElementById('styleMenu');
+        const markerGroupMenu = document.getElementById('markerGroupMenu');
+        const markerGroupsList = document.getElementById('markerGroupsList');
 
         const predefinedFiles = [
-            { name: 'AGUAS DE LINDOIA.kmz', url: './AGUAS DE LINDOIA.kmz' },
-            { name: 'AGUDOS.kmz', url: './AGUDOS.kmz' },
-            { name: 'ALTINOPOLIS.kmz', url: './ALTINOPOLIS.kmz' },
-            { name: 'AMERICANA.kmz', url: './AMERICANA.kmz' },
-            { name: 'AMPARO.kmz', url: './AMPARO.kmz' },
-            { name: 'ARACATUBA.kmz', url: './ARACATUBA.kmz' },
-            { name: 'ARARAQUARA.kmz', url: './ARARAQUARA.kmz' },
-            { name: 'BARIRI.kmz', url: './BARIRI.kmz' },
-            { name: 'BARRA BONITA.kmz', url: './BARRA BONITA.kmz' },
-            { name: 'BARRETOS.kmz', url: './BARRETOS.kmz' },
-            { name: 'BATATAIS.kmz', url: './BATATAIS.kmz' },
-            { name: 'BAURU.kmz', url: './BAURU.kmz' },
-            { name: 'BEBEDOURO.kmz', url: './BEBEDOURO.kmz' },
-            { name: 'BIRIGUI.kmz', url: './BIRIGUI.kmz' },
-            { name: 'BOA ESPERANCA DO SUL.kmz', url: './BOA ESPERANCA DO SUL.kmz' },
-            { name: 'BOTUCATU.kmz', url: './BOTUCATU.kmz' },
-            { name: 'BRAUNA.kmz', url: './BRAUNA.kmz' },
-            { name: 'BROTAS.kmz', url: './BROTAS.kmz' },
-            { name: 'CAFELANDIA.kmz', url: './CAFELANDIA.kmz' },
-            { name: 'CAJOBI.kmz', url: './CAJOBI.kmz' },
-            { name: 'CAJURU.kmz', url: './CAJURU.kmz' },
-            { name: 'CAMPINAS BARAO GERALDO-1.kmz', url: './CAMPINAS BARAO GERALDO-1.kmz' },
-            { name: 'CAMPINAS CAMPO GRANDE-1.kmz', url: './CAMPINAS CAMPO GRANDE-1.kmz' },
-            { name: 'CAMPINAS CENTRO-1.kmz', url: './CAMPINAS CENTRO-1.kmz' },
-            { name: 'CAMPINAS SOUZAS-1.kmz', url: './CAMPINAS SOUZAS-1.kmz' },
-            { name: 'CAMPINAS TREVO-1.kmz', url: './CAMPINAS TREVO-1.kmz' },
-            { name: 'CAPIVARI.kmz', url: './CAPIVARI.kmz' },
-            { name: 'CONGONHAS.kmz', url: './CONGONHAS.kmz' },
-            { name: 'COSMOPOLIS.kmz', url: './COSMOPOLIS.kmz' },
-            { name: 'CRAVINHOS.kmz', url: './CRAVINHOS.kmz' },
-            { name: 'DESCALVADO.kmz', url: './DESCALVADO.kmz' },
-            { name: 'DOIS CORREGOS.kmz', url: './DOIS CORREGOS.kmz' },
-            { name: 'DOURADO.kmz', url: './DOURADO.kmz' },
-            { name: 'DUARTINA.kmz', url: './DUARTINA.kmz' },
-            { name: 'ESPIRITO SANTO DO PINHAL.kmz', url: './ESPIRITO SANTO DO PINHAL.kmz' },
-            { name: 'FRANCA.kmz', url: './FRANCA.kmz' },
-            { name: 'GARCA.kmz', url: './GARCA.kmz' },
-            { name: 'GAVIAO PEIXOTO.kmz', url: './GAVIAO PEIXOTO.kmz' },
-            { name: 'GETULINA.kmz', url: './GETULINA.kmz' },
-            { name: 'GUAIRA.kmz', url: './GUAIRA.kmz' },
-            { name: 'GUANABARA.kmz', url: './GUANABARA.kmz' },
-            { name: 'GUARARAPES.kmz', url: './GUARARAPES.kmz' },
-            { name: 'GUARIBA.kmz', url: './GUARIBA.kmz' },
-            { name: 'HIPODROMO.kmz', url: './HIPODROMO.kmz' },
-            { name: 'HORTOLANDIA.kmz', url: './HORTOLANDIA.kmz' },
-            { name: 'IACANGA.kmz', url: './IACANGA.kmz' },
-            { name: 'IBIRA.kmz', url: './IBIRA.kmz' },
-            { name: 'IBITINGA.kmz', url: './IBITINGA.kmz' },
-            { name: 'IGARAPAVA.kmz', url: './IGARAPAVA.kmz' },
-            { name: 'IPUA.kmz', url: './IPUA.kmz' },
-            { name: 'ITAPIRA.kmz', url: './ITAPIRA.kmz' },
-            { name: 'ITAPOLIS.kmz', url: './ITAPOLIS.kmz' },
-            { name: 'ITATIBA.kmz', url: './ITATIBA.kmz' },
-            { name: 'ITATINGA.kmz', url: './ITATINGA.kmz' },
-            { name: 'ITUVERAVA.kmz', url: './ITUVERAVA.kmz' },
-            { name: 'JABOTICABAL.kmz', url: './JABOTICABAL.kmz' },
-            { name: 'JARDINOPOLIS.kmz', url: './JARDINOPOLIS.kmz' },
-            { name: 'JAU.kmz', url: './JAU.kmz' },
-            { name: 'JOSE BONIFACIO.kmz', url: './JOSE BONIFACIO.kmz' },
-            { name: 'LENCOIS PAULISTA.kmz', url: './LENCOIS PAULISTA.kmz' },
-            { name: 'LINS.kmz', url: './LINS.kmz' },
-            { name: 'MARILIA.kmz', url: './MARILIA.kmz' },
-            { name: 'MATAO.kmz', url: './MATAO.kmz' },
-            { name: 'METROPOLITANA.kmz', url: './METROPOLITANA.kmz' },
-            { name: 'MIGUELOPOLIS.kmz', url: './MIGUELOPOLIS.kmz' },
-            { name: 'MIRASSOL.kmz', url: './MIRASSOL.kmz' },
-            { name: 'MONTE ALTO.kmz', url: './MONTE ALTO.kmz' },
-            { name: 'MONTE APRAZIVEL.kmz', url: './MONTE APRAZIVEL.kmz' },
-            { name: 'MONTE MOR.kmz', url: './MONTE MOR.kmz' },
-            { name: 'MORRO AGUDO.kmz', url: './MORRO AGUDO.kmz' },
-            { name: 'MORRO DO CIPO.kmz', url: './MORRO DO CIPO.kmz' },
-            { name: 'NOVA GRANADA.kmz', url: './NOVA GRANADA.kmz' },
-            { name: 'OCAUCU.kmz', url: './OCAUCU.kmz' },
-            { name: 'OLIMPIA.kmz', url: './OLIMPIA.kmz' },
-            { name: 'ORLANDIA.kmz', url: './ORLANDIA.kmz' },
-            { name: 'PARAISO.kmz', url: './PARAISO.kmz' },
-            { name: 'PARDINHO.kmz', url: './PARDINHO.kmz' },
-            { name: 'PAULINIA.kmz', url: './PAULINIA.kmz' },
-            { name: 'PEDERNEIRAS.kmz', url: './PEDERNEIRAS.kmz' },
-            { name: 'PEDREGULHO.kmz', url: './PEDREGULHO.kmz' },
-            { name: 'PENAPOLIS.kmz', url: './PENAPOLIS.kmz' },
-            { name: 'PIACATU.kmz', url: './PIACATU.kmz' },
-            { name: 'PIRACICABA SANTA CECILIA.kmz', url: './PIRACICABA SANTA CECILIA.kmz' },
-            { name: 'PIRACICABA SANTA TEREZINHA.kmz', url: './PIRACICABA SANTA TEREZINHA.kmz' },
-            { name: 'PIRACICABA.kmz', url: './PIRACICABA.kmz' },
-            { name: 'PIRAJUI - EA.kmz', url: './PIRAJUI - EA.kmz' },
-            { name: 'PIRANGI.kmz', url: './PIRANGI.kmz' },
-            { name: 'PITANGUEIRAS.kmz', url: './PITANGUEIRAS.kmz' },
-            { name: 'POMPEIA.kmz', url: './POMPEIA.kmz' },
-            { name: 'PRESIDENTE ALVES.kmz', url: './PRESIDENTE ALVES.kmz' },
-            { name: 'PROMISSAO.kmz', url: './PROMISSAO.kmz' },
-            { name: 'RESTINGA.kmz', url: './RESTINGA.kmz' },
-            { name: 'RIBEIRAO PRETO NORTE.kmz', url: './RIBEIRAO PRETO NORTE.kmz' },
-            { name: 'RIBEIRAO PRETO SUL.kmz', url: './RIBEIRAO PRETO SUL.kmz' },
-            { name: 'RINCAO.kmz', url: './RINCAO.kmz' },
-            { name: 'SANTA ADELIA.kmz', url: './SANTA ADELIA.kmz' },
-            { name: 'SANTA BARBARA DOESTE.kmz', url: './SANTA BARBARA DOESTE.kmz' },
-            { name: 'SANTA ROSA DE VITERBO.kmz', url: './SANTA ROSA DE VITERBO.kmz' },
-            { name: 'SANTO ANTONIO ARACANGUA.kmz', url: './SANTO ANTONIO ARACANGUA.kmz' },
-            { name: 'SAO CARLOS.kmz', url: './SAO CARLOS.kmz' },
-            { name: 'SAO JOAQUIM DA BARRA.kmz', url: './SAO JOAQUIM DA BARRA.kmz' },
-            { name: 'SAO JOSE RIO PRETO.kmz', url: './SAO JOSE RIO PRETO.kmz' },
-            { name: 'SAO MANUEL.kmz', url: './SAO MANUEL.kmz' },
-            { name: 'SAO PEDRO.kmz', url: './SAO PEDRO.kmz' },
-            { name: 'SAO SIMAO.kmz', url: './SAO SIMAO.kmz' },
-            { name: 'SERRA NEGRA.kmz', url: './SERRA NEGRA.kmz' },
-            { name: 'SERRANA.kmz', url: './SERRANA.kmz' },
-            { name: 'SERTAOZINHO.kmz', url: './SERTAOZINHO.kmz' },
-            { name: 'SOCORRO.kmz', url: './SOCORRO.kmz' },
-            { name: 'SUMARE.kmz', url: './SUMARE.kmz' },
-            { name: 'TANABI.kmz', url: './TANABI.kmz' },
-            { name: 'TAQUARITINGA.kmz', url: './TAQUARITINGA.kmz' },
-            { name: 'UIRAPURU.kmz', url: './UIRAPURU.kmz' },
-            { name: 'VALINHOS.kmz', url: './VALINHOS.kmz' },
-            { name: 'VALPARAISO.kmz', url: './VALPARAISO.kmz' },
-            { name: 'VIRADOURO.kmz', url: './VIRADOURO.kmz' }
+             { name: 'AGUAS DE LINDOIA.kmz', url: './AGUAS DE LINDOIA.kmz' },
+             { name: 'AGUDOS.kmz', url: './AGUDOS.kmz' },
+             { name: 'ALTINOPOLIS.kmz', url: './ALTINOPOLIS.kmz' },
+             { name: 'AMERICANA.kmz', url: './AMERICANA.kmz' },
+             { name: 'AMPARO.kmz', url: './AMPARO.kmz' },
+             { name: 'ARACATUBA.kmz', url: './ARACATUBA.kmz' },
+             { name: 'ARARAQUARA.kmz', url: './ARARAQUARA.kmz' },
+             { name: 'BARIRI.kmz', url: './BARIRI.kmz' },
+             { name: 'BARRA BONITA.kmz', url: './BARRA BONITA.kmz' },
+             { name: 'BARRETOS.kmz', url: './BARRETOS.kmz' },
+             { name: 'BATATAIS.kmz', url: './BATATAIS.kmz' },
+             { name: 'BAURU.kmz', url: './BAURU.kmz' },
+             { name: 'BEBEDOURO.kmz', url: './BEBEDOURO.kmz' },
+             { name: 'BIRIGUI.kmz', url: './BIRIGUI.kmz' },
+             { name: 'BOA ESPERANCA DO SUL.kmz', url: './BOA ESPERANCA DO SUL.kmz' },
+             { name: 'BOTUCATU.kmz', url: './BOTUCATU.kmz' },
+             { name: 'BRAUNA.kmz', url: './BRAUNA.kmz' },
+             { name: 'BROTAS.kmz', url: './BROTAS.kmz' },
+             { name: 'CAFELANDIA.kmz', url: './CAFELANDIA.kmz' },
+             { name: 'CAJOBI.kmz', url: './CAJOBI.kmz' },
+             { name: 'CAJURU.kmz', url: './CAJURU.kmz' },
+             { name: 'CAMPINAS BARAO GERALDO-1.kmz', url: './CAMPINAS BARAO GERALDO-1.kmz' },
+             { name: 'CAMPINAS CAMPO GRANDE-1.kmz', url: './CAMPINAS CAMPO GRANDE-1.kmz' },
+             { name: 'CAMPINAS CENTRO-1.kmz', url: './CAMPINAS CENTRO-1.kmz' },
+             { name: 'CAMPINAS SOUZAS-1.kmz', url: './CAMPINAS SOUZAS-1.kmz' },
+             { name: 'CAMPINAS TREVO-1.kmz', url: './CAMPINAS TREVO-1.kmz' },
+             { name: 'CAPIVARI.kmz', url: './CAPIVARI.kmz' },
+             { name: 'CONGONHAS.kmz', url: './CONGONHAS.kmz' },
+             { name: 'COSMOPOLIS.kmz', url: './COSMOPOLIS.kmz' },
+             { name: 'CRAVINHOS.kmz', url: './CRAVINHOS.kmz' },
+             { name: 'DESCALVADO.kmz', url: './DESCALVADO.kmz' },
+             { name: 'DOIS CORREGOS.kmz', url: './DOIS CORREGOS.kmz' },
+             { name: 'DOURADO.kmz', url: './DOURADO.kmz' },
+             { name: 'DUARTINA.kmz', url: './DUARTINA.kmz' },
+             { name: 'ESPIRITO SANTO DO PINHAL.kmz', url: './ESPIRITO SANTO DO PINHAL.kmz' },
+             { name: 'FRANCA.kmz', url: './FRANCA.kmz' },
+             { name: 'GARCA.kmz', url: './GARCA.kmz' },
+             { name: 'GAVIAO PEIXOTO.kmz', url: './GAVIAO PEIXOTO.kmz' },
+             { name: 'GETULINA.kmz', url: './GETULINA.kmz' },
+             { name: 'GUAIRA.kmz', url: './GUAIRA.kmz' },
+             { name: 'GUANABARA.kmz', url: './GUANABARA.kmz' },
+             { name: 'GUARARAPES.kmz', url: './GUARARAPES.kmz' },
+             { name: 'GUARIBA.kmz', url: './GUARIBA.kmz' },
+             { name: 'HIPODROMO.kmz', url: './HIPODROMO.kmz' },
+             { name: 'HORTOLANDIA.kmz', url: './HORTOLANDIA.kmz' },
+             { name: 'IACANGA.kmz', url: './IACANGA.kmz' },
+             { name: 'IBIRA.kmz', url: './IBIRA.kmz' },
+             { name: 'IBITINGA.kmz', url: './IBITINGA.kmz' },
+             { name: 'IGARAPAVA.kmz', url: './IGARAPAVA.kmz' },
+             { name: 'IPUA.kmz', url: './IPUA.kmz' },
+             { name: 'ITAPIRA.kmz', url: './ITAPIRA.kmz' },
+             { name: 'ITAPOLIS.kmz', url: './ITAPOLIS.kmz' },
+             { name: 'ITATIBA.kmz', url: './ITATIBA.kmz' },
+             { name: 'ITATINGA.kmz', url: './ITATINGA.kmz' },
+             { name: 'ITUVERAVA.kmz', url: './ITUVERAVA.kmz' },
+             { name: 'JABOTICABAL.kmz', url: './JABOTICABAL.kmz' },
+             { name: 'JARDINOPOLIS.kmz', url: './JARDINOPOLIS.kmz' },
+             { name: 'JAU.kmz', url: './JAU.kmz' },
+             { name: 'JOSE BONIFACIO.kmz', url: './JOSE BONIFACIO.kmz' },
+             { name: 'LENCOIS PAULISTA.kmz', url: './LENCOIS PAULISTA.kmz' },
+             { name: 'LINS.kmz', url: './LINS.kmz' },
+             { name: 'MARILIA.kmz', url: './MARILIA.kmz' },
+             { name: 'MATAO.kmz', url: './MATAO.kmz' },
+             { name: 'METROPOLITANA.kmz', url: './METROPOLITANA.kmz' },
+             { name: 'MIGUELOPOLIS.kmz', url: './MIGUELOPOLIS.kmz' },
+             { name: 'MIRASSOL.kmz', url: './MIRASSOL.kmz' },
+             { name: 'MONTE ALTO.kmz', url: './MONTE ALTO.kmz' },
+             { name: 'MONTE APRAZIVEL.kmz', url: './MONTE APRAZIVEL.kmz' },
+             { name: 'MONTE MOR.kmz', url: './MONTE MOR.kmz' },
+             { name: 'MORRO AGUDO.kmz', url: './MORRO AGUDO.kmz' },
+             { name: 'MORRO DO CIPO.kmz', url: './MORRO DO CIPO.kmz' },
+             { name: 'NOVA GRANADA.kmz', url: './NOVA GRANADA.kmz' },
+             { name: 'OCAUCU.kmz', url: './OCAUCU.kmz' },
+             { name: 'OLIMPIA.kmz', url: './OLIMPIA.kmz' },
+             { name: 'ORLANDIA.kmz', url: './ORLANDIA.kmz' },
+             { name: 'PARAISO.kmz', url: './PARAISO.kmz' },
+             { name: 'PARDINHO.kmz', url: './PARDINHO.kmz' },
+             { name: 'PAULINIA.kmz', url: './PAULINIA.kmz' },
+             { name: 'PEDERNEIRAS.kmz', url: './PEDERNEIRAS.kmz' },
+             { name: 'PEDREGULHO.kmz', url: './PEDREGULHO.kmz' },
+             { name: 'PENAPOLIS.kmz', url: './PENAPOLIS.kmz' },
+             { name: 'PIACATU.kmz', url: './PIACATU.kmz' },
+             { name: 'PIRACICABA SANTA CECILIA.kmz', url: './PIRACICABA SANTA CECILIA.kmz' },
+             { name: 'PIRACICABA SANTA TEREZINHA.kmz', url: './PIRACICABA SANTA TEREZINHA.kmz' },
+             { name: 'PIRACICABA.kmz', url: './PIRACICABA.kmz' },
+             { name: 'PIRAJUI - EA.kmz', url: './PIRAJUI - EA.kmz' },
+             { name: 'PIRANGI.kmz', url: './PIRANGI.kmz' },
+             { name: 'PITANGUEIRAS.kmz', url: './PITANGUEIRAS.kmz' },
+             { name: 'POMPEIA.kmz', url: './POMPEIA.kmz' },
+             { name: 'PRESIDENTE ALVES.kmz', url: './PRESIDENTE ALVES.kmz' },
+             { name: 'PROMISSAO.kmz', url: './PROMISSAO.kmz' },
+             { name: 'RESTINGA.kmz', url: './RESTINGA.kmz' },
+             { name: 'RIBEIRAO PRETO NORTE.kmz', url: './RIBEIRAO PRETO NORTE.kmz' },
+             { name: 'RIBEIRAO PRETO SUL.kmz', url: './RIBEIRAO PRETO SUL.kmz' },
+             { name: 'RINCAO.kmz', url: './RINCAO.kmz' },
+             { name: 'SANTA ADELIA.kmz', url: './SANTA ADELIA.kmz' },
+             { name: 'SANTA BARBARA DOESTE.kmz', url: './SANTA BARBARA DOESTE.kmz' },
+             { name: 'SANTA ROSA DE VITERBO.kmz', url: './SANTA ROSA DE VITERBO.kmz' },
+             { name: 'SANTO ANTONIO ARACANGUA.kmz', url: './SANTO ANTONIO ARACANGUA.kmz' },
+             { name: 'SAO CARLOS.kmz', url: './SAO CARLOS.kmz' },
+             { name: 'SAO JOAQUIM DA BARRA.kmz', url: './SAO JOAQUIM DA BARRA.kmz' },
+             { name: 'SAO JOSE RIO PRETO.kmz', url: './SAO JOSE RIO PRETO.kmz' },
+             { name: 'SAO MANUEL.kmz', url: './SAO MANUEL.kmz' },
+             { name: 'SAO PEDRO.kmz', url: './SAO PEDRO.kmz' },
+             { name: 'SAO SIMAO.kmz', url: './SAO SIMAO.kmz' },
+             { name: 'SERRA NEGRA.kmz', url: './SERRA NEGRA.kmz' },
+             { name: 'SERRANA.kmz', url: './SERRANA.kmz' },
+             { name: 'SERTAOZINHO.kmz', url: './SERTAOZINHO.kmz' },
+             { name: 'SOCORRO.kmz', url: './SOCORRO.kmz' },
+             { name: 'SUMARE.kmz', url: './SUMARE.kmz' },
+             { name: 'TANABI.kmz', url: './TANABI.kmz' },
+             { name: 'TAQUARITINGA.kmz', url: './TAQUARITINGA.kmz' },
+             { name: 'UIRAPURU.kmz', url: './UIRAPURU.kmz' },
+             { name: 'VALINHOS.kmz', url: './VALINHOS.kmz' },
+             { name: 'VALPARAISO.kmz', url: './VALPARAISO.kmz' },
+             { name: 'VIRADOURO.kmz', url: './VIRADOURO.kmz' }
         ];
         
-        // NOVO: Adicionado evento de clique no mapa para fechar os painéis.
         map.on('click', () => {
             kmzMenu.style.display = 'none';
             lineMenu.style.display = 'none';
             loadedFilesMenu.style.display = 'none';
             styleMenu.style.display = 'none';
             searchResults.style.display = 'none';
+            markerGroupMenu.style.display = 'none';
         });
 
         function updateRecentFiles(fileName) {
@@ -618,7 +696,8 @@
             sortedFiles.forEach((file) => {
                 const li = document.createElement('li');
                 li.textContent = file.name;
-                li.addEventListener('click', () => {
+                li.addEventListener('click', (e) => {
+                    e.stopPropagation();
                     loadKMZFromURL(file.url, file.name);
                     localStorage.setItem('lastSelectedFile', file.name);
                     updateRecentFiles(file.name);
@@ -630,6 +709,7 @@
         }
 
         displayFileList();
+        updateMarkerGroupMenu();
 
         map.on('load', () => {
             const lastFile = localStorage.getItem('lastSelectedFile');
@@ -638,31 +718,45 @@
                 if (file) loadKMZFromURL(file.url, file.name);
             }
         });
-
-        document.getElementById('btnKMZ').addEventListener('click', () => toggleVisibility(kmzMenu));
+        
+        document.getElementById('btnKMZ').addEventListener('click', (e) => { e.stopPropagation(); toggleVisibility(kmzMenu); });
         document.getElementById('btnMarkers').addEventListener('click', toggleMarkers);
         document.getElementById('btnNames').addEventListener('click', () => toggleNames());
         document.getElementById('btnLines').addEventListener('click', toggleLines);
         document.getElementById('btnReset').addEventListener('click', resetView);
         document.getElementById('btnLocation').addEventListener('click', goToCurrentLocation);
-        document.getElementById('btnLineGroups').addEventListener('click', () => {
+        document.getElementById('btnLineGroups').addEventListener('click', (e) => {
+            e.stopPropagation();
             if (state.selectedGroups.size === 0) {
                 alert('Não há grupos de linhas para filtrar.');
             } else {
                 toggleVisibility(lineMenu);
             }
         });
-        btnLoadedFiles.addEventListener('click', () => toggleVisibility(loadedFilesMenu));
+        btnLoadedFiles.addEventListener('click', (e) => { e.stopPropagation(); toggleVisibility(loadedFilesMenu); });
         document.getElementById('btnSearch').addEventListener('click', searchFeatures);
-        document.getElementById('selectDevice').addEventListener('click', selectFromDevice);
+        document.getElementById('selectDevice').addEventListener('click', (e) => { e.stopPropagation(); selectFromDevice(); });
         document.getElementById('hideAll').addEventListener('click', hideAllGroups);
         document.getElementById('showAll').addEventListener('click', showAllGroups);
-        document.getElementById('btnStyles').addEventListener('click', () => {
+        document.getElementById('btnStyles').addEventListener('click', (e) => {
+            e.stopPropagation();
             displayStyleList();
             toggleVisibility(styleMenu);
         });
 
+        document.getElementById('btnMarkerGroups').addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleVisibility(markerGroupMenu);
+        });
+        document.getElementById('hideAllMarkerGroups').addEventListener('click', () => toggleAllMarkerGroups(false));
+        document.getElementById('showAllMarkerGroups').addEventListener('click', () => toggleAllMarkerGroups(true));
+
         function toggleVisibility(element) {
+            [kmzMenu, lineMenu, loadedFilesMenu, styleMenu, markerGroupMenu].forEach(menu => {
+                if (menu !== element) {
+                    menu.style.display = 'none';
+                }
+            });
             element.style.display = (element.style.display === 'block') ? 'none' : 'block';
         }
 
@@ -679,16 +773,14 @@
             try {
                 const response = await fetch(url);
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                const contentType = response.headers.get("content-type");
+                const isKmz = fileName.endsWith('.kmz');
                 let data;
-                if (contentType.includes("application/vnd.google-earth.kmz")) {
+                if (isKmz) {
                     const arrayBuffer = await response.arrayBuffer();
                     data = await parseKMZ(arrayBuffer);
-                } else if (contentType.includes("application/vnd.google-earth.kml+xml")) {
+                } else {
                     const text = await response.text();
                     data = toGeoJSON.kml(new DOMParser().parseFromString(text, 'text/xml'));
-                } else {
-                    throw new Error('Formato de arquivo não suportado.');
                 }
                 addDataToMap(data, fileName);
             } catch (error) {
@@ -768,6 +860,15 @@
                 const features = extractGeometries(feature);
                 features.forEach(f => {
                     if (f.geometry.type === 'Point') {
+                        const name = (f.properties.name || '').toUpperCase();
+                        let groupKey = 'default';
+                        if (name.endsWith('-FU')) groupKey = '-FU';
+                        else if (name.endsWith('-FA')) groupKey = '-FA';
+                        else if (name.endsWith('-RE')) groupKey = '-RE';
+                        else if (name.endsWith('KVA')) groupKey = 'KVA';
+                        
+                        f.properties.group = groupKey;
+                        f.properties.color = state.markerGroups[groupKey].color;
                         pointFeaturesArray.push(f);
                     } else if (['LineString', 'MultiLineString', 'Polygon', 'MultiPolygon'].includes(f.geometry.type)) {
                         f.properties = f.properties || {};
@@ -818,7 +919,7 @@
                     source: sourceId + '-markers',
                     paint: {
                         'circle-radius': 6,
-                        'circle-color': '#FF5722',
+                        'circle-color': ['get', 'color'],
                         'circle-stroke-width': 2,
                         'circle-stroke-color': '#FFFFFF'
                     },
@@ -842,6 +943,7 @@
                         'text-halo-width': 1
                     }
                 });
+                applyMarkerGroupFilter();
             }
 
             if (lineFeatures.features.length > 0) {
@@ -860,6 +962,63 @@
 
             updateGroupMenu();
             updateLoadedFilesList(fileName);
+        }
+        
+        function updateMarkerGroupMenu() {
+            markerGroupsList.innerHTML = '';
+            Object.keys(state.markerGroups).forEach(groupKey => {
+                if (groupKey === 'default') return;
+
+                const group = state.markerGroups[groupKey];
+                const li = document.createElement('li');
+                const lbl = document.createElement('label');
+                const chk = document.createElement('input');
+                const colorBox = document.createElement('div');
+
+                colorBox.className = 'color-box';
+                colorBox.style.backgroundColor = group.color;
+
+                chk.type = 'checkbox';
+                chk.checked = group.visible;
+                chk.onchange = () => {
+                    state.markerGroups[groupKey].visible = chk.checked;
+                    applyMarkerGroupFilter();
+                };
+                
+                lbl.appendChild(chk);
+                lbl.appendChild(colorBox);
+                lbl.appendChild(document.createTextNode(groupKey));
+                lbl.style.color = group.color;
+                li.appendChild(lbl);
+                markerGroupsList.appendChild(li);
+            });
+        }
+        
+        function applyMarkerGroupFilter() {
+            const visibleGroups = Object.keys(state.markerGroups).filter(g => state.markerGroups[g].visible);
+            
+            state.files.forEach(file => {
+                if (!file.hasMarkers) return;
+                
+                const markerLayerId = `marker-circles-${file.sourceId}`;
+                const labelLayerId = `marker-labels-${file.sourceId}`;
+                const filter = ['in', 'group', ...visibleGroups];
+                
+                if (map.getLayer(markerLayerId)) {
+                    map.setFilter(markerLayerId, filter);
+                }
+                if (map.getLayer(labelLayerId)) {
+                    map.setFilter(labelLayerId, filter);
+                }
+            });
+        }
+        
+        function toggleAllMarkerGroups(visible) {
+            Object.keys(state.markerGroups).forEach(groupKey => {
+                state.markerGroups[groupKey].visible = visible;
+            });
+            updateMarkerGroupMenu();
+            applyMarkerGroupFilter();
         }
 
         function updateGroupMenu() {
@@ -989,14 +1148,14 @@
                 if (file.hasLines && file.groupingProperty) {
                     const sourceId = file.sourceId;
                     const allGroups = new Set();
-                     if (file.lineFeatures && file.lineFeatures.features) {
-                        file.lineFeatures.features.forEach(feature => {
-                            if (feature.properties && feature.properties[file.groupingProperty]) {
-                                allGroups.add(feature.properties[file.groupingProperty]);
-                            }
-                        });
-                        state.selectedGroups.set(sourceId, new Set(allGroups));
-                    }
+                       if (file.lineFeatures && file.lineFeatures.features) {
+                            file.lineFeatures.features.forEach(feature => {
+                                if (feature.properties && feature.properties[file.groupingProperty]) {
+                                    allGroups.add(feature.properties[file.groupingProperty]);
+                                }
+                            });
+                            state.selectedGroups.set(sourceId, new Set(allGroups));
+                        }
                 }
             });
             const checkboxes = document.querySelectorAll('#lineGroupsList input[type=checkbox]');
@@ -1095,7 +1254,7 @@
             const φ1 = toRad(lat1), φ2 = toRad(lat2);
             const Δφ = toRad(lat2 - lat1), Δλ = toRad(lon2 - lon1);
             const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-                  Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+                      Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
             return R * c;
         }
@@ -1184,7 +1343,7 @@
                             source: file.sourceId + '-markers',
                             paint: {
                                 'circle-radius': 6,
-                                'circle-color': '#FF5722',
+                                'circle-color': ['get', 'color'],
                                 'circle-stroke-width': 2,
                                 'circle-stroke-color': '#FFFFFF'
                             },
@@ -1223,6 +1382,7 @@
                     }
                 });
                 applyGroupFilter();
+                applyMarkerGroupFilter();
             });
             map.setStyle(newStyleUrl);
         }
@@ -1243,23 +1403,21 @@
 
         const menuButtons = document.querySelectorAll('.menu button');
         menuButtons.forEach(button => {
-            button.addEventListener('click', () => {
+            button.addEventListener('click', (e) => {
+                if (e.currentTarget.id !== 'btnSearch') {
+                    e.stopPropagation();
+                }
+
                 const legend = button.querySelector('.button-legend');
                 if (legend) {
                     legend.style.display = 'block';
                     setTimeout(() => {
                         legend.style.display = 'none';
-                    }, 5000);
+                    }, 2000);
                 }
             });
         });
 
-        window.onload = function() {
-            setTimeout(() => {
-                const legends = document.querySelectorAll('.button-legend');
-                legends.forEach(legend => legend.style.display = 'none');
-            }, 10000);
-        };
     </script>
 </body>
 </html>
