@@ -395,18 +395,20 @@
             text-align: center;
             font-size: 10px;
             color: #555;
+            z-index: 1001; /* Para ficar acima da chave offline */
         }
         
-        /* ESTILOS PARA O TOGGLE SWITCH */
+        /* ESTILOS PARA O TOGGLE SWITCH NA PARTE INFERIOR */
         .offline-switch-container {
             position: absolute;
-            top: 20px;
-            right: 20px;
-            z-index: 1001;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1002; /* Acima do footer */
             background-color: white;
             padding: 8px 12px;
-            border-radius: 8px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            border-radius: 25px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
             display: flex;
             align-items: center;
             gap: 10px;
@@ -630,8 +632,9 @@
     <script>
         // CONSTANTES E ESTADO GLOBAL
         const DB_NAME = 'KMZOfflineDB';
-        const DB_VERSION = 1;
-        const OBJECT_STORE_NAME = 'geojson_files';
+        const DB_VERSION = 2; // Incrementar a versão para acionar o onupgradeneeded
+        const GEOJSON_STORE_NAME = 'geojson_files';
+        const SPATIAL_INDEX_STORE_NAME = 'spatial_index';
 
         const state = {
             isOfflineMode: false,
@@ -639,7 +642,7 @@
             namesVisible: true,
             linesVisible: true,
             userLocation: null,
-            files: [],
+            files: [], // Agora representa apenas os arquivos ATIVOS no mapa
             selectedGroups: new Map(),
             markerGroups: {
                 '-FU': { color: 'red', visible: true },
@@ -649,6 +652,8 @@
                 'default': { color: '#FF5722', visible: true }
             }
         };
+
+        let spatialIndex = []; // Armazenará o índice espacial em memória para acesso rápido
 
         const mapStyles = [
             { name: 'Positron', url: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json' },
@@ -818,8 +823,11 @@
                 const request = indexedDB.open(DB_NAME, DB_VERSION);
                 request.onupgradeneeded = event => {
                     const db = event.target.result;
-                    if (!db.objectStoreNames.contains(OBJECT_STORE_NAME)) {
-                        db.createObjectStore(OBJECT_STORE_NAME, { keyPath: 'name' });
+                    if (!db.objectStoreNames.contains(GEOJSON_STORE_NAME)) {
+                        db.createObjectStore(GEOJSON_STORE_NAME, { keyPath: 'name' });
+                    }
+                    if (!db.objectStoreNames.contains(SPATIAL_INDEX_STORE_NAME)) {
+                        db.createObjectStore(SPATIAL_INDEX_STORE_NAME, { keyPath: 'name' });
                     }
                 };
                 request.onsuccess = event => resolve(event.target.result);
@@ -827,41 +835,110 @@
             });
         }
 
-        async function saveGeoJSONToDB(name, geojson) {
+        async function saveDataToDB(storeName, data) {
             const db = await openDB();
             return new Promise((resolve, reject) => {
-                const transaction = db.transaction([OBJECT_STORE_NAME], 'readwrite');
-                const store = transaction.objectStore(OBJECT_STORE_NAME);
-                const request = store.put({ name, geojson });
+                const transaction = db.transaction([storeName], 'readwrite');
+                const store = transaction.objectStore(storeName);
+                const request = store.put(data);
                 request.onsuccess = () => resolve();
                 request.onerror = () => reject(request.error);
             });
         }
 
-        async function getAllGeoJSONFromDB() {
-            const db = await openDB();
-            return new Promise((resolve, reject) => {
-                const transaction = db.transaction([OBJECT_STORE_NAME], 'readonly');
-                const store = transaction.objectStore(OBJECT_STORE_NAME);
-                const request = store.getAll();
+        async function getDataFromDB(storeName, key) {
+             const db = await openDB();
+             return new Promise((resolve, reject) => {
+                const transaction = db.transaction([storeName], 'readonly');
+                const store = transaction.objectStore(storeName);
+                const request = key ? store.get(key) : store.getAll();
                 request.onsuccess = () => resolve(request.result);
                 request.onerror = () => reject(request.error);
-            });
+             });
         }
-
-        async function countDBItems() {
+        
+        async function countDBItems(storeName) {
             const db = await openDB();
             return new Promise((resolve, reject) => {
-                const transaction = db.transaction([OBJECT_STORE_NAME], 'readonly');
-                const store = transaction.objectStore(OBJECT_STORE_NAME);
+                const transaction = db.transaction([storeName], 'readonly');
+                const store = transaction.objectStore(storeName);
                 const request = store.count();
                 request.onsuccess = () => resolve(request.result);
                 request.onerror = () => reject(request.error);
             });
         }
 
+        function calculateBounds(geojson) {
+            let minLng = 180, minLat = 90, maxLng = -180, maxLat = -90;
+            function extractCoords(coords) {
+                if (typeof coords[0] === 'number' && typeof coords[1] === 'number') {
+                    const [lng, lat] = coords;
+                    if (lng < minLng) minLng = lng;
+                    if (lat < minLat) minLat = lat;
+                    if (lng > maxLng) maxLng = lng;
+                    if (lat > maxLat) maxLat = lat;
+                } else if (Array.isArray(coords)) {
+                    coords.forEach(extractCoords);
+                }
+            }
+            geojson.features.forEach(feature => {
+                if (feature.geometry && feature.geometry.coordinates) {
+                    extractCoords(feature.geometry.coordinates);
+                }
+            });
+            return (minLng > 179) ? null : [minLng, minLat, maxLng, maxLat]; // Retorna null se não houver coordenadas
+        }
+
+        function boundsIntersect(boundsA, mapBounds) {
+            if (!boundsA) return false;
+            const fileBounds = new maplibregl.LngLatBounds(
+                [boundsA[0], boundsA[1]],
+                [boundsA[2], boundsA[3]]
+            );
+            return mapBounds.intersects(fileBounds);
+        }
+
+        let updateTimeout;
+        async function updateVisibleLayers() {
+             // Evita execuções múltiplas em rápida sucessão
+            clearTimeout(updateTimeout);
+            updateTimeout = setTimeout(async () => {
+                if (!state.isOfflineMode) return;
+
+                const mapBounds = map.getBounds();
+                const loadedFileNames = new Set(state.files.map(f => f.name));
+                const requiredFiles = new Set();
+
+                // Identifica os arquivos que deveriam estar visíveis
+                for (const file of spatialIndex) {
+                    if (boundsIntersect(file.bounds, mapBounds)) {
+                        requiredFiles.add(file.name);
+                    }
+                }
+
+                // Descarrega arquivos que não são mais necessários
+                for (const loadedFile of loadedFileNames) {
+                    if (!requiredFiles.has(loadedFile)) {
+                        console.log(`Unloading: ${loadedFile}`);
+                        removeFileFromMap(loadedFile);
+                    }
+                }
+
+                // Carrega arquivos que são necessários e ainda não estão no mapa
+                for (const requiredFile of requiredFiles) {
+                    if (!loadedFileNames.has(requiredFile)) {
+                        console.log(`Loading: ${requiredFile}`);
+                        const data = await getDataFromDB(GEOJSON_STORE_NAME, requiredFile);
+                        if (data) {
+                            addDataToMap(data.geojson, data.name);
+                        }
+                    }
+                }
+            }, 300); // 300ms de debounce
+        }
+
+
         function clearMap() {
-            // Cria uma cópia do array para iterar, pois removeFileFromMap modifica o state.files original
             const filesToRemove = [...state.files];
             filesToRemove.forEach(file => removeFileFromMap(file.name));
             state.files = []; 
@@ -877,25 +954,26 @@
             document.getElementById('selectDevice').style.display = isOffline ? 'none' : 'block';
 
             if (isOffline) {
-                console.log("Ativando modo offline...");
-                const dbCount = await countDBItems();
+                console.log("Ativando modo offline dinâmico...");
+                map.on('moveend', updateVisibleLayers);
+                const dbCount = await countDBItems(SPATIAL_INDEX_STORE_NAME);
+
                 if (dbCount < predefinedFiles.length) {
                     if (confirm(`O cache offline completo não foi construído. Deseja iniciar o processo agora? Isso fará o download de ${predefinedFiles.length} arquivos.`)) {
                         await buildOfflineDatabase();
                     } else {
                         offlineToggle.checked = false; 
-                        state.isOfflineMode = false;
                         localStorage.setItem('offlineMode', 'false');
-                        // Re-habilita a UI
-                        kmzMenuDiv.style.pointerEvents = 'auto';
-                        kmzMenuDiv.style.opacity = '1';
-                        document.getElementById('selectDevice').style.display = 'block';
+                        await handleModeChange(false); // Reverte para o modo online
                         return;
                     }
                 }
-                await loadAllDataFromDB();
+                spatialIndex = await getDataFromDB(SPATIAL_INDEX_STORE_NAME);
+                updateVisibleLayers(); // Carga inicial
             } else {
                 console.log("Desativando modo offline...");
+                map.off('moveend', updateVisibleLayers);
+                spatialIndex = [];
             }
         }
 
@@ -904,17 +982,15 @@
             let count = 0;
             for (const file of predefinedFiles) {
                 try {
-                    // Tenta obter do cache localStorage primeiro
-                    let geojson = getKMZFromCache(file.name);
-                    if (!geojson) {
-                         const response = await fetch(file.url);
-                         if (!response.ok) throw new Error(`Falha ao buscar ${file.name}`);
-                         const arrayBuffer = await response.arrayBuffer();
-                         geojson = await parseKMZ(arrayBuffer);
+                    const geojson = await parseKMZFromUrl(file.url); // Usa uma função helper
+                    await saveDataToDB(GEOJSON_STORE_NAME, { name: file.name, geojson });
+
+                    const bounds = calculateBounds(geojson);
+                    if (bounds) {
+                        await saveDataToDB(SPATIAL_INDEX_STORE_NAME, { name: file.name, bounds });
                     }
-                    await saveGeoJSONToDB(file.name, geojson);
-                    count++;
                     
+                    count++;
                     const percentage = (count / predefinedFiles.length) * 100;
                     progressBar.style.width = `${percentage}%`;
                     progressText.textContent = `${count} / ${predefinedFiles.length}`;
@@ -926,37 +1002,22 @@
             progressOverlay.style.display = 'none';
             alert('Cache offline construído com sucesso!');
         }
+        
+        // --- FUNÇÕES HELPER E DE LÓGICA ---
 
-        async function loadAllDataFromDB() {
-            console.log("Carregando todos os dados do banco de dados local...");
-            const allData = await getAllGeoJSONFromDB();
-            allData.forEach(item => {
-                addDataToMap(item.geojson, item.name);
-            });
-            alert(`${allData.length} arquivos carregados do cache offline.`);
+        async function parseKMZFromUrl(url) {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`Falha ao buscar ${url}`);
+            const arrayBuffer = await response.arrayBuffer();
+            return await parseKMZ(arrayBuffer);
         }
 
-        // --- LÓGICA ORIGINAL E ADAPTADA ---
-
         function cacheKMZData(fileName, geojson) {
-            try {
+             try {
                 const key = 'kmz_cache_' + fileName;
-                const queueKey = 'cachedFilesQueue';
-                let queue = JSON.parse(localStorage.getItem(queueKey)) || [];
-                
-                queue = queue.filter(item => item !== fileName);
-                queue.unshift(fileName);
-
-                if (queue.length > 5) {
-                    const oldestFile = queue.pop();
-                    localStorage.removeItem('kmz_cache_' + oldestFile);
-                    console.log(`[Cache] Removido do cache: ${oldestFile}`);
-                }
-
-                localStorage.setItem(queueKey, JSON.stringify(queue));
                 localStorage.setItem(key, JSON.stringify(geojson));
             } catch (e) {
-                console.error("[Cache] Erro ao salvar no localStorage. O cache pode estar cheio.", e);
+                console.error("[Cache] Erro ao salvar no localStorage.", e);
             }
         }
 
@@ -964,7 +1025,6 @@
             const key = 'kmz_cache_' + fileName;
             const data = localStorage.getItem(key);
             if (data) {
-                console.log(`[Cache] Carregando "${fileName}" do cache local.`);
                 return JSON.parse(data);
             }
             return null;
@@ -1020,7 +1080,6 @@
         map.on('load', () => {
             const savedMode = localStorage.getItem('offlineMode') === 'true';
             offlineToggle.checked = savedMode;
-            // Atrasar um pouco para garantir que o mapa esteja totalmente pronto
             setTimeout(() => handleModeChange(savedMode), 100);
 
             if (!savedMode) {
@@ -1039,7 +1098,9 @@
             handleModeChange(isChecked);
         });
 
+        // O resto dos event listeners permanece o mesmo
         document.getElementById('btnKMZ').addEventListener('click', (e) => { e.stopPropagation(); toggleVisibility(kmzMenu); });
+        // ... cole aqui todos os outros `addEventListener` dos botões originais ...
         document.getElementById('btnMarkers').addEventListener('click', toggleMarkers);
         document.getElementById('btnNames').addEventListener('click', () => toggleNames());
         document.getElementById('btnLines').addEventListener('click', toggleLines);
@@ -1071,6 +1132,14 @@
         document.getElementById('hideAllMarkerGroups').addEventListener('click', () => toggleAllMarkerGroups(false));
         document.getElementById('showAllMarkerGroups').addEventListener('click', () => toggleAllMarkerGroups(true));
 
+        // --- FUNÇÕES PRINCIPAIS E MODIFICADAS ---
+        
+        // Todas as outras funções como toggleVisibility, parseKMZ, addDataToMap, etc.
+        // podem permanecer como estavam no código anterior. 
+        // O fluxo principal agora é controlado pelo handleModeChange e updateVisibleLayers.
+        
+        // Colando o resto das funções para garantir a completude
+
         function toggleVisibility(element) {
             [kmzMenu, lineMenu, loadedFilesMenu, styleMenu, markerGroupMenu].forEach(menu => {
                 if (menu !== element) {
@@ -1081,6 +1150,7 @@
         }
 
         function selectFromDevice() {
+            if (state.isOfflineMode) return;
             kmzMenu.style.display = 'none';
             const input = document.createElement('input');
             input.type = 'file';
@@ -1099,24 +1169,11 @@
                 addDataToMap(cachedData, fileName);
                 return; 
             }
-
-            try {
-                const response = await fetch(url);
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                const isKmz = fileName.endsWith('.kmz');
-                let data;
-                if (isKmz) {
-                    const arrayBuffer = await response.arrayBuffer();
-                    data = await parseKMZ(arrayBuffer);
-                } else {
-                    const text = await response.text();
-                    data = toGeoJSON.kml(new DOMParser().parseFromString(text, 'text/xml'));
-                }
-                addDataToMap(data, fileName);
-            } catch (error) {
+            const geojson = await parseKMZFromUrl(url).catch(error => {
                 console.error('Erro ao carregar o arquivo KMZ/KML:', error);
                 alert('Erro ao carregar o arquivo KMZ/KML.');
-            }
+            });
+            if(geojson) addDataToMap(geojson, fileName);
         }
 
         function handleFile(event) {
@@ -1127,15 +1184,6 @@
             const file = event.target.files[0];
             if (!file) return;
 
-            const cachedData = getKMZFromCache(file.name);
-            if (cachedData) {
-                addDataToMap(cachedData, file.name);
-                localStorage.setItem('lastSelectedFile', file.name);
-                updateRecentFiles(file.name);
-                displayFileList();
-                return;
-            }
-
             const reader = new FileReader();
             reader.onload = async () => {
                 try {
@@ -1143,9 +1191,7 @@
                         ? await parseKMZ(reader.result)
                         : toGeoJSON.kml(new DOMParser().parseFromString(reader.result, 'text/xml'));
                     addDataToMap(data, file.name);
-                    localStorage.setItem('lastSelectedFile', file.name);
-                    updateRecentFiles(file.name);
-                    displayFileList();
+                    // Não há necessidade de gerenciar lastSelectedFile para uploads
                 } catch (error) {
                     console.error('Erro ao processar o arquivo:', error);
                     alert('Erro ao processar o arquivo KML/KMZ.');
@@ -1165,6 +1211,9 @@
             const kmlContent = await kmlFile.async('string');
             return toGeoJSON.kml(new DOMParser().parseFromString(kmlContent, 'text/xml'));
         }
+
+        // A função addDataToMap e as demais funções de UI/lógica podem ser mantidas do código anterior.
+        // As colei aqui para garantir que o arquivo seja 100% completo e autocontido.
 
         function addDataToMap(geojson, fileName) {
             const sanitizedFileName = fileName.replace(/\s+/g, '_').replace(/[^\w\-]/g, '');
@@ -1310,8 +1359,6 @@
             }
         }
         
-        // ... (o resto das funções, como updateMarkerGroupMenu, applyMarkerGroupFilter, etc., permanecem as mesmas)
-        
         function updateMarkerGroupMenu() {
             markerGroupsList.innerHTML = '';
             Object.keys(state.markerGroups).forEach(groupKey => {
@@ -1430,7 +1477,6 @@
                 removeFileFromMap(fileName);
             });
             li.appendChild(removeBtn);
-            // Evitar remover o item da UI quando em modo offline, pois clearMap já limpou
             const existingLi = [...loadedFilesList.children].find(child => child.textContent.startsWith(fileName));
             if (!existingLi) {
                  loadedFilesList.appendChild(li);
@@ -1592,7 +1638,7 @@
                 }
                 extractCoords(feature.geometry.coordinates);
 
-                if(coordinates.length === 0) return [0, 0];
+                if(coordinates.length === 0) return null;
 
                 const lons = coordinates.map(coord => coord[0]);
                 const lats = coordinates.map(coord => coord[1]);
@@ -1623,7 +1669,7 @@
 
             if (state.isOfflineMode) {
                 console.log("Buscando em modo offline (global)...");
-                const allDBData = await getAllGeoJSONFromDB();
+                const allDBData = await getDataFromDB(GEOJSON_STORE_NAME);
                 allDBData.forEach(item => {
                     if(item.geojson && item.geojson.features) {
                         allFeaturesToSearch.push(...item.geojson.features);
@@ -1657,7 +1703,11 @@
                 let referencePoint = state.userLocation || map.getCenter().toArray();
                 matches.forEach(feature => {
                     const center = getFeatureCenter(feature);
-                    feature.properties.distance = computeDistance(referencePoint, center);
+                    if (center) {
+                        feature.properties.distance = computeDistance(referencePoint, center);
+                    } else {
+                        feature.properties.distance = Infinity;
+                    }
                 });
                 matches.sort((a, b) => a.properties.distance - b.properties.distance);
                 const topResults = matches.slice(0, 10);
@@ -1679,7 +1729,7 @@
                 viewButton.textContent = 'Visualizar';
                 viewButton.onclick = () => {
                     const center = getFeatureCenter(result);
-                    map.flyTo({ center: center, zoom: 16 });
+                    if(center) map.flyTo({ center: center, zoom: 16 });
                     searchResults.style.display = 'none';
                 };
 
@@ -1687,8 +1737,10 @@
                 googleMapsButton.textContent = 'Google Maps';
                 googleMapsButton.onclick = () => {
                     const center = getFeatureCenter(result);
-                    const url = `https://www.google.com/maps?q=${center[1]},${center[0]}`;
-                    window.open(url, '_blank');
+                    if (center) {
+                        const url = `https://www.google.com/maps?q=${center[1]},${center[0]}`;
+                        window.open(url, '_blank');
+                    }
                 };
 
                 li.appendChild(nameSpan);
@@ -1703,55 +1755,19 @@
 
         function changeMapStyle(newStyleUrl) {
             map.once('styledata', () => {
-                state.files.forEach(file => {
-                    if (file.hasMarkers) {
-                        map.addSource(file.sourceId + '-markers', { type: 'geojson', data: file.pointFeatures });
-                        map.addLayer({
-                            id: `marker-circles-${file.sourceId}`,
-                            type: 'circle',
-                            source: file.sourceId + '-markers',
-                            paint: {
-                                'circle-radius': 6,
-                                'circle-color': ['get', 'color'],
-                                'circle-stroke-width': 2,
-                                'circle-stroke-color': '#FFFFFF'
-                            },
-                            layout: { 'visibility': state.markersVisible ? 'visible' : 'none' }
-                        });
-                        map.addLayer({
-                            id: `marker-labels-${file.sourceId}`,
-                            type: 'symbol',
-                            source: file.sourceId + '-markers',
-                            layout: {
-                                'text-field': ['coalesce', ['get', 'name'], ['get', 'Alimentador']],
-                                'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
-                                'text-size': 12,
-                                'text-offset': [0, 1.5],
-                                'visibility': state.namesVisible ? 'visible' : 'none'
-                            },
-                            paint: {
-                                'text-color': '#000000',
-                                'text-halo-color': '#FFFFFF',
-                                'text-halo-width': 1
-                            }
-                        });
-                    }
-                    if (file.hasLines) {
-                        map.addSource(file.sourceId + '-lines', { type: 'geojson', data: file.lineFeatures });
-                        map.addLayer({
-                            id: `lines-${file.sourceId}`,
-                            type: 'line',
-                            source: file.sourceId + '-lines',
-                            paint: {
-                                'line-color': ['get', 'color'],
-                                'line-width': 4
-                            },
-                            layout: { 'visibility': state.linesVisible ? 'visible' : 'none' }
-                        });
-                    }
-                });
-                applyGroupFilter();
-                applyMarkerGroupFilter();
+                // A lógica de reaplicar camadas agora é gerenciada pelo updateVisibleLayers no modo offline
+                // No modo online, as camadas são adicionadas conforme são carregadas
+                if(state.isOfflineMode) {
+                    updateVisibleLayers();
+                } else {
+                    const currentFiles = [...state.files];
+                    clearMap();
+                    currentFiles.forEach(file => {
+                         // Uma forma simplificada de recarregar. Poderia ser mais otimizada.
+                         const originalFile = predefinedFiles.find(pf => pf.name === file.name);
+                         if(originalFile) loadKMZFromURL(originalFile.url, originalFile.name);
+                    });
+                }
             });
             map.setStyle(newStyleUrl);
         }
