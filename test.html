@@ -889,14 +889,34 @@
             return (minLng > 179) ? null : [minLng, minLat, maxLng, maxLat]; // Retorna null se não houver coordenadas
         }
 
-        function boundsIntersect(boundsA, mapBounds) {
-            if (!boundsA) return false;
-            const fileBounds = new maplibregl.LngLatBounds(
-                [boundsA[0], boundsA[1]],
-                [boundsA[2], boundsA[3]]
-            );
-            return mapBounds.intersects(fileBounds);
-        }
+        // SUBSTITUA PELA VERSÃO ABAIXO
+function boundsIntersect(fileBoundsArray, mapBounds) {
+    // fileBoundsArray é o nosso array: [minLng, minLat, maxLng, maxLat]
+    if (!fileBoundsArray) return false;
+
+    // Obtém as coordenadas da área visível do mapa
+    const mapWest = mapBounds.getWest();
+    const mapEast = mapBounds.getEast();
+    const mapSouth = mapBounds.getSouth();
+    const mapNorth = mapBounds.getNorth();
+
+    // Obtém as coordenadas do arquivo
+    const fileWest = fileBoundsArray[0];
+    const fileSouth = fileBoundsArray[1];
+    const fileEast = fileBoundsArray[2];
+    const fileNorth = fileBoundsArray[3];
+
+    // A lógica de intersecção verifica se NÃO há sobreposição.
+    // Se qualquer uma destas condições for verdadeira, as caixas NÃO se cruzam.
+    const noOverlap =
+        fileEast < mapWest ||   // O arquivo está totalmente à esquerda do mapa
+        fileWest > mapEast ||   // O arquivo está totalmente à direita do mapa
+        fileNorth < mapSouth || // O arquivo está totalmente abaixo do mapa
+        fileSouth > mapNorth;   // O arquivo está totalmente acima do mapa
+
+    // Nós queremos o inverso: retorna 'true' se HÁ sobreposição.
+    return !noOverlap;
+}
 
         let updateTimeout;
         async function updateVisibleLayers() {
