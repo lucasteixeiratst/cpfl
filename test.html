@@ -886,68 +886,74 @@
                     extractCoords(feature.geometry.coordinates);
                 }
             });
-            return (minLng > 179) ? null : [minLng, minLat, maxLng, maxLat]; // Retorna null se não houver coordenadas
+            return (minLng > 179) ? null : [minLng, minLat, maxLng, maxLat];
         }
 
-        // SUBSTITUA PELA VERSÃO ABAIXO
-function boundsIntersect(fileBoundsArray, mapBounds) {
-    // fileBoundsArray é o nosso array: [minLng, minLat, maxLng, maxLat]
-    if (!fileBoundsArray) return false;
+        function boundsIntersect(fileBoundsArray, mapBounds) {
+            if (!fileBoundsArray) return false;
+            const mapWest = mapBounds.getWest();
+            const mapEast = mapBounds.getEast();
+            const mapSouth = mapBounds.getSouth();
+            const mapNorth = mapBounds.getNorth();
+            const fileWest = fileBoundsArray[0];
+            const fileSouth = fileBoundsArray[1];
+            const fileEast = fileBoundsArray[2];
+            const fileNorth = fileBoundsArray[3];
+            const noOverlap = fileEast < mapWest || fileWest > mapEast || fileNorth < mapSouth || fileSouth > mapNorth;
+            return !noOverlap;
+        }
 
-    // Obtém as coordenadas da área visível do mapa
-    const mapWest = mapBounds.getWest();
-    const mapEast = mapBounds.getEast();
-    const mapSouth = mapBounds.getSouth();
-    const mapNorth = mapBounds.getNorth();
-
-    // Obtém as coordenadas do arquivo
-    const fileWest = fileBoundsArray[0];
-    const fileSouth = fileBoundsArray[1];
-    const fileEast = fileBoundsArray[2];
-    const fileNorth = fileBoundsArray[3];
-
-    // A lógica de intersecção verifica se NÃO há sobreposição.
-    // Se qualquer uma destas condições for verdadeira, as caixas NÃO se cruzam.
-    const noOverlap =
-        fileEast < mapWest ||   // O arquivo está totalmente à esquerda do mapa
-        fileWest > mapEast ||   // O arquivo está totalmente à direita do mapa
-        fileNorth < mapSouth || // O arquivo está totalmente abaixo do mapa
-        fileSouth > mapNorth;   // O arquivo está totalmente acima do mapa
-
-    // Nós queremos o inverso: retorna 'true' se HÁ sobreposição.
-    return !noOverlap;
-}
+        function getBoundsCenter(bounds) {
+            if (!bounds) return null;
+            const centerLng = (bounds[0] + bounds[2]) / 2;
+            const centerLat = (bounds[1] + bounds[3]) / 2;
+            return new maplibregl.LngLat(centerLng, centerLat);
+        }
 
         let updateTimeout;
         async function updateVisibleLayers() {
-             // Evita execuções múltiplas em rápida sucessão
             clearTimeout(updateTimeout);
             updateTimeout = setTimeout(async () => {
                 if (!state.isOfflineMode) return;
 
                 const mapBounds = map.getBounds();
+                const mapCenter = map.getCenter();
                 const loadedFileNames = new Set(state.files.map(f => f.name));
-                const requiredFiles = new Set();
-
-                // Identifica os arquivos que deveriam estar visíveis
+                
+                // 1. Encontra todos os arquivos candidatos que estão na viewport
+                const visibleCandidates = [];
                 for (const file of spatialIndex) {
                     if (boundsIntersect(file.bounds, mapBounds)) {
-                        requiredFiles.add(file.name);
+                        const boundsCenter = getBoundsCenter(file.bounds);
+                        if (boundsCenter) {
+                            const distance = mapCenter.distanceTo(boundsCenter);
+                            visibleCandidates.push({ name: file.name, distance: distance });
+                        }
                     }
                 }
 
-                // Descarrega arquivos que não são mais necessários
+                // 2. Prioriza e limita a lista para no máximo 4 arquivos
+                let filesToDisplay = [];
+                if (visibleCandidates.length > 4) {
+                    visibleCandidates.sort((a, b) => a.distance - b.distance);
+                    filesToDisplay = visibleCandidates.slice(0, 4);
+                } else {
+                    filesToDisplay = visibleCandidates;
+                }
+                
+                const requiredFiles = new Set(filesToDisplay.map(f => f.name));
+                console.log("Arquivos para exibir (máx 4):", Array.from(requiredFiles));
+
+                // 3. Descarrega arquivos que não são mais necessários
                 for (const loadedFile of loadedFileNames) {
                     if (!requiredFiles.has(loadedFile)) {
-                        console.log(`Unloading: ${loadedFile}`);
                         removeFileFromMap(loadedFile);
                     }
                 }
 
-                // Carrega arquivos que são necessários e ainda não estão no mapa
+                // 4. Carrega os arquivos necessários que ainda não estão no mapa
                 for (const requiredFile of requiredFiles) {
                     if (!loadedFileNames.has(requiredFile)) {
-                        console.log(`Loading: ${requiredFile}`);
                         const data = await getDataFromDB(GEOJSON_STORE_NAME, requiredFile);
                         if (data) {
                             addDataToMap(data.geojson, data.name);
@@ -956,7 +962,6 @@ function boundsIntersect(fileBoundsArray, mapBounds) {
                 }
             }, 300); // 300ms de debounce
         }
-
 
         function clearMap() {
             const filesToRemove = [...state.files];
@@ -984,12 +989,12 @@ function boundsIntersect(fileBoundsArray, mapBounds) {
                     } else {
                         offlineToggle.checked = false; 
                         localStorage.setItem('offlineMode', 'false');
-                        await handleModeChange(false); // Reverte para o modo online
+                        await handleModeChange(false);
                         return;
                     }
                 }
                 spatialIndex = await getDataFromDB(SPATIAL_INDEX_STORE_NAME);
-                updateVisibleLayers(); // Carga inicial
+                updateVisibleLayers();
             } else {
                 console.log("Desativando modo offline...");
                 map.off('moveend', updateVisibleLayers);
@@ -1002,19 +1007,16 @@ function boundsIntersect(fileBoundsArray, mapBounds) {
             let count = 0;
             for (const file of predefinedFiles) {
                 try {
-                    const geojson = await parseKMZFromUrl(file.url); // Usa uma função helper
+                    const geojson = await parseKMZFromUrl(file.url);
                     await saveDataToDB(GEOJSON_STORE_NAME, { name: file.name, geojson });
-
                     const bounds = calculateBounds(geojson);
                     if (bounds) {
                         await saveDataToDB(SPATIAL_INDEX_STORE_NAME, { name: file.name, bounds });
                     }
-                    
                     count++;
                     const percentage = (count / predefinedFiles.length) * 100;
                     progressBar.style.width = `${percentage}%`;
                     progressText.textContent = `${count} / ${predefinedFiles.length}`;
-
                 } catch (error) {
                     console.error(`Erro ao processar ${file.name}:`, error);
                 }
@@ -1118,9 +1120,7 @@ function boundsIntersect(fileBoundsArray, mapBounds) {
             handleModeChange(isChecked);
         });
 
-        // O resto dos event listeners permanece o mesmo
         document.getElementById('btnKMZ').addEventListener('click', (e) => { e.stopPropagation(); toggleVisibility(kmzMenu); });
-        // ... cole aqui todos os outros `addEventListener` dos botões originais ...
         document.getElementById('btnMarkers').addEventListener('click', toggleMarkers);
         document.getElementById('btnNames').addEventListener('click', () => toggleNames());
         document.getElementById('btnLines').addEventListener('click', toggleLines);
@@ -1144,7 +1144,6 @@ function boundsIntersect(fileBoundsArray, mapBounds) {
             displayStyleList();
             toggleVisibility(styleMenu);
         });
-
         document.getElementById('btnMarkerGroups').addEventListener('click', (e) => {
             e.stopPropagation();
             toggleVisibility(markerGroupMenu);
@@ -1152,14 +1151,8 @@ function boundsIntersect(fileBoundsArray, mapBounds) {
         document.getElementById('hideAllMarkerGroups').addEventListener('click', () => toggleAllMarkerGroups(false));
         document.getElementById('showAllMarkerGroups').addEventListener('click', () => toggleAllMarkerGroups(true));
 
-        // --- FUNÇÕES PRINCIPAIS E MODIFICADAS ---
-        
-        // Todas as outras funções como toggleVisibility, parseKMZ, addDataToMap, etc.
-        // podem permanecer como estavam no código anterior. 
-        // O fluxo principal agora é controlado pelo handleModeChange e updateVisibleLayers.
-        
-        // Colando o resto das funções para garantir a completude
-
+        // O resto do código (funções de UI, etc.) permanece o mesmo.
+        // Incluindo aqui para completude.
         function toggleVisibility(element) {
             [kmzMenu, lineMenu, loadedFilesMenu, styleMenu, markerGroupMenu].forEach(menu => {
                 if (menu !== element) {
@@ -1211,7 +1204,6 @@ function boundsIntersect(fileBoundsArray, mapBounds) {
                         ? await parseKMZ(reader.result)
                         : toGeoJSON.kml(new DOMParser().parseFromString(reader.result, 'text/xml'));
                     addDataToMap(data, file.name);
-                    // Não há necessidade de gerenciar lastSelectedFile para uploads
                 } catch (error) {
                     console.error('Erro ao processar o arquivo:', error);
                     alert('Erro ao processar o arquivo KML/KMZ.');
@@ -1232,9 +1224,6 @@ function boundsIntersect(fileBoundsArray, mapBounds) {
             return toGeoJSON.kml(new DOMParser().parseFromString(kmlContent, 'text/xml'));
         }
 
-        // A função addDataToMap e as demais funções de UI/lógica podem ser mantidas do código anterior.
-        // As colei aqui para garantir que o arquivo seja 100% completo e autocontido.
-
         function addDataToMap(geojson, fileName) {
             const sanitizedFileName = fileName.replace(/\s+/g, '_').replace(/[^\w\-]/g, '');
             const sourceId = `source-${sanitizedFileName}`;
@@ -1242,9 +1231,7 @@ function boundsIntersect(fileBoundsArray, mapBounds) {
             const labelLayerId = `marker-labels-${sourceId}`;
             const lineLayerId = `lines-${sourceId}`;
 
-            if (state.files.find(file => file.name === fileName)) {
-                return;
-            }
+            if (state.files.find(file => file.name === fileName)) return;
 
             const pointFeaturesArray = [];
             const lineFeaturesArray = [];
@@ -1252,9 +1239,7 @@ function boundsIntersect(fileBoundsArray, mapBounds) {
             function extractGeometries(feature) {
                 const geometries = [];
                 if (feature.geometry && feature.geometry.type === 'GeometryCollection') {
-                    feature.geometry.geometries.forEach(geom => {
-                        geometries.push({ ...feature, geometry: geom });
-                    });
+                    feature.geometry.geometries.forEach(geom => geometries.push({ ...feature, geometry: geom }));
                 } else if (feature.geometry) {
                     geometries.push(feature);
                 }
@@ -1285,7 +1270,6 @@ function boundsIntersect(fileBoundsArray, mapBounds) {
                         f.properties = f.properties || {};
                         const groupName = f.properties[groupingProperty];
                         let color = groupColorMap.get(groupName);
-
                         if (!color) {
                             color = colorPalette[groupColorMap.size % colorPalette.length];
                             groupColorMap.set(groupName, color);
@@ -1298,19 +1282,13 @@ function boundsIntersect(fileBoundsArray, mapBounds) {
 
             const pointFeatures = { type: 'FeatureCollection', features: pointFeaturesArray };
             const lineFeatures = { type: 'FeatureCollection', features: lineFeaturesArray };
-
             const groupsSet = new Set();
             if (lineFeatures.features.length > 0 && groupingProperty) {
                 lineFeatures.features.forEach(f => {
-                    if (f.properties && f.properties[groupingProperty]) {
-                        groupsSet.add(f.properties[groupingProperty]);
-                    }
+                    if (f.properties && f.properties[groupingProperty]) groupsSet.add(f.properties[groupingProperty]);
                 });
             }
-
-            if (groupingProperty && groupsSet.size > 0) {
-                state.selectedGroups.set(sourceId, new Set(groupsSet));
-            }
+            if (groupingProperty && groupsSet.size > 0) state.selectedGroups.set(sourceId, new Set(groupsSet));
 
             state.files.push({
                 name: fileName,
@@ -1324,82 +1302,35 @@ function boundsIntersect(fileBoundsArray, mapBounds) {
 
             if (pointFeatures.features.length > 0) {
                 map.addSource(sourceId + '-markers', { type: 'geojson', data: pointFeatures });
-                map.addLayer({
-                    id: markerLayerId,
-                    type: 'circle',
-                    source: sourceId + '-markers',
-                    paint: {
-                        'circle-radius': 6,
-                        'circle-color': ['get', 'color'],
-                        'circle-stroke-width': 2,
-                        'circle-stroke-color': '#FFFFFF'
-                    },
-                    layout: { 'visibility': state.markersVisible ? 'visible' : 'none' }
-                });
-
-                map.addLayer({
-                    id: labelLayerId,
-                    type: 'symbol',
-                    source: sourceId + '-markers',
-                    layout: {
-                        'text-field': ['coalesce', ['get', 'name'], ['get', 'Alimentador']],
-                        'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
-                        'text-size': 12,
-                        'text-offset': [0, 1.5],
-                        'visibility': state.namesVisible ? 'visible' : 'none'
-                    },
-                    paint: {
-                        'text-color': '#000000',
-                        'text-halo-color': '#FFFFFF',
-                        'text-halo-width': 1
-                    }
-                });
+                map.addLayer({ id: markerLayerId, type: 'circle', source: sourceId + '-markers', paint: { 'circle-radius': 6, 'circle-color': ['get', 'color'], 'circle-stroke-width': 2, 'circle-stroke-color': '#FFFFFF' }, layout: { 'visibility': state.markersVisible ? 'visible' : 'none' } });
+                map.addLayer({ id: labelLayerId, type: 'symbol', source: sourceId + '-markers', layout: { 'text-field': ['coalesce', ['get', 'name'], ['get', 'Alimentador']], 'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'], 'text-size': 12, 'text-offset': [0, 1.5], 'visibility': state.namesVisible ? 'visible' : 'none' }, paint: { 'text-color': '#000000', 'text-halo-color': '#FFFFFF', 'text-halo-width': 1 } });
                 applyMarkerGroupFilter();
             }
-
             if (lineFeatures.features.length > 0) {
                 map.addSource(sourceId + '-lines', { type: 'geojson', data: lineFeatures });
-                map.addLayer({
-                    id: lineLayerId,
-                    type: 'line',
-                    source: sourceId + '-lines',
-                    paint: {
-                        'line-color': ['get', 'color'],
-                        'line-width': 4
-                    },
-                    layout: { 'visibility': state.linesVisible ? 'visible' : 'none' }
-                });
+                map.addLayer({ id: lineLayerId, type: 'line', source: sourceId + '-lines', paint: { 'line-color': ['get', 'color'], 'line-width': 4 }, layout: { 'visibility': state.linesVisible ? 'visible' : 'none' } });
             }
 
             updateGroupMenu();
             updateLoadedFilesList(fileName);
 
-            if (!state.isOfflineMode) {
-                 cacheKMZData(fileName, geojson);
-            }
+            if (!state.isOfflineMode) cacheKMZData(fileName, geojson);
         }
         
         function updateMarkerGroupMenu() {
             markerGroupsList.innerHTML = '';
             Object.keys(state.markerGroups).forEach(groupKey => {
                 if (groupKey === 'default') return;
-
                 const group = state.markerGroups[groupKey];
                 const li = document.createElement('li');
                 const lbl = document.createElement('label');
                 const chk = document.createElement('input');
                 const colorBox = document.createElement('div');
-
                 colorBox.className = 'color-box';
                 colorBox.style.backgroundColor = group.color;
-
                 chk.type = 'checkbox';
                 chk.checked = group.visible;
-                chk.onchange = () => {
-                    state.markerGroups[groupKey].visible = chk.checked;
-                    applyMarkerGroupFilter();
-                };
-                
+                chk.onchange = () => { state.markerGroups[groupKey].visible = chk.checked; applyMarkerGroupFilter(); };
                 lbl.appendChild(chk);
                 lbl.appendChild(colorBox);
                 lbl.appendChild(document.createTextNode(groupKey));
@@ -1411,27 +1342,18 @@ function boundsIntersect(fileBoundsArray, mapBounds) {
         
         function applyMarkerGroupFilter() {
             const visibleGroups = Object.keys(state.markerGroups).filter(g => state.markerGroups[g].visible);
-            
             state.files.forEach(file => {
                 if (!file.hasMarkers) return;
-                
                 const markerLayerId = `marker-circles-${file.sourceId}`;
                 const labelLayerId = `marker-labels-${file.sourceId}`;
                 const filter = ['in', 'group', ...visibleGroups];
-                
-                if (map.getLayer(markerLayerId)) {
-                    map.setFilter(markerLayerId, filter);
-                }
-                if (map.getLayer(labelLayerId)) {
-                    map.setFilter(labelLayerId, filter);
-                }
+                if (map.getLayer(markerLayerId)) map.setFilter(markerLayerId, filter);
+                if (map.getLayer(labelLayerId)) map.setFilter(labelLayerId, filter);
             });
         }
         
         function toggleAllMarkerGroups(visible) {
-            Object.keys(state.markerGroups).forEach(groupKey => {
-                state.markerGroups[groupKey].visible = visible;
-            });
+            Object.keys(state.markerGroups).forEach(groupKey => { state.markerGroups[groupKey].visible = visible; });
             updateMarkerGroupMenu();
             applyMarkerGroupFilter();
         }
@@ -1441,20 +1363,13 @@ function boundsIntersect(fileBoundsArray, mapBounds) {
             state.files.forEach(file => {
                 if (file.hasLines && file.groupingProperty) {
                     const selectedFileGroups = state.selectedGroups.get(file.sourceId) || new Set();
-
                     const fileHeader = document.createElement('div');
                     fileHeader.style.fontWeight = 'bold';
                     fileHeader.style.marginTop = '10px';
                     fileHeader.textContent = `Arquivo: "${file.name}"`;
                     lineGroupsList.appendChild(fileHeader);
-                    
                     const allFileGroups = new Set();
-                    file.lineFeatures.features.forEach(feature => {
-                       if (feature.properties && feature.properties[file.groupingProperty]) {
-                           allFileGroups.add(feature.properties[file.groupingProperty]);
-                       }
-                    });
-
+                    file.lineFeatures.features.forEach(feature => { if (feature.properties && feature.properties[file.groupingProperty]) allFileGroups.add(feature.properties[file.groupingProperty]); });
                     const sortedGroups = Array.from(allFileGroups).sort((a, b) => a.localeCompare(b));
                     sortedGroups.forEach(grp => {
                         const li = document.createElement('li');
@@ -1463,22 +1378,9 @@ function boundsIntersect(fileBoundsArray, mapBounds) {
                         chk.type = 'checkbox';
                         chk.value = grp;
                         chk.checked = selectedFileGroups.has(grp);
-                        
                         const groupColor = groupColorMap.get(grp);
-                        if (groupColor) {
-                            lbl.style.color = groupColor;
-                            lbl.style.fontWeight = 'bold';
-                        }
-
-                        chk.onchange = () => {
-                            const currentGroups = state.selectedGroups.get(file.sourceId);
-                            if (chk.checked) {
-                                currentGroups.add(grp);
-                            } else {
-                                currentGroups.delete(grp);
-                            }
-                            applyGroupFilter();
-                        };
+                        if (groupColor) { lbl.style.color = groupColor; lbl.style.fontWeight = 'bold'; }
+                        chk.onchange = () => { const currentGroups = state.selectedGroups.get(file.sourceId); if (chk.checked) currentGroups.add(grp); else currentGroups.delete(grp); applyGroupFilter(); };
                         lbl.appendChild(chk);
                         lbl.appendChild(document.createTextNode(' ' + grp));
                         li.appendChild(lbl);
@@ -1493,23 +1395,17 @@ function boundsIntersect(fileBoundsArray, mapBounds) {
             li.textContent = fileName;
             const removeBtn = document.createElement('button');
             removeBtn.textContent = 'Remover';
-            removeBtn.addEventListener('click', () => {
-                removeFileFromMap(fileName);
-            });
+            removeBtn.addEventListener('click', () => removeFileFromMap(fileName));
             li.appendChild(removeBtn);
             const existingLi = [...loadedFilesList.children].find(child => child.textContent.startsWith(fileName));
-            if (!existingLi) {
-                 loadedFilesList.appendChild(li);
-            }
+            if (!existingLi) loadedFilesList.appendChild(li);
         }
         
         function removeFileFromMap(fileName) {
             const fileIndex = state.files.findIndex(file => file.name === fileName);
             if (fileIndex === -1) return;
-
             const file = state.files[fileIndex];
             const sourceId = file.sourceId;
-
             if (file.hasMarkers) {
                 const markerLayerId = `marker-circles-${sourceId}`;
                 const labelLayerId = `marker-labels-${sourceId}`;
@@ -1517,22 +1413,14 @@ function boundsIntersect(fileBoundsArray, mapBounds) {
                 if (map.getLayer(labelLayerId)) map.removeLayer(labelLayerId);
                 if (map.getSource(sourceId + '-markers')) map.removeSource(sourceId + '-markers');
             }
-
             if (file.hasLines) {
                 const lineLayerId = `lines-${sourceId}`;
                 if (map.getLayer(lineLayerId)) map.removeLayer(lineLayerId);
                 if (map.getSource(sourceId + '-lines')) map.removeSource(sourceId + '-lines');
             }
-
-            if (file.hasLines && file.groupingProperty && state.selectedGroups.has(sourceId)) {
-                state.selectedGroups.delete(sourceId);
-            }
-            
+            if (file.hasLines && file.groupingProperty && state.selectedGroups.has(sourceId)) state.selectedGroups.delete(sourceId);
             const liToRemove = [...loadedFilesList.children].find(li => li.textContent.startsWith(fileName));
-            if (liToRemove) {
-                liToRemove.remove();
-            }
-
+            if (liToRemove) liToRemove.remove();
             state.files.splice(fileIndex, 1);
             updateGroupMenu();
         }
@@ -1540,26 +1428,18 @@ function boundsIntersect(fileBoundsArray, mapBounds) {
         function applyGroupFilter() {
             state.files.forEach(file => {
                 if (!file.hasLines || !file.groupingProperty) return;
-
                 const sourceId = file.sourceId;
                 const lineLayerId = `lines-${sourceId}`;
                 const groupingProperty = file.groupingProperty;
                 const selectedGroups = state.selectedGroups.get(sourceId);
-
                 if (!map.getLayer(lineLayerId)) return;
-
-                if (!selectedGroups || selectedGroups.size === 0) {
-                    map.setFilter(lineLayerId, ["==", groupingProperty, "___no_match___"]);
-                } else {
-                    map.setFilter(lineLayerId, ["in", groupingProperty, ...Array.from(selectedGroups)]);
-                }
+                if (!selectedGroups || selectedGroups.size === 0) map.setFilter(lineLayerId, ["==", groupingProperty, "___no_match___"]);
+                else map.setFilter(lineLayerId, ["in", groupingProperty, ...Array.from(selectedGroups)]);
             });
         }
 
         function hideAllGroups() {
-            state.selectedGroups.forEach((groups, sourceId) => {
-                state.selectedGroups.set(sourceId, new Set());
-            });
+            state.selectedGroups.forEach((groups, sourceId) => state.selectedGroups.set(sourceId, new Set()));
             const checkboxes = document.querySelectorAll('#lineGroupsList input[type=checkbox]');
             checkboxes.forEach(chk => chk.checked = false);
             applyGroupFilter();
@@ -1570,14 +1450,10 @@ function boundsIntersect(fileBoundsArray, mapBounds) {
                 if (file.hasLines && file.groupingProperty) {
                     const sourceId = file.sourceId;
                     const allGroups = new Set();
-                        if (file.lineFeatures && file.lineFeatures.features) {
-                             file.lineFeatures.features.forEach(feature => {
-                                 if (feature.properties && feature.properties[file.groupingProperty]) {
-                                     allGroups.add(feature.properties[file.groupingProperty]);
-                                 }
-                             });
-                             state.selectedGroups.set(sourceId, new Set(allGroups));
-                         }
+                    if (file.lineFeatures && file.lineFeatures.features) {
+                        file.lineFeatures.features.forEach(feature => { if (feature.properties && feature.properties[file.groupingProperty]) allGroups.add(feature.properties[file.groupingProperty]); });
+                        state.selectedGroups.set(sourceId, new Set(allGroups));
+                    }
                 }
             });
             const checkboxes = document.querySelectorAll('#lineGroupsList input[type=checkbox]');
@@ -1621,7 +1497,7 @@ function boundsIntersect(fileBoundsArray, mapBounds) {
         }
 
         function resetView() {
-            map.easeTo({ center: [-47.068847, -22.934973], zoom: 13 });
+            map.easeTo({ center: [-47.068847, -22.934973], zoom: 11 });
         }
 
         let userLocationMarker;
@@ -1632,12 +1508,8 @@ function boundsIntersect(fileBoundsArray, mapBounds) {
                     state.userLocation = userCoords;
                     map.flyTo({ center: userCoords, zoom: 16 });
                     if (userLocationMarker) userLocationMarker.remove();
-                    userLocationMarker = new maplibregl.Marker({ color: 'blue' })
-                        .setLngLat(userCoords)
-                        .addTo(map);
-                }, () => {
-                    alert('Não foi possível obter sua localização.');
-                });
+                    userLocationMarker = new maplibregl.Marker({ color: 'blue' }).setLngLat(userCoords).addTo(map);
+                }, () => alert('Não foi possível obter sua localização.'));
             } else {
                 alert('Geolocalização não é suportada pelo seu navegador.');
             }
@@ -1650,16 +1522,11 @@ function boundsIntersect(fileBoundsArray, mapBounds) {
             } else {
                 const coordinates = [];
                 function extractCoords(coords) {
-                    if (typeof coords[0] === 'number' && typeof coords[1] === 'number') {
-                        coordinates.push(coords);
-                    } else if (Array.isArray(coords)) {
-                        coords.forEach(c => extractCoords(c));
-                    }
+                    if (typeof coords[0] === 'number' && typeof coords[1] === 'number') coordinates.push(coords);
+                    else if (Array.isArray(coords)) coords.forEach(c => extractCoords(c));
                 }
                 extractCoords(feature.geometry.coordinates);
-
                 if(coordinates.length === 0) return null;
-
                 const lons = coordinates.map(coord => coord[0]);
                 const lats = coordinates.map(coord => coord[1]);
                 const avgLon = lons.reduce((a, b) => a + b, 0) / lons.length;
@@ -1669,48 +1536,25 @@ function boundsIntersect(fileBoundsArray, mapBounds) {
             return center;
         }
 
-        function computeDistance(coord1, coord2) {
-            const toRad = (value) => value * Math.PI / 180;
-            const lat1 = coord1[1], lon1 = coord1[0], lat2 = coord2[1], lon2 = coord2[0];
-            const R = 6371e3;
-            const φ1 = toRad(lat1), φ2 = toRad(lat2);
-            const Δφ = toRad(lat2 - lat1), Δλ = toRad(lon2 - lon1);
-            const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-                          Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            return R * c;
-        }
-
         async function searchFeatures() {
             const term = searchInput.value.toLowerCase();
             if (!term) return alert('Digite um termo para buscar.');
-
             let allFeaturesToSearch = [];
-
             if (state.isOfflineMode) {
                 console.log("Buscando em modo offline (global)...");
                 const allDBData = await getDataFromDB(GEOJSON_STORE_NAME);
                 allDBData.forEach(item => {
-                    if(item.geojson && item.geojson.features) {
-                        allFeaturesToSearch.push(...item.geojson.features);
-                    }
+                    if(item.geojson && item.geojson.features) allFeaturesToSearch.push(...item.geojson.features);
                 });
             } else {
                 state.files.forEach(file => {
-                    const features = [
-                        ...(file.pointFeatures ? file.pointFeatures.features : []),
-                        ...(file.lineFeatures ? file.lineFeatures.features : [])
-                    ];
+                    const features = [ ...(file.pointFeatures ? file.pointFeatures.features : []), ...(file.lineFeatures ? file.lineFeatures.features : []) ];
                     allFeaturesToSearch.push(...features);
                 });
             }
-            
             const matches = [];
             allFeaturesToSearch.forEach(feature => {
-                if (feature.properties && (
-                    (feature.properties.name && feature.properties.name.toLowerCase().includes(term)) ||
-                    (feature.properties.Alimentador && feature.properties.Alimentador.toLowerCase().includes(term))
-                )) {
+                if (feature.properties && ((feature.properties.name && feature.properties.name.toLowerCase().includes(term)) || (feature.properties.Alimentador && feature.properties.Alimentador.toLowerCase().includes(term)))) {
                     matches.push(feature);
                 }
             });
@@ -1724,7 +1568,8 @@ function boundsIntersect(fileBoundsArray, mapBounds) {
                 matches.forEach(feature => {
                     const center = getFeatureCenter(feature);
                     if (center) {
-                        feature.properties.distance = computeDistance(referencePoint, center);
+                        const distance = computeDistance(referencePoint, center);
+                        feature.properties.distance = distance;
                     } else {
                         feature.properties.distance = Infinity;
                     }
@@ -1734,56 +1579,52 @@ function boundsIntersect(fileBoundsArray, mapBounds) {
                 displaySearchResults(topResults);
             }
         }
+        
+        function computeDistance(coord1, coord2) {
+            const toRad = (value) => value * Math.PI / 180;
+            const lat1 = coord1[1], lon1 = coord1[0], lat2 = coord2[1], lon2 = coord2[0];
+            const R = 6371e3;
+            const φ1 = toRad(lat1), φ2 = toRad(lat2);
+            const Δφ = toRad(lat2 - lat1), Δλ = toRad(lon2 - lon1);
+            const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
 
         function displaySearchResults(results) {
             searchResults.innerHTML = '';
             const ul = document.createElement('ul');
-
             results.forEach(result => {
                 const li = document.createElement('li');
                 const nameSpan = document.createElement('span');
                 const displayName = result.properties.name || result.properties.Alimentador || 'Sem nome';
                 nameSpan.textContent = `${displayName} (${(result.properties.distance / 1000).toFixed(2)} km)`;
-
                 const viewButton = document.createElement('button');
                 viewButton.textContent = 'Visualizar';
-                viewButton.onclick = () => {
-                    const center = getFeatureCenter(result);
-                    if(center) map.flyTo({ center: center, zoom: 16 });
-                    searchResults.style.display = 'none';
-                };
-
+                viewButton.onclick = () => { const center = getFeatureCenter(result); if(center) map.flyTo({ center: center, zoom: 16 }); searchResults.style.display = 'none'; };
                 const googleMapsButton = document.createElement('button');
                 googleMapsButton.textContent = 'Google Maps';
                 googleMapsButton.onclick = () => {
                     const center = getFeatureCenter(result);
-                    if (center) {
-                        const url = `https://www.google.com/maps?q=${center[1]},${center[0]}`;
-                        window.open(url, '_blank');
-                    }
+                    if (center) { const url = `https://www.google.com/maps?q=${center[1]},${center[0]}`; window.open(url, '_blank'); }
                 };
-
                 li.appendChild(nameSpan);
                 li.appendChild(viewButton);
                 li.appendChild(googleMapsButton);
                 ul.appendChild(li);
             });
-
             searchResults.appendChild(ul);
             searchResults.style.display = 'block';
         }
 
         function changeMapStyle(newStyleUrl) {
             map.once('styledata', () => {
-                // A lógica de reaplicar camadas agora é gerenciada pelo updateVisibleLayers no modo offline
-                // No modo online, as camadas são adicionadas conforme são carregadas
                 if(state.isOfflineMode) {
                     updateVisibleLayers();
                 } else {
                     const currentFiles = [...state.files];
                     clearMap();
                     currentFiles.forEach(file => {
-                         // Uma forma simplificada de recarregar. Poderia ser mais otimizada.
                          const originalFile = predefinedFiles.find(pf => pf.name === file.name);
                          if(originalFile) loadKMZFromURL(originalFile.url, originalFile.name);
                     });
@@ -1798,31 +1639,17 @@ function boundsIntersect(fileBoundsArray, mapBounds) {
             mapStyles.forEach(style => {
                 const li = document.createElement('li');
                 li.textContent = style.name;
-                li.addEventListener('click', () => {
-                    changeMapStyle(style.url);
-                    styleMenu.style.display = 'none';
-                });
+                li.addEventListener('click', () => { changeMapStyle(style.url); styleMenu.style.display = 'none'; });
                 styleList.appendChild(li);
             });
         }
 
         const menuButtons = document.querySelectorAll('.menu button');
         menuButtons.forEach(button => {
-            button.addEventListener('mouseover', (e) => {
-                 const legend = button.querySelector('.button-legend');
-                 if (legend) legend.style.display = 'block';
-            });
-            button.addEventListener('mouseout', (e) => {
-                 const legend = button.querySelector('.button-legend');
-                 if (legend) legend.style.display = 'none';
-            });
-             button.addEventListener('click', (e) => {
-                 if (e.currentTarget.id !== 'btnSearch') {
-                     e.stopPropagation();
-                 }
-            });
+            button.addEventListener('mouseover', (e) => { const legend = button.querySelector('.button-legend'); if (legend) legend.style.display = 'block'; });
+            button.addEventListener('mouseout', (e) => { const legend = button.querySelector('.button-legend'); if (legend) legend.style.display = 'none'; });
+            button.addEventListener('click', (e) => { if (e.currentTarget.id !== 'btnSearch') e.stopPropagation(); });
         });
-
     </script>
 </body>
 </html>
