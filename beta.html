@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Visualizador de Mapas</title>
     <style>
-        /* O CSS permanece o mesmo do original */
+        /* O CSS permanece o mesmo do original, com uma adição no final */
         body, html {
             margin: 0;
             padding: 0;
@@ -121,14 +121,14 @@
             position: absolute;
             top: 70px;
             left: 20px;
-            width: 320px; /* Aumentei um pouco a largura */
-            max-height: 250px; /* Aumentei um pouco a altura */
+            width: 320px;
+            max-height: 250px;
             overflow-y: auto;
             background-color: white;
             border-radius: 8px;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
             z-index: 1000;
-            display: none; /* Inicia fechado */
+            display: none;
         }
 
         .search-results ul {
@@ -140,14 +140,14 @@
         .search-results li {
             padding: 10px;
             border-bottom: 1px solid #f0f0f0;
-            display: flex; /* Mudei para flex para melhor alinhamento */
+            display: flex;
             justify-content: space-between;
             align-items: center;
         }
         
         .search-results .result-info {
             flex-grow: 1;
-            cursor: default; /* O clique é nos botões */
+            cursor: default;
         }
 
         .search-results .result-info small {
@@ -411,16 +411,15 @@
             text-align: center;
             font-size: 10px;
             color: #555;
-            z-index: 1001; /* Para ficar acima da chave offline */
+            z-index: 1001;
         }
         
-        /* ESTILOS PARA O TOGGLE SWITCH NA PARTE INFERIOR */
         .offline-switch-container {
             position: absolute;
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            z-index: 1002; /* Acima do footer */
+            z-index: 1002;
             background-color: white;
             padding: 8px 12px;
             border-radius: 25px;
@@ -486,7 +485,6 @@
             border-radius: 50%;
         }
 
-        /* ESTILOS PARA O OVERLAY DE PROGRESSO */
         .progress-overlay {
             position: absolute;
             top: 0;
@@ -529,6 +527,17 @@
             font-size: 16px;
             font-weight: bold;
         }
+        
+        /* NOVA CLASSE CSS ADICIONADA */
+        .visibility-toggle {
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .visibility-toggle label {
+            font-weight: bold;
+            cursor: pointer;
+        }
 
     </style>
     <link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet" />
@@ -557,23 +566,15 @@
             <p id="progressText">0 / 116</p>
         </div>
     </div>
-
+    
     <div class="menu">
         <button id="btnKMZ" aria-label="Carregar arquivo KMZ ou KML">
             <img src="https://img.icons8.com/ios-filled/50/000000/upload.png" alt="Upload">
             <div class="button-legend">Carregar KMZ/KML</div>
         </button>
-        <button id="btnMarkers" aria-label="Exibir ou ocultar os marcadores">
-            <img src="https://img.icons8.com/material-outlined/24/000000/map-pin.png" alt="Marcadores">
-            <div class="button-legend">Exibir/Ocultar Marcadores</div>
-        </button>
         <button id="btnNames" aria-label="Exibir ou ocultar os nomes dos marcadores">
             <img src="https://img.icons8.com/material-outlined/24/000000/name.png" alt="Nomes">
             <div class="button-legend">Exibir/Ocultar Nomes</div>
-        </button>
-        <button id="btnLines" aria-label="Exibir ou ocultar as linhas">
-            <img src="https://img.icons8.com/material-outlined/24/000000/polyline.png" alt="Linhas">
-            <div class="button-legend">Exibir/Ocultar Linhas</div>
         </button>
         <button id="btnMarkerGroups" aria-label="Filtrar por grupos de postos">
             <img src="https://img.icons8.com/material-outlined/24/000000/filter--v1.png" alt="Filtro de Postos">
@@ -600,7 +601,6 @@
             <div class="button-legend">Estilos do Mapa</div>
         </button>
     </div>
-
     <div class="search-bar">
         <input type="text" id="searchInput" placeholder="Buscar no mapa..." />
         <button id="btnSearch">Buscar</button>
@@ -614,15 +614,19 @@
             <li id="selectDevice">Selecionar do dispositivo...</li>
         </ul>
     </div>
-
+    
     <div class="line-menu" id="lineMenu">
+        <div class="visibility-toggle">
+            <label>
+                <input type="checkbox" id="toggleAllLinesVisibility"> Exibir Todas as Linhas
+            </label>
+        </div>
         <div style="display:flex; gap:10px; margin-bottom:10px;">
             <button id="hideAll">Ocultar Todas</button>
             <button id="showAll">Exibir Todas</button>
         </div>
         <ul id="lineGroupsList"></ul>
     </div>
-
     <div class="loaded-files-menu" id="loadedFilesMenu">
         <h3>Arquivos Carregados</h3>
         <ul id="loadedFilesList"></ul>
@@ -631,16 +635,20 @@
     <div class="style-menu" id="styleMenu">
         <ul id="styleList"></ul>
     </div>
-
+    
     <div class="marker-group-menu" id="markerGroupMenu">
         <h3>Grupos de Postos</h3>
+         <div class="visibility-toggle">
+            <label>
+                <input type="checkbox" id="toggleAllMarkersVisibility"> Exibir Todos os Marcadores
+            </label>
+        </div>
         <div style="display:flex; gap:10px; margin-bottom:10px;">
             <button id="hideAllMarkerGroups">Ocultar Todos</button>
             <button id="showAllMarkerGroups">Exibir Todos</button>
         </div>
         <ul id="markerGroupsList"></ul>
     </div>
-
     <footer>
         Todos direitos reservados a Lucas Teixeira.
     </footer>
@@ -715,9 +723,15 @@
         const progressOverlay = document.getElementById('progressOverlay');
         const progressBar = document.getElementById('progressBar');
         const progressText = document.getElementById('progressText');
+        
+        // INÍCIO: ALTERAÇÃO JS - Pegando referência dos novos checkboxes
+        const toggleAllMarkersVisibilityCheckbox = document.getElementById('toggleAllMarkersVisibility');
+        const toggleAllLinesVisibilityCheckbox = document.getElementById('toggleAllLinesVisibility');
+        // FIM: ALTERAÇÃO JS
 
         const predefinedFiles = [
-            { name: 'AGUAS DE LINDOIA.kmz', url: './AGUAS DE LINDOIA.kmz' },
+             // ... (a lista de arquivos permanece a mesma)
+             { name: 'AGUAS DE LINDOIA.kmz', url: './AGUAS DE LINDOIA.kmz' },
             { name: 'AGUDOS.kmz', url: './AGUDOS.kmz' },
             { name: 'ALTINOPOLIS.kmz', url: './ALTINOPOLIS.kmz' },
             { name: 'AMERICANA.kmz', url: './AMERICANA.kmz' },
@@ -835,7 +849,8 @@
             { name: 'VIRADOURO.kmz', url: './VIRADOURO.kmz' }
         ];
 
-        function openDB() {
+        // ... (funções de DB, calculateBounds, etc, permanecem as mesmas)
+         function openDB() {
             return new Promise((resolve, reject) => {
                 const request = indexedDB.open(DB_NAME, DB_VERSION);
                 request.onupgradeneeded = event => {
@@ -865,15 +880,15 @@
 
         async function getDataFromDB(storeName, key) {
              const db = await openDB();
-             return new Promise((resolve, reject) => {
-                 const transaction = db.transaction([storeName], 'readonly');
-                 const store = transaction.objectStore(storeName);
-                 const request = key ? store.get(key) : store.getAll();
-                 request.onsuccess = () => resolve(request.result);
-                 request.onerror = () => reject(request.error);
-             });
-         }
-         
+               return new Promise((resolve, reject) => {
+                   const transaction = db.transaction([storeName], 'readonly');
+                   const store = transaction.objectStore(storeName);
+                   const request = key ? store.get(key) : store.getAll();
+                   request.onsuccess = () => resolve(request.result);
+                   request.onerror = () => reject(request.error);
+               });
+           }
+        
         async function countDBItems(storeName) {
             const db = await openDB();
             return new Promise((resolve, reject) => {
@@ -1160,9 +1175,6 @@
                 }
             });
 
-            // =================================================================
-            // RÓTULO DO MAPA REVERTIDO PARA O ORIGINAL
-            // =================================================================
             map.addLayer({
                 id: 'dynamic-marker-labels',
                 type: 'symbol',
@@ -1180,10 +1192,13 @@
                     'text-halo-width': 1
                 }
             });
-            // =================================================================
             
             map.on('moveend', updateVisibleMarkers);
-
+            
+            // INÍCIO: ALTERAÇÃO JS - Sincronizando o estado inicial dos checkboxes
+            toggleAllMarkersVisibilityCheckbox.checked = state.markersVisible;
+            toggleAllLinesVisibilityCheckbox.checked = state.linesVisible;
+            // FIM: ALTERAÇÃO JS
 
             const savedMode = localStorage.getItem('offlineMode') === 'true';
             offlineToggle.checked = savedMode;
@@ -1204,10 +1219,11 @@
             handleModeChange(isChecked);
         });
 
+        // INÍCIO: ALTERAÇÃO JS - Atualizando os listeners dos botões
         document.getElementById('btnKMZ').addEventListener('click', (e) => { e.stopPropagation(); toggleVisibility(kmzMenu); });
-        document.getElementById('btnMarkers').addEventListener('click', toggleMarkers);
+        // Listener de 'btnMarkers' foi removido
         document.getElementById('btnNames').addEventListener('click', () => toggleNames());
-        document.getElementById('btnLines').addEventListener('click', toggleLines);
+        // Listener de 'btnLines' foi removido
         document.getElementById('btnReset').addEventListener('click', resetView);
         document.getElementById('btnLocation').addEventListener('click', goToCurrentLocation);
         document.getElementById('btnLineGroups').addEventListener('click', (e) => {
@@ -1234,6 +1250,15 @@
         });
         document.getElementById('hideAllMarkerGroups').addEventListener('click', () => toggleAllMarkerGroups(false));
         document.getElementById('showAllMarkerGroups').addEventListener('click', () => toggleAllMarkerGroups(true));
+        
+        // Adicionando listeners para os novos checkboxes
+        toggleAllMarkersVisibilityCheckbox.addEventListener('change', (e) => {
+            toggleMarkers(e.target.checked);
+        });
+        toggleAllLinesVisibilityCheckbox.addEventListener('change', (e) => {
+            toggleLines(e.target.checked);
+        });
+        // FIM: ALTERAÇÃO JS
 
         function toggleVisibility(element) {
             [kmzMenu, lineMenu, loadedFilesMenu, styleMenu, markerGroupMenu].forEach(menu => {
@@ -1451,14 +1476,23 @@
             updateVisibleMarkers();
         }
 
-        function toggleMarkers() {
-            state.markersVisible = !state.markersVisible;
+        // INÍCIO: ALTERAÇÃO JS - Função modificada para aceitar um estado
+        function toggleMarkers(visible) {
+            // Se o parâmetro for booleano, usa-o. Se não, alterna o estado.
+            const isForced = typeof visible === 'boolean';
+            state.markersVisible = isForced ? visible : !state.markersVisible;
+            
+            // Sincroniza o checkbox
+            toggleAllMarkersVisibilityCheckbox.checked = state.markersVisible;
+
             const visibility = state.markersVisible ? 'visible' : 'none';
             if (map.getLayer('dynamic-marker-circles')) {
                  map.setLayoutProperty('dynamic-marker-circles', 'visibility', visibility);
             }
+            // A visibilidade dos nomes depende da visibilidade dos marcadores
             toggleNames(state.markersVisible && state.namesVisible);
         }
+        // FIM: ALTERAÇÃO JS
 
         function toggleNames(forceVisibility) {
             const isForced = typeof forceVisibility === 'boolean';
@@ -1548,8 +1582,14 @@
             applyGroupFilter();
         }
 
-        function toggleLines() {
-            state.linesVisible = !state.linesVisible;
+        // INÍCIO: ALTERAÇÃO JS - Função modificada para aceitar um estado
+        function toggleLines(visible) {
+            const isForced = typeof visible === 'boolean';
+            state.linesVisible = isForced ? visible : !state.linesVisible;
+
+            // Sincroniza o checkbox
+            toggleAllLinesVisibilityCheckbox.checked = state.linesVisible;
+            
             const visibility = state.linesVisible ? 'visible' : 'none';
             state.files.forEach(file => {
                 if (file.hasLines) {
@@ -1558,6 +1598,7 @@
                 }
             });
         }
+        // FIM: ALTERAÇÃO JS
 
         function resetView() {
             map.easeTo({ center: [-47.068847, -22.934973], zoom: 11 });
@@ -1577,7 +1618,8 @@
                 alert('Geolocalização não é suportada pelo seu navegador.');
             }
         }
-
+        
+        // ... (resto do código JS, como searchFeatures, changeMapStyle, etc., permanece o mesmo) ...
         function getFeatureCenter(feature) {
             let center;
             if (feature.geometry.type === 'Point') {
@@ -1611,7 +1653,6 @@
                 const offlineFeatures = [];
                 allDBData.forEach(item => {
                     if(item.geojson && item.geojson.features) {
-                        // Adiciona o nome do arquivo a cada feature para a busca offline
                         item.geojson.features.forEach(feature => {
                             feature.properties = feature.properties || {};
                             feature.properties.fileName = item.name;
@@ -1622,14 +1663,13 @@
                 allFeaturesToSearch = offlineFeatures;
             } else {
                  state.files.forEach(file => {
-                     if (file.lineFeatures) {
-                        // Adiciona o nome do arquivo a cada feature para a busca online
-                         file.lineFeatures.features.forEach(feature => {
-                            feature.properties = feature.properties || {};
-                            feature.properties.fileName = file.name;
-                            allFeaturesToSearch.push(feature);
-                        });
-                     }
+                       if (file.lineFeatures) {
+                             file.lineFeatures.features.forEach(feature => {
+                                feature.properties = feature.properties || {};
+                                feature.properties.fileName = file.name;
+                                allFeaturesToSearch.push(feature);
+                            });
+                       }
                  });
             }
             const matches = [];
@@ -1671,16 +1711,12 @@
             return R * c;
         }
 
-        // =================================================================
-        // FUNÇÃO DE PESQUISA MODIFICADA PARA O FORMATO DESEJADO
-        // =================================================================
         function displaySearchResults(results) {
             searchResults.innerHTML = '';
             const ul = document.createElement('ul');
             results.forEach(result => {
                 const li = document.createElement('li');
                 
-                // Div para as informações de texto (nome, arquivo)
                 const infoDiv = document.createElement('div');
                 infoDiv.className = 'result-info';
 
@@ -1688,10 +1724,8 @@
                 const fileName = result.properties.fileName || 'Arquivo desconhecido';
                 const distanceText = `(${(result.properties.distance / 1000).toFixed(2)} km)`;
 
-                // Usa innerHTML para formatar com negrito e quebra de linha
                 infoDiv.innerHTML = `<strong>${displayName}</strong> ${distanceText}<br><small>${fileName}</small>`;
                 
-                // Div para os botões de ação
                 const actionsDiv = document.createElement('div');
                 actionsDiv.className = 'result-actions';
 
@@ -1704,7 +1738,6 @@
                 googleMapsButton.onclick = () => {
                     const center = getFeatureCenter(result);
                     if (center) { 
-                        // Link corrigido para o Google Maps Directions
                         const url = `https://www.google.com/maps/dir/?api=1&destination=${center[1]},${center[0]}`; 
                         window.open(url, '_blank'); 
                     }
@@ -1720,7 +1753,6 @@
             searchResults.appendChild(ul);
             searchResults.style.display = 'block';
         }
-        // =================================================================
 
         function changeMapStyle(newStyleUrl) {
             map.once('styledata', () => {
