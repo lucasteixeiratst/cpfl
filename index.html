@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Visualizador de Mapas</title>
     <style>
-        /* O CSS permanece praticamente o mesmo, com um pequeno ajuste para os ícones SVG */
+        /* O CSS permanece o mesmo do original */
         body, html {
             margin: 0;
             padding: 0;
@@ -57,14 +57,12 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
 
-        /* --- ALTERAÇÃO CSS: de 'img' para 'svg' --- */
         .menu button svg {
-            width: 22px;  /* Ajuste de tamanho para melhor visualização */
+            width: 22px;
             height: 22px;
-            stroke-width: 2; /* Espessura do traço do ícone */
+            stroke-width: 2;
         }
-        /* --- FIM DA ALTERAÇÃO --- */
-
+        
         .button-legend {
             position: absolute;
             top: 50%;
@@ -80,7 +78,6 @@
             display: none;
         }
 
-        /* O restante do CSS permanece o mesmo do original */
         .search-bar {
             position: absolute;
             top: 20px;
@@ -660,7 +657,7 @@
     </footer>
 
     <script>
-        // --- O CÓDIGO JAVASCRIPT PERMANECE EXATAMENTE O MESMO ---
+        // --- O CÓDIGO JAVASCRIPT PERMANECE EXATAMENTE O MESMO, EXCETO PELAS FUNÇÕES searchFeatures e displaySearchResults ---
         // --- CONSTANTES E ESTADO GLOBAL ---
         const DB_NAME = 'KMZOfflineDB';
         const DB_VERSION = 2; 
@@ -735,7 +732,6 @@
         const toggleAllLinesVisibilityCheckbox = document.getElementById('toggleAllLinesVisibility');
 
         const predefinedFiles = [
-              // ... (a lista de arquivos permanece a mesma)
              { name: 'AGUAS DE LINDOIA.kmz', url: './AGUAS DE LINDOIA.kmz' },
              { name: 'AGUDOS.kmz', url: './AGUDOS.kmz' },
              { name: 'ALTINOPOLIS.kmz', url: './ALTINOPOLIS.kmz' },
@@ -886,11 +882,11 @@
         async function getDataFromDB(storeName, key) {
              const db = await openDB();
                return new Promise((resolve, reject) => {
-                   const transaction = db.transaction([storeName], 'readonly');
-                   const store = transaction.objectStore(storeName);
-                   const request = key ? store.get(key) : store.getAll();
-                   request.onsuccess = () => resolve(request.result);
-                   request.onerror = () => reject(request.error);
+                    const transaction = db.transaction([storeName], 'readonly');
+                    const store = transaction.objectStore(storeName);
+                    const request = key ? store.get(key) : store.getAll();
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
                });
             }
         
@@ -1609,7 +1605,7 @@
             }
         }
         
-        // ... (resto do código JS, como searchFeatures, changeMapStyle, etc., permanece o mesmo) ...
+        // ... (resto do código JS, como changeMapStyle, etc., permanece o mesmo) ...
         function getFeatureCenter(feature) {
             let center;
             if (feature.geometry.type === 'Point') {
@@ -1631,10 +1627,17 @@
             return center;
         }
 
+        // ==================================================================
+        // INÍCIO DA SEÇÃO DE CÓDIGO ALTERADA PARA MELHORAR A RELEVÂNCIA
+        // ==================================================================
+
         async function searchFeatures() {
-            const term = searchInput.value.toLowerCase();
-            if (!term) return alert('Digite um termo para buscar.');
+            const term = searchInput.value.toLowerCase().trim();
+            if (!term) {
+                return alert('Digite um termo para buscar.');
+            }
             
+            // A estrutura original de busca (online vs offline) é mantida
             let allFeaturesToSearch = [...allPointFeatures]; 
 
             if (state.isOfflineMode) {
@@ -1652,20 +1655,38 @@
                 });
                 allFeaturesToSearch = offlineFeatures;
             } else {
-                 state.files.forEach(file => {
-                     if (file.lineFeatures) {
-                         file.lineFeatures.features.forEach(feature => {
-                             feature.properties = feature.properties || {};
-                             feature.properties.fileName = file.name;
-                             allFeaturesToSearch.push(feature);
-                         });
-                     }
-                 });
+                state.files.forEach(file => {
+                    if (file.lineFeatures) {
+                        file.lineFeatures.features.forEach(feature => {
+                            feature.properties = feature.properties || {};
+                            feature.properties.fileName = file.name;
+                            allFeaturesToSearch.push(feature);
+                        });
+                    }
+                });
             }
+
             const matches = [];
             allFeaturesToSearch.forEach(feature => {
-                if (feature.properties && ((feature.properties.name && feature.properties.name.toLowerCase().includes(term)) || (feature.properties.Alimentador && feature.properties.Alimentador.toLowerCase().includes(term)))) {
-                    matches.push(feature);
+                if (feature.properties) {
+                    const nameLower = (feature.properties.name || '').toLowerCase();
+                    const alimentadorLower = (feature.properties.Alimentador || '').toLowerCase();
+
+                    // Verifica se há correspondência
+                    if (nameLower.includes(term) || alimentadorLower.includes(term)) {
+                        // Calcula a pontuação de relevância
+                        let score = 0;
+                        if (nameLower === term || alimentadorLower === term) {
+                            score = 100; // Correspondência exata é a mais alta
+                        } else if (nameLower.startsWith(term) || alimentadorLower.startsWith(term)) {
+                            score = 50;  // Correspondência no início é alta
+                        } else {
+                            score = 10;  // Correspondência no meio é a mais baixa
+                        }
+                        // Adiciona a pontuação à feature para uso posterior
+                        feature.properties.score = score;
+                        matches.push(feature);
+                    }
                 }
             });
 
@@ -1675,16 +1696,26 @@
                 searchResults.innerHTML = '';
             } else {
                 let referencePoint = state.userLocation || map.getCenter().toArray();
+                
+                // Calcula a distância para cada resultado encontrado
                 matches.forEach(feature => {
                     const center = getFeatureCenter(feature);
                     if (center) {
                         const distance = computeDistance(referencePoint, center);
-                        feature.properties.distance = distance;
+                        feature.properties.distance = distance; // Adiciona a distância
                     } else {
-                        feature.properties.distance = Infinity;
+                        feature.properties.distance = Infinity; // Se não puder calcular, joga para o fim
                     }
                 });
-                matches.sort((a, b) => a.properties.distance - b.properties.distance);
+                
+                // Ordena os resultados: primeiro pela maior PONTUAÇÃO, depois pela menor DISTÂNCIA
+                matches.sort((a, b) => {
+                    if (b.properties.score !== a.properties.score) {
+                        return b.properties.score - a.properties.score;
+                    }
+                    return a.properties.distance - b.properties.distance;
+                });
+
                 const topResults = matches.slice(0, 10);
                 displaySearchResults(topResults);
             }
@@ -1714,7 +1745,11 @@
                 const fileName = result.properties.fileName || 'Arquivo desconhecido';
                 const distanceText = `(${(result.properties.distance / 1000).toFixed(2)} km)`;
 
-                infoDiv.innerHTML = `<strong>${displayName}</strong> ${distanceText}<br><small>${fileName}</small>`;
+                // NOVO: Destaca o termo da busca no nome do resultado
+                const term = searchInput.value;
+                const highlightedName = displayName.replace(new RegExp(term, 'gi'), (match) => `<b>${match}</b>`);
+
+                infoDiv.innerHTML = `${highlightedName} <small>${distanceText}</small><br><small><i>${fileName}</i></small>`;
                 
                 const actionsDiv = document.createElement('div');
                 actionsDiv.className = 'result-actions';
@@ -1728,7 +1763,8 @@
                 googleMapsButton.onclick = () => {
                     const center = getFeatureCenter(result);
                     if (center) { 
-                        const url = `https://www.google.com/maps/dir/?api=1&destination=${center[1]},${center[0]}`; 
+                        // Corrigido para uma URL válida do Google Maps
+                        const url = `https://www.google.com/maps?q=${center[1]},${center[0]}`; 
                         window.open(url, '_blank'); 
                     }
                 };
@@ -1743,6 +1779,10 @@
             searchResults.appendChild(ul);
             searchResults.style.display = 'block';
         }
+
+        // ==================================================================
+        // FIM DA SEÇÃO DE CÓDIGO ALTERADA
+        // ==================================================================
 
         function changeMapStyle(newStyleUrl) {
             map.once('styledata', () => {
