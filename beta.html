@@ -653,17 +653,34 @@
         <ul id="markerGroupsList"></ul>
     </div>
     <footer>
-        Todos direitos reservados a Lucas Teixeira. Ultima Atualização 01/07/2025.
+        Todos direitos reservados a Lucas Teixeira. Ultima Atualização 24/07/2025.
     </footer>
 
     <script>
-        // --- O CÓDIGO JAVASCRIPT PERMANECE EXATAMENTE O MESMO, EXCETO PELAS FUNÇÕES searchFeatures e displaySearchResults ---
         // --- CONSTANTES E ESTADO GLOBAL ---
         const DB_NAME = 'KMZOfflineDB';
         const DB_VERSION = 2; 
         const GEOJSON_STORE_NAME = 'geojson_files';
         const SPATIAL_INDEX_STORE_NAME = 'spatial_index';
         const MARKER_LIMIT = 500;
+
+        /**
+         * Dicionário que mapeia palavras completas para suas siglas.
+         * Facilita a busca por componentes quando o usuário digita o nome por extenso.
+         */
+        const SYNONYM_MAP = {
+            'fusivel': 'fu',
+            'fusiveis': 'fu',
+            'fusível': 'fu',
+            'fusíveis': 'fu',
+            'religador': 're',
+            'religadores': 're',
+            'chave': 'ch',
+            'chaves': 'ch',
+            'banco': 'bc',
+            'bancos': 'bc'
+            // Adicione mais mapeamentos conforme necessário
+        };
 
         const state = {
             isOfflineMode: false,
@@ -850,7 +867,8 @@
              { name: 'VIRADOURO.kmz', url: './VIRADOURO.kmz' }
         ];
 
-        // ... (funções de DB, calculateBounds, etc, permanecem as mesmas)
+        // --- FUNÇÕES DE BANCO DE DADOS E OUTRAS UTILIDADES ---
+        // (Todo o código de openDB, saveDataToDB, etc., permanece aqui, sem alterações)
         function openDB() {
             return new Promise((resolve, reject) => {
                 const request = indexedDB.open(DB_NAME, DB_VERSION);
@@ -1605,7 +1623,6 @@
             }
         }
         
-        // ... (resto do código JS, como changeMapStyle, etc., permanece o mesmo) ...
         function getFeatureCenter(feature) {
             let center;
             if (feature.geometry.type === 'Point') {
@@ -1628,16 +1645,66 @@
         }
 
         // ==================================================================
-        // INÍCIO DA SEÇÃO DE CÓDIGO ALTERADA PARA MELHORAR A RELEVÂNCIA
+        // INÍCIO DA SEÇÃO DE BUSCA AVANÇADA
         // ==================================================================
 
+        /**
+         * Normaliza texto: remove acentos, converte para minúsculas e remove caracteres especiais.
+         */
+        function normalizeText(text) {
+            if (!text) return '';
+            return text
+                .toString()
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-z0-9]/g, '');
+        }
+
+        /**
+         * Calcula a "Distância de Levenshtein" para encontrar resultados com erros de digitação.
+         */
+        function levenshteinDistance(s1, s2) {
+            const track = Array(s2.length + 1).fill(null).map(() =>
+                Array(s1.length + 1).fill(null));
+            for (let i = 0; i <= s1.length; i += 1) {
+                track[0][i] = i;
+            }
+            for (let j = 0; j <= s2.length; j += 1) {
+                track[j][0] = j;
+            }
+            for (let j = 1; j <= s2.length; j += 1) {
+                for (let i = 1; i <= s1.length; i += 1) {
+                    const indicator = s1[i - 1] === s2[j - 1] ? 0 : 1;
+                    track[j][i] = Math.min(
+                        track[j][i - 1] + 1,
+                        track[j - 1][i] + 1,
+                        track[j - 1][i - 1] + indicator,
+                    );
+                }
+            }
+            return track[s2.length][s1.length];
+        }
+
+        /**
+         * Função de busca principal com sistema de pontuação e priorização de números.
+         */
         async function searchFeatures() {
             const term = searchInput.value.toLowerCase().trim();
             if (!term) {
                 return alert('Digite um termo para buscar.');
             }
             
-            // A estrutura original de busca (online vs offline) é mantida
+            const normalizedTerm = normalizeText(term);
+            const acronym = SYNONYM_MAP[term] || null;
+            
+            const isNumericSearch = /^\d+$/.test(term);
+            let numberRegex = null;
+            if (isNumericSearch) {
+                numberRegex = new RegExp(`\\b${term}\\b`);
+                console.log(`Busca numérica detectada. Procurando pelo padrão: ${numberRegex}`);
+            }
+
             let allFeaturesToSearch = [...allPointFeatures]; 
 
             if (state.isOfflineMode) {
@@ -1655,7 +1722,7 @@
                 });
                 allFeaturesToSearch = offlineFeatures;
             } else {
-                state.files.forEach(file => {
+                 state.files.forEach(file => {
                     if (file.lineFeatures) {
                         file.lineFeatures.features.forEach(feature => {
                             feature.properties = feature.properties || {};
@@ -1667,23 +1734,42 @@
             }
 
             const matches = [];
+
             allFeaturesToSearch.forEach(feature => {
                 if (feature.properties) {
-                    const nameLower = (feature.properties.name || '').toLowerCase();
-                    const alimentadorLower = (feature.properties.Alimentador || '').toLowerCase();
+                    const name = feature.properties.name || '';
+                    const alimentador = feature.properties.Alimentador || '';
+                    
+                    const nameLower = name.toLowerCase();
+                    const normalizedName = normalizeText(name);
+                    const normalizedAlimentador = normalizeText(alimentador);
 
-                    // Verifica se há correspondência
-                    if (nameLower.includes(term) || alimentadorLower.includes(term)) {
-                        // Calcula a pontuação de relevância
-                        let score = 0;
-                        if (nameLower === term || alimentadorLower === term) {
-                            score = 100; // Correspondência exata é a mais alta
-                        } else if (nameLower.startsWith(term) || alimentadorLower.startsWith(term)) {
-                            score = 50;  // Correspondência no início é alta
-                        } else {
-                            score = 10;  // Correspondência no meio é a mais baixa
+                    let score = 0;
+
+                    // Lógica de Pontuação com prioridades
+                    if (isNumericSearch && numberRegex.test(nameLower)) {
+                        score = 98;
+                    }
+                    else if (normalizedName === normalizedTerm || normalizedAlimentador === normalizedTerm) {
+                        score = 100;
+                    } 
+                    else if (acronym && nameLower.endsWith(`-${acronym}`)) {
+                        score = 95;
+                    }
+                    else if (normalizedName.startsWith(normalizedTerm) || normalizedAlimentador.startsWith(normalizedTerm)) {
+                        score = 70;
+                    }
+                    else {
+                        const dist = levenshteinDistance(normalizedName, normalizedTerm);
+                        if (dist <= 2 && normalizedTerm.length > 3) {
+                            score = 50 - (dist * 10);
+                        } 
+                        else if (normalizedName.includes(normalizedTerm)) {
+                            score = 10;
                         }
-                        // Adiciona a pontuação à feature para uso posterior
+                    }
+
+                    if (score > 0) {
                         feature.properties.score = score;
                         matches.push(feature);
                     }
@@ -1697,18 +1783,11 @@
             } else {
                 let referencePoint = state.userLocation || map.getCenter().toArray();
                 
-                // Calcula a distância para cada resultado encontrado
                 matches.forEach(feature => {
                     const center = getFeatureCenter(feature);
-                    if (center) {
-                        const distance = computeDistance(referencePoint, center);
-                        feature.properties.distance = distance; // Adiciona a distância
-                    } else {
-                        feature.properties.distance = Infinity; // Se não puder calcular, joga para o fim
-                    }
+                    feature.properties.distance = center ? computeDistance(referencePoint, center) : Infinity;
                 });
                 
-                // Ordena os resultados: primeiro pela maior PONTUAÇÃO, depois pela menor DISTÂNCIA
                 matches.sort((a, b) => {
                     if (b.properties.score !== a.properties.score) {
                         return b.properties.score - a.properties.score;
@@ -1716,7 +1795,7 @@
                     return a.properties.distance - b.properties.distance;
                 });
 
-                const topResults = matches.slice(0, 10);
+                const topResults = matches.slice(0, 15);
                 displaySearchResults(topResults);
             }
         }
@@ -1731,7 +1810,7 @@
             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
             return R * c;
         }
-
+        
         function displaySearchResults(results) {
             searchResults.innerHTML = '';
             const ul = document.createElement('ul');
@@ -1745,7 +1824,6 @@
                 const fileName = result.properties.fileName || 'Arquivo desconhecido';
                 const distanceText = `(${(result.properties.distance / 1000).toFixed(2)} km)`;
 
-                // NOVO: Destaca o termo da busca no nome do resultado
                 const term = searchInput.value;
                 const highlightedName = displayName.replace(new RegExp(term, 'gi'), (match) => `<b>${match}</b>`);
 
@@ -1763,8 +1841,7 @@
                 googleMapsButton.onclick = () => {
                     const center = getFeatureCenter(result);
                     if (center) { 
-                        // Corrigido para uma URL válida do Google Maps
-                        const url = `https://www.google.com/maps?q=${center[1]},${center[0]}`; 
+                        const url = `https://maps.google.com/?q=${center[1]},${center[0]}`; 
                         window.open(url, '_blank'); 
                     }
                 };
@@ -1781,7 +1858,7 @@
         }
 
         // ==================================================================
-        // FIM DA SEÇÃO DE CÓDIGO ALTERADA
+        // FIM DA SEÇÃO DE BUSCA
         // ==================================================================
 
         function changeMapStyle(newStyleUrl) {
