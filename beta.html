@@ -57,10 +57,10 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
 
-        .menu button svg {
+        /* ALTERADO DE 'svg' PARA 'img' */
+        .menu button img {
             width: 22px;
             height: 22px;
-            stroke-width: 2;
         }
         
         .button-legend {
@@ -544,8 +544,7 @@
     <script src="https://unpkg.com/maplibre-gl"></script>
     <script src="https://unpkg.com/@tmcw/togeojson"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.6.0/jszip.min.js"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-</head>
+    </head>
 <body>
     <div id="map"></div>
 
@@ -570,37 +569,37 @@
     
     <div class="menu">
         <button id="btnKMZ" aria-label="Carregar arquivo KMZ ou KML">
-            <i data-lucide="upload"></i>
+            <img src="ícones/upload.svg" alt="Carregar KMZ/KML">
             <div class="button-legend">Carregar KMZ/KML</div>
         </button>
         
         <button id="btnMarkerGroups" aria-label="Filtrar por grupos de postos">
-            <i data-lucide="utility-pole"></i>
+            <img src="ícones/utility-pole.svg" alt="Grupos de Postos">
             <div class="button-legend">Grupos de Postos</div>
         </button>
         <button id="btnLineGroups" aria-label="Filtrar por grupos de linhas">
-            <i data-lucide="waypoints"></i>
+            <img src="ícones/waypoints.svg" alt="Grupos de Linhas">
             <div class="button-legend">Grupos de Linhas</div>
         </button>
         <button id="btnNames" aria-label="Exibir ou ocultar os nomes dos marcadores">
-            <i data-lucide="text"></i>
+            <img src="ícones/text-align-start.svg" alt="Exibir/Ocultar Nomes">
             <div class="button-legend">Exibir/Ocultar Nomes</div>
         </button>
         
         <button id="btnLocation" aria-label="Ir para minha localização atual">
-            <i data-lucide="navigation"></i>
+            <img src="ícones/navigation.svg" alt="Minha Localização">
             <div class="button-legend">Minha Localização</div>
         </button>
         <button id="btnReset" aria-label="Resetar a visualização do mapa">
-            <i data-lucide="rotate-cw"></i>
+            <img src="ícones/rotate-cw.svg" alt="Resetar Visão">
             <div class="button-legend">Resetar Visão</div>
         </button>
         <button id="btnLoadedFiles" aria-label="Ver arquivos carregados atualmente">
-            <i data-lucide="folder-open"></i>
+            <img src="ícones/folder-open.svg" alt="Arquivos Carregados">
             <div class="button-legend">Arquivos Carregados</div>
         </button>
         <button id="btnStyles" aria-label="Mudar o estilo do mapa">
-            <i data-lucide="palette"></i>
+            <img src="ícones/palette.svg" alt="Estilos do Mapa">
             <div class="button-legend">Estilos do Mapa</div>
         </button>
     </div>
@@ -694,7 +693,7 @@
                 '-FU': { color: 'red', visible: true },
                 '-FA': { color: 'yellow', visible: true }, 
                 '-RE': { color: 'green', visible: true },
-                'KVA': { color: 'blue', visible: true },  
+                'KVA': { color: 'blue', visible: true }, 
                 'default': { color: '#FF5722', visible: true }
             }
         };
@@ -1111,10 +1110,10 @@
 
         function cacheKMZData(fileName, geojson) {
              try {
-                 const key = 'kmz_cache_' + fileName;
-                 localStorage.setItem(key, JSON.stringify(geojson));
+                const key = 'kmz_cache_' + fileName;
+                localStorage.setItem(key, JSON.stringify(geojson));
              } catch (e) {
-                 console.error("[Cache] Erro ao salvar no localStorage.", e);
+                console.error("[Cache] Erro ao salvar no localStorage.", e);
              }
         }
 
@@ -1905,8 +1904,5 @@
         });
     </script>
 
-    <script>
-      lucide.createIcons();
-    </script>
-</body>
+    </body>
 </html>
