@@ -57,7 +57,7 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
 
-        /* ALTERADO DE 'svg' PARA 'img' */
+        /* ALTERADO DE 'svg' PARA 'img' PARA USAR ÍCONES LOCAIS */
         .menu button img {
             width: 22px;
             height: 22px;
@@ -693,7 +693,7 @@
                 '-FU': { color: 'red', visible: true },
                 '-FA': { color: 'yellow', visible: true }, 
                 '-RE': { color: 'green', visible: true },
-                'KVA': { color: 'blue', visible: true }, 
+                'TR': { color: 'blue', visible: true },  // <--- ALTERADO DE 'KVA' PARA 'TR'
                 'default': { color: '#FF5722', visible: true }
             }
         };
@@ -858,12 +858,7 @@
              { name: 'SERTAOZINHO.kmz', url: './SERTAOZINHO.kmz' },
              { name: 'SOCORRO.kmz', url: './SOCORRO.kmz' },
              { name: 'SUMARE.kmz', url: './SUMARE.kmz' },
-             { name: 'TANABI.kmz', url: './TANABI.kmz' },
-             { name: 'TAQUARITINGA.kmz', url: './TAQUARITINGA.kmz' },
-             { name: 'UIRAPURU.kmz', url: './UIRAPURU.kmz' },
-             { name: 'VALINHOS.kmz', url: './VALINHOS.kmz' },
-             { name: 'VALPARAISO.kmz', url: './VALPARAISO.kmz' },
-             { name: 'VIRADOURO.kmz', url: './VIRADOURO.kmz' }
+             { name:GUA.kmz' }
         ];
 
         // --- FUNÇÕES DE BANCO DE DADOS E OUTRAS UTILIDADES ---
@@ -1377,7 +1372,7 @@
                         if (name.endsWith('-FU')) groupKey = '-FU';
                         else if (name.endsWith('-FA')) groupKey = '-FA';
                         else if (name.endsWith('-RE')) groupKey = '-RE';
-                        else if (name.endsWith('KVA')) groupKey = 'KVA';
+                        else if (name.endsWith('KVA')) groupKey = 'TR'; // <--- ALTERADO DE 'KVA' PARA 'TR'
                         
                         f.properties.group = groupKey;
                         f.properties.color = state.markerGroups[groupKey].color;
