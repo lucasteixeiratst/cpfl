@@ -539,6 +539,15 @@
             cursor: pointer;
         }
 
+        /* Estilo para popups do MapLibre (opcional, pode ajustar) */
+        .maplibregl-popup-content {
+            padding: 10px;
+            font-size: 13px;
+        }
+        .maplibregl-popup-close-button {
+            padding: 4px;
+        }
+
     </style>
     <link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet" />
     <script src="https://unpkg.com/maplibre-gl"></script>
@@ -693,7 +702,7 @@
                 '-FU': { color: 'red', visible: true },
                 '-FA': { color: 'yellow', visible: true },
                 '-RE': { color: 'green', visible: true },
-                'TR': { color: 'blue', visible: true },  // <--- ALTERADO DE 'KVA' PARA 'TR'
+                'TR': { color: 'blue', visible: true },  // Nome visual 'TR'
                 'default': { color: '#FF5722', visible: true }
             }
         };
@@ -1061,9 +1070,15 @@
                 const filteredFeatures = allPointFeatures.filter(feature => visibleGroups.includes(feature.properties.group));
 
                 const sortedFeatures = filteredFeatures.map(feature => {
+                    // Verificação para garantir que geometry.coordinates existe e é um array
+                    if (!feature || !feature.geometry || !Array.isArray(feature.geometry.coordinates) || feature.geometry.coordinates.length < 2) {
+                        console.warn('Feature inválida encontrada:', feature);
+                        return { ...feature, properties: { ...feature.properties, distance: Infinity } }; // Retorna com distância infinita se inválido
+                    }
                     const distance = computeDistance([mapCenter.lng, mapCenter.lat], feature.geometry.coordinates);
                     return { ...feature, properties: { ...feature.properties, distance: distance } };
                 }).sort((a, b) => a.properties.distance - b.properties.distance);
+
 
                 const limitedFeatures = sortedFeatures.slice(0, MARKER_LIMIT);
 
@@ -1125,14 +1140,17 @@
             return null;
         }
 
-        map.on('click', () => {
-            kmzMenu.style.display = 'none';
-            lineMenu.style.display = 'none';
-            loadedFilesMenu.style.display = 'none';
-            styleMenu.style.display = 'none';
-            searchResults.style.display = 'none';
-            markerGroupMenu.style.display = 'none';
+        map.on('click', (e) => { // Alterado para fechar menus em qualquer clique no mapa, não apenas fora dos menus
+            if (!e.originalEvent.target.closest('.menu, .search-bar, .search-results, .kmz-menu, .line-menu, .loaded-files-menu, .style-menu, .marker-group-menu, .maplibregl-popup')) {
+                 kmzMenu.style.display = 'none';
+                 lineMenu.style.display = 'none';
+                 loadedFilesMenu.style.display = 'none';
+                 styleMenu.style.display = 'none';
+                 searchResults.style.display = 'none';
+                 markerGroupMenu.style.display = 'none';
+            }
         });
+
 
         function updateRecentFiles(fileName) {
             let recentFiles = JSON.parse(localStorage.getItem('recentFiles') || '[]');
@@ -1226,7 +1244,69 @@
                     if (file) loadKMZFromURL(file.url, file.name);
                 }
             }
-        });
+
+            // --- INÍCIO: CÓDIGO DO POPUP AO CLICAR NO MARCADOR ---
+            // Colocado dentro do map.on('load') para garantir que a camada existe
+
+            map.on('click', 'dynamic-marker-circles', (e) => {
+                // Previne que o clique no marcador feche o popup imediatamente (caso map.on('click') dispare também)
+                e.originalEvent.stopPropagation();
+
+                if (e.features && e.features.length > 0) {
+                    const feature = e.features[0];
+                    const coordinates = feature.geometry.coordinates.slice();
+                    const properties = feature.properties;
+                    const displayName = properties.name || properties.Alimentador || 'Sem nome';
+
+                    while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+                        coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+                    }
+
+                    const popupHTML = `
+                        <div>
+                            <strong>${displayName}</strong><br>
+                            <button id="popup-directions-btn-${feature.id || Math.random().toString(36).substring(7)}" style="margin-top: 5px; padding: 3px 8px; font-size: 11px; cursor: pointer;">
+                                Obter Rota (Google Maps)
+                            </button>
+                        </div>
+                    `;
+
+                    const popup = new maplibregl.Popup({
+                            closeOnClick: true,
+                            offset: 15 // Ajustado o offset
+                         })
+                        .setLngLat(coordinates)
+                        .setHTML(popupHTML)
+                        .addTo(map);
+
+                    const popupElement = popup.getElement();
+                    // Seleciona o botão específico deste popup (usando ID único ou classe)
+                    const directionsBtn = popupElement.querySelector('button'); // Mais simples se só há um botão
+
+                    if (directionsBtn) {
+                        directionsBtn.addEventListener('click', () => {
+                            const lat = coordinates[1];
+                            const lng = coordinates[0];
+                            const url = `https://maps.google.com/?q=${lat},${lng}`;
+                            window.open(url, '_blank');
+                        });
+                    } else {
+                        console.error("Botão de direções não encontrado no popup.");
+                    }
+                }
+            });
+
+            map.on('mouseenter', 'dynamic-marker-circles', () => {
+                map.getCanvas().style.cursor = 'pointer';
+            });
+
+            map.on('mouseleave', 'dynamic-marker-circles', () => {
+                map.getCanvas().style.cursor = '';
+            });
+
+            // --- FIM: CÓDIGO DO POPUP AO CLICAR NO MARCADOR ---
+
+        }); // Fim do map.on('load')
 
         offlineToggle.addEventListener('change', (event) => {
             const isChecked = event.target.checked;
@@ -1376,7 +1456,7 @@
                         if (name.endsWith('-FU')) groupKey = '-FU';
                         else if (name.endsWith('-FA')) groupKey = '-FA';
                         else if (name.endsWith('-RE')) groupKey = '-RE';
-                        else if (name.endsWith('KVA')) groupKey = 'TR'; // <--- ALTERADO DE 'KVA' PARA 'TR'
+                        else if (name.endsWith('KVA')) groupKey = 'TR'; // Lógica para encontrar KVA, mas agrupa como TR
 
                         f.properties.group = groupKey;
                         // Certifique-se de que a cor é atribuída corretamente
@@ -1385,7 +1465,7 @@
                         } else {
                            f.properties.color = state.markerGroups['default'].color; // Cor padrão se o grupo não for encontrado
                         }
-                        f.properties.fileName = fileName; // GUARDA A ORIGEM DO MARCADOR
+                        f.properties.fileName = fileName;
                         pointFeaturesToAdd.push(f);
                     } else if (['LineString', 'MultiLineString', 'Polygon', 'MultiPolygon'].includes(f.geometry.type)) {
                         f.properties = f.properties || {};
@@ -1421,9 +1501,17 @@
             });
 
             if (lineFeatures.features.length > 0) {
-                map.addSource(sourceId + '-lines', { type: 'geojson', data: lineFeatures });
-                map.addLayer({ id: lineLayerId, type: 'line', source: sourceId + '-lines', paint: { 'line-color': ['get', 'color'], 'line-width': 4 }, layout: { 'visibility': state.linesVisible ? 'visible' : 'none' } });
+                 // Verificação para evitar adicionar source/layer duplicado
+                if (!map.getSource(sourceId + '-lines')) {
+                    map.addSource(sourceId + '-lines', { type: 'geojson', data: lineFeatures });
+                } else {
+                    map.getSource(sourceId + '-lines').setData(lineFeatures); // Atualiza se já existir
+                }
+                if (!map.getLayer(lineLayerId)) {
+                    map.addLayer({ id: lineLayerId, type: 'line', source: sourceId + '-lines', paint: { 'line-color': ['get', 'color'], 'line-width': 4 }, layout: { 'visibility': state.linesVisible ? 'visible' : 'none' } });
+                 }
             }
+
 
             updateGroupMenu();
             updateLoadedFilesList(fileName);
@@ -1443,6 +1531,7 @@
 
             if (file.hasLines) {
                 const lineLayerId = `lines-${sourceId}`;
+                // Verificações antes de remover
                 if (map.getLayer(lineLayerId)) map.removeLayer(lineLayerId);
                 if (map.getSource(sourceId + '-lines')) map.removeSource(sourceId + '-lines');
             }
@@ -1563,11 +1652,12 @@
                 const lineLayerId = `lines-${sourceId}`;
                 const groupingProperty = file.groupingProperty;
                 const selectedGroups = state.selectedGroups.get(sourceId);
-                if (!map.getLayer(lineLayerId)) return;
+                if (!map.getLayer(lineLayerId)) return; // Adicionado verificação
                 if (!selectedGroups || selectedGroups.size === 0) map.setFilter(lineLayerId, ["==", groupingProperty, "___no_match___"]);
                 else map.setFilter(lineLayerId, ["in", groupingProperty, ...Array.from(selectedGroups)]);
             });
         }
+
 
         function hideAllGroups() {
             state.selectedGroups.forEach((groups, sourceId) => state.selectedGroups.set(sourceId, new Set()));
@@ -1602,10 +1692,11 @@
             state.files.forEach(file => {
                 if (file.hasLines) {
                     const lineLayerId = `lines-${file.sourceId}`;
-                    if (map.getLayer(lineLayerId)) map.setLayoutProperty(lineLayerId, 'visibility', visibility);
+                    if (map.getLayer(lineLayerId)) map.setLayoutProperty(lineLayerId, 'visibility', visibility); // Adicionado verificação
                 }
             });
         }
+
 
         function resetView() {
             map.easeTo({ center: [-47.068847, -22.934973], zoom: 11 });
@@ -1627,17 +1718,42 @@
         }
 
         function getFeatureCenter(feature) {
+             // Verificação para garantir que geometry e coordinates existem
+            if (!feature || !feature.geometry || !Array.isArray(feature.geometry.coordinates)) {
+                console.warn('Tentativa de obter centro de feature inválida:', feature);
+                return null; // Retorna null se a geometria for inválida
+            }
+
             let center;
             if (feature.geometry.type === 'Point') {
-                center = feature.geometry.coordinates;
+                 // Verifica se as coordenadas são válidas
+                if (feature.geometry.coordinates.length >= 2 && typeof feature.geometry.coordinates[0] === 'number' && typeof feature.geometry.coordinates[1] === 'number') {
+                    center = feature.geometry.coordinates;
+                } else {
+                    console.warn('Coordenadas de ponto inválidas:', feature.geometry.coordinates);
+                    return null;
+                }
             } else {
                 const coordinates = [];
                 function extractCoords(coords) {
-                    if (typeof coords[0] === 'number' && typeof coords[1] === 'number') coordinates.push(coords);
-                    else if (Array.isArray(coords)) coords.forEach(c => extractCoords(c));
+                    // Adiciona verificação para ter certeza que é um par de números
+                     if (Array.isArray(coords) && coords.length >= 2 && typeof coords[0] === 'number' && typeof coords[1] === 'number') {
+                         // Verifica se são coordenadas válidas (longitude entre -180 e 180, latitude entre -90 e 90)
+                        if (coords[0] >= -180 && coords[0] <= 180 && coords[1] >= -90 && coords[1] <= 90) {
+                             coordinates.push(coords);
+                         } else {
+                             console.warn('Coordenada fora do intervalo encontrada:', coords);
+                         }
+                    } else if (Array.isArray(coords)) {
+                        coords.forEach(c => extractCoords(c)); // Recursivo para arrays aninhados
+                    }
                 }
                 extractCoords(feature.geometry.coordinates);
-                if(coordinates.length === 0) return null;
+
+                if(coordinates.length === 0) {
+                     console.warn('Nenhuma coordenada válida encontrada para calcular o centro:', feature.geometry.coordinates);
+                    return null; // Retorna null se não houver coordenadas válidas
+                }
                 const lons = coordinates.map(coord => coord[0]);
                 const lats = coordinates.map(coord => coord[1]);
                 const avgLon = lons.reduce((a, b) => a + b, 0) / lons.length;
@@ -1646,6 +1762,7 @@
             }
             return center;
         }
+
 
         // ==================================================================
         // INÍCIO DA SEÇÃO DE BUSCA AVANÇADA
@@ -1788,6 +1905,7 @@
 
                 matches.forEach(feature => {
                     const center = getFeatureCenter(feature);
+                    // Atribui distância apenas se o centro for válido
                     feature.properties.distance = center ? computeDistance(referencePoint, center) : Infinity;
                 });
 
@@ -1803,16 +1921,26 @@
             }
         }
 
+
         function computeDistance(coord1, coord2) {
+            // Adiciona verificação para coordenadas válidas
+            if (!Array.isArray(coord1) || coord1.length < 2 || !Array.isArray(coord2) || coord2.length < 2 ||
+                typeof coord1[0] !== 'number' || typeof coord1[1] !== 'number' ||
+                typeof coord2[0] !== 'number' || typeof coord2[1] !== 'number') {
+                console.warn('Tentativa de calcular distância com coordenadas inválidas:', coord1, coord2);
+                return Infinity; // Retorna infinito se as coordenadas forem inválidas
+            }
+
             const toRad = (value) => value * Math.PI / 180;
             const lat1 = coord1[1], lon1 = coord1[0], lat2 = coord2[1], lon2 = coord2[0];
-            const R = 6371e3;
+            const R = 6371e3; // Raio da Terra em metros
             const φ1 = toRad(lat1), φ2 = toRad(lat2);
             const Δφ = toRad(lat2 - lat1), Δλ = toRad(lon2 - lon1);
             const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            return R * c;
+            return R * c; // Distância em metros
         }
+
 
         function displaySearchResults(results) {
             searchResults.innerHTML = '';
@@ -1825,10 +1953,17 @@
 
                 const displayName = result.properties.name || result.properties.Alimentador || 'Sem nome';
                 const fileName = result.properties.fileName || 'Arquivo desconhecido';
-                const distanceText = `(${(result.properties.distance / 1000).toFixed(2)} km)`;
+                // Mostra distância apenas se for finita
+                const distanceText = result.properties.distance !== Infinity
+                    ? `(${(result.properties.distance / 1000).toFixed(2)} km)`
+                    : '(Dist. inválida)';
+
 
                 const term = searchInput.value;
-                const highlightedName = displayName.replace(new RegExp(term, 'gi'), (match) => `<b>${match}</b>`);
+                // Previne erro se displayName não for string
+                const safeDisplayName = typeof displayName === 'string' ? displayName : JSON.stringify(displayName);
+                 const highlightedName = safeDisplayName.replace(new RegExp(term.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi'), (match) => `<b>${match}</b>`);
+
 
                 infoDiv.innerHTML = `${highlightedName} <small>${distanceText}</small><br><small><i>${fileName}</i></small>`;
 
@@ -1837,7 +1972,15 @@
 
                 const viewButton = document.createElement('button');
                 viewButton.textContent = 'Ver';
-                viewButton.onclick = () => { const center = getFeatureCenter(result); if(center) map.flyTo({ center: center, zoom: 16 }); searchResults.style.display = 'none'; };
+                viewButton.onclick = () => {
+                    const center = getFeatureCenter(result);
+                    if(center) {
+                         map.flyTo({ center: center, zoom: 16 });
+                         searchResults.style.display = 'none';
+                    } else {
+                        alert('Não foi possível encontrar o centro deste item.');
+                    }
+                };
 
                 const googleMapsButton = document.createElement('button');
                 googleMapsButton.textContent = 'Rota';
@@ -1846,6 +1989,8 @@
                     if (center) {
                         const url = `https://maps.google.com/?q=${center[1]},${center[0]}`;
                         window.open(url, '_blank');
+                    } else {
+                         alert('Coordenadas inválidas para gerar rota.');
                     }
                 };
 
@@ -1866,28 +2011,49 @@
 
         function changeMapStyle(newStyleUrl) {
             map.once('styledata', () => {
-                map.addSource('dynamic-markers', {
-                    type: 'geojson',
-                    data: { type: 'FeatureCollection', features: [] }
-                });
-                dynamicMarkerSource = map.getSource('dynamic-markers');
-                map.addLayer({ id: 'dynamic-marker-circles', type: 'circle', source: 'dynamic-markers', paint: { 'circle-radius': 6, 'circle-color': ['get', 'color'], 'circle-stroke-width': 2, 'circle-stroke-color': '#FFFFFF' }});
-                map.addLayer({ id: 'dynamic-marker-labels', type: 'symbol', source: 'dynamic-markers', layout: { 'text-field': ['coalesce', ['get', 'name'], ['get', 'Alimentador']], 'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'], 'text-size': 12, 'text-offset': [0, 1.5], visibility: state.namesVisible ? 'visible' : 'none' }, paint: { 'text-color': '#000000', 'text-halo-color': '#FFFFFF', 'text-halo-width': 1 } });
+                // Readiciona a source e layers DEPOIS que o novo estilo carregar
+                if (!map.getSource('dynamic-markers')) {
+                    map.addSource('dynamic-markers', {
+                        type: 'geojson',
+                        data: { type: 'FeatureCollection', features: [] } // Inicializa vazio
+                    });
+                     dynamicMarkerSource = map.getSource('dynamic-markers'); // Atualiza a referência
+                 }
 
+
+                 if (!map.getLayer('dynamic-marker-circles')) {
+                    map.addLayer({ id: 'dynamic-marker-circles', type: 'circle', source: 'dynamic-markers', paint: { 'circle-radius': 6, 'circle-color': ['get', 'color'], 'circle-stroke-width': 2, 'circle-stroke-color': '#FFFFFF' }});
+                }
+                if (!map.getLayer('dynamic-marker-labels')) {
+                    map.addLayer({ id: 'dynamic-marker-labels', type: 'symbol', source: 'dynamic-markers', layout: { 'text-field': ['coalesce', ['get', 'name'], ['get', 'Alimentador']], 'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'], 'text-size': 12, 'text-offset': [0, 1.5], visibility: state.namesVisible ? 'visible' : 'none' }, paint: { 'text-color': '#000000', 'text-halo-color': '#FFFFFF', 'text-halo-width': 1 } });
+                 }
+
+                // Recria as sources e layers das linhas dos arquivos carregados
                 state.files.forEach(file => {
                     if (file.hasLines) {
-                        const sourceId = file.sourceId + '-lines';
+                        const sourceIdLines = file.sourceId + '-lines';
                         const lineLayerId = `lines-${file.sourceId}`;
-                        map.addSource(sourceId, { type: 'geojson', data: file.lineFeatures });
-                        map.addLayer({ id: lineLayerId, type: 'line', source: sourceId, paint: { 'line-color': ['get', 'color'], 'line-width': 4 }, layout: { 'visibility': state.linesVisible ? 'visible' : 'none' } });
+                         if (!map.getSource(sourceIdLines)) { // Só adiciona se não existir
+                            map.addSource(sourceIdLines, { type: 'geojson', data: file.lineFeatures });
+                         }
+                         if (!map.getLayer(lineLayerId)) { // Só adiciona se não existir
+                            map.addLayer({ id: lineLayerId, type: 'line', source: sourceIdLines, paint: { 'line-color': ['get', 'color'], 'line-width': 4 }, layout: { 'visibility': state.linesVisible ? 'visible' : 'none' } });
+                         }
                     }
                 });
 
+                // Atualiza os dados dos marcadores e aplica filtros após recriar tudo
                 updateVisibleMarkers();
                 applyGroupFilter();
+                 applyMarkerGroupFilter(); // Garante que filtro de marcadores também seja aplicado
+                 toggleLines(state.linesVisible); // Reaplica visibilidade das linhas
+                 toggleNames(state.namesVisible); // Reaplica visibilidade dos nomes
             });
+
+            // Define o novo estilo
             map.setStyle(newStyleUrl);
         }
+
 
         function displayStyleList() {
             const styleList = document.getElementById('styleList');
@@ -1904,7 +2070,12 @@
         menuButtons.forEach(button => {
             button.addEventListener('mouseover', (e) => { const legend = button.querySelector('.button-legend'); if (legend) legend.style.display = 'block'; });
             button.addEventListener('mouseout', (e) => { const legend = button.querySelector('.button-legend'); if (legend) legend.style.display = 'none'; });
-            button.addEventListener('click', (e) => { if (e.currentTarget.id !== 'btnSearch') e.stopPropagation(); });
+            button.addEventListener('click', (e) => {
+                // Previne que cliques nos botões fechem os menus imediatamente
+                if (e.currentTarget.id !== 'btnSearch' && e.currentTarget.id !== 'btnReset' && e.currentTarget.id !== 'btnLocation' && e.currentTarget.id !== 'btnNames') {
+                    e.stopPropagation();
+                }
+             });
         });
     </script>
 </body>
