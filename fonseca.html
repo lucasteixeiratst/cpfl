@@ -415,24 +415,39 @@
             z-index: 1001;
         }
 
-        .offline-switch-container {
+        /* --- INÍCIO DA MUDANÇA 1: CSS para o novo menu offline --- */
+        .offline-menu {
             position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1002;
-            background-color: white;
-            padding: 8px 12px;
-            border-radius: 25px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            top: 80px;
+            left: 160px; /* Ajuste conforme necessário */
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            z-index: 2000;
+            padding: 15px;
+            display: none;
+            width: 200px;
+        }
+        
+        /* Estilos para os itens dentro do novo menu */
+        .offline-menu-content {
             display: flex;
             align-items: center;
+            justify-content: space-between;
             gap: 10px;
         }
 
-        .offline-switch-label {
+        .offline-menu-label {
             font-weight: bold;
             font-size: 14px;
+            flex-grow: 1;
+        }
+        /* --- FIM DA MUDANÇA 1 --- */
+
+
+        /* Oculta o container antigo */
+        .offline-switch-container {
+           display: none; /* Não é mais necessário */
         }
 
         .switch {
@@ -440,6 +455,7 @@
             display: inline-block;
             width: 50px;
             height: 24px;
+            flex-shrink: 0; /* Impede que o switch encolha */
         }
 
         .switch input {
@@ -557,14 +573,6 @@
 <body>
     <div id="map"></div>
 
-    <div class="offline-switch-container">
-        <span class="offline-switch-label">Modo Offline</span>
-        <label class="switch">
-            <input type="checkbox" id="offlineToggle">
-            <span class="slider round"></span>
-        </label>
-    </div>
-
     <div id="progressOverlay" class="progress-overlay" style="display: none;">
         <div class="progress-content">
             <h3>Construindo Cache Offline...</h3>
@@ -611,7 +619,12 @@
             <img src="ícones/palette.svg" alt="Estilos do Mapa">
             <div class="button-legend">Estilos do Mapa</div>
         </button>
-    </div>
+        
+        <button id="btnOfflineMenu" aria-label="Mudar modo offline">
+            <img src="ícones/wifi-off.svg" alt="Modo Offline"> 
+            <div class="button-legend">Modo Offline</div>
+        </button>
+        </div>
     <div class="search-bar">
         <input type="text" id="searchInput" placeholder="Buscar no mapa..." />
         <button id="btnSearch">Buscar</button>
@@ -647,6 +660,15 @@
         <ul id="styleList"></ul>
     </div>
 
+    <div class="offline-menu" id="offlineMenu">
+        <div class="offline-menu-content">
+            <span class="offline-menu-label">Modo Offline</span>
+            <label class="switch">
+                <input type="checkbox" id="offlineToggle">
+                <span class="slider round"></span>
+            </label>
+        </div>
+    </div>
     <div class="marker-group-menu" id="markerGroupMenu">
         <h3>Grupos de Postos</h3>
          <div class="visibility-toggle">
@@ -784,8 +806,12 @@
         const styleMenu = document.getElementById('styleMenu');
         const markerGroupMenu = document.getElementById('markerGroupMenu');
         const markerGroupsList = document.getElementById('markerGroupsList');
-
+        
+        // --- INÍCIO DA MUDANÇA 1: Referência ao novo menu e ao toggle ---
+        const offlineMenu = document.getElementById('offlineMenu');
         const offlineToggle = document.getElementById('offlineToggle');
+        // --- FIM DA MUDANÇA 1 ---
+
         const progressOverlay = document.getElementById('progressOverlay');
         const progressBar = document.getElementById('progressBar');
         const progressText = document.getElementById('progressText');
@@ -1159,10 +1185,6 @@
             return await parseKMZ(arrayBuffer);
         }
 
-        // ===============================================
-        // INÍCIO DA CORREÇÃO (Solução 1 - IndexedDB)
-        // ===============================================
-
         /**
          * Salva o GeoJSON no cache do IndexedDB.
          */
@@ -1190,20 +1212,20 @@
             }
             return null;
        }
-       // ===============================================
-       // FIM DA CORREÇÃO (Solução 1 - IndexedDB)
-       // ===============================================
 
 
-        map.on('click', (e) => { // Alterado para fechar menus em qualquer clique no mapa, não apenas fora dos menus
-            if (!e.originalEvent.target.closest('.menu, .search-bar, .search-results, .kmz-menu, .line-menu, .loaded-files-menu, .style-menu, .marker-group-menu, .maplibregl-popup')) {
+        map.on('click', (e) => { 
+            // --- INÍCIO DA MUDANÇA 1: Adiciona offlineMenu ao fechamento global ---
+            if (!e.originalEvent.target.closest('.menu, .search-bar, .search-results, .kmz-menu, .line-menu, .loaded-files-menu, .style-menu, .marker-group-menu, .offline-menu, .maplibregl-popup')) {
                  kmzMenu.style.display = 'none';
                  lineMenu.style.display = 'none';
                  loadedFilesMenu.style.display = 'none';
                  styleMenu.style.display = 'none';
                  searchResults.style.display = 'none';
                  markerGroupMenu.style.display = 'none';
+                 offlineMenu.style.display = 'none'; // Adicionado
             }
+            // --- FIM DA MUDANÇA 1 ---
         });
 
 
@@ -1292,13 +1314,26 @@
             offlineToggle.checked = savedMode;
             setTimeout(() => handleModeChange(savedMode), 100);
 
+            // --- INÍCIO DA MUDANÇA 2: Carregar os 2 últimos arquivos ---
             if (!savedMode) {
-                const lastFile = localStorage.getItem('lastSelectedFile');
-                if (lastFile) {
-                    const file = predefinedFiles.find(f => f.name === lastFile);
-                    if (file) loadKMZFromURL(file.url, file.name);
+                // Get the recent files list
+                const recentFiles = JSON.parse(localStorage.getItem('recentFiles') || '[]');
+                
+                // Get the top two files (ou um, ou zero)
+                const filesToLoad = recentFiles.slice(0, 2); 
+                
+                if (filesToLoad.length > 0) {
+                    console.log("Carregando os 2 últimos arquivos da sessão anterior:", filesToLoad);
+                    // Loop through the files to load and load them
+                    filesToLoad.forEach(fileName => {
+                        const file = predefinedFiles.find(f => f.name === fileName);
+                        if (file) {
+                            loadKMZFromURL(file.url, file.name);
+                        }
+                    });
                 }
             }
+            // --- FIM DA MUDANÇA 2 ---
 
             // --- INÍCIO: CÓDIGO DO POPUP AO CLICAR NO MARCADOR ---
             map.on('click', 'dynamic-marker-circles', (e) => {
@@ -1393,6 +1428,14 @@
             e.stopPropagation();
             toggleVisibility(markerGroupMenu);
         });
+        
+        // --- INÍCIO DA MUDANÇA 1: Adiciona evento ao novo botão ---
+        document.getElementById('btnOfflineMenu').addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleVisibility(offlineMenu);
+        });
+        // --- FIM DA MUDANÇA 1 ---
+        
         document.getElementById('hideAllMarkerGroups').addEventListener('click', () => toggleAllMarkerGroups(false));
         document.getElementById('showAllMarkerGroups').addEventListener('click', () => toggleAllMarkerGroups(true));
 
@@ -1404,7 +1447,9 @@
         });
 
         function toggleVisibility(element) {
-            [kmzMenu, lineMenu, loadedFilesMenu, styleMenu, markerGroupMenu].forEach(menu => {
+            // --- INÍCIO DA MUDANÇA 1: Adiciona offlineMenu ao array ---
+            [kmzMenu, lineMenu, loadedFilesMenu, styleMenu, markerGroupMenu, offlineMenu].forEach(menu => {
+            // --- FIM DA MUDANÇA 1 ---
                 if (menu !== element) {
                     menu.style.display = 'none';
                 }
@@ -1428,14 +1473,7 @@
                 return;
             }
 
-            // ===============================================
-            // INÍCIO DA CORREÇÃO (Solução 1 - IndexedDB)
-            // ===============================================
-            const cachedData = await getKMZFromCache(fileName); // Adiciona "await"
-            // ===============================================
-            // FIM DA CORREÇÃO
-            // ===============================================
-
+            const cachedData = await getKMZFromCache(fileName); // Usa await
             if (cachedData) {
                 addDataToMap(cachedData, fileName);
                 return;
