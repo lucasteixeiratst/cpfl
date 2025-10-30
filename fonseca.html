@@ -700,7 +700,7 @@
             selectedGroups: new Map(),
             markerGroups: {
                 '-FU': { color: 'red', visible: true },
-                '-FA': { color: 'yellow', visible: true },
+                '-FA': { color: '#FFA500', visible: true }, // Cor 'laranja'
                 '-RE': { color: 'green', visible: true },
                 'TR': { color: 'blue', visible: true },  // Nome visual 'TR'
                 'default': { color: '#FF5722', visible: true }
@@ -725,14 +725,51 @@
             '#D4A29C', '#008080', '#87CEFA', '#C46210', '#53736F', '#98FB98',
             '#F4A460', '#3B83BD', '#FFB6C1', '#FF4500', '#33A1C9', '#F5DEB3'
         ];
+        
+        // --- Sistema de Cores Persistente ---
+        let groupColorMap; // Será inicializado pela função abaixo
+        
+        /**
+         * Carrega o mapa de cores de grupos do localStorage.
+         */
+        function loadGroupColorMap() {
+            const storedMap = localStorage.getItem('groupColorMap');
+            if (storedMap) {
+                try {
+                    const obj = JSON.parse(storedMap);
+                    // Converte o objeto salvo de volta para um Map
+                    groupColorMap = new Map(Object.entries(obj));
+                } catch (e) {
+                    console.error("Erro ao carregar mapa de cores:", e);
+                    groupColorMap = new Map();
+                }
+            } else {
+                groupColorMap = new Map();
+            }
+        }
 
-        const groupColorMap = new Map();
+        /**
+         * Salva o mapa de cores de grupos no localStorage.
+         */
+        function saveGroupColorMap() {
+            try {
+                // Converte o Map para um objeto simples para salvar em JSON
+                const obj = Object.fromEntries(groupColorMap);
+                localStorage.setItem('groupColorMap', JSON.stringify(obj));
+            } catch (e) {
+                console.error("Erro ao salvar mapa de cores:", e);
+            }
+        }
+        
+        // Carrega as cores salvas ao iniciar
+        loadGroupColorMap(); 
+        // --- Fim do Sistema de Cores ---
 
         const map = new maplibregl.Map({
             container: 'map',
             style: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
             center: [-47.068847, -22.934973],
-            zoom: 11
+            zoom: 8
         });
 
         const searchInput = document.getElementById('searchInput');
@@ -906,14 +943,14 @@
 
         async function getDataFromDB(storeName, key) {
              const db = await openDB();
-               return new Promise((resolve, reject) => {
-                    const transaction = db.transaction([storeName], 'readonly');
-                    const store = transaction.objectStore(storeName);
-                    const request = key ? store.get(key) : store.getAll();
-                    request.onsuccess = () => resolve(request.result);
-                    request.onerror = () => reject(request.error);
-               });
-            }
+                 return new Promise((resolve, reject) => {
+                     const transaction = db.transaction([storeName], 'readonly');
+                     const store = transaction.objectStore(storeName);
+                     const request = key ? store.get(key) : store.getAll();
+                     request.onsuccess = () => resolve(request.result);
+                     request.onerror = () => reject(request.error);
+                });
+             }
 
         async function countDBItems(storeName) {
             const db = await openDB();
@@ -1122,23 +1159,41 @@
             return await parseKMZ(arrayBuffer);
         }
 
-        function cacheKMZData(fileName, geojson) {
-             try {
-                const key = 'kmz_cache_' + fileName;
-                localStorage.setItem(key, JSON.stringify(geojson));
-             } catch (e) {
-                console.error("[Cache] Erro ao salvar no localStorage.", e);
-             }
-        }
+        // ===============================================
+        // INÍCIO DA CORREÇÃO (Solução 1 - IndexedDB)
+        // ===============================================
 
-        function getKMZFromCache(fileName) {
-            const key = 'kmz_cache_' + fileName;
-            const data = localStorage.getItem(key);
-            if (data) {
-                return JSON.parse(data);
+        /**
+         * Salva o GeoJSON no cache do IndexedDB.
+         */
+        async function cacheKMZData(fileName, geojson) {
+            try {
+                // Reutiliza a função que você já criou para o modo offline
+                await saveDataToDB(GEOJSON_STORE_NAME, { name: fileName, geojson: geojson });
+            } catch (e) {
+                // Atualiza a mensagem de erro para refletir a nova lógica
+                console.error("[Cache DB] Erro ao salvar no IndexedDB.", e);
+            }
+       }
+
+        /**
+         * Busca o GeoJSON do cache do IndexedDB.
+         */
+        async function getKMZFromCache(fileName) {
+            // Busca o objeto completo do IndexedDB
+            const data = await getDataFromDB(GEOJSON_STORE_NAME, fileName);
+            
+            // Verifica se o dado existe e retorna apenas o geojson,
+            // para manter a compatibilidade com o resto do seu código.
+            if (data && data.geojson) {
+                return data.geojson;
             }
             return null;
-        }
+       }
+       // ===============================================
+       // FIM DA CORREÇÃO (Solução 1 - IndexedDB)
+       // ===============================================
+
 
         map.on('click', (e) => { // Alterado para fechar menus em qualquer clique no mapa, não apenas fora dos menus
             if (!e.originalEvent.target.closest('.menu, .search-bar, .search-results, .kmz-menu, .line-menu, .loaded-files-menu, .style-menu, .marker-group-menu, .maplibregl-popup')) {
@@ -1246,8 +1301,6 @@
             }
 
             // --- INÍCIO: CÓDIGO DO POPUP AO CLICAR NO MARCADOR ---
-            // Colocado dentro do map.on('load') para garantir que a camada existe
-
             map.on('click', 'dynamic-marker-circles', (e) => {
                 // Previne que o clique no marcador feche o popup imediatamente (caso map.on('click') dispare também)
                 e.originalEvent.stopPropagation();
@@ -1374,7 +1427,15 @@
                 console.log("Modo offline ativo. Carregamento individual desativado.");
                 return;
             }
-            const cachedData = getKMZFromCache(fileName);
+
+            // ===============================================
+            // INÍCIO DA CORREÇÃO (Solução 1 - IndexedDB)
+            // ===============================================
+            const cachedData = await getKMZFromCache(fileName); // Adiciona "await"
+            // ===============================================
+            // FIM DA CORREÇÃO
+            // ===============================================
+
             if (cachedData) {
                 addDataToMap(cachedData, fileName);
                 return;
@@ -1474,6 +1535,7 @@
                         if (!color) {
                             color = colorPalette[groupColorMap.size % colorPalette.length];
                             groupColorMap.set(groupName, color);
+                            saveGroupColorMap(); // Salva a cor padrão
                         }
                         f.properties.color = color;
                         lineFeaturesArray.push(f);
@@ -1601,7 +1663,8 @@
                 map.setLayoutProperty('dynamic-marker-labels', 'visibility', visibility);
             }
         }
-
+        
+        // --- Função updateGroupMenu com Seletor de Cor ---
         function updateGroupMenu() {
             lineGroupsList.innerHTML = '';
             state.files.forEach(file => {
@@ -1618,6 +1681,9 @@
                     sortedGroups.forEach(grp => {
                         const li = document.createElement('li');
                         const lbl = document.createElement('label');
+                        lbl.style.display = 'flex'; // Para alinhar itens
+                        lbl.style.alignItems = 'center'; // Para alinhar itens
+
                         const chk = document.createElement('input');
                         chk.type = 'checkbox';
                         chk.value = grp;
@@ -1627,12 +1693,38 @@
                         chk.onchange = () => { const currentGroups = state.selectedGroups.get(file.sourceId); if (chk.checked) currentGroups.add(grp); else currentGroups.delete(grp); applyGroupFilter(); };
                         lbl.appendChild(chk);
                         lbl.appendChild(document.createTextNode(' ' + grp));
+                        
+                        // --- Seletor de Cor ---
+                        const colorPicker = document.createElement('input');
+                        colorPicker.type = 'color';
+                        colorPicker.value = groupColor || '#CCCCCC'; // Usa a cor do grupo ou um padrão
+                        colorPicker.style.marginLeft = 'auto'; // Alinha à direita
+                        colorPicker.style.padding = '0';
+                        colorPicker.style.border = 'none';
+                        colorPicker.style.width = '30px';
+                        colorPicker.style.height = '20px';
+                        colorPicker.style.cursor = 'pointer';
+                        
+                        // Adiciona os dados necessários para a função de callback
+                        colorPicker.dataset.groupName = grp;
+                        colorPicker.dataset.sourceId = file.sourceId;
+
+                        // Chama a nova função ao mudar a cor
+                        colorPicker.onchange = handleColorChange;
+
+                        // Previne que o clique no seletor de cor acione o checkbox
+                        colorPicker.onclick = (e) => e.stopPropagation(); 
+
+                        lbl.appendChild(colorPicker);
+                        // --- Fim do Seletor de Cor ---
+
                         li.appendChild(lbl);
                         lineGroupsList.appendChild(li);
                     });
                 }
             });
         }
+        // --- Fim da função updateGroupMenu ---
 
         function updateLoadedFilesList(fileName) {
             const li = document.createElement('li');
@@ -1696,6 +1788,56 @@
                 }
             });
         }
+        
+        // --- Função handleColorChange ---
+        /**
+         * Chamado quando um seletor de cor no menu de linhas é alterado.
+         * Atualiza a cor no groupColorMap, no localStorage e na fonte de dados do mapa.
+         */
+        function handleColorChange(event) {
+            const newColor = event.target.value;
+            const groupName = event.target.dataset.groupName;
+            const sourceId = event.target.dataset.sourceId;
+            
+            if (!groupName || !sourceId) {
+                console.error("Dados do grupo ausentes no seletor de cor.");
+                return;
+            }
+
+            // 1. Atualiza o mapa de cores e salva no localStorage
+            groupColorMap.set(groupName, newColor);
+            saveGroupColorMap();
+
+            // 2. Encontra o arquivo correspondente no estado
+            const file = state.files.find(f => f.sourceId === sourceId);
+            if (!file) {
+                    console.error("Arquivo não encontrado para o sourceId:", sourceId);
+                    return;
+            }
+
+            // 3. Atualiza a propriedade 'color' nas features do GeoJSON
+            let featuresUpdated = false;
+            file.lineFeatures.features.forEach(feature => {
+                if (feature.properties && feature.properties[file.groupingProperty] === groupName) {
+                    feature.properties.color = newColor;
+                    featuresUpdated = true;
+                }
+            });
+
+            // 4. Atualiza a fonte (source) no mapa para refletir a nova cor
+            if (featuresUpdated) {
+                const source = map.getSource(file.sourceId + '-lines');
+                if (source) {
+                    source.setData(file.lineFeatures);
+                }
+            }
+
+            // 5. (Opcional) Atualiza a cor do texto do label no menu
+            if (event.target.parentElement) {
+                event.target.parentElement.style.color = newColor;
+            }
+        }
+        // --- Fim da função handleColorChange ---
 
 
         function resetView() {
@@ -1843,14 +1985,14 @@
                 allFeaturesToSearch = offlineFeatures;
             } else {
                  state.files.forEach(file => {
-                    if (file.lineFeatures) {
-                        file.lineFeatures.features.forEach(feature => {
-                            feature.properties = feature.properties || {};
-                            feature.properties.fileName = file.name;
-                            allFeaturesToSearch.push(feature);
-                        });
-                    }
-                });
+                     if (file.lineFeatures) {
+                         file.lineFeatures.features.forEach(feature => {
+                             feature.properties = feature.properties || {};
+                             feature.properties.fileName = file.name;
+                             allFeaturesToSearch.push(feature);
+                         });
+                     }
+                 });
             }
 
             const matches = [];
@@ -2034,10 +2176,10 @@
                         const sourceIdLines = file.sourceId + '-lines';
                         const lineLayerId = `lines-${file.sourceId}`;
                          if (!map.getSource(sourceIdLines)) { // Só adiciona se não existir
-                            map.addSource(sourceIdLines, { type: 'geojson', data: file.lineFeatures });
+                             map.addSource(sourceIdLines, { type: 'geojson', data: file.lineFeatures });
                          }
                          if (!map.getLayer(lineLayerId)) { // Só adiciona se não existir
-                            map.addLayer({ id: lineLayerId, type: 'line', source: sourceIdLines, paint: { 'line-color': ['get', 'color'], 'line-width': 4 }, layout: { 'visibility': state.linesVisible ? 'visible' : 'none' } });
+                             map.addLayer({ id: lineLayerId, type: 'line', source: sourceIdLines, paint: { 'line-color': ['get', 'color'], 'line-width': 4 }, layout: { 'visibility': state.linesVisible ? 'visible' : 'none' } });
                          }
                     }
                 });
