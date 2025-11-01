@@ -563,6 +563,113 @@
         .maplibregl-popup-close-button {
             padding: 4px;
         }
+        
+        /* ==== INÍCIO DA MUDANÇA (Estilos Rota) ==== */
+
+        /* Estilo para o botão de rota quando ativo */
+        .menu button#btnRoutePlanner.active {
+            background-color: #d1e3ff; /* Um azul claro para indicar "ativo" */
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Painel principal da rota */
+        .route-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            z-index: 2000;
+            padding: 15px;
+            width: 280px;
+            max-height: 400px;
+            display: none; /* Começa oculto */
+            flex-direction: column;
+        }
+        .route-panel h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            text-align: center;
+        }
+        .route-panel p {
+            font-size: 12px;
+            color: #555;
+            margin: 0 0 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+            padding-bottom: 10px;
+        }
+        .route-panel ul {
+            list-style: decimal;
+            margin: 0 0 10px 20px;
+            padding: 0;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 13px;
+            flex-grow: 1;
+        }
+        .route-panel li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 0;
+        }
+        .route-panel li span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            padding-right: 10px;
+        }
+        .route-panel li .remove-wp {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 2px 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 10px;
+            font-weight: bold;
+            margin-left: 10px;
+            flex-shrink: 0;
+        }
+        .route-panel li .remove-wp:hover {
+            background-color: #c0392b;
+        }
+
+        .route-panel-footer {
+            margin-top: 10px;
+            border-top: 1px solid #f0f0f0;
+            padding-top: 10px;
+        }
+        #routeCounter {
+            font-size: 12px;
+            color: #333;
+        }
+        .route-panel-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+        .route-panel button {
+            background-color: #ccc;
+            color: #333;
+            border: none;
+            padding: 8px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 13px;
+            flex-basis: 48%;
+        }
+        .route-panel button#btnGenerateRoute {
+            background-color: #4285F4;
+            color: white;
+            font-weight: bold;
+        }
+        .route-panel button#btnGenerateRoute:hover {
+            background-color: #357ae8;
+        }
+
+        /* ==== FIM DA MUDANÇA ==== */
 
     </style>
     <link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet" />
@@ -620,11 +727,16 @@
             <div class="button-legend">Estilos do Mapa</div>
         </button>
         
+        <button id="btnRoutePlanner" aria-label="Planejar Rota">
+            <img src="ícones/route.svg" alt="Planejar Rota"> 
+            <div class="button-legend">Planejar Rota</div>
+        </button>
         <button id="btnOfflineMenu" aria-label="Mudar modo offline">
             <img src="ícones/wifi-off.svg" alt="Modo Offline"> 
             <div class="button-legend">Modo Offline</div>
         </button>
-        </div>
+    </div>
+    
     <div class="search-bar">
         <input type="text" id="searchInput" placeholder="Buscar no mapa..." />
         <button id="btnSearch">Buscar</button>
@@ -682,6 +794,20 @@
         </div>
         <ul id="markerGroupsList"></ul>
     </div>
+    
+    <div class="route-panel" id="routePanel">
+        <h3>Planejador de Rota</h3>
+        <p>Selecione os pontos no mapa (Máx: 10). O primeiro é a origem, o último é o destino.</p>
+        <ul id="routeList">
+            </ul>
+        <div class="route-panel-footer">
+            <span id="routeCounter">Pontos: 0 / 10</span>
+            <div class="route-panel-buttons">
+                <button id="btnCancelRoute">Limpar</button>
+                <button id="btnGenerateRoute">Gerar Rota</button>
+            </div>
+        </div>
+    </div>
     <footer>
         Todos direitos reservados a Lucas Teixeira. Ultima Atualização 24/07/2025.
     </footer>
@@ -693,6 +819,12 @@
         const GEOJSON_STORE_NAME = 'geojson_files';
         const SPATIAL_INDEX_STORE_NAME = 'spatial_index';
         const MARKER_LIMIT = 500;
+        
+        // ==== INÍCIO DA MUDANÇA (Rota) ====
+        const MAX_WAYPOINTS = 10;
+        let routeWaypoints = [];
+        let routeMarkers = [];
+        // ==== FIM DA MUDANÇA ====
 
         /**
          * Dicionário que mapeia palavras completas para suas siglas.
@@ -714,6 +846,9 @@
 
         const state = {
             isOfflineMode: false,
+            // ==== INÍCIO DA MUDANÇA (Rota) ====
+            isRoutePlanning: false,
+            // ==== FIM DA MUDANÇA ====
             markersVisible: true,
             namesVisible: true,
             linesVisible: true,
@@ -806,6 +941,15 @@
         const styleMenu = document.getElementById('styleMenu');
         const markerGroupMenu = document.getElementById('markerGroupMenu');
         const markerGroupsList = document.getElementById('markerGroupsList');
+        
+        // ==== INÍCIO DA MUDANÇA (Referências Rota) ====
+        const btnRoutePlanner = document.getElementById('btnRoutePlanner');
+        const routePanel = document.getElementById('routePanel');
+        const routeList = document.getElementById('routeList');
+        const routeCounter = document.getElementById('routeCounter');
+        const btnGenerateRoute = document.getElementById('btnGenerateRoute');
+        const btnCancelRoute = document.getElementById('btnCancelRoute');
+        // ==== FIM DA MUDANÇA ====
         
         // --- INÍCIO DA MUDANÇA 1: Referência ao novo menu e ao toggle ---
         const offlineMenu = document.getElementById('offlineMenu');
@@ -1215,15 +1359,16 @@
 
 
         map.on('click', (e) => { 
-            // --- INÍCIO DA MUDANÇA 1: Adiciona offlineMenu ao fechamento global ---
-            if (!e.originalEvent.target.closest('.menu, .search-bar, .search-results, .kmz-menu, .line-menu, .loaded-files-menu, .style-menu, .marker-group-menu, .offline-menu, .maplibregl-popup')) {
+            // --- INÍCIO DA MUDANÇA 1: Adiciona offlineMenu e routePanel ao fechamento global ---
+            if (!e.originalEvent.target.closest('.menu, .search-bar, .search-results, .kmz-menu, .line-menu, .loaded-files-menu, .style-menu, .marker-group-menu, .offline-menu, .maplibregl-popup, .route-panel')) {
                  kmzMenu.style.display = 'none';
                  lineMenu.style.display = 'none';
                  loadedFilesMenu.style.display = 'none';
                  styleMenu.style.display = 'none';
                  searchResults.style.display = 'none';
                  markerGroupMenu.style.display = 'none';
-                 offlineMenu.style.display = 'none'; // Adicionado
+                 offlineMenu.style.display = 'none';
+                 // Não fechamos o routePanel aqui, pois ele é controlado pelo botão de Rota
             }
             // --- FIM DA MUDANÇA 1 ---
         });
@@ -1335,61 +1480,96 @@
             }
             // --- FIM DA MUDANÇA 2 ---
 
-            // --- INÍCIO: CÓDIGO DO POPUP AO CLICAR NO MARCADOR ---
+            // ==================================================================
+            // INÍCIO DA MODIFICAÇÃO: LÓGICA DO POPUP
+            // ==================================================================
             map.on('click', 'dynamic-marker-circles', (e) => {
-                // Previne que o clique no marcador feche o popup imediatamente (caso map.on('click') dispare também)
+                // Previne que o clique no marcador feche o popup imediatamente
                 e.originalEvent.stopPropagation();
 
-                if (e.features && e.features.length > 0) {
-                    const feature = e.features[0];
-                    const coordinates = feature.geometry.coordinates.slice();
-                    const properties = feature.properties;
-                    const displayName = properties.name || properties.Alimentador || 'Sem nome';
+                if (!e.features || e.features.length === 0) return;
 
-                    while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-                        coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
-                    }
+                const feature = e.features[0];
+                const coordinates = feature.geometry.coordinates.slice();
+                const properties = feature.properties;
+                const displayName = properties.name || properties.Alimentador || 'Sem nome';
+                // Usar um ID único baseado nas propriedades para garantir que o botão certo seja encontrado
+                const featureId = feature.id || (properties.name + coordinates.join('')).replace(/[^a-z0-9]/gi, '');
 
-                    const popupHTML = `
+
+                while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+                    coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+                }
+
+                let popupHTML;
+                
+                // Verifica se o modo rota está ativo
+                if (state.isRoutePlanning) {
+                    // MODO ROTA: Mostra o botão "Adicionar à Rota"
+                    popupHTML = `
                         <div>
                             <strong>${displayName}</strong><br>
-                            <button id="popup-directions-btn-${feature.id || Math.random().toString(36).substring(7)}" style="margin-top: 5px; padding: 3px 8px; font-size: 11px; cursor: pointer;">
+                            <button id="popup-add-route-btn-${featureId}" style="margin-top: 5px; padding: 3px 8px; font-size: 11px; cursor: pointer; background-color: #f7b731; color: black; border: none; border-radius: 3px;">
+                                Adicionar à Rota
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    // MODO NORMAL: Mostra o botão "Obter Rota (Google Maps)"
+                    popupHTML = `
+                        <div>
+                            <strong>${displayName}</strong><br>
+                            <button id="popup-directions-btn-${featureId}" style="margin-top: 5px; padding: 3px 8px; font-size: 11px; cursor: pointer;">
                                 Obter Rota (Google Maps)
                             </button>
                         </div>
                     `;
+                }
 
-                    const popup = new maplibregl.Popup({
-                            closeOnClick: true,
-                            offset: 15 // Ajustado o offset
-                         })
-                        .setLngLat(coordinates)
-                        .setHTML(popupHTML)
-                        .addTo(map);
+                const popup = new maplibregl.Popup({
+                        closeOnClick: true,
+                        offset: 15
+                     })
+                    .setLngLat(coordinates)
+                    .setHTML(popupHTML)
+                    .addTo(map);
 
-                    const popupElement = popup.getElement();
-                    // Seleciona o botão específico deste popup (usando ID único ou classe)
-                    const directionsBtn = popupElement.querySelector('button'); // Mais simples se só há um botão
+                // Adiciona o listener correto dependendo do modo
+                const popupElement = popup.getElement();
 
+                if (state.isRoutePlanning) {
+                    const addRouteBtn = popupElement.querySelector(`#popup-add-route-btn-${featureId}`);
+                    if (addRouteBtn) {
+                        addRouteBtn.addEventListener('click', () => {
+                            addWaypointToRoute(feature); // A função que já existe
+                            popup.remove(); // Fecha o popup após adicionar
+                        });
+                    }
+                } else {
+                    const directionsBtn = popupElement.querySelector(`#popup-directions-btn-${featureId}`);
                     if (directionsBtn) {
                         directionsBtn.addEventListener('click', () => {
                             const lat = coordinates[1];
                             const lng = coordinates[0];
-                            const url = `https://maps.google.com/?q=${lat},${lng}`;
+                            const url = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
                             window.open(url, '_blank');
                         });
-                    } else {
-                        console.error("Botão de direções não encontrado no popup.");
                     }
                 }
             });
+            // ==================================================================
+            // FIM DA MODIFICAÇÃO: LÓGICA DO POPUP
+            // ==================================================================
 
             map.on('mouseenter', 'dynamic-marker-circles', () => {
                 map.getCanvas().style.cursor = 'pointer';
             });
 
             map.on('mouseleave', 'dynamic-marker-circles', () => {
-                map.getCanvas().style.cursor = '';
+                // Só reseta o cursor se não estiver no modo rota
+                if (!state.isRoutePlanning) {
+                    map.getCanvas().style.cursor = '';
+                }
             });
 
             // --- FIM: CÓDIGO DO POPUP AO CLICAR NO MARCADOR ---
@@ -1436,6 +1616,15 @@
         });
         // --- FIM DA MUDANÇA 1 ---
         
+        // ==== INÍCIO DA MUDANÇA (Listeners Rota) ====
+        btnRoutePlanner.addEventListener('click', (e) => {
+            e.stopPropagation(); // Previne que o map.on('click') feche os menus
+            toggleRoutePlanning();
+        });
+        btnGenerateRoute.addEventListener('click', generateGoogleMapsUrl);
+        btnCancelRoute.addEventListener('click', cancelRoutePlanning);
+        // ==== FIM DA MUDANÇA ====
+        
         document.getElementById('hideAllMarkerGroups').addEventListener('click', () => toggleAllMarkerGroups(false));
         document.getElementById('showAllMarkerGroups').addEventListener('click', () => toggleAllMarkerGroups(true));
 
@@ -1447,14 +1636,29 @@
         });
 
         function toggleVisibility(element) {
-            // --- INÍCIO DA MUDANÇA 1: Adiciona offlineMenu ao array ---
-            [kmzMenu, lineMenu, loadedFilesMenu, styleMenu, markerGroupMenu, offlineMenu].forEach(menu => {
-            // --- FIM DA MUDANÇA 1 ---
+            // --- INÍCIO DA MUDANÇA: Adiciona routePanel e offlineMenu ao array ---
+            [kmzMenu, lineMenu, loadedFilesMenu, styleMenu, markerGroupMenu, offlineMenu, routePanel].forEach(menu => {
+            // --- FIM DA MUDANÇA ---
                 if (menu !== element) {
-                    menu.style.display = 'none';
+                    // Não esconde o painel de rota se ele já estiver visível
+                    if (menu === routePanel && state.isRoutePlanning) {
+                         // não faz nada
+                    } else {
+                        menu.style.display = 'none';
+                    }
                 }
             });
-            element.style.display = (element.style.display === 'block') ? 'none' : 'block';
+            
+            // Lógica especial para o painel de rota, que é controlado pelo state.isRoutePlanning
+            if (element === routePanel) {
+                if (state.isRoutePlanning) {
+                     element.style.display = 'flex';
+                } else {
+                     element.style.display = 'none';
+                }
+            } else {
+                 element.style.display = (element.style.display === 'block') ? 'none' : 'block';
+            }
         }
 
         function selectFromDevice() {
@@ -2145,7 +2349,7 @@
                  const highlightedName = safeDisplayName.replace(new RegExp(term.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi'), (match) => `<b>${match}</b>`);
 
 
-                infoDiv.innerHTML = `${highlightedName} <small>${distanceText}</small><br><small><i>${fileName}</i></small>`;
+                infoDiv.innerHTML = `${highlightName} <small>${distanceText}</small><br><small><i>${fileName}</i></small>`;
 
                 const actionsDiv = document.createElement('div');
                 actionsDiv.className = 'result-actions';
@@ -2167,7 +2371,8 @@
                 googleMapsButton.onclick = () => {
                     const center = getFeatureCenter(result);
                     if (center) {
-                        const url = `https://maps.google.com/?q=${center[1]},${center[0]}`;
+                        // Corrigindo a URL do Google Maps para um único ponto
+                        const url = `http://googleusercontent.com/maps/google.com/1{center[1]},${center[0]}`;
                         window.open(url, '_blank');
                     } else {
                          alert('Coordenadas inválidas para gerar rota.');
@@ -2245,6 +2450,172 @@
                 styleList.appendChild(li);
             });
         }
+        
+        // ==================================================================
+        // INÍCIO DA SEÇÃO DE PLANEJAMENTO DE ROTA
+        // ==================================================================
+
+        /**
+         * Ativa ou desativa o modo de planejamento de rota.
+         */
+        function toggleRoutePlanning() {
+            state.isRoutePlanning = !state.isRoutePlanning;
+            if (state.isRoutePlanning) {
+                routePanel.style.display = 'flex';
+                btnRoutePlanner.classList.add('active');
+                map.getCanvas().style.cursor = 'crosshair'; // Muda o cursor
+                updateRoutePanelUI(); // Atualiza a UI caso ela esteja vazia
+            } else {
+                cancelRoutePlanning(); // Limpa tudo ao desativar
+            }
+        }
+
+        /**
+         * Adiciona um ponto (feature) à lista de waypoints da rota.
+         */
+        function addWaypointToRoute(feature) {
+            if (routeWaypoints.length >= MAX_WAYPOINTS) {
+                alert(`Você só pode adicionar até ${MAX_WAYPOINTS} pontos à rota.`);
+                return;
+            }
+            
+            // Garante um ID único para a feature, combinando nome e coordenadas
+            const featureId = feature.id || (feature.properties.name + feature.geometry.coordinates.join(','));
+            
+            // Verifica se o ponto já foi adicionado (baseado no ID único)
+            if (routeWaypoints.some(wp => wp.id === featureId)) {
+                alert("Este ponto já foi adicionado à rota.");
+                return;
+            }
+
+            const coordinates = feature.geometry.coordinates.slice();
+            const name = feature.properties.name || feature.properties.Alimentador || 'Ponto sem nome';
+
+            // Adiciona à lista
+            routeWaypoints.push({ id: featureId, name: name, coordinates: coordinates });
+
+            // Adiciona um marcador visual temporário
+            const routeMarker = new maplibregl.Marker({ color: '#f7b731' }) // Cor laranja/dourada
+                .setLngLat(coordinates)
+                .addTo(map);
+            routeMarkers.push(routeMarker);
+
+            // Atualiza o painel
+            updateRoutePanelUI();
+        }
+
+        /**
+         * Atualiza o painel de UI da rota com os waypoints atuais.
+         */
+        function updateRoutePanelUI() {
+            routeList.innerHTML = '';
+            if (routeWaypoints.length === 0) {
+                routeList.innerHTML = '<li style="list-style: none;">Nenhum ponto selecionado.</li>';
+            } else {
+                routeWaypoints.forEach((wp, index) => {
+                    const li = document.createElement('li');
+                    
+                    const span = document.createElement('span');
+                    let displayName = wp.name;
+                    if (index === 0) {
+                        displayName += " (Origem)";
+                    } else if (index > 0 && index === routeWaypoints.length - 1) {
+                         displayName += " (Destino)";
+                    } else if (index > 0) {
+                         displayName += ` (Parada ${index})`
+                    }
+                    span.textContent = displayName;
+                    span.title = wp.name; // Mostra o nome completo no hover
+                    
+                    const removeBtn = document.createElement('button');
+                    removeBtn.textContent = 'X';
+                    removeBtn.className = 'remove-wp';
+                    removeBtn.onclick = () => removeWaypoint(index);
+                    
+                    li.appendChild(span);
+                    li.appendChild(removeBtn);
+                    routeList.appendChild(li);
+                });
+            }
+            routeCounter.textContent = `Pontos: ${routeWaypoints.length} / ${MAX_WAYPOINTS}`;
+        }
+
+        /**
+         * Remove um waypoint da lista pelo seu índice.
+         */
+        function removeWaypoint(index) {
+            // Remove da lista
+            routeWaypoints.splice(index, 1);
+            
+            // Remove o marcador do mapa
+            if (routeMarkers[index]) {
+                routeMarkers[index].remove();
+                routeMarkers.splice(index, 1);
+            }
+
+            // Atualiza a UI
+            updateRoutePanelUI();
+        }
+
+        /**
+         * Limpa o planejamento de rota e reseta o estado.
+         */
+        function cancelRoutePlanning() {
+            // Remove todos os marcadores temporários do mapa
+            routeMarkers.forEach(marker => marker.remove());
+            routeMarkers = [];
+            
+            // Limpa a lista de pontos
+            routeWaypoints = [];
+            
+            // Reseta a UI do painel
+            updateRoutePanelUI();
+            routePanel.style.display = 'none';
+            
+            // Reseta o estado
+            state.isRoutePlanning = false;
+            btnRoutePlanner.classList.remove('active');
+            map.getCanvas().style.cursor = ''; // Restaura o cursor
+        }
+
+        /**
+         * Gera e abre a URL do Google Maps com os waypoints selecionados.
+         * Usa o formato: https://www.google.com/maps/dir/?api=1
+         */
+        function generateGoogleMapsUrl() {
+            if (routeWaypoints.length < 2) {
+                alert("Você precisa de pelo menos 2 pontos (origem e destino) para gerar uma rota.");
+                return;
+            }
+
+            const baseUrl = "https://www.google.com/maps/dir/?api=1";
+
+            // O Google Maps usa o formato Lat,Lng (invertido do GeoJSON Lng,Lat)
+            // .slice() é importante para não modificar o array original
+            const origin = "origin=" + routeWaypoints[0].coordinates.slice().reverse().join(',');
+            const destination = "destination=" + routeWaypoints[routeWaypoints.length - 1].coordinates.slice().reverse().join(',');
+
+            // Pontos intermediários (todos entre o primeiro e o último)
+            const waypoints = routeWaypoints.slice(1, -1)
+                .map(wp => wp.coordinates.slice().reverse().join(','))
+                .join('|'); // Formato do Google Maps usa '|' como separador de waypoints
+
+            let url = `${baseUrl}&${origin}&${destination}`;
+
+            if (waypoints.length > 0) {
+                url += `&waypoints=${waypoints}`;
+            }
+
+            // Abre em uma nova aba
+            window.open(url, '_blank');
+
+            // Limpa a rota após gerar
+            cancelRoutePlanning();
+        }
+
+        // ==================================================================
+        // FIM DA SEÇÃO DE PLANEJAMENTO DE ROTA
+        // ==================================================================
 
         const menuButtons = document.querySelectorAll('.menu button');
         menuButtons.forEach(button => {
