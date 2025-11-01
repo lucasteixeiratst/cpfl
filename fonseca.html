@@ -415,7 +415,6 @@
             z-index: 1001;
         }
 
-        /* --- INÍCIO DA MUDANÇA 1: CSS para o novo menu offline --- */
         .offline-menu {
             position: absolute;
             top: 80px;
@@ -429,7 +428,6 @@
             width: 200px;
         }
         
-        /* Estilos para os itens dentro do novo menu */
         .offline-menu-content {
             display: flex;
             align-items: center;
@@ -442,10 +440,7 @@
             font-size: 14px;
             flex-grow: 1;
         }
-        /* --- FIM DA MUDANÇA 1 --- */
 
-
-        /* Oculta o container antigo */
         .offline-switch-container {
            display: none; /* Não é mais necessário */
         }
@@ -673,7 +668,9 @@
 
     </style>
     <link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet" />
-    <script src="https://unpkg.com/maplibre-gl"></script>
+    
+    <script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
+    
     <script src="https://unpkg.com/@tmcw/togeojson"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.6.0/jszip.min.js"></script>
 </head>
@@ -1119,7 +1116,7 @@
                      const request = key ? store.get(key) : store.getAll();
                      request.onsuccess = () => resolve(request.result);
                      request.onerror = () => reject(request.error);
-                });
+                 });
              }
 
         async function countDBItems(storeName) {
@@ -1359,7 +1356,7 @@
 
 
         map.on('click', (e) => { 
-            // --- INÍCIO DA MUDANÇA 1: Adiciona offlineMenu e routePanel ao fechamento global ---
+            // --- INÍCIO DA MUDANÇA: Adiciona offlineMenu e routePanel ao fechamento global ---
             if (!e.originalEvent.target.closest('.menu, .search-bar, .search-results, .kmz-menu, .line-menu, .loaded-files-menu, .style-menu, .marker-group-menu, .offline-menu, .maplibregl-popup, .route-panel')) {
                  kmzMenu.style.display = 'none';
                  lineMenu.style.display = 'none';
@@ -1370,7 +1367,7 @@
                  offlineMenu.style.display = 'none';
                  // Não fechamos o routePanel aqui, pois ele é controlado pelo botão de Rota
             }
-            // --- FIM DA MUDANÇA 1 ---
+            // --- FIM DA MUDANÇA ---
         });
 
 
@@ -1459,17 +1456,13 @@
             offlineToggle.checked = savedMode;
             setTimeout(() => handleModeChange(savedMode), 100);
 
-            // --- INÍCIO DA MUDANÇA 2: Carregar os 2 últimos arquivos ---
+            // Carrega os 2 últimos arquivos
             if (!savedMode) {
-                // Get the recent files list
                 const recentFiles = JSON.parse(localStorage.getItem('recentFiles') || '[]');
-                
-                // Get the top two files (ou um, ou zero)
                 const filesToLoad = recentFiles.slice(0, 2); 
                 
                 if (filesToLoad.length > 0) {
                     console.log("Carregando os 2 últimos arquivos da sessão anterior:", filesToLoad);
-                    // Loop through the files to load and load them
                     filesToLoad.forEach(fileName => {
                         const file = predefinedFiles.find(f => f.name === fileName);
                         if (file) {
@@ -1478,7 +1471,6 @@
                     });
                 }
             }
-            // --- FIM DA MUDANÇA 2 ---
 
             // ==================================================================
             // INÍCIO DA MODIFICAÇÃO: LÓGICA DO POPUP
@@ -1529,7 +1521,7 @@
                 const popup = new maplibregl.Popup({
                         closeOnClick: true,
                         offset: 15
-                     })
+                    })
                     .setLngLat(coordinates)
                     .setHTML(popupHTML)
                     .addTo(map);
@@ -1551,7 +1543,8 @@
                         directionsBtn.addEventListener('click', () => {
                             const lat = coordinates[1];
                             const lng = coordinates[0];
-                            const url = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+                            // *** MUDANÇA DA RESPOSTA ANTERIOR ***
+                            const url = `http://googleusercontent.com/maps/google.com/4{lat},${lng}`;
                             window.open(url, '_blank');
                         });
                     }
@@ -1571,8 +1564,6 @@
                     map.getCanvas().style.cursor = '';
                 }
             });
-
-            // --- FIM: CÓDIGO DO POPUP AO CLICAR NO MARCADOR ---
 
         }); // Fim do map.on('load')
 
@@ -2349,7 +2340,7 @@
                  const highlightedName = safeDisplayName.replace(new RegExp(term.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi'), (match) => `<b>${match}</b>`);
 
 
-                infoDiv.innerHTML = `${highlightName} <small>${distanceText}</small><br><small><i>${fileName}</i></small>`;
+                infoDiv.innerHTML = `${highlightedName} <small>${distanceText}</small><br><small><i>${fileName}</i></small>`;
 
                 const actionsDiv = document.createElement('div');
                 actionsDiv.className = 'result-actions';
@@ -2371,8 +2362,10 @@
                 googleMapsButton.onclick = () => {
                     const center = getFeatureCenter(result);
                     if (center) {
-                        // Corrigindo a URL do Google Maps para um único ponto
-                        const url = `http://googleusercontent.com/maps/google.com/1{center[1]},${center[0]}`;
+                        // *** MUDANÇA DA RESPOSTA ANTERIOR (CORRIGIDO) ***
+                        const lat = center[1];
+                        const lng = center[0];
+                        const url = `http://googleusercontent.com/maps/google.com/4{lat},${lng}`;
                         window.open(url, '_blank');
                     } else {
                          alert('Coordenadas inválidas para gerar rota.');
@@ -2407,10 +2400,10 @@
 
 
                  if (!map.getLayer('dynamic-marker-circles')) {
-                    map.addLayer({ id: 'dynamic-marker-circles', type: 'circle', source: 'dynamic-markers', paint: { 'circle-radius': 6, 'circle-color': ['get', 'color'], 'circle-stroke-width': 2, 'circle-stroke-color': '#FFFFFF' }});
-                }
+                     map.addLayer({ id: 'dynamic-marker-circles', type: 'circle', source: 'dynamic-markers', paint: { 'circle-radius': 6, 'circle-color': ['get', 'color'], 'circle-stroke-width': 2, 'circle-stroke-color': '#FFFFFF' }});
+                 }
                 if (!map.getLayer('dynamic-marker-labels')) {
-                    map.addLayer({ id: 'dynamic-marker-labels', type: 'symbol', source: 'dynamic-markers', layout: { 'text-field': ['coalesce', ['get', 'name'], ['get', 'Alimentador']], 'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'], 'text-size': 12, 'text-offset': [0, 1.5], visibility: state.namesVisible ? 'visible' : 'none' }, paint: { 'text-color': '#000000', 'text-halo-color': '#FFFFFF', 'text-halo-width': 1 } });
+                     map.addLayer({ id: 'dynamic-marker-labels', type: 'symbol', source: 'dynamic-markers', layout: { 'text-field': ['coalesce', ['get', 'name'], ['get', 'Alimentador']], 'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'], 'text-size': 12, 'text-offset': [0, 1.5], visibility: state.namesVisible ? 'visible' : 'none' }, paint: { 'text-color': '#000000', 'text-halo-color': '#FFFFFF', 'text-halo-width': 1 } });
                  }
 
                 // Recria as sources e layers das linhas dos arquivos carregados
