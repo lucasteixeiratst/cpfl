@@ -794,7 +794,7 @@
     
     <div class="route-panel" id="routePanel">
         <h3>Planejador de Rota</h3>
-        <p>Selecione os pontos no mapa (Máx: 10). O primeiro é a origem, o último é o destino.</p>
+        <p>A rota usará seu GPS como origem. Selecione as paradas (Máx: 10). O último ponto será o destino.</p>
         <ul id="routeList">
             </ul>
         <div class="route-panel-footer">
@@ -1543,8 +1543,12 @@
                         directionsBtn.addEventListener('click', () => {
                             const lat = coordinates[1];
                             const lng = coordinates[0];
-                            // *** MUDANÇA DA RESPOSTA ANTERIOR ***
-                            const url = `http://googleusercontent.com/maps/google.com/4{lat},${lng}`;
+                            
+                            // ==================================================================
+                            // CORREÇÃO 2: Link do Google Maps (Popup)
+                            // Formato /5 com destino (sem origem) + dirflg=d força a navegação.
+                            // ==================================================================
+                            const url = `http://googleusercontent.com/maps/google.com/25{lat},${lng}&travelmode=driving&dirflg=d`;
                             window.open(url, '_blank');
                         });
                     }
@@ -2339,7 +2343,10 @@
                 const safeDisplayName = typeof displayName === 'string' ? displayName : JSON.stringify(displayName);
                  const highlightedName = safeDisplayName.replace(new RegExp(term.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi'), (match) => `<b>${match}</b>`);
 
-
+                
+                // ==================================================================
+                // CORREÇÃO 5: Bug do Typo (highlightName -> highlightedName)
+                // ==================================================================
                 infoDiv.innerHTML = `${highlightedName} <small>${distanceText}</small><br><small><i>${fileName}</i></small>`;
 
                 const actionsDiv = document.createElement('div');
@@ -2362,10 +2369,13 @@
                 googleMapsButton.onclick = () => {
                     const center = getFeatureCenter(result);
                     if (center) {
-                        // *** MUDANÇA DA RESPOSTA ANTERIOR (CORRIGIDO) ***
                         const lat = center[1];
                         const lng = center[0];
-                        const url = `http://googleusercontent.com/maps/google.com/4{lat},${lng}`;
+                        
+                        // ==================================================================
+                        // CORREÇÃO 3: Link do Google Maps (Lista de Busca)
+                        // ==================================================================
+                        const url = `http://googleusercontent.com/maps/google.com/25{lat},${lng}&travelmode=driving&dirflg=d`;
                         window.open(url, '_blank');
                     } else {
                          alert('Coordenadas inválidas para gerar rota.');
@@ -2510,12 +2520,14 @@
                     
                     const span = document.createElement('span');
                     let displayName = wp.name;
-                    if (index === 0) {
-                        displayName += " (Origem)";
-                    } else if (index > 0 && index === routeWaypoints.length - 1) {
+                    
+                    // ==================================================================
+                    // MUDANÇA NA LÓGICA DE EXIBIÇÃO DA ROTA (GPS é a origem)
+                    // ==================================================================
+                    if (index === routeWaypoints.length - 1) {
                          displayName += " (Destino)";
-                    } else if (index > 0) {
-                         displayName += ` (Parada ${index})`
+                    } else {
+                         displayName += ` (Parada ${index + 1})`
                     }
                     span.textContent = displayName;
                     span.title = wp.name; // Mostra o nome completo no hover
@@ -2571,32 +2583,41 @@
             map.getCanvas().style.cursor = ''; // Restaura o cursor
         }
 
+
+        // ==================================================================
+        // CORREÇÃO 4: Nova função generateGoogleMapsUrl
+        // ==================================================================
         /**
-         * Gera e abre a URL do Google Maps com os waypoints selecionados.
-         * Usa o formato: https://www.google.com/maps/dir/?api=1
+         * Gera e abre a URL do Google Maps.
+         * A origem será SEMPRE o GPS do usuário.
+         * Todos os pontos da lista são tratados como paradas/destino.
          */
         function generateGoogleMapsUrl() {
-            if (routeWaypoints.length < 2) {
-                alert("Você precisa de pelo menos 2 pontos (origem e destino) para gerar uma rota.");
+            // Agora, só precisamos de 1 ponto (o destino) para gerar uma rota.
+            if (routeWaypoints.length < 1) {
+                alert("Adicione pelo menos um destino à rota.");
                 return;
             }
 
-            const baseUrl = "https://www.google.com/maps/dir/?api=1";
+            // O último ponto da lista é o destino final.
+            const destinationPoint = routeWaypoints[routeWaypoints.length - 1];
+            // O Google Maps usa Lat,Lng
+            const destLat = destinationPoint.coordinates[1];
+            const destLng = destinationPoint.coordinates[0];
 
-            // O Google Maps usa o formato Lat,Lng (invertido do GeoJSON Lng,Lat)
-            // .slice() é importante para não modificar o array original
-            const origin = "origin=" + routeWaypoints[0].coordinates.slice().reverse().join(',');
-            const destination = "destination=" + routeWaypoints[routeWaypoints.length - 1].coordinates.slice().reverse().join(',');
+            // Todos os pontos ANTES do último são paradas (waypoints).
+            const intermediatePoints = routeWaypoints.slice(0, -1);
+            
+            // Constrói a string de waypoints (paradas)
+            const waypointsString = intermediatePoints
+                .map(wp => `${wp.coordinates[1]},${wp.coordinates[0]}`) // Formato Lat,Lng
+                .join('|'); // Separador do Google Maps
 
-            // Pontos intermediários (todos entre o primeiro e o último)
-            const waypoints = routeWaypoints.slice(1, -1)
-                .map(wp => wp.coordinates.slice().reverse().join(','))
-                .join('|'); // Formato do Google Maps usa '|' como separador de waypoints
+            // Constrói a URL final
+            let url = `http://googleusercontent.com/maps/google.com/25{destLat},${destLng}&travelmode=driving&dirflg=d`;
 
-            let url = `${baseUrl}&${origin}&${destination}`;
-
-            if (waypoints.length > 0) {
-                url += `&waypoints=${waypoints}`;
+            if (waypointsString.length > 0) {
+                url += `&waypoints=${waypointsString}`;
             }
 
             // Abre em uma nova aba
