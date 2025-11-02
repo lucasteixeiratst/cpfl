@@ -1017,7 +1017,8 @@
              { name: 'ITATINGA.kmz', url: './ITATINGA.kmz' },
              { name: 'ITUVERAVA.kmz', url: './ITUVERAVA.kmz' },
              { name: 'JABOTICABAL.kmz', url: './JABOTICABAL.kmz' },
-             { name: 'JARDINOPOLIS.kmz', url: './JARDINOPOLIS.kmz' },
+             { name:Obter Rota (Google Maps)
+            'JARDINOPOLIS.kmz', url: './JARDINOPOLIS.kmz' },
              { name: 'JAU.kmz', url: './JAU.kmz' },
              { name: 'JOSE BONIFACIO.kmz', url: './JOSE BONIFACIO.kmz' },
              { name: 'LENCOIS PAULISTA.kmz', url: './LENCOIS PAULISTA.kmz' },
@@ -1546,9 +1547,9 @@
                             
                             // ==================================================================
                             // CORREÇÃO 2: Link do Google Maps (Popup)
-                            // Formato /5 com destino (sem origem) + dirflg=d força a navegação.
+                            // Formato /dir/ com destino (sem origem) + dir_action=navigate força a navegação.
                             // ==================================================================
-                            const url = `http://googleusercontent.com/maps/google.com/25{lat},${lng}&travelmode=driving&dirflg=d`;
+                            const url = `https://maps.google.com/?q=$...1,,${lat},${lng}?travelmode=driving&dir_action=navigate`;
                             window.open(url, '_blank');
                         });
                     }
@@ -2375,7 +2376,7 @@
                         // ==================================================================
                         // CORREÇÃO 3: Link do Google Maps (Lista de Busca)
                         // ==================================================================
-                        const url = `http://googleusercontent.com/maps/google.com/25{lat},${lng}&travelmode=driving&dirflg=d`;
+                        const url = `https://maps.google.com/?q=$...1,,${lat},${lng}?travelmode=driving&dir_action=navigate`;
                         window.open(url, '_blank');
                     } else {
                          alert('Coordenadas inválidas para gerar rota.');
@@ -2585,7 +2586,7 @@
 
 
         // ==================================================================
-        // CORREÇÃO 4: Nova função generateGoogleMapsUrl
+        // CORREÇÃO 4: Nova função generateGoogleMapsUrl (URL CORRETA)
         // ==================================================================
         /**
          * Gera e abre a URL do Google Maps.
@@ -2613,11 +2614,12 @@
                 .map(wp => `${wp.coordinates[1]},${wp.coordinates[0]}`) // Formato Lat,Lng
                 .join('|'); // Separador do Google Maps
 
-            // Constrói a URL final
-            let url = `http://googleusercontent.com/maps/google.com/25{destLat},${destLng}&travelmode=driving&dirflg=d`;
+            // Constrói a URL final (Formato /dir/ com destino, sem origem, + dir_action=navigate)
+            let url = `https://maps.google.com/?q=$...1,,${destLat},${destLng}?travelmode=driving&dir_action=navigate`;
 
             if (waypointsString.length > 0) {
-                url += `&waypoints=${waypointsString}`;
+                // Adiciona os waypoints *após* o destino, no formato correto
+                url = `google.com/maps${waypointsString}/${destLat},${destLng}?travelmode=driving&dir_action=navigate`;
             }
 
             // Abre em uma nova aba
