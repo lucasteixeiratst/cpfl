@@ -559,7 +559,7 @@
             padding: 4px;
         }
         
-        /* ==== INÍCIO DA MUDANÇA (Estilos Rota) ==== */
+        /* Estilos Rota */
 
         /* Estilo para o botão de rota quando ativo */
         .menu button#btnRoutePlanner.active {
@@ -663,8 +663,6 @@
         .route-panel button#btnGenerateRoute:hover {
             background-color: #357ae8;
         }
-
-        /* ==== FIM DA MUDANÇA ==== */
 
     </style>
     <link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet" />
@@ -810,22 +808,20 @@
     </footer>
 
     <script>
-        // --- CONSTANTES E ESTADO GLOBAL ---
+        // Configurações Globais e Constantes
         const DB_NAME = 'KMZOfflineDB';
         const DB_VERSION = 2;
         const GEOJSON_STORE_NAME = 'geojson_files';
         const SPATIAL_INDEX_STORE_NAME = 'spatial_index';
         const MARKER_LIMIT = 500;
         
-        // ==== INÍCIO DA MUDANÇA (Rota) ====
+        // Estado para o planejamento de rota
         const MAX_WAYPOINTS = 10;
         let routeWaypoints = [];
         let routeMarkers = [];
-        // ==== FIM DA MUDANÇA ====
 
         /**
-         * Dicionário que mapeia palavras completas para suas siglas.
-         * Facilita a busca por componentes quando o usuário digita o nome por extenso.
+         * Dicionário de sinônimos para a busca.
          */
         const SYNONYM_MAP = {
             'fusivel': 'fu',
@@ -838,14 +834,12 @@
             'chaves': 'ch',
             'banco': 'bc',
             'bancos': 'bc'
-            // Adicione mais mapeamentos conforme necessário
+            // Adicionar mais mapeamentos conforme necessário
         };
 
         const state = {
             isOfflineMode: false,
-            // ==== INÍCIO DA MUDANÇA (Rota) ====
-            isRoutePlanning: false,
-            // ==== FIM DA MUDANÇA ====
+            isRoutePlanning: false, // Flag para modo de rota
             markersVisible: true,
             namesVisible: true,
             linesVisible: true,
@@ -880,11 +874,11 @@
             '#F4A460', '#3B83BD', '#FFB6C1', '#FF4500', '#33A1C9', '#F5DEB3'
         ];
         
-        // --- Sistema de Cores Persistente ---
+        // Sistema de Cores (localStorage)
         let groupColorMap; // Será inicializado pela função abaixo
         
         /**
-         * Carrega o mapa de cores de grupos do localStorage.
+         * Carregar o mapa de cores de grupos do localStorage.
          */
         function loadGroupColorMap() {
             const storedMap = localStorage.getItem('groupColorMap');
@@ -903,7 +897,7 @@
         }
 
         /**
-         * Salva o mapa de cores de grupos no localStorage.
+         * Salvar o mapa de cores de grupos no localStorage.
          */
         function saveGroupColorMap() {
             try {
@@ -915,9 +909,8 @@
             }
         }
         
-        // Carrega as cores salvas ao iniciar
+        // Carregar as cores salvas ao iniciar
         loadGroupColorMap(); 
-        // --- Fim do Sistema de Cores ---
 
         const map = new maplibregl.Map({
             container: 'map',
@@ -939,19 +932,17 @@
         const markerGroupMenu = document.getElementById('markerGroupMenu');
         const markerGroupsList = document.getElementById('markerGroupsList');
         
-        // ==== INÍCIO DA MUDANÇA (Referências Rota) ====
+        // Referências DOM (Planejador de Rota)
         const btnRoutePlanner = document.getElementById('btnRoutePlanner');
         const routePanel = document.getElementById('routePanel');
         const routeList = document.getElementById('routeList');
         const routeCounter = document.getElementById('routeCounter');
         const btnGenerateRoute = document.getElementById('btnGenerateRoute');
         const btnCancelRoute = document.getElementById('btnCancelRoute');
-        // ==== FIM DA MUDANÇA ====
         
-        // --- INÍCIO DA MUDANÇA 1: Referência ao novo menu e ao toggle ---
+        // Referências DOM (Menu Offline)
         const offlineMenu = document.getElementById('offlineMenu');
         const offlineToggle = document.getElementById('offlineToggle');
-        // --- FIM DA MUDANÇA 1 ---
 
         const progressOverlay = document.getElementById('progressOverlay');
         const progressBar = document.getElementById('progressBar');
@@ -1079,7 +1070,7 @@
              { name: 'VIRADOURO.kmz', url: './VIRADOURO.kmz' }
         ];
 
-        // --- FUNÇÕES DE BANCO DE DADOS E OUTRAS UTILIDADES ---
+        // Funções do IndexedDB (Cache Offline)
         function openDB() {
             return new Promise((resolve, reject) => {
                 const request = indexedDB.open(DB_NAME, DB_VERSION);
@@ -1327,7 +1318,7 @@
         }
 
         /**
-         * Salva o GeoJSON no cache do IndexedDB.
+         * Salvar o GeoJSON no cache do IndexedDB.
          */
         async function cacheKMZData(fileName, geojson) {
             try {
@@ -1340,14 +1331,13 @@
        }
 
         /**
-         * Busca o GeoJSON do cache do IndexedDB.
+         * Buscar o GeoJSON do cache do IndexedDB.
          */
         async function getKMZFromCache(fileName) {
             // Busca o objeto completo do IndexedDB
             const data = await getDataFromDB(GEOJSON_STORE_NAME, fileName);
             
-            // Verifica se o dado existe e retorna apenas o geojson,
-            // para manter a compatibilidade com o resto do seu código.
+            // Verifica se o dado existe e retorna apenas o geojson
             if (data && data.geojson) {
                 return data.geojson;
             }
@@ -1356,7 +1346,7 @@
 
 
         map.on('click', (e) => { 
-            // --- INÍCIO DA MUDANÇA: Adiciona offlineMenu e routePanel ao fechamento global ---
+            // Gerenciador de clique global para fechar menus
             if (!e.originalEvent.target.closest('.menu, .search-bar, .search-results, .kmz-menu, .line-menu, .loaded-files-menu, .style-menu, .marker-group-menu, .offline-menu, .maplibregl-popup, .route-panel')) {
                  kmzMenu.style.display = 'none';
                  lineMenu.style.display = 'none';
@@ -1367,7 +1357,6 @@
                  offlineMenu.style.display = 'none';
                  // Não fechamos o routePanel aqui, pois ele é controlado pelo botão de Rota
             }
-            // --- FIM DA MUDANÇA ---
         });
 
 
@@ -1410,6 +1399,19 @@
         updateMarkerGroupMenu();
 
         map.on('load', () => {
+
+            // Exibe as legendas dos botões por 10 segundos ao carregar a página
+            const legends = document.querySelectorAll('.button-legend');
+            legends.forEach(legend => {
+                legend.style.display = 'block';
+            });
+            setTimeout(() => {
+                legends.forEach(legend => {
+                    legend.style.display = 'none';
+                });
+            }, 5000); // 5 segundos
+
+
             map.addSource('dynamic-markers', {
                 type: 'geojson',
                 data: { type: 'FeatureCollection', features: [] }
@@ -1456,7 +1458,7 @@
             offlineToggle.checked = savedMode;
             setTimeout(() => handleModeChange(savedMode), 100);
 
-            // Carrega os 2 últimos arquivos
+            // Carregar os 2 últimos arquivos
             if (!savedMode) {
                 const recentFiles = JSON.parse(localStorage.getItem('recentFiles') || '[]');
                 const filesToLoad = recentFiles.slice(0, 2); 
@@ -1472,11 +1474,9 @@
                 }
             }
 
-            // ==================================================================
-            // INÍCIO DA MODIFICAÇÃO: LÓGICA DO POPUP
-            // ==================================================================
+            // Lógica de Popups (Modo Rota vs. Modo Normal)
             map.on('click', 'dynamic-marker-circles', (e) => {
-                // Previne que o clique no marcador feche o popup imediatamente
+                // Prevenir que o clique no marcador feche o popup imediatamente
                 e.originalEvent.stopPropagation();
 
                 if (!e.features || e.features.length === 0) return;
@@ -1485,7 +1485,7 @@
                 const coordinates = feature.geometry.coordinates.slice();
                 const properties = feature.properties;
                 const displayName = properties.name || properties.Alimentador || 'Sem nome';
-                // Usar um ID único baseado nas propriedades para garantir que o botão certo seja encontrado
+                // Usar um ID único baseado nas propriedades
                 const featureId = feature.id || (properties.name + coordinates.join('')).replace(/[^a-z0-9]/gi, '');
 
 
@@ -1495,9 +1495,9 @@
 
                 let popupHTML;
                 
-                // Verifica se o modo rota está ativo
+                // Verificar se o modo rota está ativo
                 if (state.isRoutePlanning) {
-                    // MODO ROTA: Mostra o botão "Adicionar à Rota"
+                    // MODO ROTA: Mostrar o botão "Adicionar à Rota"
                     popupHTML = `
                         <div>
                             <strong>${displayName}</strong><br>
@@ -1507,7 +1507,7 @@
                         </div>
                     `;
                 } else {
-                    // MODO NORMAL: Mostra o botão "Obter Rota (Google Maps)"
+                    // MODO NORMAL: Mostrar o botão "Obter Rota (Google Maps)"
                     popupHTML = `
                         <div>
                             <strong>${displayName}</strong><br>
@@ -1526,14 +1526,14 @@
                     .setHTML(popupHTML)
                     .addTo(map);
 
-                // Adiciona o listener correto dependendo do modo
+                // Adicionar o listener correto dependendo do modo
                 const popupElement = popup.getElement();
 
                 if (state.isRoutePlanning) {
                     const addRouteBtn = popupElement.querySelector(`#popup-add-route-btn-${featureId}`);
                     if (addRouteBtn) {
                         addRouteBtn.addEventListener('click', () => {
-                            addWaypointToRoute(feature); // A função que já existe
+                            addWaypointToRoute(feature); 
                             popup.remove(); // Fecha o popup após adicionar
                         });
                     }
@@ -1544,26 +1544,20 @@
                             const lat = coordinates[1];
                             const lng = coordinates[0];
                             
-                            // ==================================================================
-                            // CORREÇÃO 2: Link do Google Maps (Popup)
-                            // Usa google.com, /dir/ e &dir_action=navigate
-                            // ==================================================================
+                            // Link de rota individual (Google Maps)
                             const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving&dir_action=navigate`;
                             window.open(url, '_blank');
                         });
                     }
                 }
             });
-            // ==================================================================
-            // FIM DA MODIFICAÇÃO: LÓGICA DO POPUP
-            // ==================================================================
 
             map.on('mouseenter', 'dynamic-marker-circles', () => {
                 map.getCanvas().style.cursor = 'pointer';
             });
 
             map.on('mouseleave', 'dynamic-marker-circles', () => {
-                // Só reseta o cursor se não estiver no modo rota
+                // Só resetar o cursor se não estiver no modo rota
                 if (!state.isRoutePlanning) {
                     map.getCanvas().style.cursor = '';
                 }
@@ -1604,21 +1598,18 @@
             toggleVisibility(markerGroupMenu);
         });
         
-        // --- INÍCIO DA MUDANÇA 1: Adiciona evento ao novo botão ---
         document.getElementById('btnOfflineMenu').addEventListener('click', (e) => {
             e.stopPropagation();
             toggleVisibility(offlineMenu);
         });
-        // --- FIM DA MUDANÇA 1 ---
         
-        // ==== INÍCIO DA MUDANÇA (Listeners Rota) ====
+        // Listeners de eventos (Planejador de Rota)
         btnRoutePlanner.addEventListener('click', (e) => {
             e.stopPropagation(); // Previne que o map.on('click') feche os menus
             toggleRoutePlanning();
         });
         btnGenerateRoute.addEventListener('click', generateGoogleMapsUrl);
         btnCancelRoute.addEventListener('click', cancelRoutePlanning);
-        // ==== FIM DA MUDANÇA ====
         
         document.getElementById('hideAllMarkerGroups').addEventListener('click', () => toggleAllMarkerGroups(false));
         document.getElementById('showAllMarkerGroups').addEventListener('click', () => toggleAllMarkerGroups(true));
@@ -1631,9 +1622,8 @@
         });
 
         function toggleVisibility(element) {
-            // --- INÍCIO DA MUDANÇA: Adiciona routePanel e offlineMenu ao array ---
+            // Array de menus para toggle de visibilidade
             [kmzMenu, lineMenu, loadedFilesMenu, styleMenu, markerGroupMenu, offlineMenu, routePanel].forEach(menu => {
-            // --- FIM DA MUDANÇA ---
                 if (menu !== element) {
                     // Não esconde o painel de rota se ele já estiver visível
                     if (menu === routePanel && state.isRoutePlanning) {
@@ -1647,9 +1637,9 @@
             // Lógica especial para o painel de rota, que é controlado pelo state.isRoutePlanning
             if (element === routePanel) {
                 if (state.isRoutePlanning) {
-                     element.style.display = 'flex';
+                    element.style.display = 'flex';
                 } else {
-                     element.style.display = 'none';
+                    element.style.display = 'none';
                 }
             } else {
                  element.style.display = (element.style.display === 'block') ? 'none' : 'block';
@@ -1757,7 +1747,7 @@
                         else if (name.endsWith('KVA')) groupKey = 'TR'; // Lógica para encontrar KVA, mas agrupa como TR
 
                         f.properties.group = groupKey;
-                        // Certifique-se de que a cor é atribuída corretamente
+                        // Certificar de que a cor é atribuída corretamente
                         if (state.markerGroups[groupKey]) {
                            f.properties.color = state.markerGroups[groupKey].color;
                         } else {
@@ -1901,7 +1891,7 @@
             }
         }
         
-        // --- Função updateGroupMenu com Seletor de Cor ---
+        // Atualizar menu de grupos de linhas (com seletor de cor)
         function updateGroupMenu() {
             lineGroupsList.innerHTML = '';
             state.files.forEach(file => {
@@ -1961,7 +1951,6 @@
                 }
             });
         }
-        // --- Fim da função updateGroupMenu ---
 
         function updateLoadedFilesList(fileName) {
             const li = document.createElement('li');
@@ -2026,9 +2015,9 @@
             });
         }
         
-        // --- Função handleColorChange ---
+        // Callback: Mudança de cor do grupo de linha
         /**
-         * Chamado quando um seletor de cor no menu de linhas é alterado.
+         * Função chamada quando um seletor de cor no menu de linhas é alterado.
          * Atualiza a cor no groupColorMap, no localStorage e na fonte de dados do mapa.
          */
         function handleColorChange(event) {
@@ -2041,18 +2030,18 @@
                 return;
             }
 
-            // 1. Atualiza o mapa de cores e salva no localStorage
+            // 1. Atualizar o mapa de cores e salva no localStorage
             groupColorMap.set(groupName, newColor);
             saveGroupColorMap();
 
-            // 2. Encontra o arquivo correspondente no estado
+            // 2. Encontrar o arquivo correspondente no estado
             const file = state.files.find(f => f.sourceId === sourceId);
             if (!file) {
                     console.error("Arquivo não encontrado para o sourceId:", sourceId);
                     return;
             }
 
-            // 3. Atualiza a propriedade 'color' nas features do GeoJSON
+            // 3. Atualizar a propriedade 'color' nas features do GeoJSON
             let featuresUpdated = false;
             file.lineFeatures.features.forEach(feature => {
                 if (feature.properties && feature.properties[file.groupingProperty] === groupName) {
@@ -2061,7 +2050,7 @@
                 }
             });
 
-            // 4. Atualiza a fonte (source) no mapa para refletir a nova cor
+            // 4. Atualizar a fonte (source) no mapa para refletir a nova cor
             if (featuresUpdated) {
                 const source = map.getSource(file.sourceId + '-lines');
                 if (source) {
@@ -2069,12 +2058,11 @@
                 }
             }
 
-            // 5. (Opcional) Atualiza a cor do texto do label no menu
+            // 5. (Opcional) Atualizar a cor do texto do label no menu
             if (event.target.parentElement) {
                 event.target.parentElement.style.color = newColor;
             }
         }
-        // --- Fim da função handleColorChange ---
 
 
         function resetView() {
@@ -2143,12 +2131,10 @@
         }
 
 
-        // ==================================================================
-        // INÍCIO DA SEÇÃO DE BUSCA AVANÇADA
-        // ==================================================================
+        // Funções de Busca Avançada
 
         /**
-         * Normaliza texto: remove acentos, converte para minúsculas e remove caracteres especiais.
+         * Normalizar texto: remove acentos, converte para minúsculas e remove caracteres especiais.
          */
         function normalizeText(text) {
             if (!text) return '';
@@ -2161,7 +2147,7 @@
         }
 
         /**
-         * Calcula a "Distância de Levenshtein" para encontrar resultados com erros de digitação.
+         * Calcular a "Distância de Levenshtein" para encontrar resultados com erros de digitação.
          */
         function levenshteinDistance(s1, s2) {
             const track = Array(s2.length + 1).fill(null).map(() =>
@@ -2344,9 +2330,7 @@
                  const highlightedName = safeDisplayName.replace(new RegExp(term.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi'), (match) => `<b>${match}</b>`);
 
                 
-                // ==================================================================
-                // CORREÇÃO 5: Bug do Typo (highlightName -> highlightedName)
-                // ==================================================================
+                // Corrigir typo no display da busca
                 infoDiv.innerHTML = `${highlightedName} <small>${distanceText}</small><br><small><i>${fileName}</i></small>`;
 
                 const actionsDiv = document.createElement('div');
@@ -2372,9 +2356,7 @@
                         const lat = center[1];
                         const lng = center[0];
                         
-                        // ==================================================================
-                        // CORREÇÃO 3: Link do Google Maps (Lista de Busca)
-                        // ==================================================================
+                        // Link de rota da busca (Google Maps)
                         const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving&dir_action=navigate`;
                         window.open(url, '_blank');
                     } else {
@@ -2393,9 +2375,7 @@
             searchResults.style.display = 'block';
         }
 
-        // ==================================================================
-        // FIM DA SEÇÃO DE BUSCA
-        // ==================================================================
+        // Fim - Funções de Busca
 
         function changeMapStyle(newStyleUrl) {
             map.once('styledata', () => {
@@ -2454,12 +2434,10 @@
             });
         }
         
-        // ==================================================================
-        // INÍCIO DA SEÇÃO DE PLANEJAMENTO DE ROTA
-        // ==================================================================
+        // Funções do Planejador de Rota
 
         /**
-         * Ativa ou desativa o modo de planejamento de rota.
+         * Ativar ou desativar o modo de planejamento de rota.
          */
         function toggleRoutePlanning() {
             state.isRoutePlanning = !state.isRoutePlanning;
@@ -2474,7 +2452,7 @@
         }
 
         /**
-         * Adiciona um ponto (feature) à lista de waypoints da rota.
+         * Adicionar um ponto (feature) à lista de waypoints da rota.
          */
         function addWaypointToRoute(feature) {
             if (routeWaypoints.length >= MAX_WAYPOINTS) {
@@ -2482,10 +2460,10 @@
                 return;
             }
             
-            // Garante um ID único para a feature, combinando nome e coordenadas
+            // Garantir um ID único para a feature
             const featureId = feature.id || (feature.properties.name + feature.geometry.coordinates.join(','));
             
-            // Verifica se o ponto já foi adicionado (baseado no ID único)
+            // Verificar se o ponto já foi adicionado
             if (routeWaypoints.some(wp => wp.id === featureId)) {
                 alert("Este ponto já foi adicionado à rota.");
                 return;
@@ -2494,21 +2472,21 @@
             const coordinates = feature.geometry.coordinates.slice();
             const name = feature.properties.name || feature.properties.Alimentador || 'Ponto sem nome';
 
-            // Adiciona à lista
+            // Adicionar à lista
             routeWaypoints.push({ id: featureId, name: name, coordinates: coordinates });
 
-            // Adiciona um marcador visual temporário
+            // Adicionar um marcador visual temporário
             const routeMarker = new maplibregl.Marker({ color: '#f7b731' }) // Cor laranja/dourada
                 .setLngLat(coordinates)
                 .addTo(map);
             routeMarkers.push(routeMarker);
 
-            // Atualiza o painel
+            // Atualizar o painel
             updateRoutePanelUI();
         }
 
         /**
-         * Atualiza o painel de UI da rota com os waypoints atuais.
+         * Atualizar o painel de UI da rota com os waypoints atuais.
          */
         function updateRoutePanelUI() {
             routeList.innerHTML = '';
@@ -2521,9 +2499,7 @@
                     const span = document.createElement('span');
                     let displayName = wp.name;
                     
-                    // ==================================================================
-                    // MUDANÇA NA LÓGICA DE EXIBIÇÃO DA ROTA (GPS é a origem)
-                    // ==================================================================
+                    // Definir o label (Parada / Destino)
                     if (index === routeWaypoints.length - 1) {
                          displayName += " (Destino)";
                     } else {
@@ -2546,49 +2522,46 @@
         }
 
         /**
-         * Remove um waypoint da lista pelo seu índice.
+         * Remover um waypoint da lista pelo seu índice.
          */
         function removeWaypoint(index) {
-            // Remove da lista
+            // Remover da lista
             routeWaypoints.splice(index, 1);
             
-            // Remove o marcador do mapa
+            // Remover o marcador do mapa
             if (routeMarkers[index]) {
                 routeMarkers[index].remove();
                 routeMarkers.splice(index, 1);
             }
 
-            // Atualiza a UI
+            // Atualizar a UI
             updateRoutePanelUI();
         }
 
         /**
-         * Limpa o planejamento de rota e reseta o estado.
+         * Limpar o planejamento de rota e reseta o estado.
          */
         function cancelRoutePlanning() {
-            // Remove todos os marcadores temporários do mapa
+            // Remover todos os marcadores temporários do mapa
             routeMarkers.forEach(marker => marker.remove());
             routeMarkers = [];
             
-            // Limpa a lista de pontos
+            // Limpar a lista de pontos
             routeWaypoints = [];
             
-            // Reseta a UI do painel
+            // Resetar a UI do painel
             updateRoutePanelUI();
             routePanel.style.display = 'none';
             
-            // Reseta o estado
+            // Resetar o estado
             state.isRoutePlanning = false;
             btnRoutePlanner.classList.remove('active');
             map.getCanvas().style.cursor = ''; // Restaura o cursor
         }
 
 
-        // ==================================================================
-        // CORREÇÃO 4: Nova função generateGoogleMapsUrl (URL CORRETA)
-        // ==================================================================
         /**
-         * Gera e abre a URL do Google Maps.
+         * Gerar e abrir a URL do Google Maps.
          * A origem será SEMPRE o GPS do usuário (omitindo o parâmetro 'origin').
          */
         function generateGoogleMapsUrl() {
@@ -2612,35 +2585,46 @@
                 .map(wp => `${wp.coordinates[1]},${wp.coordinates[0]}`) // Formato Lat,Lng
                 .join('|'); // O separador de parâmetro é |
 
-            // Constrói a URL final usando o formato de parâmetro ?api=1
+            // Constrói a URL final
             let url = `https://www.google.com/maps/dir/?api=1&destination=${destination}&travelmode=driving&dir_action=navigate`;
 
             if (waypointsString.length > 0) {
                 url += `&waypoints=${waypointsString}`;
             }
 
-            // Abre em uma nova aba
+            // Abrir em uma nova aba
             window.open(url, '_blank');
 
-            // Limpa a rota após gerar
+            // Limpar a rota após gerar
             cancelRoutePlanning();
         }
 
-        // ==================================================================
-        // FIM DA SEÇÃO DE PLANEJAMENTO DE ROTA
-        // ==================================================================
+        // Fim - Planejador de Rota
 
+        // ==== INÍCIO DA MUDANÇA (Correção do MouseOut) ====
         const menuButtons = document.querySelectorAll('.menu button');
         menuButtons.forEach(button => {
-            button.addEventListener('mouseover', (e) => { const legend = button.querySelector('.button-legend'); if (legend) legend.style.display = 'block'; });
-            button.addEventListener('mouseout', (e) => { const legend = button.querySelector('.button-legend'); if (legend) legend.style.display = 'none'; });
+            button.addEventListener('mouseover', (e) => { 
+                const legend = button.querySelector('.button-legend'); 
+                if (legend) legend.style.display = 'block'; 
+            });
+            
+            // CORRIGIDO: O mouseout deve sempre esconder a legenda.
+            button.addEventListener('mouseout', (e) => { 
+                const legend = button.querySelector('.button-legend'); 
+                if (legend) {
+                     legend.style.display = 'none';
+                }
+            });
+            
             button.addEventListener('click', (e) => {
                 // Previne que cliques nos botões fechem os menus imediatamente
                 if (e.currentTarget.id !== 'btnSearch' && e.currentTarget.id !== 'btnReset' && e.currentTarget.id !== 'btnLocation' && e.currentTarget.id !== 'btnNames') {
                     e.stopPropagation();
                 }
-             });
+            });
         });
+        // ==== FIM DA MUDANÇA ====
     </script>
 </body>
 </html>
