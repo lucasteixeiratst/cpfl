@@ -415,17 +415,16 @@
             z-index: 1001;
         }
 
-        /* ==== ESTILO DO NOVO MENU OFFLINE ==== */
+        /* ==== ESTILO DO MENU OFFLINE ==== */
         .offline-menu {
             position: absolute;
             top: 80px;
-            left: 80px; /* <<< ALTERADO DE 160px PARA 80px */
+            left: 80px; 
             background: #fff;
             border-radius: 8px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.2);
             z-index: 2000;
             padding: 15px;
-            display: none;
             width: 300px; /* Largura aumentada */
             max-height: 450px; /* Altura máxima */
             display: none;
@@ -440,7 +439,6 @@
             padding-top: 15px;
         }
 
-        /* NOVO: Estilo para os botões de toggle */
         .offline-menu .offline-toggle-buttons {
             display: flex;
             gap: 10px;
@@ -459,8 +457,6 @@
         .offline-menu .offline-toggle-buttons button:hover {
             background-color: #ddd;
         }
-        /* FIM NOVO */
-
 
         .offline-menu-content {
             display: flex;
@@ -743,6 +739,85 @@
             background-color: #357ae8;
         }
 
+        /* ==== NOVOS ESTILOS PARA O PAINEL DE ARMAZENAMENTO ==== */
+        .storage-menu {
+            position: absolute;
+            top: 80px;
+            left: 80px; /* Perto dos outros menus */
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            z-index: 2000;
+            padding: 15px;
+            width: 300px;
+            display: none; /* Começa oculto */
+            flex-direction: column;
+            gap: 10px;
+        }
+        .storage-menu h3 {
+            margin: 0 0 5px 0;
+            font-size: 16px;
+            text-align: center;
+        }
+        .storage-menu p {
+            font-size: 12px;
+            color: #555;
+            text-align: center;
+            margin: 0 0 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+            padding-bottom: 10px;
+        }
+        .storage-menu .storage-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .storage-menu .storage-buttons button {
+            border: none;
+            padding: 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            transition: background-color 0.2s;
+        }
+        .storage-menu .storage-buttons button small {
+            font-size: 11px;
+            font-weight: normal;
+            opacity: 0.9;
+            margin-top: 4px;
+        }
+
+        .storage-menu .btn-danger {
+            background-color: #fbebee;
+            color: #c0392b;
+            border: 1px solid #e74c3c;
+        }
+        .storage-menu .btn-danger:hover {
+            background-color: #fadbd8;
+        }
+
+        .storage-menu .btn-warning {
+            background-color: #fef9e7;
+            color: #b08f00;
+            border: 1px solid #f1c40f;
+        }
+        .storage-menu .btn-warning:hover {
+            background-color: #fcf3cf;
+        }
+
+        .storage-menu .btn-danger-full {
+            background-color: #e74c3c;
+            color: white;
+            text-align: center;
+        }
+        .storage-menu .btn-danger-full:hover {
+            background-color: #c0392b;
+        }
+
     </style>
     <link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet" />
     
@@ -809,6 +884,10 @@
             <img src="ícones/wifi-off.svg" alt="Modo Offline"> 
             <div class="button-legend">Modo Offline</div>
         </button>
+        <button id="btnStorageMenu" aria-label="Gerenciar Armazenamento">
+            <img src="ícones/database-zap.svg" alt="Limpar Dados"> 
+            <div class="button-legend">Limpar Dados</div>
+        </button>
     </div>
     
     <div class="search-bar">
@@ -869,6 +948,7 @@
             <button id="btnSaveOfflineCache">Salvar no Cache</button>
         </div>
     </div>
+    
     <div class="marker-group-menu" id="markerGroupMenu">
         <h3>Grupos de Postos</h3>
          <div class="visibility-toggle">
@@ -896,6 +976,26 @@
             </div>
         </div>
     </div>
+
+    <div class="storage-menu" id="storageMenu">
+        <h3>Gerenciar Armazenamento</h3>
+        <p>Use com cuidado. Isso removerá dados salvos no seu navegador para este site.</p>
+        <div class="storage-buttons">
+            <button id="btnResetOfflineDB" class="btn-danger">
+                Limpar Cache de Mapas (Offline)
+                <small>Remove todos os mapas KMZ salvos.</small>
+            </button>
+            <button id="btnResetLocalStorage" class="btn-warning">
+                Limpar Configurações
+                <small>Reseta cores, arquivos recentes e modo.</small>
+            </button>
+            <button id="btnResetAllStorage" class="btn-danger-full">
+                Resetar Tudo
+                <small>Limpa cache, configurações e recarrega.</small>
+            </button>
+        </div>
+    </div>
+    
     <footer>
         Todos direitos reservados a Lucas Teixeira. Ultima Atualização 01/11/2025.
     </footer>
@@ -1038,6 +1138,12 @@
         const offlineToggle = document.getElementById('offlineToggle');
         const offlineFileList = document.getElementById('offlineFileList'); // NOVO
         const btnSaveOfflineCache = document.getElementById('btnSaveOfflineCache'); // NOVO
+
+        // ==== NOVAS REFERÊNCIAS DOM (Gerenciamento de Armazenamento) ====
+        const storageMenu = document.getElementById('storageMenu');
+        const btnResetOfflineDB = document.getElementById('btnResetOfflineDB');
+        const btnResetLocalStorage = document.getElementById('btnResetLocalStorage');
+        const btnResetAllStorage = document.getElementById('btnResetAllStorage');
 
         const progressOverlay = document.getElementById('progressOverlay');
         const progressBar = document.getElementById('progressBar');
@@ -1196,13 +1302,13 @@
 
         async function getDataFromDB(storeName, key) {
              const db = await openDB();
-                   return new Promise((resolve, reject) => {
-                       const transaction = db.transaction([storeName], 'readonly');
-                       const store = transaction.objectStore(storeName);
-                       const request = key ? store.get(key) : store.getAll();
-                       request.onsuccess = () => resolve(request.result);
-                       request.onerror = () => reject(request.error);
-                   });
+                 return new Promise((resolve, reject) => {
+                     const transaction = db.transaction([storeName], 'readonly');
+                     const store = transaction.objectStore(storeName);
+                     const request = key ? store.get(key) : store.getAll();
+                     request.onsuccess = () => resolve(request.result);
+                     request.onerror = () => reject(request.error);
+                 });
              }
 
         async function countDBItems(storeName) {
@@ -1335,7 +1441,6 @@
                 map.on('moveend', updateVisibleLayers);
                 
                 // Apenas carrega o que quer que esteja no cache.
-                // Removemos o prompt para construir o cache.
                 spatialIndex = await getDataFromDB(SPATIAL_INDEX_STORE_NAME);
                 updateVisibleLayers();
                 
@@ -1450,14 +1555,15 @@
 
         map.on('click', (e) => { 
             // Gerenciador de clique global para fechar menus
-            if (!e.originalEvent.target.closest('.menu, .search-bar, .search-results, .kmz-menu, .line-menu, .loaded-files-menu, .style-menu, .marker-group-menu, .offline-menu, .maplibregl-popup, .route-panel')) {
+            if (!e.originalEvent.target.closest('.menu, .search-bar, .search-results, .kmz-menu, .line-menu, .loaded-files-menu, .style-menu, .marker-group-menu, .offline-menu, .maplibregl-popup, .route-panel, .storage-menu')) {
                  kmzMenu.style.display = 'none';
                  lineMenu.style.display = 'none';
                  loadedFilesMenu.style.display = 'none';
                  styleMenu.style.display = 'none';
                  searchResults.style.display = 'none';
                  markerGroupMenu.style.display = 'none';
-                 offlineMenu.style.display = 'none'; // Agora fecha o painel offline também
+                 offlineMenu.style.display = 'none'; 
+                 storageMenu.style.display = 'none'; // ADICIONADO
                  // Não fechamos o routePanel aqui, pois ele é controlado pelo botão de Rota
             }
         });
@@ -1801,36 +1907,102 @@
             toggleLines(e.target.checked);
         });
 
+        // ---- Listeners do Menu de Armazenamento (ADICIONADOS) ----
+
+        document.getElementById('btnStorageMenu').addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleVisibility(storageMenu); // Reusa a função toggleVisibility
+        });
+
+        btnResetOfflineDB.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (confirm('TEM CERTEZA?\n\nIsso limpará TODOS os mapas salvos para o modo offline. Você precisará baixá-los novamente.')) {
+                console.log("Limpando banco de dados IndexedDB...");
+                // DB_NAME é a constante global que você já definiu ('KMZOfflineDB')
+                const deleteRequest = indexedDB.deleteDatabase(DB_NAME);
+                
+                deleteRequest.onsuccess = () => {
+                    alert('Cache de mapas offline foi limpo. A página será recarregada.');
+                    location.reload();
+                };
+                deleteRequest.onerror = (err) => {
+                    console.error("Erro ao deletar DB:", err);
+                    alert('Erro ao limpar o cache de mapas.');
+                };
+                deleteRequest.onblocked = () => {
+                    // Isso acontece se outra aba estiver com o DB aberto
+                    console.warn("Delete DB bloqueado. Feche outras abas.");
+                    alert('Não foi possível limpar o cache. Por favor, feche todas as outras abas deste site e tente novamente.');
+                };
+            }
+        });
+
+        btnResetLocalStorage.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (confirm('TEM CERTEZA?\n\nIsso limpará todas as suas configurações salvas (cores, arquivos recentes, estado do modo offline).')) {
+                console.log("Limpando localStorage...");
+                localStorage.clear();
+                alert('Configurações resetadas. A página será recarregada.');
+                location.reload();
+            }
+        });
+
+        btnResetAllStorage.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (confirm('TEM CERTEZA ABSOLUTA?\n\nIsso limpará TODAS as configurações E TODOS os mapas offline salvos. A aplicação será resetada ao estado inicial.')) {
+                console.log("Limpando localStorage e IndexedDB...");
+                
+                // Limpa Configurações
+                localStorage.clear();
+                
+                // Limpa Cache Offline
+                const deleteRequest = indexedDB.deleteDatabase(DB_NAME);
+                
+                deleteRequest.onsuccess = () => {
+                    alert('Todos os dados foram resetados. A página será recarregada.');
+                    location.reload();
+                };
+                deleteRequest.onerror = (err) => {
+                    console.error("Erro ao deletar DB:", err);
+                    alert('Erro ao limpar o cache de mapas, mas as configurações foram limpas. Recarregando...');
+                    location.reload();
+                };
+                deleteRequest.onblocked = () => {
+                    alert('Não foi possível limpar o cache. Por favor, feche todas as outras abas deste site e tente novamente.');
+                };
+            }
+        });
+
+        // ==== FUNÇÃO toggleVisibility ATUALIZADA ====
         function toggleVisibility(element) {
             // Array de menus para toggle de visibilidade
-            [kmzMenu, lineMenu, loadedFilesMenu, styleMenu, markerGroupMenu, offlineMenu, routePanel].forEach(menu => {
+            [kmzMenu, lineMenu, loadedFilesMenu, styleMenu, markerGroupMenu, offlineMenu, routePanel, storageMenu].forEach(menu => {
                 if (menu !== element) {
                     // Não esconde o painel de rota se ele já estiver visível
                     if (menu === routePanel && state.isRoutePlanning) {
-                         // não faz nada
+                        // não faz nada
                     } else {
-                        // MODIFICAÇÃO: O painel offline agora é 'flex'
                         menu.style.display = 'none';
                     }
                 }
             });
             
-            // Lógica especial para o painel de rota E OFFLINE
-            if (element === routePanel || element === offlineMenu) {
-                // Se for o painel de rota
+            // Lógica especial para painéis que usam 'flex'
+            if (element === routePanel || element === offlineMenu || element === storageMenu) {
+                
                 if (element === routePanel) {
                      if (state.isRoutePlanning) {
-                        element.style.display = 'flex';
+                         element.style.display = 'flex';
                      } else {
-                        element.style.display = 'none';
+                         element.style.display = 'none';
                      }
                 } 
-                // Se for o painel offline (que é flex)
-                else if (element === offlineMenu) {
-                    element.style.display = (element.style.display === 'flex') ? 'none' : 'flex';
+                // Lógica para offlineMenu e storageMenu
+                else {
+                     element.style.display = (element.style.display === 'flex') ? 'none' : 'flex';
                 }
             } else {
-                 // Menus antigos que usam 'block'
+                // Menus antigos que usam 'block'
                  element.style.display = (element.style.display === 'block') ? 'none' : 'block';
             }
         }
@@ -2300,7 +2472,7 @@
                          } else {
                              console.warn('Coordenada fora do intervalo encontrada:', coords);
                          }
-                     } else if (Array.isArray(coords)) {
+                    } else if (Array.isArray(coords)) {
                          coords.forEach(c => extractCoords(c)); // Recursivo para arrays aninhados
                      }
                 }
