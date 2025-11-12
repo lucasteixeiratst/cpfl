@@ -415,24 +415,56 @@
             z-index: 1001;
         }
 
+        /* ==== ESTILO DO MENU OFFLINE ==== */
         .offline-menu {
             position: absolute;
             top: 80px;
-            left: 160px; /* Ajuste conforme necessário */
+            left: 80px; 
             background: #fff;
             border-radius: 8px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.2);
             z-index: 2000;
             padding: 15px;
+            width: 300px; /* Largura aumentada */
+            max-height: 450px; /* Altura máxima */
             display: none;
-            width: 200px;
+            flex-direction: column; /* Organiza o conteúdo verticalmente */
         }
         
+        .offline-menu h3 {
+            margin: 10px 0 10px 0;
+            font-size: 16px;
+            text-align: center;
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+        }
+
+        .offline-menu .offline-toggle-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .offline-menu .offline-toggle-buttons button {
+            background-color: #eee;
+            border: 1px solid #ccc;
+            color: #333;
+            padding: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            flex: 1;
+            font-size: 12px;
+        }
+        .offline-menu .offline-toggle-buttons button:hover {
+            background-color: #ddd;
+        }
+
         .offline-menu-content {
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
         }
 
         .offline-menu-label {
@@ -441,9 +473,52 @@
             flex-grow: 1;
         }
 
-        .offline-switch-container {
-           display: none; /* Não é mais necessário */
+        /* Lista de arquivos */
+        .offline-file-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            overflow-y: auto; /* Permite rolagem da lista */
+            flex-grow: 1; /* Faz a lista ocupar o espaço restante */
+            max-height: 300px; /* Altura máxima para a lista */
         }
+        
+        .offline-file-list li {
+            padding: 6px 5px;
+            font-size: 13px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .offline-file-list li label {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Controles (Botão Salvar) */
+        .offline-controls {
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+            text-align: center;
+        }
+        
+        .offline-controls button {
+            background-color: #4285F4;
+            color: #fff;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+        }
+        
+        .offline-controls button:hover {
+            background-color: #357ae8;
+        }
+        /* ==== FIM ESTILO MENU OFFLINE ==== */
+
 
         .switch {
             position: relative;
@@ -664,6 +739,85 @@
             background-color: #357ae8;
         }
 
+        /* ==== NOVOS ESTILOS PARA O PAINEL DE ARMAZENAMENTO ==== */
+        .storage-menu {
+            position: absolute;
+            top: 80px;
+            left: 80px; /* Perto dos outros menus */
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            z-index: 2000;
+            padding: 15px;
+            width: 300px;
+            display: none; /* Começa oculto */
+            flex-direction: column;
+            gap: 10px;
+        }
+        .storage-menu h3 {
+            margin: 0 0 5px 0;
+            font-size: 16px;
+            text-align: center;
+        }
+        .storage-menu p {
+            font-size: 12px;
+            color: #555;
+            text-align: center;
+            margin: 0 0 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+            padding-bottom: 10px;
+        }
+        .storage-menu .storage-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .storage-menu .storage-buttons button {
+            border: none;
+            padding: 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            transition: background-color 0.2s;
+        }
+        .storage-menu .storage-buttons button small {
+            font-size: 11px;
+            font-weight: normal;
+            opacity: 0.9;
+            margin-top: 4px;
+        }
+
+        .storage-menu .btn-danger {
+            background-color: #fbebee;
+            color: #c0392b;
+            border: 1px solid #e74c3c;
+        }
+        .storage-menu .btn-danger:hover {
+            background-color: #fadbd8;
+        }
+
+        .storage-menu .btn-warning {
+            background-color: #fef9e7;
+            color: #b08f00;
+            border: 1px solid #f1c40f;
+        }
+        .storage-menu .btn-warning:hover {
+            background-color: #fcf3cf;
+        }
+
+        .storage-menu .btn-danger-full {
+            background-color: #e74c3c;
+            color: white;
+            text-align: center;
+        }
+        .storage-menu .btn-danger-full:hover {
+            background-color: #c0392b;
+        }
+
     </style>
     <link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet" />
     
@@ -682,7 +836,7 @@
             <div class="progress-bar-container">
                 <div id="progressBar" class="progress-bar"></div>
             </div>
-            <p id="progressText">0 / 116</p>
+            <p id="progressText">0 / 0</p>
         </div>
     </div>
 
@@ -730,6 +884,10 @@
             <img src="ícones/wifi-off.svg" alt="Modo Offline"> 
             <div class="button-legend">Modo Offline</div>
         </button>
+        <button id="btnStorageMenu" aria-label="Gerenciar Armazenamento">
+            <img src="ícones/database-zap.svg" alt="Limpar Dados"> 
+            <div class="button-legend">Limpar Dados</div>
+        </button>
     </div>
     
     <div class="search-bar">
@@ -775,7 +933,22 @@
                 <span class="slider round"></span>
             </label>
         </div>
+        
+        <h3>Arquivos para Cache</h3>
+        
+        <div class="offline-toggle-buttons">
+            <button id="btnOfflineSelectAll">Selecionar Todos</button>
+            <button id="btnOfflineDeselectAll">Desselecionar Todos</button>
+        </div>
+
+        <ul id="offlineFileList" class="offline-file-list">
+            </ul>
+        
+        <div class="offline-controls">
+            <button id="btnSaveOfflineCache">Salvar no Cache</button>
+        </div>
     </div>
+    
     <div class="marker-group-menu" id="markerGroupMenu">
         <h3>Grupos de Postos</h3>
          <div class="visibility-toggle">
@@ -803,6 +976,26 @@
             </div>
         </div>
     </div>
+
+    <div class="storage-menu" id="storageMenu">
+        <h3>Gerenciar Armazenamento</h3>
+        <p>Use com cuidado. Isso removerá dados salvos no seu navegador para este site.</p>
+        <div class="storage-buttons">
+            <button id="btnResetOfflineDB" class="btn-danger">
+                Limpar Cache de Mapas (Offline)
+                <small>Remove todos os mapas KMZ salvos.</small>
+            </button>
+            <button id="btnResetLocalStorage" class="btn-warning">
+                Limpar Configurações
+                <small>Reseta cores, arquivos recentes e modo.</small>
+            </button>
+            <button id="btnResetAllStorage" class="btn-danger-full">
+                Resetar Tudo
+                <small>Limpa cache, configurações e recarrega.</small>
+            </button>
+        </div>
+    </div>
+    
     <footer>
         Todos direitos reservados a Lucas Teixeira. Ultima Atualização 01/11/2025.
     </footer>
@@ -943,6 +1136,14 @@
         // Referências DOM (Menu Offline)
         const offlineMenu = document.getElementById('offlineMenu');
         const offlineToggle = document.getElementById('offlineToggle');
+        const offlineFileList = document.getElementById('offlineFileList'); // NOVO
+        const btnSaveOfflineCache = document.getElementById('btnSaveOfflineCache'); // NOVO
+
+        // ==== NOVAS REFERÊNCIAS DOM (Gerenciamento de Armazenamento) ====
+        const storageMenu = document.getElementById('storageMenu');
+        const btnResetOfflineDB = document.getElementById('btnResetOfflineDB');
+        const btnResetLocalStorage = document.getElementById('btnResetLocalStorage');
+        const btnResetAllStorage = document.getElementById('btnResetAllStorage');
 
         const progressOverlay = document.getElementById('progressOverlay');
         const progressBar = document.getElementById('progressBar');
@@ -1221,10 +1422,15 @@
             updateVisibleMarkers();
         }
 
-
+        /**
+         * NOVA LÓGICA: Esta função apenas ativa/desativa o MODO.
+         * Ela não constrói mais o cache.
+         */
         async function handleModeChange(isOffline) {
             clearMap();
             state.isOfflineMode = isOffline;
+            
+            // Desabilita/Habilita o menu de carregamento online
             const kmzMenuDiv = document.getElementById('kmzMenu');
             kmzMenuDiv.style.pointerEvents = isOffline ? 'none' : 'auto';
             kmzMenuDiv.style.opacity = isOffline ? '0.5' : '1';
@@ -1233,20 +1439,11 @@
             if (isOffline) {
                 console.log("Ativando modo offline dinâmico...");
                 map.on('moveend', updateVisibleLayers);
-                const dbCount = await countDBItems(SPATIAL_INDEX_STORE_NAME);
-
-                if (dbCount < predefinedFiles.length) {
-                    if (confirm(`O cache offline completo não foi construído. Deseja iniciar o processo agora? Isso fará o download de ${predefinedFiles.length} arquivos.`)) {
-                        await buildOfflineDatabase();
-                    } else {
-                        offlineToggle.checked = false;
-                        localStorage.setItem('offlineMode', 'false');
-                        await handleModeChange(false);
-                        return;
-                    }
-                }
+                
+                // Apenas carrega o que quer que esteja no cache.
                 spatialIndex = await getDataFromDB(SPATIAL_INDEX_STORE_NAME);
                 updateVisibleLayers();
+                
             } else {
                 console.log("Desativando modo offline...");
                 map.off('moveend', updateVisibleLayers);
@@ -1287,10 +1484,21 @@
             }, 150);
         }
 
-        async function buildOfflineDatabase() {
+        /**
+         * NOVA LÓGICA: Esta função agora aceita os arquivos a serem construídos.
+         */
+        async function buildOfflineDatabase(filesToCache) {
+            if (!filesToCache || filesToCache.length === 0) {
+                alert("Nenhum arquivo selecionado para salvar no cache.");
+                return;
+            }
+            
             progressOverlay.style.display = 'flex';
+            progressBar.style.width = `0%`;
+            progressText.textContent = `0 / ${filesToCache.length}`;
+            
             let count = 0;
-            for (const file of predefinedFiles) {
+            for (const file of filesToCache) {
                 try {
                     const geojson = await parseKMZFromUrl(file.url);
                     await saveDataToDB(GEOJSON_STORE_NAME, { name: file.name, geojson });
@@ -1299,15 +1507,15 @@
                         await saveDataToDB(SPATIAL_INDEX_STORE_NAME, { name: file.name, bounds });
                     }
                     count++;
-                    const percentage = (count / predefinedFiles.length) * 100;
+                    const percentage = (count / filesToCache.length) * 100;
                     progressBar.style.width = `${percentage}%`;
-                    progressText.textContent = `${count} / ${predefinedFiles.length}`;
+                    progressText.textContent = `${count} / ${filesToCache.length}`;
                 } catch (error) {
                     console.error(`Erro ao processar ${file.name}:`, error);
                 }
             }
             progressOverlay.style.display = 'none';
-            alert('Cache offline construído com sucesso!');
+            alert('Cache offline construído com sucesso para os arquivos selecionados!');
         }
 
         async function parseKMZFromUrl(url) {
@@ -1347,14 +1555,15 @@
 
         map.on('click', (e) => { 
             // Gerenciador de clique global para fechar menus
-            if (!e.originalEvent.target.closest('.menu, .search-bar, .search-results, .kmz-menu, .line-menu, .loaded-files-menu, .style-menu, .marker-group-menu, .offline-menu, .maplibregl-popup, .route-panel')) {
+            if (!e.originalEvent.target.closest('.menu, .search-bar, .search-results, .kmz-menu, .line-menu, .loaded-files-menu, .style-menu, .marker-group-menu, .offline-menu, .maplibregl-popup, .route-panel, .storage-menu')) {
                  kmzMenu.style.display = 'none';
                  lineMenu.style.display = 'none';
                  loadedFilesMenu.style.display = 'none';
                  styleMenu.style.display = 'none';
                  searchResults.style.display = 'none';
                  markerGroupMenu.style.display = 'none';
-                 offlineMenu.style.display = 'none';
+                 offlineMenu.style.display = 'none'; 
+                 storageMenu.style.display = 'none'; // ADICIONADO
                  // Não fechamos o routePanel aqui, pois ele é controlado pelo botão de Rota
             }
         });
@@ -1394,9 +1603,42 @@
                 kmzList.appendChild(li);
             });
         }
+        
+        /**
+         * NOVO: Popula a lista de arquivos no menu offline.
+         */
+        function populateOfflineFileList() {
+            if (!offlineFileList) return;
+            
+            offlineFileList.innerHTML = '';
+            
+            // Ordena os arquivos alfabeticamente para a lista
+            const sortedFiles = [...predefinedFiles].sort((a, b) => a.name.localeCompare(b.name));
+
+            sortedFiles.forEach((file) => {
+                const li = document.createElement('li');
+                const label = document.createElement('label');
+                const checkbox = document.createElement('input');
+                
+                checkbox.type = 'checkbox';
+                checkbox.name = 'offlineFile';
+                checkbox.value = file.name; // Usamos o nome como identificador
+                
+                label.appendChild(checkbox);
+                label.appendChild(document.createTextNode(file.name));
+                li.appendChild(label);
+                
+                offlineFileList.appendChild(li);
+            });
+        }
+
 
         displayFileList();
         updateMarkerGroupMenu();
+        
+        // NOVO: Popula a lista do menu offline assim que o script carregar
+        populateOfflineFileList();
+
 
         map.on('load', () => {
 
@@ -1456,7 +1698,8 @@
 
             const savedMode = localStorage.getItem('offlineMode') === 'true';
             offlineToggle.checked = savedMode;
-            setTimeout(() => handleModeChange(savedMode), 100);
+            // Atraso para garantir que o mapa esteja pronto
+            setTimeout(() => handleModeChange(savedMode), 100); 
 
             // Carregar os 2 últimos arquivos
             if (!savedMode) {
@@ -1565,11 +1808,54 @@
 
         }); // Fim do map.on('load')
 
+        // Listener do Switch (Offline)
         offlineToggle.addEventListener('change', (event) => {
             const isChecked = event.target.checked;
             localStorage.setItem('offlineMode', isChecked);
             handleModeChange(isChecked);
         });
+
+        // NOVO: Listener do Botão Salvar Cache
+        btnSaveOfflineCache.addEventListener('click', (e) => {
+            e.stopPropagation(); // Impede que o menu feche
+            
+            const checkedBoxes = offlineFileList.querySelectorAll('input[type="checkbox"]:checked');
+            const filesToCache = [];
+            
+            checkedBoxes.forEach(box => {
+                const fileName = box.value;
+                const file = predefinedFiles.find(f => f.name === fileName);
+                if (file) {
+                    filesToCache.push(file);
+                }
+            });
+            
+            if (filesToCache.length > 0) {
+                // Chama a função modificada
+                buildOfflineDatabase(filesToCache);
+            } else {
+                alert("Nenhum arquivo selecionado.");
+            }
+        });
+
+        // **** NOVO: Listeners para Selecionar/Deselecionar Todos ****
+        document.getElementById('btnOfflineSelectAll').addEventListener('click', (e) => {
+            e.stopPropagation(); // Impede que o menu feche
+            const checkboxes = offlineFileList.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(box => {
+                box.checked = true;
+            });
+        });
+
+        document.getElementById('btnOfflineDeselectAll').addEventListener('click', (e) => {
+            e.stopPropagation(); // Impede que o menu feche
+            const checkboxes = offlineFileList.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(box => {
+                box.checked = false;
+            });
+        });
+        // **** FIM DOS NOVOS LISTENERS ****
+
 
         document.getElementById('btnKMZ').addEventListener('click', (e) => { e.stopPropagation(); toggleVisibility(kmzMenu); });
         document.getElementById('btnNames').addEventListener('click', () => toggleNames());
@@ -1600,7 +1886,7 @@
         
         document.getElementById('btnOfflineMenu').addEventListener('click', (e) => {
             e.stopPropagation();
-            toggleVisibility(offlineMenu);
+            toggleVisibility(offlineMenu); // Agora chama toggleVisibility
         });
         
         // Listeners de eventos (Planejador de Rota)
@@ -1621,27 +1907,102 @@
             toggleLines(e.target.checked);
         });
 
+        // ---- Listeners do Menu de Armazenamento (ADICIONADOS) ----
+
+        document.getElementById('btnStorageMenu').addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleVisibility(storageMenu); // Reusa a função toggleVisibility
+        });
+
+        btnResetOfflineDB.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (confirm('TEM CERTEZA?\n\nIsso limpará TODOS os mapas salvos para o modo offline. Você precisará baixá-los novamente.')) {
+                console.log("Limpando banco de dados IndexedDB...");
+                // DB_NAME é a constante global que você já definiu ('KMZOfflineDB')
+                const deleteRequest = indexedDB.deleteDatabase(DB_NAME);
+                
+                deleteRequest.onsuccess = () => {
+                    alert('Cache de mapas offline foi limpo. A página será recarregada.');
+                    location.reload();
+                };
+                deleteRequest.onerror = (err) => {
+                    console.error("Erro ao deletar DB:", err);
+                    alert('Erro ao limpar o cache de mapas.');
+                };
+                deleteRequest.onblocked = () => {
+                    // Isso acontece se outra aba estiver com o DB aberto
+                    console.warn("Delete DB bloqueado. Feche outras abas.");
+                    alert('Não foi possível limpar o cache. Por favor, feche todas as outras abas deste site e tente novamente.');
+                };
+            }
+        });
+
+        btnResetLocalStorage.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (confirm('TEM CERTEZA?\n\nIsso limpará todas as suas configurações salvas (cores, arquivos recentes, estado do modo offline).')) {
+                console.log("Limpando localStorage...");
+                localStorage.clear();
+                alert('Configurações resetadas. A página será recarregada.');
+                location.reload();
+            }
+        });
+
+        btnResetAllStorage.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (confirm('TEM CERTEZA ABSOLUTA?\n\nIsso limpará TODAS as configurações E TODOS os mapas offline salvos. A aplicação será resetada ao estado inicial.')) {
+                console.log("Limpando localStorage e IndexedDB...");
+                
+                // Limpa Configurações
+                localStorage.clear();
+                
+                // Limpa Cache Offline
+                const deleteRequest = indexedDB.deleteDatabase(DB_NAME);
+                
+                deleteRequest.onsuccess = () => {
+                    alert('Todos os dados foram resetados. A página será recarregada.');
+                    location.reload();
+                };
+                deleteRequest.onerror = (err) => {
+                    console.error("Erro ao deletar DB:", err);
+                    alert('Erro ao limpar o cache de mapas, mas as configurações foram limpas. Recarregando...');
+                    location.reload();
+                };
+                deleteRequest.onblocked = () => {
+                    alert('Não foi possível limpar o cache. Por favor, feche todas as outras abas deste site e tente novamente.');
+                };
+            }
+        });
+
+        // ==== FUNÇÃO toggleVisibility ATUALIZADA ====
         function toggleVisibility(element) {
             // Array de menus para toggle de visibilidade
-            [kmzMenu, lineMenu, loadedFilesMenu, styleMenu, markerGroupMenu, offlineMenu, routePanel].forEach(menu => {
+            [kmzMenu, lineMenu, loadedFilesMenu, styleMenu, markerGroupMenu, offlineMenu, routePanel, storageMenu].forEach(menu => {
                 if (menu !== element) {
                     // Não esconde o painel de rota se ele já estiver visível
                     if (menu === routePanel && state.isRoutePlanning) {
-                         // não faz nada
+                        // não faz nada
                     } else {
                         menu.style.display = 'none';
                     }
                 }
             });
             
-            // Lógica especial para o painel de rota, que é controlado pelo state.isRoutePlanning
-            if (element === routePanel) {
-                if (state.isRoutePlanning) {
-                    element.style.display = 'flex';
-                } else {
-                    element.style.display = 'none';
+            // Lógica especial para painéis que usam 'flex'
+            if (element === routePanel || element === offlineMenu || element === storageMenu) {
+                
+                if (element === routePanel) {
+                     if (state.isRoutePlanning) {
+                         element.style.display = 'flex';
+                     } else {
+                         element.style.display = 'none';
+                     }
+                } 
+                // Lógica para offlineMenu e storageMenu
+                else {
+                     element.style.display = (element.style.display === 'flex') ? 'none' : 'flex';
                 }
             } else {
+                // Menus antigos que usam 'block'
                  element.style.display = (element.style.display === 'block') ? 'none' : 'block';
             }
         }
@@ -2112,8 +2473,8 @@
                              console.warn('Coordenada fora do intervalo encontrada:', coords);
                          }
                     } else if (Array.isArray(coords)) {
-                        coords.forEach(c => extractCoords(c)); // Recursivo para arrays aninhados
-                    }
+                         coords.forEach(c => extractCoords(c)); // Recursivo para arrays aninhados
+                     }
                 }
                 extractCoords(feature.geometry.coordinates);
 
@@ -2344,7 +2705,7 @@
                          map.flyTo({ center: center, zoom: 16 });
                          searchResults.style.display = 'none';
                     } else {
-                        alert('Não foi possível encontrar o centro deste item.');
+                         alert('Não foi possível encontrar o centro deste item.');
                     }
                 };
 
