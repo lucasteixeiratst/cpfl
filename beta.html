@@ -1796,8 +1796,8 @@
                             const lat = coordinates[1];
                             const lng = coordinates[0];
                            
-                            // Link de rota individual (Google Maps)
-                            const url = `http://googleusercontent.com/maps/google.com/0{lat},${lng}&travelmode=driving&dir_action=navigate`;
+                            // *** CORREÇÃO 1: Link de rota individual (Google Maps) ***
+                            const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
                             window.open(url, '_blank');
                         });
                     }
@@ -2726,8 +2726,8 @@
                         const lat = center[1];
                         const lng = center[0];
                        
-                        // Link de rota da busca (Google Maps)
-                        const url = `http://googleusercontent.com/maps/google.com/0{lat},${lng}&travelmode=driving&dir_action=navigate`;
+                        // *** CORREÇÃO 2: Link de rota da busca (Google Maps) ***
+                        const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
                         window.open(url, '_blank');
                     } else {
                          alert('Coordenadas inválidas para gerar rota.');
@@ -2955,8 +2955,8 @@
                 .map(wp => `${wp.coordinates[1]},${wp.coordinates[0]}`) // Formato Lat,Lng
                 .join('|'); // O separador de parâmetro é |
 
-            // Constrói a URL final
-            let url = `http://googleusercontent.com/maps/google.com/0{destination}&travelmode=driving&dir_action=navigate`;
+            // *** CORREÇÃO 3: Constrói a URL final ***
+            let url = `https://www.google.com/maps/dir/?api=1&destination=${destination}&travelmode=driving`;
 
             if (waypointsString.length > 0) {
                 url += `&waypoints=${waypointsString}`;
