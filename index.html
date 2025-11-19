@@ -888,6 +888,11 @@
             <img src="ícones/database-zap.svg" alt="Limpar Dados"> 
             <div class="button-legend">Limpar Dados</div>
         </button>
+
+        <button id="btnSupport" aria-label="Grupo de Suporte">
+            <img src="ícones/handshake.svg" alt="Suporte">
+            <div class="button-legend">Suporte WhatsApp</div>
+        </button>
     </div>
     
     <div class="search-bar">
@@ -998,7 +1003,6 @@
     Todos direitos reservados a Lucas Teixeira • Atualizado em 18/11/2025
     
     <div style="margin-top:10px; font-size:10px; color:#777; line-height:1.6;">
-        <!-- Contador visível bonito (S12) -->
         <div>
             <script type='text/javascript' src='https://contador.s12.com.br/ad.js?id=WB1CDZ52wzww50W8'></script>
             <a href='https://contador.s12.com.br' target='_blank' style="text-decoration:none; opacity:0.7;">
@@ -1007,7 +1011,6 @@
             </a>
         </div>
         
-        <!-- Google Analytics 4 (invisível – estatísticas profissionais) -->
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-G7MC2S78V6"></script>
         <script>
           window.dataLayer = window.dataLayer || [];
@@ -2040,6 +2043,13 @@
             }
         });
 
+        // Listener do Botão de Suporte (WhatsApp)
+        document.getElementById('btnSupport').addEventListener('click', (e) => {
+            e.stopPropagation(); // Evita fechar outros menus se estiverem abertos
+            // Abre o link do grupo em uma nova aba
+            window.open('https://chat.whatsapp.com/KmBQvO3u5Pm53cV3XWz2dX', '_blank');
+        });
+
         // ==== FUNÇÃO toggleVisibility ATUALIZADA ====
         function toggleVisibility(element) {
             // Array de menus para toggle de visibilidade
@@ -2545,9 +2555,9 @@
                      if (Array.isArray(coords) && coords.length >= 2 && typeof coords[0] === 'number' && typeof coords[1] === 'number') {
                          // Verifica se são coordenadas válidas (longitude entre -180 e 180, latitude entre -90 e 90)
                         if (coords[0] >= -180 && coords[0] <= 180 && coords[1] >= -90 && coords[1] <= 90) {
-                            coordinates.push(coords);
+                           coordinates.push(coords);
                          } else {
-                            console.warn('Coordenada fora do intervalo encontrada:', coords);
+                           console.warn('Coordenada fora do intervalo encontrada:', coords);
                          }
                     } else if (Array.isArray(coords)) {
                          coords.forEach(c => extractCoords(c)); // Recursivo para arrays aninhados
@@ -3057,7 +3067,7 @@
             
             button.addEventListener('click', (e) => {
                 // Previne que cliques nos botões fechem os menus imediatamente
-                if (e.currentTarget.id !== 'btnSearch' && e.currentTarget.id !== 'btnReset' && e.currentTarget.id !== 'btnLocation' && e.currentTarget.id !== 'btnNames') {
+                if (e.currentTarget.id !== 'btnSearch' && e.currentTarget.id !== 'btnReset' && e.currentTarget.id !== 'btnLocation' && e.currentTarget.id !== 'btnNames' && e.currentTarget.id !== 'btnSupport') {
                     e.stopPropagation();
                 }
             });
