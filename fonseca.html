@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Visualizador de Mapas - Editor de Cores</title>
+    <title>Visualizador de Mapas - Com Ferramentas</title>
     <style>
-        /* O CSS permanece o mesmo do original */
         body, html {
             margin: 0;
             padding: 0;
@@ -20,6 +19,7 @@
             width: 100%;
         }
 
+        /* --- Menu com Scroll --- */
         .menu {
             position: absolute;
             top: 50%;
@@ -33,6 +33,21 @@
             flex-direction: column;
             align-items: center;
             padding: 10px 0;
+            max-height: 70vh; 
+            overflow-y: auto;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none;  /* IE e Edge */
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+
+        .menu::-webkit-scrollbar {
+            display: none;
+        }
+
+        .menu.hidden {
+            transform: translate(-200%, -50%);
+            opacity: 0;
+            pointer-events: none;
         }
 
         .menu button {
@@ -50,6 +65,7 @@
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
             cursor: pointer;
             transition: all 0.2s;
+            flex-shrink: 0;
         }
 
         .menu button:hover {
@@ -90,6 +106,31 @@
             padding: 10px;
             align-items: center;
             gap: 10px;
+        }
+
+        .toggle-menu-btn {
+            position: absolute;
+            top: 20px;
+            left: 340px;
+            width: 40px;
+            height: 40px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .toggle-menu-btn:hover {
+            background-color: #f0f0f0;
+        }
+        .toggle-menu-btn img {
+            width: 20px;
+            height: 20px;
         }
 
         .search-bar input {
@@ -180,117 +221,79 @@
             background-color: #357ae8;
         }
 
-        .kmz-menu {
+        /* Menus Flutuantes Genéricos */
+        .kmz-menu, .line-menu, .loaded-files-menu, .style-menu, .marker-group-menu, .offline-menu, .storage-menu, .tools-menu {
             position: absolute;
             top: 80px;
-            left: 80px;
+            left: 80px; /* Posição padrão, ajustada no CSS específico se precisar */
             background: #fff;
             border-radius: 8px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.2);
             z-index: 2000;
             padding: 10px;
             display: none;
-            width: 300px;
             max-height: 400px;
             overflow-y: auto;
         }
 
-        .kmz-menu ul {
+        .kmz-menu { width: 300px; }
+        .line-menu { left: 100px; width: 300px; }
+        .loaded-files-menu { left: 120px; width: 220px; }
+        .style-menu { left: 140px; width: 200px; }
+        .marker-group-menu { left: 160px; width: 240px; }
+        
+        /* ==== ESTILO DO MENU FERRAMENTAS (NOVO) ==== */
+        .tools-menu {
+            left: 180px;
+            width: 280px;
+            flex-direction: column;
+            gap: 15px;
+            padding: 15px;
+        }
+        .tools-menu h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        .tool-item {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+        .tool-item label {
+            font-size: 13px;
+            font-weight: bold;
+            color: #333;
+            display: flex;
+            justify-content: space-between;
+        }
+        .tool-item input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+        }
+        /* ============================================ */
+
+        .kmz-menu ul, .line-menu ul, .loaded-files-menu ul, .style-menu ul, .marker-group-menu ul {
             list-style: none;
             margin: 0;
             padding: 0;
         }
 
-        .kmz-menu li {
+        .kmz-menu li, .line-menu li, .style-menu li, .marker-group-menu li {
             padding: 8px 10px;
             cursor: pointer;
             border-bottom: 1px solid #f0f0f0;
         }
-
-        .kmz-menu li:hover {
-            background-color: #f0f0f0;
-        }
-
-        .kmz-menu li:last-child {
-            border-bottom: none;
-        }
-
-        .line-menu {
-            position: absolute;
-            top: 80px;
-            left: 100px;
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-            z-index: 2000;
-            padding: 10px;
-            display: none;
-            width: 300px; /* Aumentado para caber nomes maiores */
-        }
-
-        .line-menu ul {
-            list-style: none;
-            margin: 0;
-            padding: 0;
-            max-height: 300px; /* Aumentado */
-            overflow-y: auto;
-        }
-
-        .line-menu li {
-            padding: 8px 10px;
-            border-bottom: 1px solid #f0f0f0;
-        }
-
-        .line-menu li:last-child {
-            border-bottom: none;
-        }
-
-        .line-menu li label {
+        .kmz-menu li:hover, .style-menu li:hover { background-color: #f0f0f0; }
+        
+        .line-menu li label, .marker-group-menu li label {
             cursor: pointer;
             width: 100%; 
             display: flex;
             align-items: center;
-        }
-
-        .line-menu button {
-            background-color: #4285F4;
-            color: #fff;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 5px;
-            cursor: pointer;
-            margin: 5px 0;
-        }
-
-        .line-menu button:hover {
-            background-color: #357ae8;
-        }
-
-        .loaded-files-menu {
-            position: absolute;
-            top: 80px;
-            left: 120px;
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-            z-index: 2000;
-            padding: 10px;
-            display: none;
-            width: 220px;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-
-        .loaded-files-menu h3 {
-            margin: 0 0 10px 0;
-            font-size: 16px;
-            text-align: center;
-        }
-
-        .loaded-files-menu ul {
-            list-style: none;
-            margin: 0;
-            padding: 0;
         }
 
         .loaded-files-menu li {
@@ -300,11 +303,6 @@
             padding: 5px 0;
             border-bottom: 1px solid #f0f0f0;
         }
-
-        .loaded-files-menu li:last-child {
-            border-bottom: none;
-        }
-
         .loaded-files-menu li button {
             background-color: #e74c3c;
             color: white;
@@ -313,99 +311,6 @@
             border-radius: 4px;
             cursor: pointer;
             font-size: 10px;
-        }
-
-        .loaded-files-menu li button:hover {
-            background-color: #c0392b;
-        }
-
-        .style-menu {
-            position: absolute;
-            top: 80px;
-            left: 140px;
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-            z-index: 2000;
-            padding: 10px;
-            display: none;
-            width: 200px;
-        }
-
-        .style-menu ul {
-            list-style: none;
-            margin: 0;
-            padding: 0;
-        }
-
-        .style-menu li {
-            padding: 8px 10px;
-            cursor: pointer;
-            border-bottom: 1px solid #f0f0f0;
-        }
-
-        .style-menu li:hover {
-            background-color: #f0f0f0;
-        }
-
-        .style-menu li:last-child {
-            border-bottom: none;
-        }
-
-        .marker-group-menu {
-            position: absolute;
-            top: 80px;
-            left: 160px;
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-            z-index: 2000;
-            padding: 10px;
-            display: none;
-            width: 240px;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        .marker-group-menu h3 {
-            margin: 0 0 10px 0;
-            font-size: 16px;
-            text-align: center;
-        }
-        .marker-group-menu ul {
-            list-style: none;
-            margin: 0;
-            padding: 0;
-        }
-        .marker-group-menu li {
-            padding: 8px 10px;
-            border-bottom: 1px solid #f0f0f0;
-        }
-        .marker-group-menu li:last-child {
-            border-bottom: none;
-        }
-        .marker-group-menu li label {
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            font-weight: bold;
-        }
-        .marker-group-menu .color-box {
-            width: 15px;
-            height: 15px;
-            margin-right: 10px;
-            border: 1px solid #ccc;
-        }
-        .marker-group-menu button {
-            background-color: #4285F4;
-            color: #fff;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 5px;
-            cursor: pointer;
-            margin: 5px 0;
-        }
-        .marker-group-menu button:hover {
-            background-color: #357ae8;
         }
 
         footer {
@@ -419,17 +324,8 @@
         }
 
         .offline-menu {
-            position: absolute;
-            top: 80px;
-            left: 80px; 
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-            z-index: 2000;
-            padding: 15px;
             width: 300px;
             max-height: 450px;
-            display: none;
             flex-direction: column;
         }
         
@@ -456,9 +352,7 @@
             flex: 1;
             font-size: 12px;
         }
-        .offline-menu .offline-toggle-buttons button:hover {
-            background-color: #ddd;
-        }
+        .offline-menu .offline-toggle-buttons button:hover { background-color: #ddd; }
 
         .offline-menu-content {
             display: flex;
@@ -514,9 +408,7 @@
             width: 100%;
         }
         
-        .offline-controls button:hover {
-            background-color: #357ae8;
-        }
+        .offline-controls button:hover { background-color: #357ae8; }
 
         .switch {
             position: relative;
@@ -526,19 +418,12 @@
             flex-shrink: 0;
         }
 
-        .switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
+        .switch input { opacity: 0; width: 0; height: 0; }
 
         .slider {
             position: absolute;
             cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            top: 0; left: 0; right: 0; bottom: 0;
             background-color: #ccc;
             transition: .4s;
         }
@@ -546,36 +431,20 @@
         .slider:before {
             position: absolute;
             content: "";
-            height: 18px;
-            width: 18px;
-            left: 3px;
-            bottom: 3px;
+            height: 18px; width: 18px;
+            left: 3px; bottom: 3px;
             background-color: white;
             transition: .4s;
         }
 
-        input:checked + .slider {
-            background-color: #4285F4;
-        }
-
-        input:checked + .slider:before {
-            transform: translateX(26px);
-        }
-
-        .slider.round {
-            border-radius: 24px;
-        }
-
-        .slider.round:before {
-            border-radius: 50%;
-        }
+        input:checked + .slider { background-color: #4285F4; }
+        input:checked + .slider:before { transform: translateX(26px); }
+        .slider.round { border-radius: 24px; }
+        .slider.round:before { border-radius: 50%; }
 
         .progress-overlay {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.7);
             z-index: 9999;
             display: flex;
@@ -608,28 +477,8 @@
             transition: width 0.2s linear;
         }
 
-        #progressText {
-            font-size: 16px;
-            font-weight: bold;
-        }
-
-        .visibility-toggle {
-            padding-bottom: 10px;
-            margin-bottom: 10px;
-            border-bottom: 1px solid #eee;
-        }
-        .visibility-toggle label {
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .maplibregl-popup-content {
-            padding: 10px;
-            font-size: 13px;
-        }
-        .maplibregl-popup-close-button {
-            padding: 4px;
-        }
+        .maplibregl-popup-content { padding: 10px; font-size: 13px; }
+        .maplibregl-popup-close-button { padding: 4px; }
         
         .menu button#btnRoutePlanner.active {
             background-color: #d1e3ff;
@@ -650,18 +499,8 @@
             display: none;
             flex-direction: column;
         }
-        .route-panel h3 {
-            margin: 0 0 10px 0;
-            font-size: 16px;
-            text-align: center;
-        }
-        .route-panel p {
-            font-size: 12px;
-            color: #555;
-            margin: 0 0 10px 0;
-            border-bottom: 1px solid #f0f0f0;
-            padding-bottom: 10px;
-        }
+        .route-panel h3 { margin: 0 0 10px 0; font-size: 16px; text-align: center; }
+        .route-panel p { font-size: 12px; color: #555; margin: 0 0 10px 0; border-bottom: 1px solid #f0f0f0; padding-bottom: 10px; }
         .route-panel ul {
             list-style: decimal;
             margin: 0 0 10px 20px;
@@ -695,18 +534,12 @@
             margin-left: 10px;
             flex-shrink: 0;
         }
-        .route-panel li .remove-wp:hover {
-            background-color: #c0392b;
-        }
+        .route-panel li .remove-wp:hover { background-color: #c0392b; }
 
         .route-panel-footer {
             margin-top: 10px;
             border-top: 1px solid #f0f0f0;
             padding-top: 10px;
-        }
-        #routeCounter {
-            font-size: 12px;
-            color: #333;
         }
         .route-panel-buttons {
             display: flex;
@@ -728,42 +561,17 @@
             color: white;
             font-weight: bold;
         }
-        .route-panel button#btnGenerateRoute:hover {
-            background-color: #357ae8;
-        }
+        .route-panel button#btnGenerateRoute:hover { background-color: #357ae8; }
 
         .storage-menu {
-            position: absolute;
-            top: 80px;
-            left: 80px;
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-            z-index: 2000;
-            padding: 15px;
             width: 300px;
             display: none;
             flex-direction: column;
             gap: 10px;
         }
-        .storage-menu h3 {
-            margin: 0 0 5px 0;
-            font-size: 16px;
-            text-align: center;
-        }
-        .storage-menu p {
-            font-size: 12px;
-            color: #555;
-            text-align: center;
-            margin: 0 0 10px 0;
-            border-bottom: 1px solid #f0f0f0;
-            padding-bottom: 10px;
-        }
-        .storage-menu .storage-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
+        .storage-menu h3 { margin: 0 0 5px 0; font-size: 16px; text-align: center; }
+        .storage-menu p { font-size: 12px; color: #555; text-align: center; margin: 0 0 10px 0; border-bottom: 1px solid #f0f0f0; padding-bottom: 10px; }
+        .storage-menu .storage-buttons { display: flex; flex-direction: column; gap: 10px; }
         .storage-menu .storage-buttons button {
             border: none;
             padding: 12px;
@@ -776,39 +584,13 @@
             flex-direction: column;
             transition: background-color 0.2s;
         }
-        .storage-menu .storage-buttons button small {
-            font-size: 11px;
-            font-weight: normal;
-            opacity: 0.9;
-            margin-top: 4px;
-        }
-
-        .storage-menu .btn-danger {
-            background-color: #fbebee;
-            color: #c0392b;
-            border: 1px solid #e74c3c;
-        }
-        .storage-menu .btn-danger:hover {
-            background-color: #fadbd8;
-        }
-
-        .storage-menu .btn-warning {
-            background-color: #fef9e7;
-            color: #b08f00;
-            border: 1px solid #f1c40f;
-        }
-        .storage-menu .btn-warning:hover {
-            background-color: #fcf3cf;
-        }
-
-        .storage-menu .btn-danger-full {
-            background-color: #e74c3c;
-            color: white;
-            text-align: center;
-        }
-        .storage-menu .btn-danger-full:hover {
-            background-color: #c0392b;
-        }
+        .storage-menu .storage-buttons button small { font-size: 11px; font-weight: normal; opacity: 0.9; margin-top: 4px; }
+        .storage-menu .btn-danger { background-color: #fbebee; color: #c0392b; border: 1px solid #e74c3c; }
+        .storage-menu .btn-danger:hover { background-color: #fadbd8; }
+        .storage-menu .btn-warning { background-color: #fef9e7; color: #b08f00; border: 1px solid #f1c40f; }
+        .storage-menu .btn-warning:hover { background-color: #fcf3cf; }
+        .storage-menu .btn-danger-full { background-color: #e74c3c; color: white; text-align: center; }
+        .storage-menu .btn-danger-full:hover { background-color: #c0392b; }
 
     </style>
     <link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet" />
@@ -832,7 +614,16 @@
         </div>
     </div>
 
-    <div class="menu">
+    <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="Buscar no mapa..." />
+        <button id="btnSearch">Buscar</button>
+    </div>
+
+    <button id="btnToggleUI" class="toggle-menu-btn" title="Ocultar/Exibir Menu Lateral">
+        <img src="ícones/eye.svg" alt="Ver/Ocultar">
+    </button>
+
+    <div class="menu" id="mainMenu">
         <button id="btnKMZ" aria-label="Carregar arquivo KMZ ou KML">
             <img src="ícones/upload.svg" alt="Carregar KMZ/KML">
             <div class="button-legend">Carregar KMZ/KML</div>
@@ -849,6 +640,10 @@
         <button id="btnNames" aria-label="Exibir ou ocultar os nomes dos marcadores">
             <img src="ícones/text-align-start.svg" alt="Exibir/Ocultar Nomes">
             <div class="button-legend">Exibir/Ocultar Nomes</div>
+        </button>
+
+        <button id="btnTools" aria-label="Ferramentas de Visualização">
+            <img src="ícones/settings.svg" alt="Ferramentas"> <div class="button-legend">Ferramentas</div>
         </button>
 
         <button id="btnLocation" aria-label="Ir para minha localização atual">
@@ -887,10 +682,7 @@
         </button>
     </div>
     
-    <div class="search-bar">
-        <input type="text" id="searchInput" placeholder="Buscar no mapa..." />
-        <button id="btnSearch">Buscar</button>
-    </div>
+    
 
     <div id="searchResults" class="search-results"></div>
 
@@ -906,6 +698,25 @@
         <ul>
             <li id="selectDevice">Selecionar do dispositivo...</li>
         </ul>
+    </div>
+
+    <div class="tools-menu" id="toolsMenu" style="display: none;">
+        <h3>Ferramentas de Visualização</h3>
+        
+        <div class="tool-item">
+            <label>Espessura da Linha: <span id="valLineWidth">4</span>px</label>
+            <input type="range" id="rngLineWidth" min="1" max="15" value="4">
+        </div>
+
+        <div class="tool-item">
+            <label>Tamanho do Marcador: <span id="valMarkerSize">6</span>px</label>
+            <input type="range" id="rngMarkerSize" min="2" max="20" value="6">
+        </div>
+
+        <div class="tool-item">
+            <label>Tamanho do Texto: <span id="valTextSize">12</span>px</label>
+            <input type="range" id="rngTextSize" min="8" max="24" value="12">
+        </div>
     </div>
 
     <div class="line-menu" id="lineMenu">
@@ -1056,6 +867,12 @@
                 '-RE': { color: 'green', visible: true },
                 'TR': { color: 'blue', visible: true },  
                 'default': { color: '#FF5722', visible: true }
+            },
+            // Configurações Visuais Padrão
+            visualSettings: {
+                lineWidth: 4,
+                markerSize: 6,
+                textSize: 12
             }
         };
 
@@ -1127,6 +944,16 @@
         const markerGroupMenu = document.getElementById('markerGroupMenu');
         const markerGroupsList = document.getElementById('markerGroupsList');
         
+        // NOVO: Menu Ferramentas
+        const btnTools = document.getElementById('btnTools');
+        const toolsMenu = document.getElementById('toolsMenu');
+        const rngLineWidth = document.getElementById('rngLineWidth');
+        const valLineWidth = document.getElementById('valLineWidth');
+        const rngMarkerSize = document.getElementById('rngMarkerSize');
+        const valMarkerSize = document.getElementById('valMarkerSize');
+        const rngTextSize = document.getElementById('rngTextSize');
+        const valTextSize = document.getElementById('valTextSize');
+
         const btnRoutePlanner = document.getElementById('btnRoutePlanner');
         const routePanel = document.getElementById('routePanel');
         const routeList = document.getElementById('routeList');
@@ -1147,6 +974,10 @@
         const progressOverlay = document.getElementById('progressOverlay');
         const progressBar = document.getElementById('progressBar');
         const progressText = document.getElementById('progressText');
+
+        // Toggle UI Button
+        const btnToggleUI = document.getElementById('btnToggleUI');
+        const mainMenu = document.getElementById('mainMenu');
 
         const toggleAllMarkersVisibilityCheckbox = document.getElementById('toggleAllMarkersVisibility');
         const toggleAllLinesVisibilityCheckbox = document.getElementById('toggleAllLinesVisibility');
@@ -1548,7 +1379,7 @@
 
 
         map.on('click', (e) => { 
-            if (!e.originalEvent.target.closest('.menu, .search-bar, .search-results, .kmz-menu, .line-menu, .loaded-files-menu, .style-menu, .marker-group-menu, .offline-menu, .maplibregl-popup, .route-panel, .storage-menu')) {
+            if (!e.originalEvent.target.closest('.menu, .search-bar, .search-results, .kmz-menu, .line-menu, .loaded-files-menu, .style-menu, .marker-group-menu, .offline-menu, .maplibregl-popup, .route-panel, .storage-menu, .toggle-menu-btn, .tools-menu')) {
                 kmzMenu.style.display = 'none';
                 lineMenu.style.display = 'none';
                 loadedFilesMenu.style.display = 'none';
@@ -1557,6 +1388,7 @@
                 markerGroupMenu.style.display = 'none';
                 offlineMenu.style.display = 'none'; 
                 storageMenu.style.display = 'none';
+                toolsMenu.style.display = 'none'; // Fecha menu ferramentas
             }
         });
 
@@ -1660,7 +1492,7 @@
                 type: 'circle',
                 source: 'dynamic-markers',
                 paint: {
-                    'circle-radius': 6,
+                    'circle-radius': state.visualSettings.markerSize, // Usa o valor do state
                     'circle-color': ['get', 'color'],
                     'circle-stroke-width': 2,
                     'circle-stroke-color': '#FFFFFF'
@@ -1674,7 +1506,7 @@
                 layout: {
                     'text-field': ['coalesce', ['get', 'name'], ['get', 'Alimentador']],
                     'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
-                    'text-size': 12,
+                    'text-size': state.visualSettings.textSize, // Usa o valor do state
                     'text-offset': [0, 1.5],
                     'visibility': state.namesVisible ? 'visible' : 'none'
                 },
@@ -1905,6 +1737,63 @@
             toggleVisibility(storageMenu); 
         });
 
+        // LOGICA DO BOTÃO OCULTAR/EXIBIR MENU
+        btnToggleUI.addEventListener('click', (e) => {
+            e.stopPropagation();
+            mainMenu.classList.toggle('hidden');
+        });
+
+        // LOGICA DO BOTÃO FERRAMENTAS (NOVO)
+        btnTools.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleVisibility(toolsMenu);
+        });
+
+        // LOGICA DOS SLIDERS DE FERRAMENTAS (NOVO)
+        function updateMapVisuals() {
+            // Atualizar Linhas
+            state.files.forEach(file => {
+                if (file.hasLines) {
+                    const lineLayerId = `lines-${file.sourceId}`;
+                    if (map.getLayer(lineLayerId)) {
+                        map.setPaintProperty(lineLayerId, 'line-width', parseInt(state.visualSettings.lineWidth));
+                    }
+                }
+            });
+
+            // Atualizar Marcadores
+            if (map.getLayer('dynamic-marker-circles')) {
+                map.setPaintProperty('dynamic-marker-circles', 'circle-radius', parseInt(state.visualSettings.markerSize));
+            }
+
+            // Atualizar Texto
+            if (map.getLayer('dynamic-marker-labels')) {
+                map.setLayoutProperty('dynamic-marker-labels', 'text-size', parseInt(state.visualSettings.textSize));
+            }
+        }
+
+        rngLineWidth.addEventListener('input', (e) => {
+            const val = e.target.value;
+            valLineWidth.textContent = val;
+            state.visualSettings.lineWidth = val;
+            updateMapVisuals();
+        });
+
+        rngMarkerSize.addEventListener('input', (e) => {
+            const val = e.target.value;
+            valMarkerSize.textContent = val;
+            state.visualSettings.markerSize = val;
+            updateMapVisuals();
+        });
+
+        rngTextSize.addEventListener('input', (e) => {
+            const val = e.target.value;
+            valTextSize.textContent = val;
+            state.visualSettings.textSize = val;
+            updateMapVisuals();
+        });
+
+
         btnResetOfflineDB.addEventListener('click', (e) => {
             e.stopPropagation();
             if (confirm('TEM CERTEZA?\n\nIsso limpará TODOS os mapas salvos para o modo offline. Você precisará baixá-los novamente.')) {
@@ -1966,7 +1855,7 @@
         });
 
         function toggleVisibility(element) {
-            [kmzMenu, lineMenu, loadedFilesMenu, styleMenu, markerGroupMenu, offlineMenu, routePanel, storageMenu].forEach(menu => {
+            [kmzMenu, lineMenu, loadedFilesMenu, styleMenu, markerGroupMenu, offlineMenu, routePanel, storageMenu, toolsMenu].forEach(menu => {
                 if (menu !== element) {
                     if (menu === routePanel && state.isRoutePlanning) {
                         // não faz nada
@@ -1976,7 +1865,7 @@
                 }
             });
             
-            if (element === routePanel || element === offlineMenu || element === storageMenu) {
+            if (element === routePanel || element === offlineMenu || element === storageMenu || element === toolsMenu) {
                 
                 if (element === routePanel) {
                      if (state.isRoutePlanning) {
@@ -2060,17 +1949,13 @@
             return toGeoJSON.kml(new DOMParser().parseFromString(kmlContent, 'text/xml'));
         }
 
-        // **** NOVA FUNÇÃO: Atualiza cor centralizadamente ****
         function applyColorUpdate(groupName, sourceId, newColor) {
-            // 1. Atualizar o mapa de cores e salvar
             groupColorMap.set(groupName, newColor);
             saveGroupColorMap();
 
-            // 2. Encontrar o arquivo correspondente
             const file = state.files.find(f => f.sourceId === sourceId);
             if (!file) return;
 
-            // 3. Atualizar propriedades no GeoJSON
             let featuresUpdated = false;
             file.lineFeatures.features.forEach(feature => {
                 if (feature.properties && feature.properties[file.groupingProperty] === groupName) {
@@ -2079,13 +1964,11 @@
                 }
             });
 
-            // 4. Atualizar o mapa
             if (featuresUpdated) {
                 const source = map.getSource(file.sourceId + '-lines');
                 if (source) source.setData(file.lineFeatures);
             }
 
-            // 5. Atualizar o Input Color no Menu (Sincronização Visual)
             const menuInput = document.querySelector(`input[type="color"][data-group-name="${groupName}"][data-source-id="${sourceId}"]`);
             if (menuInput) {
                 menuInput.value = newColor;
@@ -2181,18 +2064,26 @@
                     map.getSource(sourceId + '-lines').setData(lineFeatures); 
                 }
                 if (!map.getLayer(lineLayerId)) {
-                     map.addLayer({ id: lineLayerId, type: 'line', source: sourceId + '-lines', paint: { 'line-color': ['get', 'color'], 'line-width': 4 }, layout: { 'visibility': state.linesVisible ? 'visible' : 'none' } });
+                     map.addLayer({ 
+                         id: lineLayerId, 
+                         type: 'line', 
+                         source: sourceId + '-lines', 
+                         paint: { 
+                             'line-color': ['get', 'color'], 
+                             'line-width': parseInt(state.visualSettings.lineWidth) // USA O STATE
+                         }, 
+                         layout: { 
+                             'visibility': state.linesVisible ? 'visible' : 'none' 
+                         } 
+                     });
                      
-                     // **** CÓDIGO ATUALIZADO: Popup com Seletor de Cor ****
                      map.on('click', lineLayerId, (e) => {
                          e.originalEvent.stopPropagation(); 
                          const feature = e.features[0];
                          const name = feature.properties.Alimentador || feature.properties.name || 'Sem Nome';
                          const groupName = feature.properties[groupingProperty];
-                         // Obter cor atual
                          const currentColor = groupColorMap.get(groupName) || '#000000';
 
-                         // Criar container DOM para o popup
                          const popupContainer = document.createElement('div');
                          popupContainer.style.textAlign = "center";
                          
@@ -2213,10 +2104,9 @@
                          colorInput.value = currentColor;
                          colorInput.style.cursor = 'pointer';
                          
-                         // Evento ao mudar a cor no popup
                          colorInput.addEventListener('input', (ev) => {
                              const newColor = ev.target.value;
-                             applyColorUpdate(groupName, sourceId, newColor);
+                             applyColorUpdate(groupName, file.sourceId, newColor);
                          });
 
                          popupContainer.appendChild(colorInput);
@@ -2226,9 +2116,7 @@
                             .setDOMContent(popupContainer)
                             .addTo(map);
                      });
-                     // ****************************************************
 
-                     // Alterar cursor ao passar sobre a linha
                      map.on('mouseenter', lineLayerId, () => {
                          map.getCanvas().style.cursor = 'pointer';
                      });
@@ -2357,7 +2245,6 @@
                         lbl.appendChild(chk);
                         lbl.appendChild(document.createTextNode(' ' + grp));
                         
-                        // --- Seletor de Cor ---
                         const colorPicker = document.createElement('input');
                         colorPicker.type = 'color';
                         colorPicker.value = groupColor || '#CCCCCC'; 
@@ -2375,7 +2262,6 @@
                         colorPicker.onclick = (e) => e.stopPropagation(); 
 
                         lbl.appendChild(colorPicker);
-                        // --- Fim do Seletor de Cor ---
 
                         li.appendChild(lbl);
                         lineGroupsList.appendChild(li);
@@ -2757,10 +2643,10 @@
 
 
                  if (!map.getLayer('dynamic-marker-circles')) {
-                     map.addLayer({ id: 'dynamic-marker-circles', type: 'circle', source: 'dynamic-markers', paint: { 'circle-radius': 6, 'circle-color': ['get', 'color'], 'circle-stroke-width': 2, 'circle-stroke-color': '#FFFFFF' }});
+                     map.addLayer({ id: 'dynamic-marker-circles', type: 'circle', source: 'dynamic-markers', paint: { 'circle-radius': parseInt(state.visualSettings.markerSize), 'circle-color': ['get', 'color'], 'circle-stroke-width': 2, 'circle-stroke-color': '#FFFFFF' }});
                  }
                 if (!map.getLayer('dynamic-marker-labels')) {
-                     map.addLayer({ id: 'dynamic-marker-labels', type: 'symbol', source: 'dynamic-markers', layout: { 'text-field': ['coalesce', ['get', 'name'], ['get', 'Alimentador']], 'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'], 'text-size': 12, 'text-offset': [0, 1.5], visibility: state.namesVisible ? 'visible' : 'none' }, paint: { 'text-color': '#000000', 'text-halo-color': '#FFFFFF', 'text-halo-width': 1 } });
+                     map.addLayer({ id: 'dynamic-marker-labels', type: 'symbol', source: 'dynamic-markers', layout: { 'text-field': ['coalesce', ['get', 'name'], ['get', 'Alimentador']], 'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'], 'text-size': parseInt(state.visualSettings.textSize), 'text-offset': [0, 1.5], visibility: state.namesVisible ? 'visible' : 'none' }, paint: { 'text-color': '#000000', 'text-halo-color': '#FFFFFF', 'text-halo-width': 1 } });
                  }
 
                 state.files.forEach(file => {
@@ -2773,7 +2659,7 @@
                              map.addSource(sourceIdLines, { type: 'geojson', data: file.lineFeatures });
                          }
                          if (!map.getLayer(lineLayerId)) { 
-                             map.addLayer({ id: lineLayerId, type: 'line', source: sourceIdLines, paint: { 'line-color': ['get', 'color'], 'line-width': 4 }, layout: { 'visibility': state.linesVisible ? 'visible' : 'none' } });
+                             map.addLayer({ id: lineLayerId, type: 'line', source: sourceIdLines, paint: { 'line-color': ['get', 'color'], 'line-width': parseInt(state.visualSettings.lineWidth) }, layout: { 'visibility': state.linesVisible ? 'visible' : 'none' } });
                              
                              // **** RE-APLICAR LISTENERS (Estilo alterado) ****
                              map.on('click', lineLayerId, (e) => {
