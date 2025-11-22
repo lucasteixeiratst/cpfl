@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Visualizador de Mapas</title>
+    <title>Visualizador de Mapas - Editor de Cores</title>
     <style>
         /* O CSS permanece o mesmo do original */
         body, html {
@@ -19,11 +19,12 @@
             height: 100%;
             width: 100%;
         }
-    .menu {
-    position: absolute;
-    top: 100px; /* <--- Define 200px de distância do topo (aumente para descer mais) */
-    left: 20px;
-    transform: none;
+
+        .menu {
+            position: absolute;
+            top: 50%;
+            left: 20px;
+            transform: translateY(-50%);
             background-color: white;
             border-radius: 8px;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
@@ -56,7 +57,6 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
 
-        /* CSS para a tag <img> dos ícones */
         .menu button img {
             width: 22px;
             height: 22px;
@@ -225,13 +225,14 @@
             z-index: 2000;
             padding: 10px;
             display: none;
+            width: 300px; /* Aumentado para caber nomes maiores */
         }
 
         .line-menu ul {
             list-style: none;
             margin: 0;
             padding: 0;
-            max-height: 200px;
+            max-height: 300px; /* Aumentado */
             overflow-y: auto;
         }
 
@@ -246,6 +247,9 @@
 
         .line-menu li label {
             cursor: pointer;
+            width: 100%; 
+            display: flex;
+            align-items: center;
         }
 
         .line-menu button {
@@ -414,7 +418,6 @@
             z-index: 1001;
         }
 
-        /* ==== ESTILO DO MENU OFFLINE ==== */
         .offline-menu {
             position: absolute;
             top: 80px;
@@ -424,10 +427,10 @@
             box-shadow: 0 2px 6px rgba(0,0,0,0.2);
             z-index: 2000;
             padding: 15px;
-            width: 300px; /* Largura aumentada */
-            max-height: 450px; /* Altura máxima */
+            width: 300px;
+            max-height: 450px;
             display: none;
-            flex-direction: column; /* Organiza o conteúdo verticalmente */
+            flex-direction: column;
         }
         
         .offline-menu h3 {
@@ -472,14 +475,13 @@
             flex-grow: 1;
         }
 
-        /* Lista de arquivos */
         .offline-file-list {
             list-style: none;
             margin: 0;
             padding: 0;
-            overflow-y: auto; /* Permite rolagem da lista */
-            flex-grow: 1; /* Faz a lista ocupar o espaço restante */
-            max-height: 300px; /* Altura máxima para a lista */
+            overflow-y: auto;
+            flex-grow: 1;
+            max-height: 300px;
         }
         
         .offline-file-list li {
@@ -495,7 +497,6 @@
             gap: 8px;
         }
 
-        /* Controles (Botão Salvar) */
         .offline-controls {
             margin-top: 15px;
             padding-top: 10px;
@@ -516,15 +517,13 @@
         .offline-controls button:hover {
             background-color: #357ae8;
         }
-        /* ==== FIM ESTILO MENU OFFLINE ==== */
-
 
         .switch {
             position: relative;
             display: inline-block;
             width: 50px;
             height: 24px;
-            flex-shrink: 0; /* Impede que o switch encolha */
+            flex-shrink: 0;
         }
 
         .switch input {
@@ -624,7 +623,6 @@
             cursor: pointer;
         }
 
-        /* Estilo para popups do MapLibre (opcional, pode ajustar) */
         .maplibregl-popup-content {
             padding: 10px;
             font-size: 13px;
@@ -633,15 +631,11 @@
             padding: 4px;
         }
         
-        /* Estilos Rota */
-
-        /* Estilo para o botão de rota quando ativo */
         .menu button#btnRoutePlanner.active {
-            background-color: #d1e3ff; /* Um azul claro para indicar "ativo" */
+            background-color: #d1e3ff;
             box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
         }
 
-        /* Painel principal da rota */
         .route-panel {
             position: absolute;
             top: 20px;
@@ -653,7 +647,7 @@
             padding: 15px;
             width: 280px;
             max-height: 400px;
-            display: none; /* Começa oculto */
+            display: none;
             flex-direction: column;
         }
         .route-panel h3 {
@@ -738,18 +732,17 @@
             background-color: #357ae8;
         }
 
-        /* ==== NOVOS ESTILOS PARA O PAINEL DE ARMAZENAMENTO ==== */
         .storage-menu {
             position: absolute;
             top: 80px;
-            left: 80px; /* Perto dos outros menus */
+            left: 80px;
             background: #fff;
             border-radius: 8px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.2);
             z-index: 2000;
             padding: 15px;
             width: 300px;
-            display: none; /* Começa oculto */
+            display: none;
             flex-direction: column;
             gap: 10px;
         }
@@ -999,7 +992,7 @@
         </div>
     </div>
     <footer>
-    Todos direitos reservados a Lucas Teixeira • Atualizado em 18/11/2025
+    Todos direitos reservados a Lucas Teixeira • Atualizado em 21/11/2025
     
     <div style="margin-top:10px; font-size:10px; color:#777; line-height:1.6;">
         <div>
@@ -1022,9 +1015,7 @@
     <script>
         // Configurações Globais e Constantes
         const DB_NAME = 'KMZOfflineDB';
-        // **** CORREÇÃO DE VERSÃO ****
         const DB_VERSION = 3; 
-        // **************************
         const GEOJSON_STORE_NAME = 'geojson_files';
         const SPATIAL_INDEX_STORE_NAME = 'spatial_index';
         const MARKER_LIMIT = 500;
@@ -1048,7 +1039,6 @@
             'chaves': 'ch',
             'banco': 'bc',
             'bancos': 'bc'
-            // Adicionar mais mapeamentos conforme necessário
         };
 
         const state = {
@@ -1062,9 +1052,9 @@
             selectedGroups: new Map(),
             markerGroups: {
                 '-FU': { color: 'red', visible: true },
-                '-FA': { color: '#FFA500', visible: true }, // Cor 'laranja'
+                '-FA': { color: '#FFA500', visible: true },
                 '-RE': { color: 'green', visible: true },
-                'TR': { color: 'blue', visible: true },  // Nome visual 'TR'
+                'TR': { color: 'blue', visible: true },  
                 'default': { color: '#FF5722', visible: true }
             }
         };
@@ -1091,15 +1081,11 @@
         // Sistema de Cores (localStorage)
         let groupColorMap; // Será inicializado pela função abaixo
         
-        /**
-         * Carregar o mapa de cores de grupos do localStorage.
-         */
         function loadGroupColorMap() {
             const storedMap = localStorage.getItem('groupColorMap');
             if (storedMap) {
                 try {
                     const obj = JSON.parse(storedMap);
-                    // Converte o objeto salvo de volta para um Map
                     groupColorMap = new Map(Object.entries(obj));
                 } catch (e) {
                     console.error("Erro ao carregar mapa de cores:", e);
@@ -1110,12 +1096,8 @@
             }
         }
 
-        /**
-         * Salvar o mapa de cores de grupos no localStorage.
-         */
         function saveGroupColorMap() {
             try {
-                // Converte o Map para um objeto simples para salvar em JSON
                 const obj = Object.fromEntries(groupColorMap);
                 localStorage.setItem('groupColorMap', JSON.stringify(obj));
             } catch (e) {
@@ -1123,7 +1105,6 @@
             }
         }
         
-        // Carregar as cores salvas ao iniciar
         loadGroupColorMap(); 
 
         const map = new maplibregl.Map({
@@ -1146,7 +1127,6 @@
         const markerGroupMenu = document.getElementById('markerGroupMenu');
         const markerGroupsList = document.getElementById('markerGroupsList');
         
-        // Referências DOM (Planejador de Rota)
         const btnRoutePlanner = document.getElementById('btnRoutePlanner');
         const routePanel = document.getElementById('routePanel');
         const routeList = document.getElementById('routeList');
@@ -1154,13 +1134,11 @@
         const btnGenerateRoute = document.getElementById('btnGenerateRoute');
         const btnCancelRoute = document.getElementById('btnCancelRoute');
         
-        // Referências DOM (Menu Offline)
         const offlineMenu = document.getElementById('offlineMenu');
         const offlineToggle = document.getElementById('offlineToggle');
-        const offlineFileList = document.getElementById('offlineFileList'); // NOVO
-        const btnSaveOfflineCache = document.getElementById('btnSaveOfflineCache'); // NOVO
+        const offlineFileList = document.getElementById('offlineFileList'); 
+        const btnSaveOfflineCache = document.getElementById('btnSaveOfflineCache'); 
 
-        // ==== NOVAS REFERÊNCIAS DOM (Gerenciamento de Armazenamento) ====
         const storageMenu = document.getElementById('storageMenu');
         const btnResetOfflineDB = document.getElementById('btnResetOfflineDB');
         const btnResetLocalStorage = document.getElementById('btnResetLocalStorage');
@@ -1443,16 +1421,10 @@
             updateVisibleMarkers();
         }
 
-        /**
-         * NOVA LÓGICA: Esta função apenas ativa/desativa o MODO.
-         * Ela não constrói mais o cache.
-         */
         async function handleModeChange(isOffline) {
             clearMap();
             state.isOfflineMode = isOffline;
             
-            // **INÍCIO DA CORREÇÃO DO BUG**
-            // Desabilita/Habilita seletivamente os controles de carregamento online
             const kmzListUl = document.getElementById('kmzList');
             const selectDeviceLi = document.getElementById('selectDevice');
             
@@ -1465,7 +1437,6 @@
                 kmzListUl.style.opacity = '1';
                 selectDeviceLi.style.display = 'block';
             }
-            // **FIM DA CORREÇÃO DO BUG**
 
             if (isOffline) {
                 console.log("Ativando modo offline dinâmico...");
@@ -1493,10 +1464,9 @@
                 const filteredFeatures = allPointFeatures.filter(feature => visibleGroups.includes(feature.properties.group));
 
                 const sortedFeatures = filteredFeatures.map(feature => {
-                    // Verificação para garantir que geometry.coordinates existe e é um array
                     if (!feature || !feature.geometry || !Array.isArray(feature.geometry.coordinates) || feature.geometry.coordinates.length < 2) {
                         console.warn('Feature inválida encontrada:', feature);
-                        return { ...feature, properties: { ...feature.properties, distance: Infinity } }; // Retorna com distância infinita se inválido
+                        return { ...feature, properties: { ...feature.properties, distance: Infinity } };
                     }
                     const distance = computeDistance([mapCenter.lng, mapCenter.lat], feature.geometry.coordinates);
                     return { ...feature, properties: { ...feature.properties, distance: distance } };
@@ -1515,9 +1485,6 @@
             }, 150);
         }
 
-        /**
-         * NOVA LÓGICA: Esta função agora aceita os arquivos a serem construídos.
-         */
         async function buildOfflineDatabase(filesToCache) {
             if (!filesToCache || filesToCache.length === 0) {
                 alert("Nenhum arquivo selecionado para salvar no cache.");
@@ -1556,16 +1523,10 @@
             return await parseKMZ(arrayBuffer);
         }
 
-        // **** FUNÇÃO MODIFICADA ****
-        /**
-         * Salvar o GeoJSON E O ÍNDICE ESPACIAL no cache do IndexedDB.
-         */
         async function cacheKMZData(fileName, geojson) {
             try {
-                // 1. Salvar o GeoJSON
                 await saveDataToDB(GEOJSON_STORE_NAME, { name: fileName, geojson: geojson });
                 
-                // 2. NOVO: Calcular e salvar o índice espacial
                 const bounds = calculateBounds(geojson);
                 if (bounds) {
                     await saveDataToDB(SPATIAL_INDEX_STORE_NAME, { name: fileName, bounds: bounds });
@@ -1575,16 +1536,10 @@
                 console.error("[Cache DB] Erro ao salvar no IndexedDB.", e);
             }
        }
-       // **************************
 
-        /**
-         * Buscar o GeoJSON do cache do IndexedDB.
-         */
         async function getKMZFromCache(fileName) {
-            // Busca o objeto completo do IndexedDB
             const data = await getDataFromDB(GEOJSON_STORE_NAME, fileName);
             
-            // Verifica se o dado existe e retorna apenas o geojson
             if (data && data.geojson) {
                 return data.geojson;
             }
@@ -1593,7 +1548,6 @@
 
 
         map.on('click', (e) => { 
-            // Gerenciador de clique global para fechar menus
             if (!e.originalEvent.target.closest('.menu, .search-bar, .search-results, .kmz-menu, .line-menu, .loaded-files-menu, .style-menu, .marker-group-menu, .offline-menu, .maplibregl-popup, .route-panel, .storage-menu')) {
                 kmzMenu.style.display = 'none';
                 lineMenu.style.display = 'none';
@@ -1602,8 +1556,7 @@
                 searchResults.style.display = 'none';
                 markerGroupMenu.style.display = 'none';
                 offlineMenu.style.display = 'none'; 
-                storageMenu.style.display = 'none'; // ADICIONADO
-                // Não fechamos o routePanel aqui, pois ele é controlado pelo botão de Rota
+                storageMenu.style.display = 'none';
             }
         });
 
@@ -1616,15 +1569,13 @@
             localStorage.setItem('recentFiles', JSON.stringify(recentFiles));
         }
 
-        // ==== FUNÇÃO ADICIONADA ====
         function updateRecentExternalFiles(fileName) {
             let recentFiles = JSON.parse(localStorage.getItem('recentExternalFiles') || '[]');
             recentFiles = recentFiles.filter(f => f !== fileName);
             recentFiles.unshift(fileName);
-            recentFiles = recentFiles.slice(0, 5); // Limita aos 5 mais recentes
+            recentFiles = recentFiles.slice(0, 5);
             localStorage.setItem('recentExternalFiles', JSON.stringify(recentFiles));
         }
-        // ============================
 
         function displayFileList() {
             kmzList.innerHTML = '';
@@ -1653,15 +1604,11 @@
             });
         }
         
-        /**
-         * NOVO: Popula a lista de arquivos no menu offline.
-         */
         function populateOfflineFileList() {
             if (!offlineFileList) return;
             
             offlineFileList.innerHTML = '';
             
-            // Ordena os arquivos alfabeticamente para a lista
             const sortedFiles = [...predefinedFiles].sort((a, b) => a.name.localeCompare(b.name));
 
             sortedFiles.forEach((file) => {
@@ -1671,7 +1618,7 @@
                 
                 checkbox.type = 'checkbox';
                 checkbox.name = 'offlineFile';
-                checkbox.value = file.name; // Usamos o nome como identificador
+                checkbox.value = file.name;
                 
                 label.appendChild(checkbox);
                 label.appendChild(document.createTextNode(file.name));
@@ -1685,13 +1632,11 @@
         displayFileList();
         updateMarkerGroupMenu();
         
-        // NOVO: Popula a lista do menu offline assim que o script carregar
         populateOfflineFileList();
 
 
         map.on('load', () => {
 
-            // Exibe as legendas dos botões por 10 segundos ao carregar a página
             const legends = document.querySelectorAll('.button-legend');
             legends.forEach(legend => {
                 legend.style.display = 'block';
@@ -1700,7 +1645,7 @@
                 legends.forEach(legend => {
                     legend.style.display = 'none';
                 });
-            }, 5000); // 5 segundos
+            }, 5000);
 
 
             map.addSource('dynamic-markers', {
@@ -1747,10 +1692,8 @@
 
             const savedMode = localStorage.getItem('offlineMode') === 'true';
             offlineToggle.checked = savedMode;
-            // Atraso para garantir que o mapa esteja pronto
             setTimeout(() => handleModeChange(savedMode), 100); 
 
-            // Carregar os 2 últimos arquivos
             if (!savedMode) {
                 const recentFiles = JSON.parse(localStorage.getItem('recentFiles') || '[]');
                 const filesToLoad = recentFiles.slice(0, 2); 
@@ -1765,14 +1708,11 @@
                     });
                 }
 
-                // ==== BLOCO ADICIONADO ====
                 const recentExternalFiles = JSON.parse(localStorage.getItem('recentExternalFiles') || '[]');
                 if (recentExternalFiles.length > 0) {
                     console.log("Carregando arquivos externos recentes do cache:", recentExternalFiles);
-                    // Usar uma IIFE assíncrona para carregar do cache
                     (async () => {
                         for (const fileName of recentExternalFiles) {
-                            // getKMZFromCache já busca do IndexedDB
                             const cachedData = await getKMZFromCache(fileName); 
                             if (cachedData) {
                                 addDataToMap(cachedData, fileName);
@@ -1782,13 +1722,11 @@
                         }
                     })();
                 }
-                // =========================
 
-            } // Fim do if (!savedMode)
+            }
 
             // Lógica de Popups (Modo Rota vs. Modo Normal)
             map.on('click', 'dynamic-marker-circles', (e) => {
-                // Prevenir que o clique no marcador feche o popup imediatamente
                 e.originalEvent.stopPropagation();
 
                 if (!e.features || e.features.length === 0) return;
@@ -1797,7 +1735,6 @@
                 const coordinates = feature.geometry.coordinates.slice();
                 const properties = feature.properties;
                 const displayName = properties.name || properties.Alimentador || 'Sem nome';
-                // Usar um ID único baseado nas propriedades
                 const featureId = feature.id || (properties.name + coordinates.join('')).replace(/[^a-z0-9]/gi, '');
 
 
@@ -1807,9 +1744,7 @@
 
                 let popupHTML;
                 
-                // Verificar se o modo rota está ativo
                 if (state.isRoutePlanning) {
-                    // MODO ROTA: Mostrar o botão "Adicionar à Rota"
                     popupHTML = `
                         <div>
                             <strong>${displayName}</strong><br>
@@ -1819,7 +1754,6 @@
                         </div>
                     `;
                 } else {
-                    // MODO NORMAL: Mostrar o botão "Obter Rota (Google Maps)"
                     popupHTML = `
                         <div>
                             <strong>${displayName}</strong><br>
@@ -1838,7 +1772,6 @@
                     .setHTML(popupHTML)
                     .addTo(map);
 
-                // Adicionar o listener correto dependendo do modo
                 const popupElement = popup.getElement();
 
                 if (state.isRoutePlanning) {
@@ -1846,7 +1779,7 @@
                     if (addRouteBtn) {
                         addRouteBtn.addEventListener('click', () => {
                             addWaypointToRoute(feature); 
-                            popup.remove(); // Fecha o popup após adicionar
+                            popup.remove(); 
                         });
                     }
                 } else {
@@ -1855,8 +1788,6 @@
                         directionsBtn.addEventListener('click', () => {
                             const lat = coordinates[1];
                             const lng = coordinates[0];
-                            
-                            // *** CORREÇÃO 1: Link de rota individual (Google Maps) ***
                             const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
                             window.open(url, '_blank');
                         });
@@ -1869,24 +1800,21 @@
             });
 
             map.on('mouseleave', 'dynamic-marker-circles', () => {
-                // Só resetar o cursor se não estiver no modo rota
                 if (!state.isRoutePlanning) {
                     map.getCanvas().style.cursor = '';
                 }
             });
 
-        }); // Fim do map.on('load')
+        }); 
 
-        // Listener do Switch (Offline)
         offlineToggle.addEventListener('change', (event) => {
             const isChecked = event.target.checked;
             localStorage.setItem('offlineMode', isChecked);
             handleModeChange(isChecked);
         });
 
-        // NOVO: Listener do Botão Salvar Cache
         btnSaveOfflineCache.addEventListener('click', (e) => {
-            e.stopPropagation(); // Impede que o menu feche
+            e.stopPropagation(); 
             
             const checkedBoxes = offlineFileList.querySelectorAll('input[type="checkbox"]:checked');
             const filesToCache = [];
@@ -1900,16 +1828,14 @@
             });
             
             if (filesToCache.length > 0) {
-                // Chama a função modificada
                 buildOfflineDatabase(filesToCache);
             } else {
                 alert("Nenhum arquivo selecionado.");
             }
         });
 
-        // **** NOVO: Listeners para Selecionar/Deselecionar Todos ****
         document.getElementById('btnOfflineSelectAll').addEventListener('click', (e) => {
-            e.stopPropagation(); // Impede que o menu feche
+            e.stopPropagation(); 
             const checkboxes = offlineFileList.querySelectorAll('input[type="checkbox"]');
             checkboxes.forEach(box => {
                 box.checked = true;
@@ -1917,13 +1843,12 @@
         });
 
         document.getElementById('btnOfflineDeselectAll').addEventListener('click', (e) => {
-            e.stopPropagation(); // Impede que o menu feche
+            e.stopPropagation(); 
             const checkboxes = offlineFileList.querySelectorAll('input[type="checkbox"]');
             checkboxes.forEach(box => {
                 box.checked = false;
             });
         });
-        // **** FIM DOS NOVOS LISTENERS ****
 
 
         document.getElementById('btnKMZ').addEventListener('click', (e) => { e.stopPropagation(); toggleVisibility(kmzMenu); });
@@ -1955,12 +1880,11 @@
         
         document.getElementById('btnOfflineMenu').addEventListener('click', (e) => {
             e.stopPropagation();
-            toggleVisibility(offlineMenu); // Agora chama toggleVisibility
+            toggleVisibility(offlineMenu); 
         });
         
-        // Listeners de eventos (Planejador de Rota)
         btnRoutePlanner.addEventListener('click', (e) => {
-            e.stopPropagation(); // Previne que o map.on('click') feche os menus
+            e.stopPropagation();
             toggleRoutePlanning();
         });
         btnGenerateRoute.addEventListener('click', generateGoogleMapsUrl);
@@ -1976,18 +1900,15 @@
             toggleLines(e.target.checked);
         });
 
-        // ---- Listeners do Menu de Armazenamento (ADICIONADOS) ----
-
         document.getElementById('btnStorageMenu').addEventListener('click', (e) => {
             e.stopPropagation();
-            toggleVisibility(storageMenu); // Reusa a função toggleVisibility
+            toggleVisibility(storageMenu); 
         });
 
         btnResetOfflineDB.addEventListener('click', (e) => {
             e.stopPropagation();
             if (confirm('TEM CERTEZA?\n\nIsso limpará TODOS os mapas salvos para o modo offline. Você precisará baixá-los novamente.')) {
                 console.log("Limpando banco de dados IndexedDB...");
-                // DB_NAME é a constante global que você já definiu ('KMZOfflineDB')
                 const deleteRequest = indexedDB.deleteDatabase(DB_NAME);
                 
                 deleteRequest.onsuccess = () => {
@@ -1999,7 +1920,6 @@
                     alert('Erro ao limpar o cache de mapas.');
                 };
                 deleteRequest.onblocked = () => {
-                    // Isso acontece se outra aba estiver com o DB aberto
                     console.warn("Delete DB bloqueado. Feche outras abas.");
                     alert('Não foi possível limpar o cache. Por favor, feche todas as outras abas deste site e tente novamente.');
                 };
@@ -2021,10 +1941,8 @@
             if (confirm('TEM CERTEZA ABSOLUTA?\n\nIsso limpará TODAS as configurações E TODOS os mapas offline salvos. A aplicação será resetada ao estado inicial.')) {
                 console.log("Limpando localStorage e IndexedDB...");
                 
-                // Limpa Configurações
                 localStorage.clear();
                 
-                // Limpa Cache Offline
                 const deleteRequest = indexedDB.deleteDatabase(DB_NAME);
                 
                 deleteRequest.onsuccess = () => {
@@ -2042,19 +1960,14 @@
             }
         });
 
-        // Listener do Botão de Suporte (WhatsApp)
         document.getElementById('btnSupport').addEventListener('click', (e) => {
-            e.stopPropagation(); // Evita fechar outros menus se estiverem abertos
-            // Abre o link do grupo em uma nova aba
+            e.stopPropagation(); 
             window.open('https://chat.whatsapp.com/KmBQvO3u5Pm53cV3XWz2dX', '_blank');
         });
 
-        // ==== FUNÇÃO toggleVisibility ATUALIZADA ====
         function toggleVisibility(element) {
-            // Array de menus para toggle de visibilidade
             [kmzMenu, lineMenu, loadedFilesMenu, styleMenu, markerGroupMenu, offlineMenu, routePanel, storageMenu].forEach(menu => {
                 if (menu !== element) {
-                    // Não esconde o painel de rota se ele já estiver visível
                     if (menu === routePanel && state.isRoutePlanning) {
                         // não faz nada
                     } else {
@@ -2063,22 +1976,19 @@
                 }
             });
             
-            // Lógica especial para painéis que usam 'flex'
             if (element === routePanel || element === offlineMenu || element === storageMenu) {
                 
                 if (element === routePanel) {
                      if (state.isRoutePlanning) {
                           element.style.display = 'flex';
-                     } else {
+                      } else {
                           element.style.display = 'none';
-                     }
+                      }
                 } 
-                // Lógica para offlineMenu e storageMenu
                 else {
-                     element.style.display = (element.style.display === 'flex') ? 'none' : 'flex';
+                      element.style.display = (element.style.display === 'flex') ? 'none' : 'flex';
                 }
             } else {
-                // Menus antigos que usam 'block'
                  element.style.display = (element.style.display === 'block') ? 'none' : 'block';
             }
         }
@@ -2099,7 +2009,7 @@
                 return;
             }
 
-            const cachedData = await getKMZFromCache(fileName); // Usa await
+            const cachedData = await getKMZFromCache(fileName); 
             if (cachedData) {
                 addDataToMap(cachedData, fileName);
                 return;
@@ -2111,7 +2021,6 @@
             if(geojson) addDataToMap(geojson, fileName);
         }
 
-        // **** FUNÇÃO MODIFICADA ****
         function handleFile(event) {
             if (state.isOfflineMode) {
                 console.log("Modo offline ativo. Upload do dispositivo desativado.");
@@ -2129,7 +2038,6 @@
                     
                     addDataToMap(data, file.name);
 
-                    // NOVO: Adiciona à lista de recarregamento de arquivos externos
                     updateRecentExternalFiles(file.name); 
 
                 } catch (error) {
@@ -2143,7 +2051,6 @@
                 reader.readAsText(file);
             }
         }
-        // **************************
 
         async function parseKMZ(data) {
             const zip = await JSZip.loadAsync(data);
@@ -2151,6 +2058,41 @@
             if (!kmlFile) throw new Error('Arquivo KML não encontrado dentro do KMZ.');
             const kmlContent = await kmlFile.async('string');
             return toGeoJSON.kml(new DOMParser().parseFromString(kmlContent, 'text/xml'));
+        }
+
+        // **** NOVA FUNÇÃO: Atualiza cor centralizadamente ****
+        function applyColorUpdate(groupName, sourceId, newColor) {
+            // 1. Atualizar o mapa de cores e salvar
+            groupColorMap.set(groupName, newColor);
+            saveGroupColorMap();
+
+            // 2. Encontrar o arquivo correspondente
+            const file = state.files.find(f => f.sourceId === sourceId);
+            if (!file) return;
+
+            // 3. Atualizar propriedades no GeoJSON
+            let featuresUpdated = false;
+            file.lineFeatures.features.forEach(feature => {
+                if (feature.properties && feature.properties[file.groupingProperty] === groupName) {
+                    feature.properties.color = newColor;
+                    featuresUpdated = true;
+                }
+            });
+
+            // 4. Atualizar o mapa
+            if (featuresUpdated) {
+                const source = map.getSource(file.sourceId + '-lines');
+                if (source) source.setData(file.lineFeatures);
+            }
+
+            // 5. Atualizar o Input Color no Menu (Sincronização Visual)
+            const menuInput = document.querySelector(`input[type="color"][data-group-name="${groupName}"][data-source-id="${sourceId}"]`);
+            if (menuInput) {
+                menuInput.value = newColor;
+                if (menuInput.parentElement) {
+                    menuInput.parentElement.style.color = newColor;
+                }
+            }
         }
 
         function addDataToMap(geojson, fileName) {
@@ -2173,13 +2115,11 @@
                 return geometries;
             }
 
-            // **** LÓGICA ORIGINAL MANTIDA (COMO SOLICITADO) ****
             let groupingProperty = null;
             const exampleFeature = geojson.features.find(f => f.properties && (f.properties.Alimentador || f.properties.name));
             if (exampleFeature) {
                 groupingProperty = exampleFeature.properties.Alimentador ? 'Alimentador' : 'name';
             }
-            // ****************************************************
 
             geojson.features.forEach(feature => {
                 const features = extractGeometries(feature);
@@ -2190,14 +2130,13 @@
                         if (name.endsWith('-FU')) groupKey = '-FU';
                         else if (name.endsWith('-FA')) groupKey = '-FA';
                         else if (name.endsWith('-RE')) groupKey = '-RE';
-                        else if (name.endsWith('KVA')) groupKey = 'TR'; // Lógica para encontrar KVA, mas agrupa como TR
+                        else if (name.endsWith('KVA')) groupKey = 'TR'; 
 
                         f.properties.group = groupKey;
-                        // Certificar de que a cor é atribuída corretamente
                         if (state.markerGroups[groupKey]) {
                            f.properties.color = state.markerGroups[groupKey].color;
                         } else {
-                           f.properties.color = state.markerGroups['default'].color; // Cor padrão se o grupo não for encontrado
+                           f.properties.color = state.markerGroups['default'].color;
                         }
                         f.properties.fileName = fileName;
                         pointFeaturesToAdd.push(f);
@@ -2208,7 +2147,7 @@
                         if (!color) {
                             color = colorPalette[groupColorMap.size % colorPalette.length];
                             groupColorMap.set(groupName, color);
-                            saveGroupColorMap(); // Salva a cor padrão
+                            saveGroupColorMap(); 
                         }
                         f.properties.color = color;
                         lineFeaturesArray.push(f);
@@ -2236,24 +2175,76 @@
             });
 
             if (lineFeatures.features.length > 0) {
-                 // Verificação para evitar adicionar source/layer duplicado
                 if (!map.getSource(sourceId + '-lines')) {
                     map.addSource(sourceId + '-lines', { type: 'geojson', data: lineFeatures });
                 } else {
-                    map.getSource(sourceId + '-lines').setData(lineFeatures); // Atualiza se já existir
+                    map.getSource(sourceId + '-lines').setData(lineFeatures); 
                 }
                 if (!map.getLayer(lineLayerId)) {
                      map.addLayer({ id: lineLayerId, type: 'line', source: sourceId + '-lines', paint: { 'line-color': ['get', 'color'], 'line-width': 4 }, layout: { 'visibility': state.linesVisible ? 'visible' : 'none' } });
+                     
+                     // **** CÓDIGO ATUALIZADO: Popup com Seletor de Cor ****
+                     map.on('click', lineLayerId, (e) => {
+                         e.originalEvent.stopPropagation(); 
+                         const feature = e.features[0];
+                         const name = feature.properties.Alimentador || feature.properties.name || 'Sem Nome';
+                         const groupName = feature.properties[groupingProperty];
+                         // Obter cor atual
+                         const currentColor = groupColorMap.get(groupName) || '#000000';
+
+                         // Criar container DOM para o popup
+                         const popupContainer = document.createElement('div');
+                         popupContainer.style.textAlign = "center";
+                         
+                         const title = document.createElement('strong');
+                         title.textContent = name;
+                         popupContainer.appendChild(title);
+                         
+                         popupContainer.appendChild(document.createElement('br'));
+                         
+                         const label = document.createElement('label');
+                         label.textContent = "Mudar Cor: ";
+                         label.style.fontSize = "12px";
+                         label.style.marginRight = "5px";
+                         popupContainer.appendChild(label);
+
+                         const colorInput = document.createElement('input');
+                         colorInput.type = 'color';
+                         colorInput.value = currentColor;
+                         colorInput.style.cursor = 'pointer';
+                         
+                         // Evento ao mudar a cor no popup
+                         colorInput.addEventListener('input', (ev) => {
+                             const newColor = ev.target.value;
+                             applyColorUpdate(groupName, sourceId, newColor);
+                         });
+
+                         popupContainer.appendChild(colorInput);
+
+                         new maplibregl.Popup()
+                            .setLngLat(e.lngLat)
+                            .setDOMContent(popupContainer)
+                            .addTo(map);
+                     });
+                     // ****************************************************
+
+                     // Alterar cursor ao passar sobre a linha
+                     map.on('mouseenter', lineLayerId, () => {
+                         map.getCanvas().style.cursor = 'pointer';
+                     });
+                     map.on('mouseleave', lineLayerId, () => {
+                         if (!state.isRoutePlanning) { 
+                            map.getCanvas().style.cursor = '';
+                         }
+                     });
                  }
             }
-
 
             updateGroupMenu();
             updateLoadedFilesList(fileName);
 
             updateVisibleMarkers();
 
-            // **** CHAMADA MODIFICADA ****
             if (!state.isOfflineMode) cacheKMZData(fileName, geojson);
         }
 
@@ -2267,7 +2258,6 @@
 
             if (file.hasLines) {
                 const lineLayerId = `lines-${sourceId}`;
-                // Verificações antes de remover
                 if (map.getLayer(lineLayerId)) map.removeLayer(lineLayerId);
                 if (map.getSource(sourceId + '-lines')) map.removeSource(sourceId + '-lines');
             }
@@ -2338,7 +2328,6 @@
             }
         }
         
-        // Atualizar menu de grupos de linhas (com seletor de cor)
         function updateGroupMenu() {
             lineGroupsList.innerHTML = '';
             state.files.forEach(file => {
@@ -2355,8 +2344,8 @@
                     sortedGroups.forEach(grp => {
                         const li = document.createElement('li');
                         const lbl = document.createElement('label');
-                        lbl.style.display = 'flex'; // Para alinhar itens
-                        lbl.style.alignItems = 'center'; // Para alinhar itens
+                        lbl.style.display = 'flex'; 
+                        lbl.style.alignItems = 'center'; 
 
                         const chk = document.createElement('input');
                         chk.type = 'checkbox';
@@ -2371,22 +2360,18 @@
                         // --- Seletor de Cor ---
                         const colorPicker = document.createElement('input');
                         colorPicker.type = 'color';
-                        colorPicker.value = groupColor || '#CCCCCC'; // Usa a cor do grupo ou um padrão
-                        colorPicker.style.marginLeft = 'auto'; // Alinha à direita
+                        colorPicker.value = groupColor || '#CCCCCC'; 
+                        colorPicker.style.marginLeft = 'auto'; 
                         colorPicker.style.padding = '0';
                         colorPicker.style.border = 'none';
                         colorPicker.style.width = '30px';
                         colorPicker.style.height = '20px';
                         colorPicker.style.cursor = 'pointer';
                         
-                        // Adiciona os dados necessários para a função de callback
                         colorPicker.dataset.groupName = grp;
                         colorPicker.dataset.sourceId = file.sourceId;
 
-                        // Chama a nova função ao mudar a cor
                         colorPicker.onchange = handleColorChange;
-
-                        // Previne que o clique no seletor de cor acione o checkbox
                         colorPicker.onclick = (e) => e.stopPropagation(); 
 
                         lbl.appendChild(colorPicker);
@@ -2417,7 +2402,7 @@
                 const lineLayerId = `lines-${sourceId}`;
                 const groupingProperty = file.groupingProperty;
                 const selectedGroups = state.selectedGroups.get(sourceId);
-                if (!map.getLayer(lineLayerId)) return; // Adicionado verificação
+                if (!map.getLayer(lineLayerId)) return; 
                 if (!selectedGroups || selectedGroups.size === 0) map.setFilter(lineLayerId, ["==", groupingProperty, "___no_match___"]);
                 else map.setFilter(lineLayerId, ["in", groupingProperty, ...Array.from(selectedGroups)]);
             });
@@ -2457,58 +2442,19 @@
             state.files.forEach(file => {
                 if (file.hasLines) {
                     const lineLayerId = `lines-${file.sourceId}`;
-                    if (map.getLayer(lineLayerId)) map.setLayoutProperty(lineLayerId, 'visibility', visibility); // Adicionado verificação
+                    if (map.getLayer(lineLayerId)) map.setLayoutProperty(lineLayerId, 'visibility', visibility); 
                 }
             });
         }
         
-        // Callback: Mudança de cor do grupo de linha
-        /**
-         * Função chamada quando um seletor de cor no menu de linhas é alterado.
-         * Atualiza a cor no groupColorMap, no localStorage e na fonte de dados do mapa.
-         */
         function handleColorChange(event) {
             const newColor = event.target.value;
             const groupName = event.target.dataset.groupName;
             const sourceId = event.target.dataset.sourceId;
             
-            if (!groupName || !sourceId) {
-                console.error("Dados do grupo ausentes no seletor de cor.");
-                return;
-            }
+            if (!groupName || !sourceId) return;
 
-            // 1. Atualizar o mapa de cores e salva no localStorage
-            groupColorMap.set(groupName, newColor);
-            saveGroupColorMap();
-
-            // 2. Encontrar o arquivo correspondente no estado
-            const file = state.files.find(f => f.sourceId === sourceId);
-            if (!file) {
-                    console.error("Arquivo não encontrado para o sourceId:", sourceId);
-                    return;
-            }
-
-            // 3. Atualizar a propriedade 'color' nas features do GeoJSON
-            let featuresUpdated = false;
-            file.lineFeatures.features.forEach(feature => {
-                if (feature.properties && feature.properties[file.groupingProperty] === groupName) {
-                    feature.properties.color = newColor;
-                    featuresUpdated = true;
-                }
-            });
-
-            // 4. Atualizar a fonte (source) no mapa para refletir a nova cor
-            if (featuresUpdated) {
-                const source = map.getSource(file.sourceId + '-lines');
-                if (source) {
-                    source.setData(file.lineFeatures);
-                }
-            }
-
-            // 5. (Opcional) Atualizar a cor do texto do label no menu
-            if (event.target.parentElement) {
-                event.target.parentElement.style.color = newColor;
-            }
+            applyColorUpdate(groupName, sourceId, newColor);
         }
 
 
@@ -2532,15 +2478,13 @@
         }
 
         function getFeatureCenter(feature) {
-             // Verificação para garantir que geometry e coordinates existem
             if (!feature || !feature.geometry || !Array.isArray(feature.geometry.coordinates)) {
                 console.warn('Tentativa de obter centro de feature inválida:', feature);
-                return null; // Retorna null se a geometria for inválida
+                return null; 
             }
 
             let center;
             if (feature.geometry.type === 'Point') {
-                 // Verifica se as coordenadas são válidas
                 if (feature.geometry.coordinates.length >= 2 && typeof feature.geometry.coordinates[0] === 'number' && typeof feature.geometry.coordinates[1] === 'number') {
                     center = feature.geometry.coordinates;
                 } else {
@@ -2550,23 +2494,21 @@
             } else {
                 const coordinates = [];
                 function extractCoords(coords) {
-                    // Adiciona verificação para ter certeza que é um par de números
                      if (Array.isArray(coords) && coords.length >= 2 && typeof coords[0] === 'number' && typeof coords[1] === 'number') {
-                         // Verifica se são coordenadas válidas (longitude entre -180 e 180, latitude entre -90 e 90)
                         if (coords[0] >= -180 && coords[0] <= 180 && coords[1] >= -90 && coords[1] <= 90) {
                            coordinates.push(coords);
                          } else {
                            console.warn('Coordenada fora do intervalo encontrada:', coords);
                          }
                     } else if (Array.isArray(coords)) {
-                         coords.forEach(c => extractCoords(c)); // Recursivo para arrays aninhados
+                         coords.forEach(c => extractCoords(c)); 
                      }
                 }
                 extractCoords(feature.geometry.coordinates);
 
                 if(coordinates.length === 0) {
                      console.warn('Nenhuma coordenada válida encontrada para calcular o centro:', feature.geometry.coordinates);
-                    return null; // Retorna null se não houver coordenadas válidas
+                    return null; 
                 }
                 const lons = coordinates.map(coord => coord[0]);
                 const lats = coordinates.map(coord => coord[1]);
@@ -2577,12 +2519,6 @@
             return center;
         }
 
-
-        // Funções de Busca Avançada
-
-        /**
-         * Normalizar texto: remove acentos, converte para minúsculas e remove caracteres especiais.
-         */
         function normalizeText(text) {
             if (!text) return '';
             return text
@@ -2593,9 +2529,6 @@
                 .replace(/[^a-z0-9]/g, '');
         }
 
-        /**
-         * Calcular a "Distância de Levenshtein" para encontrar resultados com erros de digitação.
-         */
         function levenshteinDistance(s1, s2) {
             const track = Array(s2.length + 1).fill(null).map(() =>
                 Array(s1.length + 1).fill(null));
@@ -2618,9 +2551,6 @@
             return track[s2.length][s1.length];
         }
 
-        /**
-         * Função de busca principal com sistema de pontuação e priorização de números.
-         */
         async function searchFeatures() {
             const term = searchInput.value.toLowerCase().trim();
             if (!term) {
@@ -2678,7 +2608,6 @@
 
                     let score = 0;
 
-                    // Lógica de Pontuação com prioridades
                     if (isNumericSearch && numberRegex.test(nameLower)) {
                         score = 98;
                     }
@@ -2717,7 +2646,6 @@
 
                 matches.forEach(feature => {
                     const center = getFeatureCenter(feature);
-                    // Atribui distância apenas se o centro for válido
                     feature.properties.distance = center ? computeDistance(referencePoint, center) : Infinity;
                 });
 
@@ -2735,22 +2663,21 @@
 
 
         function computeDistance(coord1, coord2) {
-            // Adiciona verificação para coordenadas válidas
             if (!Array.isArray(coord1) || coord1.length < 2 || !Array.isArray(coord2) || coord2.length < 2 ||
                 typeof coord1[0] !== 'number' || typeof coord1[1] !== 'number' ||
                 typeof coord2[0] !== 'number' || typeof coord2[1] !== 'number') {
                 console.warn('Tentativa de calcular distância com coordenadas inválidas:', coord1, coord2);
-                return Infinity; // Retorna infinito se as coordenadas forem inválidas
+                return Infinity; 
             }
 
             const toRad = (value) => value * Math.PI / 180;
             const lat1 = coord1[1], lon1 = coord1[0], lat2 = coord2[1], lon2 = coord2[0];
-            const R = 6371e3; // Raio da Terra em metros
+            const R = 6371e3; 
             const φ1 = toRad(lat1), φ2 = toRad(lat2);
             const Δφ = toRad(lat2 - lat1), Δλ = toRad(lon2 - lon1);
             const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            return R * c; // Distância em metros
+            return R * c; 
         }
 
 
@@ -2765,19 +2692,16 @@
 
                 const displayName = result.properties.name || result.properties.Alimentador || 'Sem nome';
                 const fileName = result.properties.fileName || 'Arquivo desconhecido';
-                // Mostra distância apenas se for finita
                 const distanceText = result.properties.distance !== Infinity
                     ? `(${(result.properties.distance / 1000).toFixed(2)} km)`
                     : '(Dist. inválida)';
 
 
                 const term = searchInput.value;
-                // Previne erro se displayName não for string
                 const safeDisplayName = typeof displayName === 'string' ? displayName : JSON.stringify(displayName);
                  const highlightedName = safeDisplayName.replace(new RegExp(term.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi'), (match) => `<b>${match}</b>`);
 
                 
-                // Corrigir typo no display da busca
                 infoDiv.innerHTML = `${highlightedName} <small>${distanceText}</small><br><small><i>${fileName}</i></small>`;
 
                 const actionsDiv = document.createElement('div');
@@ -2803,7 +2727,6 @@
                         const lat = center[1];
                         const lng = center[0];
                         
-                        // *** CORREÇÃO 2: Link de rota da busca (Google Maps) ***
                         const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
                         window.open(url, '_blank');
                     } else {
@@ -2822,17 +2745,14 @@
             searchResults.style.display = 'block';
         }
 
-        // Fim - Funções de Busca
-
         function changeMapStyle(newStyleUrl) {
             map.once('styledata', () => {
-                // Readiciona a source e layers DEPOIS que o novo estilo carregar
                 if (!map.getSource('dynamic-markers')) {
                     map.addSource('dynamic-markers', {
                         type: 'geojson',
-                        data: { type: 'FeatureCollection', features: [] } // Inicializa vazio
+                        data: { type: 'FeatureCollection', features: [] } 
                     });
-                     dynamicMarkerSource = map.getSource('dynamic-markers'); // Atualiza a referência
+                    dynamicMarkerSource = map.getSource('dynamic-markers'); 
                  }
 
 
@@ -2843,29 +2763,79 @@
                      map.addLayer({ id: 'dynamic-marker-labels', type: 'symbol', source: 'dynamic-markers', layout: { 'text-field': ['coalesce', ['get', 'name'], ['get', 'Alimentador']], 'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'], 'text-size': 12, 'text-offset': [0, 1.5], visibility: state.namesVisible ? 'visible' : 'none' }, paint: { 'text-color': '#000000', 'text-halo-color': '#FFFFFF', 'text-halo-width': 1 } });
                  }
 
-                // Recria as sources e layers das linhas dos arquivos carregados
                 state.files.forEach(file => {
                     if (file.hasLines) {
                         const sourceIdLines = file.sourceId + '-lines';
                         const lineLayerId = `lines-${file.sourceId}`;
-                         if (!map.getSource(sourceIdLines)) { // Só adiciona se não existir
+                        const groupingProperty = file.groupingProperty; // Needed for context
+
+                         if (!map.getSource(sourceIdLines)) { 
                              map.addSource(sourceIdLines, { type: 'geojson', data: file.lineFeatures });
                          }
-                         if (!map.getLayer(lineLayerId)) { // Só adiciona se não existir
+                         if (!map.getLayer(lineLayerId)) { 
                              map.addLayer({ id: lineLayerId, type: 'line', source: sourceIdLines, paint: { 'line-color': ['get', 'color'], 'line-width': 4 }, layout: { 'visibility': state.linesVisible ? 'visible' : 'none' } });
+                             
+                             // **** RE-APLICAR LISTENERS (Estilo alterado) ****
+                             map.on('click', lineLayerId, (e) => {
+                                 e.originalEvent.stopPropagation(); 
+                                 const feature = e.features[0];
+                                 const name = feature.properties.Alimentador || feature.properties.name || 'Sem Nome';
+                                 const groupName = feature.properties[groupingProperty];
+                                 const currentColor = groupColorMap.get(groupName) || '#000000';
+
+                                 const popupContainer = document.createElement('div');
+                                 popupContainer.style.textAlign = "center";
+                                 
+                                 const title = document.createElement('strong');
+                                 title.textContent = name;
+                                 popupContainer.appendChild(title);
+                                 
+                                 popupContainer.appendChild(document.createElement('br'));
+                                 
+                                 const label = document.createElement('label');
+                                 label.textContent = "Mudar Cor: ";
+                                 label.style.fontSize = "12px";
+                                 label.style.marginRight = "5px";
+                                 popupContainer.appendChild(label);
+
+                                 const colorInput = document.createElement('input');
+                                 colorInput.type = 'color';
+                                 colorInput.value = currentColor;
+                                 colorInput.style.cursor = 'pointer';
+                                 
+                                 colorInput.addEventListener('input', (ev) => {
+                                     const newColor = ev.target.value;
+                                     applyColorUpdate(groupName, file.sourceId, newColor);
+                                 });
+
+                                 popupContainer.appendChild(colorInput);
+
+                                 new maplibregl.Popup()
+                                    .setLngLat(e.lngLat)
+                                    .setDOMContent(popupContainer)
+                                    .addTo(map);
+                             });
+
+                             map.on('mouseenter', lineLayerId, () => {
+                                 map.getCanvas().style.cursor = 'pointer';
+                             });
+                             map.on('mouseleave', lineLayerId, () => {
+                                 if (!state.isRoutePlanning) {
+                                    map.getCanvas().style.cursor = '';
+                                 }
+                             });
+                             // ******************************************************************
                          }
                     }
                 });
 
-                // Atualiza os dados dos marcadores e aplica filtros após recriar tudo
                 updateVisibleMarkers();
                 applyGroupFilter();
-                 applyMarkerGroupFilter(); // Garante que filtro de marcadores também seja aplicado
-                 toggleLines(state.linesVisible); // Reaplica visibilidade das linhas
-                 toggleNames(state.namesVisible); // Reaplica visibilidade dos nomes
+                 applyMarkerGroupFilter(); 
+                 toggleLines(state.linesVisible); 
+                 toggleNames(state.namesVisible); 
             });
 
-            // Define o novo estilo
             map.setStyle(newStyleUrl);
         }
 
@@ -2881,36 +2851,26 @@
             });
         }
         
-        // Funções do Planejador de Rota
-
-        /**
-         * Ativar ou desativar o modo de planejamento de rota.
-         */
         function toggleRoutePlanning() {
             state.isRoutePlanning = !state.isRoutePlanning;
             if (state.isRoutePlanning) {
                 routePanel.style.display = 'flex';
                 btnRoutePlanner.classList.add('active');
-                map.getCanvas().style.cursor = 'crosshair'; // Muda o cursor
-                updateRoutePanelUI(); // Atualiza a UI caso ela esteja vazia
+                map.getCanvas().style.cursor = 'crosshair'; 
+                updateRoutePanelUI(); 
             } else {
-                cancelRoutePlanning(); // Limpa tudo ao desativar
+                cancelRoutePlanning(); 
             }
         }
 
-        /**
-         * Adicionar um ponto (feature) à lista de waypoints da rota.
-         */
         function addWaypointToRoute(feature) {
             if (routeWaypoints.length >= MAX_WAYPOINTS) {
                 alert(`Você só pode adicionar até ${MAX_WAYPOINTS} pontos à rota.`);
                 return;
             }
             
-            // Garantir um ID único para a feature
             const featureId = feature.id || (feature.properties.name + feature.geometry.coordinates.join(','));
             
-            // Verificar se o ponto já foi adicionado
             if (routeWaypoints.some(wp => wp.id === featureId)) {
                 alert("Este ponto já foi adicionado à rota.");
                 return;
@@ -2919,22 +2879,16 @@
             const coordinates = feature.geometry.coordinates.slice();
             const name = feature.properties.name || feature.properties.Alimentador || 'Ponto sem nome';
 
-            // Adicionar à lista
             routeWaypoints.push({ id: featureId, name: name, coordinates: coordinates });
 
-            // Adicionar um marcador visual temporário
-            const routeMarker = new maplibregl.Marker({ color: '#f7b731' }) // Cor laranja/dourada
+            const routeMarker = new maplibregl.Marker({ color: '#f7b731' }) 
                 .setLngLat(coordinates)
                 .addTo(map);
             routeMarkers.push(routeMarker);
 
-            // Atualizar o painel
             updateRoutePanelUI();
         }
 
-        /**
-         * Atualizar o painel de UI da rota com os waypoints atuais.
-         */
         function updateRoutePanelUI() {
             routeList.innerHTML = '';
             if (routeWaypoints.length === 0) {
@@ -2946,14 +2900,13 @@
                     const span = document.createElement('span');
                     let displayName = wp.name;
                     
-                    // Definir o label (Parada / Destino)
                     if (index === routeWaypoints.length - 1) {
                         displayName += " (Destino)";
                     } else {
                         displayName += ` (Parada ${index + 1})`
                     }
                     span.textContent = displayName;
-                    span.title = wp.name; // Mostra o nome completo no hover
+                    span.title = wp.name; 
                     
                     const removeBtn = document.createElement('button');
                     removeBtn.textContent = 'X';
@@ -2968,87 +2921,60 @@
             routeCounter.textContent = `Pontos: ${routeWaypoints.length} / ${MAX_WAYPOINTS}`;
         }
 
-        /**
-         * Remover um waypoint da lista pelo seu índice.
-         */
         function removeWaypoint(index) {
-            // Remover da lista
             routeWaypoints.splice(index, 1);
             
-            // Remover o marcador do mapa
             if (routeMarkers[index]) {
                 routeMarkers[index].remove();
                 routeMarkers.splice(index, 1);
             }
 
-            // Atualizar a UI
             updateRoutePanelUI();
         }
 
-        /**
-         * Limpar o planejamento de rota e reseta o estado.
-         */
         function cancelRoutePlanning() {
-            // Remover todos os marcadores temporários do mapa
             routeMarkers.forEach(marker => marker.remove());
             routeMarkers = [];
             
-            // Limpar a lista de pontos
             routeWaypoints = [];
             
-            // Resetar a UI do painel
             updateRoutePanelUI();
             routePanel.style.display = 'none';
             
-            // Resetar o estado
             state.isRoutePlanning = false;
             btnRoutePlanner.classList.remove('active');
-            map.getCanvas().style.cursor = ''; // Restaura o cursor
+            map.getCanvas().style.cursor = ''; 
         }
 
 
-        /**
-         * Gerar e abrir a URL do Google Maps.
-         * A origem será SEMPRE o GPS do usuário (omitindo o parâmetro 'origin').
-         */
         function generateGoogleMapsUrl() {
-            // Agora, só precisamos de 1 ponto (o destino) para gerar uma rota.
             if (routeWaypoints.length < 1) {
                 alert("Adicione pelo menos um destino à rota.");
                 return;
             }
 
-            // O último ponto da lista é o destino final.
             const destinationPoint = routeWaypoints[routeWaypoints.length - 1];
-            const destLat = destinationPoint.coordinates[1]; // Google Maps usa Lat,Lng
+            const destLat = destinationPoint.coordinates[1]; 
             const destLng = destinationPoint.coordinates[0];
             const destination = `${destLat},${destLng}`;
 
-            // Todos os pontos ANTES do último são paradas (waypoints).
             const intermediatePoints = routeWaypoints.slice(0, -1);
             
-            // Constrói a string de waypoints (paradas)
             const waypointsString = intermediatePoints
-                .map(wp => `${wp.coordinates[1]},${wp.coordinates[0]}`) // Formato Lat,Lng
-                .join('|'); // O separador de parâmetro é |
+                .map(wp => `${wp.coordinates[1]},${wp.coordinates[0]}`) 
+                .join('|'); 
 
-            // *** CORREÇÃO 3: Constrói a URL final ***
             let url = `https://www.google.com/maps/dir/?api=1&destination=${destination}&travelmode=driving`;
 
             if (waypointsString.length > 0) {
                 url += `&waypoints=${waypointsString}`;
             }
 
-            // Abrir em uma nova aba
             window.open(url, '_blank');
 
-            // Limpar a rota após gerar
             cancelRoutePlanning();
         }
 
-        // Fim - Planejador de Rota
-
-        // ==== INÍCIO DA MUDANÇA (Correção do MouseOut) ====
         const menuButtons = document.querySelectorAll('.menu button');
         menuButtons.forEach(button => {
             button.addEventListener('mouseover', (e) => { 
@@ -3056,7 +2982,6 @@
                 if (legend) legend.style.display = 'block'; 
             });
             
-            // CORRIGIDO: O mouseout deve sempre esconder a legenda.
             button.addEventListener('mouseout', (e) => { 
                 const legend = button.querySelector('.button-legend'); 
                 if (legend) {
@@ -3065,13 +2990,11 @@
             });
             
             button.addEventListener('click', (e) => {
-                // Previne que cliques nos botões fechem os menus imediatamente
                 if (e.currentTarget.id !== 'btnSearch' && e.currentTarget.id !== 'btnReset' && e.currentTarget.id !== 'btnLocation' && e.currentTarget.id !== 'btnNames' && e.currentTarget.id !== 'btnSupport') {
                     e.stopPropagation();
                 }
             });
         });
-        // ==== FIM DA MUDANÇA ====
     </script>
 </body>
 </html>
