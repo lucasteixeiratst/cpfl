@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Visualizador de Mapas - Com Ferramentas</title>
+    <title>Visualizador de Mapas - Versão Final</title>
     <style>
         body, html {
             margin: 0;
@@ -19,7 +19,7 @@
             width: 100%;
         }
 
-        /* --- Menu com Scroll --- */
+        /* --- Menu Lateral e Botões --- */
         .menu {
             position: absolute;
             top: 50%;
@@ -35,14 +35,12 @@
             padding: 10px 0;
             max-height: 70vh; 
             overflow-y: auto;
-            scrollbar-width: none; /* Firefox */
-            -ms-overflow-style: none;  /* IE e Edge */
+            scrollbar-width: none;
+            -ms-overflow-style: none;
             transition: transform 0.3s ease, opacity 0.3s ease;
         }
 
-        .menu::-webkit-scrollbar {
-            display: none;
-        }
+        .menu::-webkit-scrollbar { display: none; }
 
         .menu.hidden {
             transform: translate(-200%, -50%);
@@ -78,6 +76,11 @@
             height: 22px;
         }
 
+        .menu button#btnRoutePlanner.active {
+            background-color: #d1e3ff;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
         .button-legend {
             position: absolute;
             top: 50%;
@@ -93,6 +96,7 @@
             display: none;
         }
 
+        /* --- Barra de Busca e Toggle UI --- */
         .search-bar {
             position: absolute;
             top: 20px;
@@ -125,13 +129,8 @@
             cursor: pointer;
             transition: background-color 0.3s;
         }
-        .toggle-menu-btn:hover {
-            background-color: #f0f0f0;
-        }
-        .toggle-menu-btn img {
-            width: 20px;
-            height: 20px;
-        }
+        .toggle-menu-btn:hover { background-color: #f0f0f0; }
+        .toggle-menu-btn img { width: 20px; height: 20px; }
 
         .search-bar input {
             flex: 1;
@@ -153,10 +152,7 @@
             cursor: pointer;
             transition: background-color 0.3s;
         }
-
-        .search-bar button:hover {
-            background-color: #357ae8;
-        }
+        .search-bar button:hover { background-color: #357ae8; }
 
         .search-results {
             position: absolute;
@@ -171,13 +167,7 @@
             z-index: 1000;
             display: none;
         }
-
-        .search-results ul {
-            list-style: none;
-            margin: 0;
-            padding: 0;
-        }
-
+        .search-results ul { list-style: none; margin: 0; padding: 0; }
         .search-results li {
             padding: 10px;
             border-bottom: 1px solid #f0f0f0;
@@ -185,28 +175,10 @@
             justify-content: space-between;
             align-items: center;
         }
-
-        .search-results .result-info {
-            flex-grow: 1;
-            cursor: default;
-        }
-
-        .search-results .result-info small {
-            color: #555;
-            font-size: 0.8em;
-        }
-
-        .search-results .result-actions {
-            display: flex;
-            gap: 5px;
-            flex-shrink: 0;
-            margin-left: 10px;
-        }
-
-        .search-results li:hover {
-            background-color: #f0f0f0;
-        }
-
+        .search-results li:hover { background-color: #f0f0f0; }
+        .search-results .result-info { flex-grow: 1; cursor: default; }
+        .search-results .result-info small { color: #555; font-size: 0.8em; }
+        .search-results .result-actions { display: flex; gap: 5px; flex-shrink: 0; margin-left: 10px; }
         .search-results button {
             background-color: #4285F4;
             color: white;
@@ -217,15 +189,11 @@
             font-size: 12px;
         }
 
-        .search-results button:hover {
-            background-color: #357ae8;
-        }
-
-        /* Menus Flutuantes Genéricos */
+        /* --- Menus Flutuantes Genéricos --- */
         .kmz-menu, .line-menu, .loaded-files-menu, .style-menu, .marker-group-menu, .offline-menu, .storage-menu, .tools-menu {
             position: absolute;
             top: 80px;
-            left: 80px; /* Posição padrão, ajustada no CSS específico se precisar */
+            left: 80px; 
             background: #fff;
             border-radius: 8px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.2);
@@ -241,10 +209,10 @@
         .loaded-files-menu { left: 120px; width: 220px; }
         .style-menu { left: 140px; width: 200px; }
         .marker-group-menu { left: 160px; width: 240px; }
-        
-        /* ==== ESTILO DO MENU FERRAMENTAS (NOVO) ==== */
+
+        /* Menu de Ferramentas (Corrigido) */
         .tools-menu {
-            left: 80px;
+            left: 80px; /* Ajustado para ficar alinhado */
             width: 280px;
             flex-direction: column;
             gap: 15px;
@@ -274,316 +242,90 @@
             width: 100%;
             cursor: pointer;
         }
-        /* ============================================ */
 
+        /* Listas dentro dos menus */
         .kmz-menu ul, .line-menu ul, .loaded-files-menu ul, .style-menu ul, .marker-group-menu ul {
-            list-style: none;
-            margin: 0;
-            padding: 0;
+            list-style: none; margin: 0; padding: 0;
         }
-
         .kmz-menu li, .line-menu li, .style-menu li, .marker-group-menu li {
-            padding: 8px 10px;
-            cursor: pointer;
-            border-bottom: 1px solid #f0f0f0;
+            padding: 8px 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0;
         }
         .kmz-menu li:hover, .style-menu li:hover { background-color: #f0f0f0; }
         
         .line-menu li label, .marker-group-menu li label {
-            cursor: pointer;
-            width: 100%; 
-            display: flex;
-            align-items: center;
+            cursor: pointer; width: 100%; display: flex; align-items: center;
+        }
+        .marker-group-menu .color-box {
+            width: 15px; height: 15px; margin-right: 10px; border: 1px solid #ccc;
         }
 
         .loaded-files-menu li {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 5px 0;
-            border-bottom: 1px solid #f0f0f0;
+            display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #f0f0f0;
         }
         .loaded-files-menu li button {
-            background-color: #e74c3c;
-            color: white;
-            border: none;
-            padding: 3px 6px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 10px;
+            background-color: #e74c3c; color: white; border: none; padding: 3px 6px; border-radius: 4px; cursor: pointer; font-size: 10px;
         }
 
-        footer {
-            position: absolute;
-            bottom: 5px;
-            width: 100%;
-            text-align: center;
-            font-size: 10px;
-            color: #555;
-            z-index: 1001;
-        }
-
-        .offline-menu {
-            width: 300px;
-            max-height: 450px;
-            flex-direction: column;
-        }
-        
-        .offline-menu h3 {
-            margin: 10px 0 10px 0;
-            font-size: 16px;
-            text-align: center;
-            border-top: 1px solid #eee;
-            padding-top: 15px;
-        }
-
-        .offline-menu .offline-toggle-buttons {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
+        /* Menu Offline */
+        .offline-menu { width: 300px; max-height: 450px; flex-direction: column; }
+        .offline-menu h3 { margin: 10px 0; font-size: 16px; text-align: center; border-top: 1px solid #eee; padding-top: 15px; }
+        .offline-menu .offline-toggle-buttons { display: flex; gap: 10px; margin-bottom: 10px; }
         .offline-menu .offline-toggle-buttons button {
-            background-color: #eee;
-            border: 1px solid #ccc;
-            color: #333;
-            padding: 5px;
-            border-radius: 5px;
-            cursor: pointer;
-            flex: 1;
-            font-size: 12px;
+            background-color: #eee; border: 1px solid #ccc; color: #333; padding: 5px; border-radius: 5px; cursor: pointer; flex: 1; font-size: 12px;
         }
-        .offline-menu .offline-toggle-buttons button:hover { background-color: #ddd; }
-
-        .offline-menu-content {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #eee;
-        }
-
-        .offline-menu-label {
-            font-weight: bold;
-            font-size: 14px;
-            flex-grow: 1;
-        }
-
-        .offline-file-list {
-            list-style: none;
-            margin: 0;
-            padding: 0;
-            overflow-y: auto;
-            flex-grow: 1;
-            max-height: 300px;
-        }
-        
-        .offline-file-list li {
-            padding: 6px 5px;
-            font-size: 13px;
-            border-bottom: 1px solid #f0f0f0;
-        }
-        
-        .offline-file-list li label {
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .offline-controls {
-            margin-top: 15px;
-            padding-top: 10px;
-            border-top: 1px solid #eee;
-            text-align: center;
-        }
-        
+        .offline-menu-content { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-bottom: 10px; border-bottom: 1px solid #eee; }
+        .offline-menu-label { font-weight: bold; font-size: 14px; flex-grow: 1; }
+        .offline-file-list { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex-grow: 1; max-height: 300px; }
+        .offline-file-list li { padding: 6px 5px; font-size: 13px; border-bottom: 1px solid #f0f0f0; }
+        .offline-file-list li label { cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        .offline-controls { margin-top: 15px; padding-top: 10px; border-top: 1px solid #eee; text-align: center; }
         .offline-controls button {
-            background-color: #4285F4;
-            color: #fff;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            width: 100%;
-        }
-        
-        .offline-controls button:hover { background-color: #357ae8; }
-
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 50px;
-            height: 24px;
-            flex-shrink: 0;
+            background-color: #4285F4; color: #fff; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; width: 100%;
         }
 
+        /* Switches e Sliders */
+        .switch { position: relative; display: inline-block; width: 50px; height: 24px; flex-shrink: 0; }
         .switch input { opacity: 0; width: 0; height: 0; }
-
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-        }
-
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 18px; width: 18px;
-            left: 3px; bottom: 3px;
-            background-color: white;
-            transition: .4s;
-        }
-
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; }
         input:checked + .slider { background-color: #4285F4; }
         input:checked + .slider:before { transform: translateX(26px); }
         .slider.round { border-radius: 24px; }
         .slider.round:before { border-radius: 50%; }
 
+        /* Overlay de Progresso */
         .progress-overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            z-index: 9999;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: white;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 9999; display: flex; justify-content: center; align-items: center; color: white;
         }
+        .progress-content { background: #333; padding: 30px; border-radius: 10px; text-align: center; width: 400px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        .progress-bar-container { width: 100%; background-color: #555; border-radius: 5px; margin: 15px 0; }
+        .progress-bar { width: 0%; height: 20px; background-color: #4285F4; border-radius: 5px; transition: width 0.2s linear; }
 
-        .progress-content {
-            background: #333;
-            padding: 30px;
-            border-radius: 10px;
-            text-align: center;
-            width: 400px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-        }
-
-        .progress-bar-container {
-            width: 100%;
-            background-color: #555;
-            border-radius: 5px;
-            margin: 15px 0;
-        }
-
-        .progress-bar {
-            width: 0%;
-            height: 20px;
-            background-color: #4285F4;
-            border-radius: 5px;
-            transition: width 0.2s linear;
-        }
-
+        /* Popups */
         .maplibregl-popup-content { padding: 10px; font-size: 13px; }
         .maplibregl-popup-close-button { padding: 4px; }
-        
-        .menu button#btnRoutePlanner.active {
-            background-color: #d1e3ff;
-            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
-        }
 
+        /* Painel de Rota */
         .route-panel {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-            z-index: 2000;
-            padding: 15px;
-            width: 280px;
-            max-height: 400px;
-            display: none;
-            flex-direction: column;
+            position: absolute; top: 20px; right: 20px; background: #fff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); z-index: 2000; padding: 15px; width: 280px; max-height: 400px; display: none; flex-direction: column;
         }
         .route-panel h3 { margin: 0 0 10px 0; font-size: 16px; text-align: center; }
         .route-panel p { font-size: 12px; color: #555; margin: 0 0 10px 0; border-bottom: 1px solid #f0f0f0; padding-bottom: 10px; }
-        .route-panel ul {
-            list-style: decimal;
-            margin: 0 0 10px 20px;
-            padding: 0;
-            max-height: 200px;
-            overflow-y: auto;
-            font-size: 13px;
-            flex-grow: 1;
-        }
-        .route-panel li {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 4px 0;
-        }
-        .route-panel li span {
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            padding-right: 10px;
-        }
-        .route-panel li .remove-wp {
-            background-color: #e74c3c;
-            color: white;
-            border: none;
-            padding: 2px 5px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 10px;
-            font-weight: bold;
-            margin-left: 10px;
-            flex-shrink: 0;
-        }
-        .route-panel li .remove-wp:hover { background-color: #c0392b; }
+        .route-panel ul { list-style: decimal; margin: 0 0 10px 20px; padding: 0; max-height: 200px; overflow-y: auto; font-size: 13px; flex-grow: 1; }
+        .route-panel li { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; }
+        .route-panel li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 10px; }
+        .route-panel li .remove-wp { background-color: #e74c3c; color: white; border: none; padding: 2px 5px; border-radius: 4px; cursor: pointer; font-size: 10px; font-weight: bold; margin-left: 10px; flex-shrink: 0; }
+        .route-panel-footer { margin-top: 10px; border-top: 1px solid #f0f0f0; padding-top: 10px; }
+        .route-panel-buttons { display: flex; justify-content: space-between; margin-top: 10px; }
+        .route-panel button { background-color: #ccc; color: #333; border: none; padding: 8px; border-radius: 5px; cursor: pointer; font-size: 13px; flex-basis: 48%; }
+        .route-panel button#btnGenerateRoute { background-color: #4285F4; color: white; font-weight: bold; }
 
-        .route-panel-footer {
-            margin-top: 10px;
-            border-top: 1px solid #f0f0f0;
-            padding-top: 10px;
-        }
-        .route-panel-buttons {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 10px;
-        }
-        .route-panel button {
-            background-color: #ccc;
-            color: #333;
-            border: none;
-            padding: 8px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 13px;
-            flex-basis: 48%;
-        }
-        .route-panel button#btnGenerateRoute {
-            background-color: #4285F4;
-            color: white;
-            font-weight: bold;
-        }
-        .route-panel button#btnGenerateRoute:hover { background-color: #357ae8; }
-
-        .storage-menu {
-            width: 300px;
-            display: none;
-            flex-direction: column;
-            gap: 10px;
-        }
+        /* Menu de Armazenamento */
+        .storage-menu { width: 300px; display: none; flex-direction: column; gap: 10px; }
         .storage-menu h3 { margin: 0 0 5px 0; font-size: 16px; text-align: center; }
         .storage-menu p { font-size: 12px; color: #555; text-align: center; margin: 0 0 10px 0; border-bottom: 1px solid #f0f0f0; padding-bottom: 10px; }
         .storage-menu .storage-buttons { display: flex; flex-direction: column; gap: 10px; }
-        .storage-menu .storage-buttons button {
-            border: none;
-            padding: 12px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: bold;
-            text-align: left;
-            display: flex;
-            flex-direction: column;
-            transition: background-color 0.2s;
-        }
+        .storage-menu .storage-buttons button { border: none; padding: 12px; border-radius: 5px; cursor: pointer; font-size: 13px; font-weight: bold; text-align: left; display: flex; flex-direction: column; transition: background-color 0.2s; }
         .storage-menu .storage-buttons button small { font-size: 11px; font-weight: normal; opacity: 0.9; margin-top: 4px; }
         .storage-menu .btn-danger { background-color: #fbebee; color: #c0392b; border: 1px solid #e74c3c; }
         .storage-menu .btn-danger:hover { background-color: #fadbd8; }
@@ -592,11 +334,11 @@
         .storage-menu .btn-danger-full { background-color: #e74c3c; color: white; text-align: center; }
         .storage-menu .btn-danger-full:hover { background-color: #c0392b; }
 
+        footer { position: absolute; bottom: 5px; width: 100%; text-align: center; font-size: 10px; color: #555; z-index: 1001; }
     </style>
     <link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet" />
     
     <script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
-    
     <script src="https://unpkg.com/@tmcw/togeojson"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.6.0/jszip.min.js"></script>
 </head>
@@ -1950,25 +1692,41 @@
         }
 
         function applyColorUpdate(groupName, sourceId, newColor) {
+            console.log(`Alterando cor do grupo ${groupName} para ${newColor}`); // Debug
+
+            // 1. Atualiza o mapa de cores global e salva
             groupColorMap.set(groupName, newColor);
             saveGroupColorMap();
 
+            // 2. Encontra o arquivo correto
             const file = state.files.find(f => f.sourceId === sourceId);
-            if (!file) return;
+            if (!file) {
+                console.error("Arquivo não encontrado para atualizar cor.");
+                return;
+            }
 
+            // 3. Atualiza as propriedades do GeoJSON em memória
             let featuresUpdated = false;
             file.lineFeatures.features.forEach(feature => {
+                // Verifica se a feature pertence ao grupo que estamos mudando
                 if (feature.properties && feature.properties[file.groupingProperty] === groupName) {
                     feature.properties.color = newColor;
                     featuresUpdated = true;
                 }
             });
 
+            // 4. Força o mapa a redesenhar a fonte de dados
             if (featuresUpdated) {
                 const source = map.getSource(file.sourceId + '-lines');
-                if (source) source.setData(file.lineFeatures);
+                if (source) {
+                    source.setData(file.lineFeatures);
+                    console.log("Fonte de dados atualizada com sucesso.");
+                } else {
+                    console.error("Source do mapa não encontrada.");
+                }
             }
 
+            // 5. Sincroniza com o seletor de cores do menu lateral (se estiver aberto)
             const menuInput = document.querySelector(`input[type="color"][data-group-name="${groupName}"][data-source-id="${sourceId}"]`);
             if (menuInput) {
                 menuInput.value = newColor;
@@ -1976,6 +1734,16 @@
                     menuInput.parentElement.style.color = newColor;
                 }
             }
+        }
+
+        function handleColorChange(event) {
+            const newColor = event.target.value;
+            const groupName = event.target.dataset.groupName;
+            const sourceId = event.target.dataset.sourceId;
+            
+            if (!groupName || !sourceId) return;
+
+            applyColorUpdate(groupName, sourceId, newColor);
         }
 
         function addDataToMap(geojson, fileName) {
@@ -2077,6 +1845,7 @@
                          } 
                      });
                      
+                     // *** CORREÇÃO PRINCIPAL DO POPUP DE COR ***
                      map.on('click', lineLayerId, (e) => {
                          e.originalEvent.stopPropagation(); 
                          const feature = e.features[0];
@@ -2104,9 +1873,10 @@
                          colorInput.value = currentColor;
                          colorInput.style.cursor = 'pointer';
                          
-                         colorInput.addEventListener('input', (ev) => {
+                         // *** USO DE 'change' PARA EVITAR BUGS ***
+                         colorInput.addEventListener('change', (ev) => {
                              const newColor = ev.target.value;
-                             applyColorUpdate(groupName, file.sourceId, newColor);
+                             applyColorUpdate(groupName, sourceId, newColor);
                          });
 
                          popupContainer.appendChild(colorInput);
@@ -2333,17 +2103,6 @@
             });
         }
         
-        function handleColorChange(event) {
-            const newColor = event.target.value;
-            const groupName = event.target.dataset.groupName;
-            const sourceId = event.target.dataset.sourceId;
-            
-            if (!groupName || !sourceId) return;
-
-            applyColorUpdate(groupName, sourceId, newColor);
-        }
-
-
         function resetView() {
             map.easeTo({ center: [-47.068847, -22.934973], zoom: 11 });
         }
@@ -2653,7 +2412,7 @@
                     if (file.hasLines) {
                         const sourceIdLines = file.sourceId + '-lines';
                         const lineLayerId = `lines-${file.sourceId}`;
-                        const groupingProperty = file.groupingProperty; // Needed for context
+                        const groupingProperty = file.groupingProperty; 
 
                          if (!map.getSource(sourceIdLines)) { 
                              map.addSource(sourceIdLines, { type: 'geojson', data: file.lineFeatures });
@@ -2661,7 +2420,6 @@
                          if (!map.getLayer(lineLayerId)) { 
                              map.addLayer({ id: lineLayerId, type: 'line', source: sourceIdLines, paint: { 'line-color': ['get', 'color'], 'line-width': parseInt(state.visualSettings.lineWidth) }, layout: { 'visibility': state.linesVisible ? 'visible' : 'none' } });
                              
-                             // **** RE-APLICAR LISTENERS (Estilo alterado) ****
                              map.on('click', lineLayerId, (e) => {
                                  e.originalEvent.stopPropagation(); 
                                  const feature = e.features[0];
@@ -2689,7 +2447,7 @@
                                  colorInput.value = currentColor;
                                  colorInput.style.cursor = 'pointer';
                                  
-                                 colorInput.addEventListener('input', (ev) => {
+                                 colorInput.addEventListener('change', (ev) => {
                                      const newColor = ev.target.value;
                                      applyColorUpdate(groupName, file.sourceId, newColor);
                                  });
@@ -2710,7 +2468,6 @@
                                     map.getCanvas().style.cursor = '';
                                  }
                              });
-                             // ******************************************************************
                          }
                     }
                 });
