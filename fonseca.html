@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Visualizador de Mapas - Versão Final</title>
+    <title>Visualizador de Mapas - Alinhado</title>
     <style>
         body, html {
             margin: 0;
@@ -189,11 +189,12 @@
             font-size: 12px;
         }
 
-        /* --- Menus Flutuantes Genéricos --- */
+        /* --- Menus Flutuantes Genéricos (AJUSTADO PARA ESQUERDA) --- */
+        /* Todos os menus agora abrem a 70px da esquerda, colados na barra */
         .kmz-menu, .line-menu, .loaded-files-menu, .style-menu, .marker-group-menu, .offline-menu, .storage-menu, .tools-menu {
             position: absolute;
             top: 80px;
-            left: 80px; 
+            left: 70px; /* <-- MUDANÇA AQUI: Mais para a esquerda */
             background: #fff;
             border-radius: 8px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.2);
@@ -204,15 +205,15 @@
             overflow-y: auto;
         }
 
+        /* Larguras específicas */
         .kmz-menu { width: 300px; }
-        .line-menu { left: 100px; width: 300px; }
-        .loaded-files-menu { left: 120px; width: 220px; }
-        .style-menu { left: 140px; width: 200px; }
-        .marker-group-menu { left: 160px; width: 240px; }
+        .line-menu { width: 300px; }
+        .loaded-files-menu { width: 220px; }
+        .style-menu { width: 200px; }
+        .marker-group-menu { width: 240px; }
 
-        /* Menu de Ferramentas (Corrigido) */
+        /* Menu de Ferramentas */
         .tools-menu {
-            left: 80px; /* Ajustado para ficar alinhado */
             width: 280px;
             flex-direction: column;
             gap: 15px;
@@ -1845,7 +1846,7 @@
                          } 
                      });
                      
-                     // *** CORREÇÃO PRINCIPAL DO POPUP DE COR ***
+                     // *** CONFIGURAÇÃO DO POPUP DE COR ***
                      map.on('click', lineLayerId, (e) => {
                          e.originalEvent.stopPropagation(); 
                          const feature = e.features[0];
