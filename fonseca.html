@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Visualizador de Mapas - Alinhado</title>
+    <title>Visualizador de Mapas</title>
     <style>
         body, html {
             margin: 0;
@@ -19,7 +19,6 @@
             width: 100%;
         }
 
-        /* --- Menu Lateral e Botões --- */
         .menu {
             position: absolute;
             top: 50%;
@@ -96,7 +95,6 @@
             display: none;
         }
 
-        /* --- Barra de Busca e Toggle UI --- */
         .search-bar {
             position: absolute;
             top: 20px;
@@ -189,12 +187,10 @@
             font-size: 12px;
         }
 
-        /* --- Menus Flutuantes Genéricos (AJUSTADO PARA ESQUERDA) --- */
-        /* Todos os menus agora abrem a 70px da esquerda, colados na barra */
         .kmz-menu, .line-menu, .loaded-files-menu, .style-menu, .marker-group-menu, .offline-menu, .storage-menu, .tools-menu {
             position: absolute;
             top: 80px;
-            left: 70px; /* <-- MUDANÇA AQUI: Mais para a esquerda */
+            left: 70px;
             background: #fff;
             border-radius: 8px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.2);
@@ -205,14 +201,12 @@
             overflow-y: auto;
         }
 
-        /* Larguras específicas */
         .kmz-menu { width: 300px; }
         .line-menu { width: 300px; }
         .loaded-files-menu { width: 220px; }
         .style-menu { width: 200px; }
         .marker-group-menu { width: 240px; }
 
-        /* Menu de Ferramentas */
         .tools-menu {
             width: 280px;
             flex-direction: column;
@@ -244,7 +238,6 @@
             cursor: pointer;
         }
 
-        /* Listas dentro dos menus */
         .kmz-menu ul, .line-menu ul, .loaded-files-menu ul, .style-menu ul, .marker-group-menu ul {
             list-style: none; margin: 0; padding: 0;
         }
@@ -267,7 +260,6 @@
             background-color: #e74c3c; color: white; border: none; padding: 3px 6px; border-radius: 4px; cursor: pointer; font-size: 10px;
         }
 
-        /* Menu Offline */
         .offline-menu { width: 300px; max-height: 450px; flex-direction: column; }
         .offline-menu h3 { margin: 10px 0; font-size: 16px; text-align: center; border-top: 1px solid #eee; padding-top: 15px; }
         .offline-menu .offline-toggle-buttons { display: flex; gap: 10px; margin-bottom: 10px; }
@@ -284,7 +276,6 @@
             background-color: #4285F4; color: #fff; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; width: 100%;
         }
 
-        /* Switches e Sliders */
         .switch { position: relative; display: inline-block; width: 50px; height: 24px; flex-shrink: 0; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; }
@@ -294,7 +285,6 @@
         .slider.round { border-radius: 24px; }
         .slider.round:before { border-radius: 50%; }
 
-        /* Overlay de Progresso */
         .progress-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 9999; display: flex; justify-content: center; align-items: center; color: white;
         }
@@ -302,11 +292,9 @@
         .progress-bar-container { width: 100%; background-color: #555; border-radius: 5px; margin: 15px 0; }
         .progress-bar { width: 0%; height: 20px; background-color: #4285F4; border-radius: 5px; transition: width 0.2s linear; }
 
-        /* Popups */
         .maplibregl-popup-content { padding: 10px; font-size: 13px; }
         .maplibregl-popup-close-button { padding: 4px; }
 
-        /* Painel de Rota */
         .route-panel {
             position: absolute; top: 20px; right: 20px; background: #fff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); z-index: 2000; padding: 15px; width: 280px; max-height: 400px; display: none; flex-direction: column;
         }
@@ -321,7 +309,6 @@
         .route-panel button { background-color: #ccc; color: #333; border: none; padding: 8px; border-radius: 5px; cursor: pointer; font-size: 13px; flex-basis: 48%; }
         .route-panel button#btnGenerateRoute { background-color: #4285F4; color: white; font-weight: bold; }
 
-        /* Menu de Armazenamento */
         .storage-menu { width: 300px; display: none; flex-direction: column; gap: 10px; }
         .storage-menu h3 { margin: 0 0 5px 0; font-size: 16px; text-align: center; }
         .storage-menu p { font-size: 12px; color: #555; text-align: center; margin: 0 0 10px 0; border-bottom: 1px solid #f0f0f0; padding-bottom: 10px; }
@@ -567,21 +554,16 @@
     </div>
 </footer>
     <script>
-        // Configurações Globais e Constantes
         const DB_NAME = 'KMZOfflineDB';
         const DB_VERSION = 3; 
         const GEOJSON_STORE_NAME = 'geojson_files';
         const SPATIAL_INDEX_STORE_NAME = 'spatial_index';
         const MARKER_LIMIT = 500;
         
-        // Estado para o planejamento de rota
         const MAX_WAYPOINTS = 10;
         let routeWaypoints = [];
         let routeMarkers = [];
 
-        /**
-         * Dicionário de sinônimos para a busca.
-         */
         const SYNONYM_MAP = {
             'fusivel': 'fu',
             'fusiveis': 'fu',
@@ -597,7 +579,7 @@
 
         const state = {
             isOfflineMode: false,
-            isRoutePlanning: false, // Flag para modo de rota
+            isRoutePlanning: false, 
             markersVisible: true,
             namesVisible: true,
             linesVisible: true,
@@ -611,7 +593,6 @@
                 'TR': { color: 'blue', visible: true },  
                 'default': { color: '#FF5722', visible: true }
             },
-            // Configurações Visuais Padrão
             visualSettings: {
                 lineWidth: 4,
                 markerSize: 6,
@@ -638,8 +619,7 @@
             '#F4A460', '#3B83BD', '#FFB6C1', '#FF4500', '#33A1C9', '#F5DEB3'
         ];
         
-        // Sistema de Cores (localStorage)
-        let groupColorMap; // Será inicializado pela função abaixo
+        let groupColorMap; 
         
         function loadGroupColorMap() {
             const storedMap = localStorage.getItem('groupColorMap');
@@ -687,7 +667,6 @@
         const markerGroupMenu = document.getElementById('markerGroupMenu');
         const markerGroupsList = document.getElementById('markerGroupsList');
         
-        // NOVO: Menu Ferramentas
         const btnTools = document.getElementById('btnTools');
         const toolsMenu = document.getElementById('toolsMenu');
         const rngLineWidth = document.getElementById('rngLineWidth');
@@ -718,7 +697,6 @@
         const progressBar = document.getElementById('progressBar');
         const progressText = document.getElementById('progressText');
 
-        // Toggle UI Button
         const btnToggleUI = document.getElementById('btnToggleUI');
         const mainMenu = document.getElementById('mainMenu');
 
@@ -844,7 +822,6 @@
              { name: 'VIRADOURO.kmz', url: './VIRADOURO.kmz' }
         ];
 
-        // Funções do IndexedDB (Cache Offline)
         function openDB() {
             return new Promise((resolve, reject) => {
                 const request = indexedDB.open(DB_NAME, DB_VERSION);
@@ -1016,7 +993,6 @@
                 console.log("Ativando modo offline dinâmico...");
                 map.on('moveend', updateVisibleLayers);
                 
-                // Apenas carrega o que quer que esteja no cache.
                 spatialIndex = await getDataFromDB(SPATIAL_INDEX_STORE_NAME);
                 updateVisibleLayers();
                 
@@ -1131,7 +1107,7 @@
                 markerGroupMenu.style.display = 'none';
                 offlineMenu.style.display = 'none'; 
                 storageMenu.style.display = 'none';
-                toolsMenu.style.display = 'none'; // Fecha menu ferramentas
+                toolsMenu.style.display = 'none'; 
             }
         });
 
@@ -1235,7 +1211,7 @@
                 type: 'circle',
                 source: 'dynamic-markers',
                 paint: {
-                    'circle-radius': state.visualSettings.markerSize, // Usa o valor do state
+                    'circle-radius': state.visualSettings.markerSize, 
                     'circle-color': ['get', 'color'],
                     'circle-stroke-width': 2,
                     'circle-stroke-color': '#FFFFFF'
@@ -1249,7 +1225,7 @@
                 layout: {
                     'text-field': ['coalesce', ['get', 'name'], ['get', 'Alimentador']],
                     'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
-                    'text-size': state.visualSettings.textSize, // Usa o valor do state
+                    'text-size': state.visualSettings.textSize, 
                     'text-offset': [0, 1.5],
                     'visibility': state.namesVisible ? 'visible' : 'none'
                 },
@@ -1300,7 +1276,6 @@
 
             }
 
-            // Lógica de Popups (Modo Rota vs. Modo Normal)
             map.on('click', 'dynamic-marker-circles', (e) => {
                 e.originalEvent.stopPropagation();
 
@@ -1480,21 +1455,17 @@
             toggleVisibility(storageMenu); 
         });
 
-        // LOGICA DO BOTÃO OCULTAR/EXIBIR MENU
         btnToggleUI.addEventListener('click', (e) => {
             e.stopPropagation();
             mainMenu.classList.toggle('hidden');
         });
 
-        // LOGICA DO BOTÃO FERRAMENTAS (NOVO)
         btnTools.addEventListener('click', (e) => {
             e.stopPropagation();
             toggleVisibility(toolsMenu);
         });
 
-        // LOGICA DOS SLIDERS DE FERRAMENTAS (NOVO)
         function updateMapVisuals() {
-            // Atualizar Linhas
             state.files.forEach(file => {
                 if (file.hasLines) {
                     const lineLayerId = `lines-${file.sourceId}`;
@@ -1504,12 +1475,10 @@
                 }
             });
 
-            // Atualizar Marcadores
             if (map.getLayer('dynamic-marker-circles')) {
                 map.setPaintProperty('dynamic-marker-circles', 'circle-radius', parseInt(state.visualSettings.markerSize));
             }
 
-            // Atualizar Texto
             if (map.getLayer('dynamic-marker-labels')) {
                 map.setLayoutProperty('dynamic-marker-labels', 'text-size', parseInt(state.visualSettings.textSize));
             }
@@ -1693,30 +1662,25 @@
         }
 
         function applyColorUpdate(groupName, sourceId, newColor) {
-            console.log(`Alterando cor do grupo ${groupName} para ${newColor}`); // Debug
+            console.log(`Alterando cor do grupo ${groupName} para ${newColor}`); 
 
-            // 1. Atualiza o mapa de cores global e salva
             groupColorMap.set(groupName, newColor);
             saveGroupColorMap();
 
-            // 2. Encontra o arquivo correto
             const file = state.files.find(f => f.sourceId === sourceId);
             if (!file) {
                 console.error("Arquivo não encontrado para atualizar cor.");
                 return;
             }
 
-            // 3. Atualiza as propriedades do GeoJSON em memória
             let featuresUpdated = false;
             file.lineFeatures.features.forEach(feature => {
-                // Verifica se a feature pertence ao grupo que estamos mudando
                 if (feature.properties && feature.properties[file.groupingProperty] === groupName) {
                     feature.properties.color = newColor;
                     featuresUpdated = true;
                 }
             });
 
-            // 4. Força o mapa a redesenhar a fonte de dados
             if (featuresUpdated) {
                 const source = map.getSource(file.sourceId + '-lines');
                 if (source) {
@@ -1727,7 +1691,6 @@
                 }
             }
 
-            // 5. Sincroniza com o seletor de cores do menu lateral (se estiver aberto)
             const menuInput = document.querySelector(`input[type="color"][data-group-name="${groupName}"][data-source-id="${sourceId}"]`);
             if (menuInput) {
                 menuInput.value = newColor;
@@ -1839,14 +1802,13 @@
                          source: sourceId + '-lines', 
                          paint: { 
                              'line-color': ['get', 'color'], 
-                             'line-width': parseInt(state.visualSettings.lineWidth) // USA O STATE
+                             'line-width': parseInt(state.visualSettings.lineWidth) 
                          }, 
                          layout: { 
                              'visibility': state.linesVisible ? 'visible' : 'none' 
                          } 
                      });
                      
-                     // *** CONFIGURAÇÃO DO POPUP DE COR ***
                      map.on('click', lineLayerId, (e) => {
                          e.originalEvent.stopPropagation(); 
                          const feature = e.features[0];
@@ -1874,10 +1836,9 @@
                          colorInput.value = currentColor;
                          colorInput.style.cursor = 'pointer';
                          
-                         // *** USO DE 'change' PARA EVITAR BUGS ***
                          colorInput.addEventListener('change', (ev) => {
                              const newColor = ev.target.value;
-                             applyColorUpdate(groupName, sourceId, newColor);
+                             applyColorUpdate(groupName, file.sourceId, newColor);
                          });
 
                          popupContainer.appendChild(colorInput);
@@ -2465,7 +2426,7 @@
                                  map.getCanvas().style.cursor = 'pointer';
                              });
                              map.on('mouseleave', lineLayerId, () => {
-                                 if (!state.isRoutePlanning) {
+                                 if (!state.isRoutePlanning) { 
                                     map.getCanvas().style.cursor = '';
                                  }
                              });
