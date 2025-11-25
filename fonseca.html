@@ -116,7 +116,6 @@
 
         .maplibregl-popup-content { padding: 10px; font-size: 13px; }
         .maplibregl-popup-close-button { padding: 4px; }
-        .marker-group-menu .color-box { width: 15px; height: 15px; margin-right: 10px; border: 1px solid #ccc; }
         .line-menu li label, .marker-group-menu li label { cursor: pointer; width: 100%; display: flex; align-items: center; }
 
         footer { position: absolute; bottom: 5px; width: 100%; text-align: center; font-size: 10px; color: #555; z-index: 1001; }
@@ -398,9 +397,27 @@
                 lineWidth: 4,
                 markerSize: 6,
                 textSize: 12,
-                markerLimit: 500 // Padrão inicial
+                markerLimit: 500 
             }
         };
+        
+        // Função para carregar cores personalizadas dos marcadores
+        function loadSavedMarkerColors() {
+            const saved = localStorage.getItem('markerGroupColors');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    Object.keys(parsed).forEach(key => {
+                        if (state.markerGroups[key]) {
+                            state.markerGroups[key].color = parsed[key];
+                        }
+                    });
+                } catch (e) {
+                    console.error("Erro ao carregar cores dos marcadores:", e);
+                }
+            }
+        }
+        loadSavedMarkerColors(); // Chama imediatamente
 
         let spatialIndex = [];
         let allPointFeatures = [];
@@ -826,7 +843,6 @@
                     return { ...feature, properties: { ...feature.properties, distance: distance } };
                 }).sort((a, b) => a.properties.distance - b.properties.distance);
 
-                // MODIFICAÇÃO: Usa o limite dinâmico do slider
                 const limit = parseInt(state.visualSettings.markerLimit);
                 const limitedFeatures = sortedFeatures.slice(0, limit);
 
@@ -1317,12 +1333,12 @@
             updateMapVisuals();
         });
 
-        // LISTENER PARA O NOVO SLIDER DE LIMITE DE MARCADORES
+        // Listener para o novo slider de limite de marcadores
         rngMarkerLimit.addEventListener('input', (e) => {
             const val = e.target.value;
             valMarkerLimit.textContent = val;
-            state.visualSettings.markerLimit = val; // Atualiza o estado
-            updateVisibleMarkers(); // Redesenha os marcadores
+            state.visualSettings.markerLimit = val; 
+            updateVisibleMarkers(); 
         });
 
 
@@ -1551,6 +1567,34 @@
             applyColorUpdate(groupName, sourceId, newColor);
         }
 
+        // Função específica para alterar cor de GRUPO de Marcadores
+        function changeMarkerGroupColor(groupKey, newColor) {
+            if (state.markerGroups[groupKey]) {
+                state.markerGroups[groupKey].color = newColor;
+            }
+
+            // Salva no LocalStorage
+            const colorsToSave = {};
+            Object.keys(state.markerGroups).forEach(key => {
+                colorsToSave[key] = state.markerGroups[key].color;
+            });
+            localStorage.setItem('markerGroupColors', JSON.stringify(colorsToSave));
+
+            // Atualiza a propriedade 'color' em TODOS os pontos carregados na memória
+            allPointFeatures.forEach(feature => {
+                if (feature.properties.group === groupKey) {
+                    feature.properties.color = newColor;
+                }
+            });
+
+            // Força o redesenho do mapa
+            updateVisibleMarkers();
+            
+            // Atualiza visualmente o texto do label
+            const labelText = document.querySelector(`label[data-group-label="${groupKey}"] span`);
+            if(labelText) labelText.style.color = newColor;
+        }
+
         function addDataToMap(geojson, fileName) {
             const sanitizedFileName = fileName.replace(/\s+/g, '_').replace(/[^\w\-]/g, '');
             const sourceId = `source-${sanitizedFileName}`;
@@ -1589,6 +1633,7 @@
                         else if (name.endsWith('KVA')) groupKey = 'TR'; 
 
                         f.properties.group = groupKey;
+                        // AQUI: Usa a cor ATUAL do state (que pode ter sido carregada do localStorage)
                         if (state.markerGroups[groupKey]) {
                            f.properties.color = state.markerGroups[groupKey].color;
                         } else {
@@ -1731,27 +1776,58 @@
             updateVisibleMarkers();
         }
 
+        // ATUALIZADO: Menu de marcadores com Color Picker
         function updateMarkerGroupMenu() {
             markerGroupsList.innerHTML = '';
             Object.keys(state.markerGroups).forEach(groupKey => {
                 if (groupKey === 'default') return;
                 const group = state.markerGroups[groupKey];
                 const li = document.createElement('li');
+                
                 const lbl = document.createElement('label');
+                lbl.style.display = 'flex';
+                lbl.style.alignItems = 'center';
+                lbl.style.width = '100%';
+                lbl.dataset.groupLabel = groupKey;
+
                 const chk = document.createElement('input');
-                const colorBox = document.createElement('div');
-                colorBox.className = 'color-box';
-                colorBox.style.backgroundColor = group.color;
                 chk.type = 'checkbox';
                 chk.checked = group.visible;
+                chk.style.marginRight = '10px';
                 chk.onchange = () => {
                     state.markerGroups[groupKey].visible = chk.checked;
                     updateVisibleMarkers();
                 };
+
+                const textSpan = document.createElement('span');
+                textSpan.textContent = groupKey;
+                textSpan.style.fontWeight = 'bold';
+                textSpan.style.color = group.color;
+                textSpan.style.flexGrow = '1';
+
+                // Seletor de Cor
+                const colorInput = document.createElement('input');
+                colorInput.type = 'color';
+                colorInput.value = group.color;
+                colorInput.style.border = 'none';
+                colorInput.style.width = '30px';
+                colorInput.style.height = '25px';
+                colorInput.style.padding = '0';
+                colorInput.style.cursor = 'pointer';
+                colorInput.style.background = 'none';
+
+                colorInput.addEventListener('input', (e) => {
+                    const newColor = e.target.value;
+                    textSpan.style.color = newColor;
+                    changeMarkerGroupColor(groupKey, newColor);
+                });
+                
+                colorInput.addEventListener('click', (e) => e.stopPropagation());
+
                 lbl.appendChild(chk);
-                lbl.appendChild(colorBox);
-                lbl.appendChild(document.createTextNode(groupKey));
-                lbl.style.color = group.color;
+                lbl.appendChild(textSpan);
+                lbl.appendChild(colorInput);
+                
                 li.appendChild(lbl);
                 markerGroupsList.appendChild(li);
             });
