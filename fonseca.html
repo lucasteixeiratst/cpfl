@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Visualizador de Mapas - Analytics Enhanced</title>
+    <title>Visualizador de Mapas</title>
     <style>
-        /* --- CSS Mantido Original --- */
         body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: Arial, sans-serif; position: relative; }
         #map { height: 100%; width: 100%; }
         
@@ -253,6 +252,11 @@
             <label>Tamanho do Texto: <span id="valTextSize">12</span>px</label>
             <input type="range" id="rngTextSize" min="8" max="24" value="12">
         </div>
+
+        <div class="tool-item">
+            <label>Qtd. Marcadores: <span id="valMarkerLimit">500</span></label>
+            <input type="range" id="rngMarkerLimit" min="0" max="3000" value="500" step="50">
+        </div>
     </div>
 
     <div class="line-menu" id="lineMenu">
@@ -356,7 +360,6 @@
         const DB_VERSION = 3; 
         const GEOJSON_STORE_NAME = 'geojson_files';
         const SPATIAL_INDEX_STORE_NAME = 'spatial_index';
-        const MARKER_LIMIT = 500;
         
         const MAX_WAYPOINTS = 10;
         let routeWaypoints = [];
@@ -394,7 +397,8 @@
             visualSettings: {
                 lineWidth: 4,
                 markerSize: 6,
-                textSize: 12
+                textSize: 12,
+                markerLimit: 500 // Padrão inicial
             }
         };
 
@@ -467,12 +471,16 @@
         
         const btnTools = document.getElementById('btnTools');
         const toolsMenu = document.getElementById('toolsMenu');
+        
+        // Sliders
         const rngLineWidth = document.getElementById('rngLineWidth');
         const valLineWidth = document.getElementById('valLineWidth');
         const rngMarkerSize = document.getElementById('rngMarkerSize');
         const valMarkerSize = document.getElementById('valMarkerSize');
         const rngTextSize = document.getElementById('rngTextSize');
         const valTextSize = document.getElementById('valTextSize');
+        const rngMarkerLimit = document.getElementById('rngMarkerLimit');
+        const valMarkerLimit = document.getElementById('valMarkerLimit');
 
         const btnRoutePlanner = document.getElementById('btnRoutePlanner');
         const routePanel = document.getElementById('routePanel');
@@ -818,8 +826,9 @@
                     return { ...feature, properties: { ...feature.properties, distance: distance } };
                 }).sort((a, b) => a.properties.distance - b.properties.distance);
 
-
-                const limitedFeatures = sortedFeatures.slice(0, MARKER_LIMIT);
+                // MODIFICAÇÃO: Usa o limite dinâmico do slider
+                const limit = parseInt(state.visualSettings.markerLimit);
+                const limitedFeatures = sortedFeatures.slice(0, limit);
 
                 const geojson = {
                     type: 'FeatureCollection',
@@ -1308,6 +1317,14 @@
             updateMapVisuals();
         });
 
+        // LISTENER PARA O NOVO SLIDER DE LIMITE DE MARCADORES
+        rngMarkerLimit.addEventListener('input', (e) => {
+            const val = e.target.value;
+            valMarkerLimit.textContent = val;
+            state.visualSettings.markerLimit = val; // Atualiza o estado
+            updateVisibleMarkers(); // Redesenha os marcadores
+        });
+
 
         btnResetOfflineDB.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -1445,7 +1462,6 @@
             if (!file) return;
 
             // --- ANALYTICS: CARREGAMENTO DISPOSITIVO (EXTERNO) ---
-            // Isso resolve sua dúvida sobre quais arquivos externos estão sendo usados
             if (typeof gtag === 'function') {
                 gtag('event', 'map_load', {
                     'file_name': file.name,
