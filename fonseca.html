@@ -404,9 +404,9 @@
         let dynamicMarkerSource = null;
         let updateMarkersTimeout;
 
-        // --- ESTILOS ESRI (CORRIGIDO) ---
+        // --- ESTILOS ESRI SEPARADOS (LIMPO vs HÍBRIDO) ---
         
-        // Opção 1: Limpo (Só Imagem)
+        // Opção 1: Esri Limpo (Só Satélite)
         const esriSatelliteCleanStyle = {
             'version': 8,
             'sources': {
@@ -424,7 +424,7 @@
             'glyphs': 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf'
         };
 
-        // Opção 2: Híbrido (Imagem + Ruas + Nomes)
+        // Opção 2: Esri Híbrido (Satélite + Ruas + Nomes)
         const esriSatelliteHybridStyle = {
             'version': 8,
             'sources': {
@@ -460,8 +460,8 @@
             { name: 'Positron', url: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json' },
             { name: 'Dark Matter', url: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json' },
             { name: 'Voyager', url: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json' },
-            { name: 'Esri Satélite (Limpo)', style: esriSatelliteCleanStyle },
-            { name: 'Esri Satélite (Com Nomes)', style: esriSatelliteHybridStyle }
+            { name: 'Esri Satélite (Limpo)', style: esriSatelliteCleanStyle }, // Nova opção
+            { name: 'Esri Satélite (Com Nomes)', style: esriSatelliteHybridStyle } // Nova opção
         ];
 
         const colorPalette = ['#FF6347', '#4682B4', '#B0E0E6', '#FFD700', '#5F9EA0', '#F0E68C', '#F08080', '#20B2AA', '#ADD8E6', '#FFA07A', '#87CEEB', '#E6E6FA', '#FF7F50', '#6A5ACD', '#FFFACD', '#E55300', '#483D8B', '#DDA0DD', '#D4A29C', '#008080', '#87CEFA', '#C46210', '#53736F', '#98FB98', '#F4A460', '#3B83BD', '#FFB6C1', '#FF4500', '#33A1C9', '#F5DEB3'];
@@ -980,13 +980,30 @@
             sortedFiles.forEach((file) => {
                 const li = document.createElement('li');
                 li.textContent = file.name;
-                li.addEventListener('click', (e) => {
+                li.addEventListener('click', async (e) => { // Async aqui
                     e.stopPropagation();
-                    loadKMZFromURL(file.url, file.name);
+                    kmzMenu.style.display = 'none'; // Fecha o menu imediatamente
+                    
+                    // Tenta carregar do cache primeiro
+                    let cachedData = await getKMZFromCache(file.name);
+                    
+                    if (cachedData) {
+                        addDataToMap(cachedData, file.name);
+                    } else {
+                        // Se não estiver no cache, tenta baixar
+                        try {
+                            const geojson = await parseKMZFromUrl(file.url);
+                            addDataToMap(geojson, file.name);
+                            // Salva no cache para a próxima vez!
+                            cacheKMZData(file.name, geojson);
+                        } catch (err) {
+                            alert('Erro ao baixar arquivo. Verifique sua conexão ou se o arquivo existe.');
+                        }
+                    }
+
                     localStorage.setItem('lastSelectedFile', file.name);
                     updateRecentFiles(file.name);
                     displayFileList();
-                    kmzMenu.style.display = 'none';
                 });
                 kmzList.appendChild(li);
             });
@@ -1061,7 +1078,7 @@
             offlineToggle.checked = savedMode;
             setTimeout(() => handleModeChange(savedMode), 100); 
 
-            // --- LÓGICA CORRIGIDA DE RECARREGAMENTO AUTOMÁTICO ---
+            // --- LÓGICA DE RECARREGAMENTO AUTOMÁTICO (FIXED) ---
             if (!savedMode) {
                 const recentFiles = JSON.parse(localStorage.getItem('recentFiles') || '[]');
                 const filesToLoad = recentFiles.slice(0, 2); 
@@ -1069,17 +1086,15 @@
                 if (filesToLoad.length > 0) {
                     filesToLoad.forEach(fileName => {
                         const file = predefinedFiles.find(f => f.name === fileName);
-                        if (file) {
-                            // Tenta carregar primeiro do CACHE (ignorando URL para evitar erro file://)
-                            getKMZFromCache(fileName).then(cachedData => {
-                                if (cachedData) {
-                                    addDataToMap(cachedData, fileName);
-                                } else {
-                                    // Se não tiver no cache, aí sim tenta URL (pode falhar no Android file://)
-                                    loadKMZFromURL(file.url, file.name);
-                                }
-                            });
-                        }
+                        // Tenta carregar APENAS DO CACHE inicialmente para evitar erros de URL local
+                        getKMZFromCache(fileName).then(cachedData => {
+                            if (cachedData) {
+                                addDataToMap(cachedData, fileName);
+                            } else if (file) {
+                                // Se não estiver no cache, tenta URL (pode falhar no mobile, mas é o fallback)
+                                loadKMZFromURL(file.url, file.name);
+                            }
+                        });
                     });
                 }
 
@@ -1301,7 +1316,6 @@
                     const data = file.name.endsWith('.kmz') ? await parseKMZ(reader.result) : toGeoJSON.kml(new DOMParser().parseFromString(reader.result, 'text/xml'));
                     addDataToMap(data, file.name);
                     updateRecentExternalFiles(file.name); 
-                    // IMPORTANTE: Salva no cache para funcionar no recarregamento automático
                     cacheKMZData(file.name, data);
                 } catch (error) { alert('Erro ao processar arquivo.'); }
             };
@@ -1671,7 +1685,6 @@
                     }
                 });
 
-                // ORDEM DAS CAMADAS
                 state.files.forEach(file => {
                     if (file.hasLines) {
                         const lineId = `lines-${file.sourceId}`;
