@@ -404,9 +404,9 @@
         let dynamicMarkerSource = null;
         let updateMarkersTimeout;
 
-        // --- ESTILOS ESRI SEPARADOS (LIMPO vs HÍBRIDO) ---
+        // --- ESTILOS ESRI (CORRIGIDO) ---
         
-        // Opção 1: Esri Limpo (Só Satélite)
+        // Opção 1: Limpo (Só Imagem)
         const esriSatelliteCleanStyle = {
             'version': 8,
             'sources': {
@@ -424,7 +424,7 @@
             'glyphs': 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf'
         };
 
-        // Opção 2: Esri Híbrido (Satélite + Ruas + Nomes)
+        // Opção 2: Híbrido (Imagem + Ruas + Nomes)
         const esriSatelliteHybridStyle = {
             'version': 8,
             'sources': {
@@ -460,8 +460,8 @@
             { name: 'Positron', url: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json' },
             { name: 'Dark Matter', url: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json' },
             { name: 'Voyager', url: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json' },
-            { name: 'Esri Satélite (Limpo)', style: esriSatelliteCleanStyle }, // Nova opção
-            { name: 'Esri Satélite (Com Nomes)', style: esriSatelliteHybridStyle } // Nova opção
+            { name: 'Esri Satélite (Limpo)', style: esriSatelliteCleanStyle },
+            { name: 'Esri Satélite (Com Nomes)', style: esriSatelliteHybridStyle }
         ];
 
         const colorPalette = ['#FF6347', '#4682B4', '#B0E0E6', '#FFD700', '#5F9EA0', '#F0E68C', '#F08080', '#20B2AA', '#ADD8E6', '#FFA07A', '#87CEEB', '#E6E6FA', '#FF7F50', '#6A5ACD', '#FFFACD', '#E55300', '#483D8B', '#DDA0DD', '#D4A29C', '#008080', '#87CEFA', '#C46210', '#53736F', '#98FB98', '#F4A460', '#3B83BD', '#FFB6C1', '#FF4500', '#33A1C9', '#F5DEB3'];
@@ -1061,6 +1061,7 @@
             offlineToggle.checked = savedMode;
             setTimeout(() => handleModeChange(savedMode), 100); 
 
+            // --- LÓGICA CORRIGIDA DE RECARREGAMENTO AUTOMÁTICO ---
             if (!savedMode) {
                 const recentFiles = JSON.parse(localStorage.getItem('recentFiles') || '[]');
                 const filesToLoad = recentFiles.slice(0, 2); 
@@ -1068,7 +1069,17 @@
                 if (filesToLoad.length > 0) {
                     filesToLoad.forEach(fileName => {
                         const file = predefinedFiles.find(f => f.name === fileName);
-                        if (file) loadKMZFromURL(file.url, file.name);
+                        if (file) {
+                            // Tenta carregar primeiro do CACHE (ignorando URL para evitar erro file://)
+                            getKMZFromCache(fileName).then(cachedData => {
+                                if (cachedData) {
+                                    addDataToMap(cachedData, fileName);
+                                } else {
+                                    // Se não tiver no cache, aí sim tenta URL (pode falhar no Android file://)
+                                    loadKMZFromURL(file.url, file.name);
+                                }
+                            });
+                        }
                     });
                 }
 
@@ -1274,9 +1285,7 @@
                 const geojson = await parseKMZFromUrl(url);
                 if(geojson) addDataToMap(geojson, fileName);
             } catch (error) {
-                // TRATAMENTO DE ERRO AMIGÁVEL (SEM ALERTAS INTRUSIVOS DE FETCH)
-                // Apenas ignora se falhar o fetch automático, o usuário pode usar o botão "Selecionar do dispositivo"
-                console.log(`Não foi possível carregar "${fileName}" automaticamente via URL.`);
+                console.log(`Não foi possível carregar "${fileName}" automaticamente via URL (provável bloqueio de protocolo local). Use 'Selecionar do Dispositivo'.`);
             }
         }
 
@@ -1292,6 +1301,8 @@
                     const data = file.name.endsWith('.kmz') ? await parseKMZ(reader.result) : toGeoJSON.kml(new DOMParser().parseFromString(reader.result, 'text/xml'));
                     addDataToMap(data, file.name);
                     updateRecentExternalFiles(file.name); 
+                    // IMPORTANTE: Salva no cache para funcionar no recarregamento automático
+                    cacheKMZData(file.name, data);
                 } catch (error) { alert('Erro ao processar arquivo.'); }
             };
             if (file.name.endsWith('.kmz')) reader.readAsArrayBuffer(file);
@@ -1660,6 +1671,7 @@
                     }
                 });
 
+                // ORDEM DAS CAMADAS
                 state.files.forEach(file => {
                     if (file.hasLines) {
                         const lineId = `lines-${file.sourceId}`;
