@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Visualizador de Mapas</title>
+    <title>Visualizador de Mapas Profissional</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: Arial, sans-serif; position: relative; }
@@ -404,24 +404,54 @@
         let dynamicMarkerSource = null;
         let updateMarkersTimeout;
 
-        const esriHybridStyle = {
+        // --- ESTILOS ESRI SEPARADOS (LIMPO vs HÍBRIDO) ---
+        
+        // Opção 1: Esri Limpo (Só Satélite)
+        const esriSatelliteCleanStyle = {
             'version': 8,
             'sources': {
                 'esri-satellite': {
                     'type': 'raster',
                     'tiles': ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
                     'tileSize': 256,
-                    'attribution': '© Esri, Maxar, Earthstar Geographics'
+                    'attribution': '© Esri, Maxar, Earthstar Geographics',
+                    'maxzoom': 19
+                }
+            },
+            'layers': [
+                { 'id': 'esri-satellite-layer', 'type': 'raster', 'source': 'esri-satellite', 'minzoom': 0, 'maxzoom': 24 }
+            ],
+            'glyphs': 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf'
+        };
+
+        // Opção 2: Esri Híbrido (Satélite + Ruas + Nomes)
+        const esriSatelliteHybridStyle = {
+            'version': 8,
+            'sources': {
+                'esri-satellite': {
+                    'type': 'raster',
+                    'tiles': ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+                    'tileSize': 256,
+                    'attribution': '© Esri, Maxar, Earthstar Geographics',
+                    'maxzoom': 19
+                },
+                'esri-transportation': {
+                    'type': 'raster',
+                    'tiles': ['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}'],
+                    'tileSize': 256,
+                    'maxzoom': 19
                 },
                 'esri-labels': {
                     'type': 'raster',
                     'tiles': ['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],
-                    'tileSize': 256
+                    'tileSize': 256,
+                    'maxzoom': 19
                 }
             },
             'layers': [
-                { 'id': 'esri-satellite-layer', 'type': 'raster', 'source': 'esri-satellite', 'minzoom': 0, 'maxzoom': 19 },
-                { 'id': 'esri-labels-layer', 'type': 'raster', 'source': 'esri-labels', 'minzoom': 0, 'maxzoom': 19 }
+                { 'id': 'esri-satellite-layer', 'type': 'raster', 'source': 'esri-satellite', 'minzoom': 0, 'maxzoom': 24 },
+                { 'id': 'esri-transportation-layer', 'type': 'raster', 'source': 'esri-transportation', 'minzoom': 0, 'maxzoom': 24 },
+                { 'id': 'esri-labels-layer', 'type': 'raster', 'source': 'esri-labels', 'minzoom': 0, 'maxzoom': 24 }
             ],
             'glyphs': 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf'
         };
@@ -430,7 +460,8 @@
             { name: 'Positron', url: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json' },
             { name: 'Dark Matter', url: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json' },
             { name: 'Voyager', url: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json' },
-            { name: 'Esri Satélite (Híbrido)', style: esriHybridStyle }
+            { name: 'Esri Satélite (Limpo)', style: esriSatelliteCleanStyle }, // Nova opção
+            { name: 'Esri Satélite (Com Nomes)', style: esriSatelliteHybridStyle } // Nova opção
         ];
 
         const colorPalette = ['#FF6347', '#4682B4', '#B0E0E6', '#FFD700', '#5F9EA0', '#F0E68C', '#F08080', '#20B2AA', '#ADD8E6', '#FFA07A', '#87CEEB', '#E6E6FA', '#FF7F50', '#6A5ACD', '#FFFACD', '#E55300', '#483D8B', '#DDA0DD', '#D4A29C', '#008080', '#87CEFA', '#C46210', '#53736F', '#98FB98', '#F4A460', '#3B83BD', '#FFB6C1', '#FF4500', '#33A1C9', '#F5DEB3'];
@@ -460,7 +491,8 @@
             container: 'map',
             style: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
             center: [-47.068847, -22.934973],
-            zoom: 8
+            zoom: 8,
+            maxZoom: 24 
         });
 
         const searchInput = document.getElementById('searchInput');
@@ -515,7 +547,7 @@
         const toggleAllMarkersVisibilityCheckbox = document.getElementById('toggleAllMarkersVisibility');
         const toggleAllLinesVisibilityCheckbox = document.getElementById('toggleAllLinesVisibility');
 
-        // LISTA DE ARQUIVOS
+        // LISTA COMPLETA DE 116 ARQUIVOS
         const predefinedFiles = [
              { name: 'AGUAS DE LINDOIA.kmz', url: './AGUAS DE LINDOIA.kmz' },
              { name: 'AGUDOS.kmz', url: './AGUDOS.kmz' },
@@ -882,7 +914,7 @@
                 const arrayBuffer = await response.arrayBuffer();
                 return await parseKMZ(arrayBuffer);
             } catch (error) {
-                if (error.name !== 'AbortError') throw error;
+                throw error;
             }
         }
 
@@ -1242,7 +1274,9 @@
                 const geojson = await parseKMZFromUrl(url);
                 if(geojson) addDataToMap(geojson, fileName);
             } catch (error) {
-                if (error.name !== 'AbortError') alert('Erro ao carregar arquivo.');
+                // TRATAMENTO DE ERRO AMIGÁVEL (SEM ALERTAS INTRUSIVOS DE FETCH)
+                // Apenas ignora se falhar o fetch automático, o usuário pode usar o botão "Selecionar do dispositivo"
+                console.log(`Não foi possível carregar "${fileName}" automaticamente via URL.`);
             }
         }
 
@@ -1562,12 +1596,10 @@
         
         function resetView() { map.easeTo({ center: [-47.068847, -22.934973], zoom: 11 }); }
 
-        // === MUDANÇA DE ESTILO COM CORREÇÃO DE ORDEM DE CAMADAS (ATUALIZADO) ===
         function changeMapStyle(newStyleUrlOrObject) {
             map.setStyle(newStyleUrlOrObject);
 
             map.once('styledata', () => {
-                // 1. Garante que a fonte dos marcadores existe
                 if (!map.getSource('dynamic-markers')) {
                     map.addSource('dynamic-markers', {
                         type: 'geojson',
@@ -1576,7 +1608,6 @@
                     dynamicMarkerSource = map.getSource('dynamic-markers');
                 }
 
-                // 2. Re-adiciona as camadas de marcadores (se ainda não existirem)
                 if (!map.getLayer('dynamic-marker-circles')) {
                     map.addLayer({
                         id: 'dynamic-marker-circles',
@@ -1611,7 +1642,6 @@
                     });
                 }
 
-                // 3. Re-adiciona as camadas de linhas (se necessário)
                 state.files.forEach(file => {
                     if (file.hasLines) {
                         const sourceIdLines = file.sourceId + '-lines';
@@ -1630,8 +1660,6 @@
                     }
                 });
 
-                // 4. === CORREÇÃO PRINCIPAL: FORÇA A ORDEM DAS CAMADAS ===
-                // Move as linhas para cima do mapa base
                 state.files.forEach(file => {
                     if (file.hasLines) {
                         const lineId = `lines-${file.sourceId}`;
@@ -1639,17 +1667,9 @@
                     }
                 });
 
-                // Move os marcadores para cima das linhas
-                if (map.getLayer('dynamic-marker-circles')) {
-                    map.moveLayer('dynamic-marker-circles');
-                }
+                if (map.getLayer('dynamic-marker-circles')) map.moveLayer('dynamic-marker-circles');
+                if (map.getLayer('dynamic-marker-labels')) map.moveLayer('dynamic-marker-labels');
 
-                // Move os textos para o topo absoluto
-                if (map.getLayer('dynamic-marker-labels')) {
-                    map.moveLayer('dynamic-marker-labels');
-                }
-
-                // Atualiza visualização final
                 updateVisibleMarkers();
                 applyGroupFilter();
                 toggleLines(state.linesVisible);
@@ -1668,7 +1688,6 @@
             });
         }
 
-        // Funções de Busca (CORRIGIDAS COM O BOTÃO DE ROTA)
         function normalizeText(text) {
              if (!text) return '';
              return text.toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
@@ -1676,112 +1695,78 @@
 
         function getFeatureCenter(feature) {
             if (!feature || !feature.geometry) return null;
-
-            // Se for um Ponto simples
             if (feature.geometry.type === 'Point') {
-                // Garante que tem 2 coordenadas
-                if (feature.geometry.coordinates.length >= 2) {
-                    return feature.geometry.coordinates;
-                }
+                if (feature.geometry.coordinates.length >= 2) return feature.geometry.coordinates;
                 return null;
             }
-
-            // Se for Linha ou Polígono (calcula a média das coordenadas)
             let coords = [];
             const extract = (list) => {
-                if (Array.isArray(list[0])) {
-                    list.forEach(extract);
-                } else if (list.length >= 2 && typeof list[0] === 'number') {
-                    coords.push(list);
-                }
+                if (Array.isArray(list[0])) list.forEach(extract);
+                else if (list.length >= 2 && typeof list[0] === 'number') coords.push(list);
             };
             extract(feature.geometry.coordinates);
-
             if (coords.length === 0) return null;
-
-            // Calcula média simples (centroide)
             const avgLng = coords.reduce((sum, p) => sum + p[0], 0) / coords.length;
             const avgLat = coords.reduce((sum, p) => sum + p[1], 0) / coords.length;
-            
             return [avgLng, avgLat];
         }
 
         async function searchFeatures() {
             const term = searchInput.value.toLowerCase().trim();
             if (!term) return alert('Digite um termo para buscar.');
-            
             const matches = allPointFeatures.filter(f => {
                 const name = f.properties.name || f.properties.Alimentador || '';
                 return normalizeText(name).includes(normalizeText(term));
             }).slice(0, 15);
-
             displaySearchResults(matches);
         }
 
         function displaySearchResults(results) {
             searchResults.innerHTML = '';
-            
             if (results.length === 0) {
                  searchResults.style.display = 'none';
                  return alert('Nenhum resultado encontrado.');
             }
-
             const ul = document.createElement('ul');
-            
             results.forEach(result => {
                 const li = document.createElement('li');
                 const name = result.properties.name || result.properties.Alimentador || 'Sem nome';
                 const fileName = result.properties.fileName || '';
-
-                // Cria o HTML das informações
+                
                 const infoDiv = document.createElement('div');
                 infoDiv.className = 'result-info';
                 infoDiv.innerHTML = `<strong>${name}</strong><br><small style="color:#666">${fileName}</small>`;
                 
-                // Container para os botões
                 const actionsDiv = document.createElement('div');
                 actionsDiv.className = 'result-actions';
 
-                // Botão VER (foca no mapa)
                 const btnVer = document.createElement('button');
                 btnVer.textContent = 'Ver';
                 btnVer.onclick = (e) => {
                     e.stopPropagation();
                     const center = getFeatureCenter(result);
-                    if(center) { 
-                        map.flyTo({ center: center, zoom: 16 }); 
-                        searchResults.style.display = 'none'; 
-                    } else {
-                        alert('Localização inválida.');
-                    }
+                    if(center) { map.flyTo({ center: center, zoom: 16 }); searchResults.style.display = 'none'; } 
+                    else { alert('Localização inválida.'); }
                 };
 
-                // Botão ROTA (abre Google Maps em nova aba)
                 const btnRota = document.createElement('button');
                 btnRota.textContent = 'Rota';
-                btnRota.style.backgroundColor = '#34A853'; // Verde estilo Google
+                btnRota.style.backgroundColor = '#34A853'; 
                 btnRota.onclick = (e) => {
                     e.stopPropagation();
                     const center = getFeatureCenter(result);
                     if (center) {
-                        const lat = center[1];
-                        const lng = center[0];
-                        // Link universal para rota de carro
-                        const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
+                        const url = `https://www.google.com/maps/dir/?api=1&destination=${center[1]},${center[0]}&travelmode=driving`;
                         window.open(url, '_blank');
-                    } else {
-                        alert('Coordenadas inválidas para gerar rota.');
-                    }
+                    } else { alert('Coordenadas inválidas.'); }
                 };
 
                 actionsDiv.appendChild(btnVer);
                 actionsDiv.appendChild(btnRota);
-
                 li.appendChild(infoDiv);
                 li.appendChild(actionsDiv);
                 ul.appendChild(li);
             });
-
             searchResults.appendChild(ul);
             searchResults.style.display = 'block';
         }
@@ -1838,7 +1823,7 @@
              routeCounter.textContent = `Pontos: ${routeWaypoints.length} / ${MAX_WAYPOINTS}`;
         }
         
-        window.removeWaypoint = function(index) { // Expose to global scope for inline onclick
+        window.removeWaypoint = function(index) { 
              routeWaypoints.splice(index, 1);
              if(routeMarkers[index]) routeMarkers[index].remove();
              routeMarkers.splice(index, 1);
@@ -1859,7 +1844,7 @@
         function generateGoogleMapsUrl() {
              if (routeWaypoints.length < 1) return alert("Adicione pontos.");
              const dest = routeWaypoints[routeWaypoints.length - 1];
-             let url = `https://www.google.com/maps/dir/?api=1&destination=$${dest.coordinates[1]},${dest.coordinates[0]}&travelmode=driving`;
+             let url = `https://www.google.com/maps/dir/?api=1&destination=${dest.coordinates[1]},${dest.coordinates[0]}&travelmode=driving`;
              if (routeWaypoints.length > 1) {
                  const wps = routeWaypoints.slice(0, -1).map(wp => `${wp.coordinates[1]},${wp.coordinates[0]}`).join('|');
                  url += `&waypoints=${wps}`;
