@@ -17,7 +17,7 @@
         .menu button { position: relative; background-color: #ffffff; border: none; padding: 10px; margin: 5px 0; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
         .menu button:hover { background-color: #f0f0f0; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); }
         .menu button img { width: 22px; height: 22px; }
-        .menu button#btnRoutePlanner.active { background-color: #d1e3ff; box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3); }
+        .menu button#btnRoutePlanner.active, .menu button#btnTrailMenu.active { background-color: #d1e3ff; box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3); }
         
         .button-legend { position: absolute; top: 50%; left: 50px; transform: translateY(-50%); background: rgba(255,255,255,0.9); border-radius: 4px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); padding: 5px; font-size: 12px; white-space: nowrap; z-index: 2000; display: none; }
         
@@ -43,16 +43,17 @@
         .search-results button { background-color: #4285F4; color: white; border: none; padding: 5px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; }
 
         /* MENUS FLUTUANTES */
-        .kmz-menu, .line-menu, .loaded-files-menu, .style-menu, .marker-group-menu, .offline-menu, .storage-menu, .tools-menu {
+        .kmz-menu, .line-menu, .loaded-files-menu, .style-menu, .marker-group-menu, .offline-menu, .storage-menu, .tools-menu, .trail-menu {
             position: absolute; top: 80px; left: 70px; background: #fff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); z-index: 2000; padding: 10px; display: none; max-height: 400px; overflow-y: auto;
         }
         .kmz-menu, .line-menu { width: 300px; }
         .loaded-files-menu { width: 220px; }
         .style-menu { width: 200px; }
         .marker-group-menu { width: 240px; }
+        .trail-menu { width: 250px; flex-direction: column; gap: 10px; padding: 15px; }
         
         .tools-menu { width: 280px; flex-direction: column; gap: 15px; padding: 15px; }
-        .tools-menu h3 { margin: 0 0 10px 0; font-size: 16px; text-align: center; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        .tools-menu h3, .trail-menu h3 { margin: 0 0 10px 0; font-size: 16px; text-align: center; border-bottom: 1px solid #eee; padding-bottom: 5px; }
         .tool-item { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
         .tool-item label { font-size: 13px; font-weight: bold; color: #333; display: flex; justify-content: space-between; align-items: center; }
         .tool-item input[type="range"] { width: 100%; cursor: pointer; }
@@ -187,6 +188,11 @@
             <img src="ícones/settings.svg" alt="Ferramentas"> <div class="button-legend">Ferramentas</div>
         </button>
 
+        <button id="btnTrailMenu" aria-label="Rastro de Inspeção">
+            <img src="ícones/activity.svg" alt="Rastro"> 
+            <div class="button-legend">Rastro de Inspeção</div>
+        </button>
+
         <button id="btnLocation" aria-label="Ir para minha localização atual">
             <img src="ícones/navigation.svg" alt="Minha Localização">
             <div class="button-legend">Minha Localização</div>
@@ -239,15 +245,25 @@
         </ul>
     </div>
 
-    <div class="tools-menu" id="toolsMenu" style="display: none;">
-        <h3>Ferramentas de Visualização</h3>
-        
-        <div class="tool-item">
-            <label style="cursor: pointer;">
-                <span>Gravar Rastro de Inspeção</span>
-                <input type="checkbox" id="chkUserTrail" style="width: auto;">
+    <div class="trail-menu" id="trailMenu" style="display: none;">
+        <h3>Rastro de Inspeção</h3>
+        <div class="tool-item" style="flex-direction: row; align-items: center; justify-content: space-between;">
+            <span>Ativar Gravação</span>
+            <label class="switch">
+                <input type="checkbox" id="chkUserTrail">
+                <span class="slider round"></span>
             </label>
         </div>
+        <p style="font-size: 11px; color: #555; text-align: center; margin-top: 5px;">
+            Seu trajeto será salvo automaticamente no banco de dados.
+        </p>
+        <div style="font-size: 12px; margin-top: 10px;">
+            Pontos gravados: <span id="trailPointCount">0</span>
+        </div>
+    </div>
+
+    <div class="tools-menu" id="toolsMenu" style="display: none;">
+        <h3>Ferramentas de Visualização</h3>
         <div class="tool-item">
             <label>Espessura da Linha: <span id="valLineWidth">4</span>px</label>
             <input type="range" id="rngLineWidth" min="1" max="15" value="4">
@@ -330,6 +346,11 @@
         <h3>Gerenciar Armazenamento</h3>
         <p>Use com cuidado. Isso removerá dados salvos no seu navegador para este site.</p>
         <div class="storage-buttons">
+            <button id="btnDeleteTrail" class="btn-warning">
+                Apagar Rastro de Inspeção
+                <small>Remove o caminho gravado da memória.</small>
+            </button>
+
             <button id="btnResetOfflineDB" class="btn-danger">
                 Limpar Cache de Mapas (Offline)
                 <small>Remove todos os mapas KMZ salvos.</small>
@@ -349,9 +370,10 @@
     </footer>
     <script>
         const DB_NAME = 'KMZOfflineDB';
-        const DB_VERSION = 3; 
+        const DB_VERSION = 4; // VERSÃO ATUALIZADA PARA CRIAR NOVA TABELA
         const GEOJSON_STORE_NAME = 'geojson_files';
         const SPATIAL_INDEX_STORE_NAME = 'spatial_index';
+        const TRAIL_STORE_NAME = 'user_trails'; // NOVA TABELA
         const MAX_WAYPOINTS = 10;
         let routeWaypoints = [];
         let routeMarkers = [];
@@ -401,6 +423,92 @@
             }
         }
         loadSavedMarkerColors();
+
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onupgradeneeded = event => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains(GEOJSON_STORE_NAME)) {
+                        db.createObjectStore(GEOJSON_STORE_NAME, { keyPath: 'name' });
+                    }
+                    if (!db.objectStoreNames.contains(SPATIAL_INDEX_STORE_NAME)) {
+                        db.createObjectStore(SPATIAL_INDEX_STORE_NAME, { keyPath: 'name' });
+                    }
+                    // NOVA STORE PARA O RASTRO
+                    if (!db.objectStoreNames.contains(TRAIL_STORE_NAME)) {
+                        db.createObjectStore(TRAIL_STORE_NAME, { keyPath: 'name' });
+                    }
+                };
+                request.onsuccess = event => resolve(event.target.result);
+                request.onerror = event => reject(event.target.error);
+            });
+        }
+
+        async function saveDataToDB(storeName, data) {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([storeName], 'readwrite');
+                const store = transaction.objectStore(storeName);
+                const request = store.put(data);
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function getDataFromDB(storeName, key) {
+             const db = await openDB();
+                 return new Promise((resolve, reject) => {
+                     const transaction = db.transaction([storeName], 'readonly');
+                     const store = transaction.objectStore(storeName);
+                     const request = key ? store.get(key) : store.getAll();
+                     request.onsuccess = () => resolve(request.result);
+                     request.onerror = () => reject(request.error);
+                 });
+             }
+        
+        async function deleteDataFromDB(storeName, key) {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([storeName], 'readwrite');
+                const store = transaction.objectStore(storeName);
+                const request = store.delete(key);
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function countDBItems(storeName) {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([storeName], 'readonly');
+                const store = transaction.objectStore(storeName);
+                const request = store.count();
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        // CARREGAR RASTRO SALVO DO INDEXEDDB
+        async function loadSavedTrail() {
+            try {
+                const savedData = await getDataFromDB(TRAIL_STORE_NAME, 'current_trail');
+                if (savedData && savedData.coordinates) {
+                    trailCoordinates = savedData.coordinates;
+                    document.getElementById('trailPointCount').textContent = trailCoordinates.length;
+                    
+                    // Se o mapa já estiver carregado, atualiza
+                    if (map && map.getSource('user-trail')) {
+                        map.getSource('user-trail').setData({
+                            type: 'Feature',
+                            geometry: { type: 'LineString', coordinates: trailCoordinates }
+                        });
+                    }
+                }
+            } catch(e) { console.error("Erro ao carregar rastro do DB", e); }
+        }
+        // Tenta carregar ao iniciar
+        loadSavedTrail();
 
         let spatialIndex = [];
         let allPointFeatures = [];
@@ -511,8 +619,12 @@
         const btnTools = document.getElementById('btnTools');
         const toolsMenu = document.getElementById('toolsMenu');
         
-        // NOVO ELEMENTO DO CHECKBOX DE RASTRO
+        // NOVO BOTÃO DE RASTRO E MENU
+        const btnTrailMenu = document.getElementById('btnTrailMenu');
+        const trailMenu = document.getElementById('trailMenu');
         const chkUserTrail = document.getElementById('chkUserTrail');
+        const trailPointCount = document.getElementById('trailPointCount');
+        const btnDeleteTrail = document.getElementById('btnDeleteTrail');
 
         const rngLineWidth = document.getElementById('rngLineWidth');
         const valLineWidth = document.getElementById('valLineWidth');
@@ -669,56 +781,6 @@
              { name: 'VALPARAISO.kmz', url: './VALPARAISO.kmz' },
              { name: 'VIRADOURO.kmz', url: './VIRADOURO.kmz' }
         ];
-
-        function openDB() {
-            return new Promise((resolve, reject) => {
-                const request = indexedDB.open(DB_NAME, DB_VERSION);
-                request.onupgradeneeded = event => {
-                    const db = event.target.result;
-                    if (!db.objectStoreNames.contains(GEOJSON_STORE_NAME)) {
-                        db.createObjectStore(GEOJSON_STORE_NAME, { keyPath: 'name' });
-                    }
-                    if (!db.objectStoreNames.contains(SPATIAL_INDEX_STORE_NAME)) {
-                        db.createObjectStore(SPATIAL_INDEX_STORE_NAME, { keyPath: 'name' });
-                    }
-                };
-                request.onsuccess = event => resolve(event.target.result);
-                request.onerror = event => reject(event.target.error);
-            });
-        }
-
-        async function saveDataToDB(storeName, data) {
-            const db = await openDB();
-            return new Promise((resolve, reject) => {
-                const transaction = db.transaction([storeName], 'readwrite');
-                const store = transaction.objectStore(storeName);
-                const request = store.put(data);
-                request.onsuccess = () => resolve();
-                request.onerror = () => reject(request.error);
-            });
-        }
-
-        async function getDataFromDB(storeName, key) {
-             const db = await openDB();
-                 return new Promise((resolve, reject) => {
-                     const transaction = db.transaction([storeName], 'readonly');
-                     const store = transaction.objectStore(storeName);
-                     const request = key ? store.get(key) : store.getAll();
-                     request.onsuccess = () => resolve(request.result);
-                     request.onerror = () => reject(request.error);
-                 });
-             }
-
-        async function countDBItems(storeName) {
-            const db = await openDB();
-            return new Promise((resolve, reject) => {
-                const transaction = db.transaction([storeName], 'readonly');
-                const store = transaction.objectStore(storeName);
-                const request = store.count();
-                request.onsuccess = () => resolve(request.result);
-                request.onerror = () => reject(request.error);
-            });
-        }
 
         function calculateBounds(geojson) {
             let minLng = 180, minLat = 90, maxLng = -180, maxLat = -90;
@@ -939,7 +1001,7 @@
        }
 
         map.on('click', (e) => { 
-            if (!e.originalEvent.target.closest('.menu, .search-bar, .search-results, .kmz-menu, .line-menu, .loaded-files-menu, .style-menu, .marker-group-menu, .offline-menu, .maplibregl-popup, .route-panel, .storage-menu, .toggle-menu-btn, .tools-menu')) {
+            if (!e.originalEvent.target.closest('.menu, .search-bar, .search-results, .kmz-menu, .line-menu, .loaded-files-menu, .style-menu, .marker-group-menu, .offline-menu, .maplibregl-popup, .route-panel, .storage-menu, .toggle-menu-btn, .tools-menu, .trail-menu')) {
                 kmzMenu.style.display = 'none';
                 lineMenu.style.display = 'none';
                 loadedFilesMenu.style.display = 'none';
@@ -949,6 +1011,7 @@
                 offlineMenu.style.display = 'none'; 
                 storageMenu.style.display = 'none';
                 toolsMenu.style.display = 'none'; 
+                trailMenu.style.display = 'none';
             }
         });
 
@@ -1030,12 +1093,12 @@
                     type: 'Feature',
                     geometry: {
                         type: 'LineString',
-                        coordinates: []
+                        coordinates: trailCoordinates
                     }
                 }
             });
 
-            // --- LAYER PARA O RASTRO DO USUÁRIO (ROSA CHOQUE PARA DESTAQUE) ---
+            // --- LAYER PARA O RASTRO DO USUÁRIO ---
             map.addLayer({
                 id: 'user-trail-layer',
                 type: 'line',
@@ -1169,15 +1232,23 @@
         // --- FUNÇÃO PARA CONTROLAR O RASTRO DE INSPEÇÃO ---
         chkUserTrail.addEventListener('change', (e) => {
             if (e.target.checked) {
+                // Ao ativar, tenta carregar o que já existe no banco
+                loadSavedTrail();
+
                 // Iniciar gravação
                 if (navigator.geolocation) {
                     alert("Iniciando gravação do rastro de inspeção...");
                     trailWatchId = navigator.geolocation.watchPosition((pos) => {
                         const coord = [pos.coords.longitude, pos.coords.latitude];
                         
-                        // Opcional: Adicionar lógica para só adicionar se tiver se movido X metros
-                        // Para simplificar, vamos adicionar tudo e deixar o mapa desenhar
+                        // Adiciona ao array local
                         trailCoordinates.push(coord);
+                        
+                        // Atualiza contador na UI
+                        trailPointCount.textContent = trailCoordinates.length;
+
+                        // SALVA NO INDEXEDDB
+                        saveDataToDB(TRAIL_STORE_NAME, { name: 'current_trail', coordinates: trailCoordinates });
 
                         // Atualiza a fonte de dados do mapa
                         const source = map.getSource('user-trail');
@@ -1204,16 +1275,43 @@
                     e.target.checked = false;
                 }
             } else {
-                // Parar gravação
+                // Parar gravação (mas mantém o desenho e o salvo)
                 if (trailWatchId !== null) {
                     navigator.geolocation.clearWatch(trailWatchId);
                     trailWatchId = null;
-                    alert("Gravação do rastro parada.");
+                    alert("Gravação do rastro parada (dados mantidos).");
                 }
-                // Nota: O rastro continua desenhado na tela até recarregar a página
-                // Se quiser limpar ao desligar, descomente a linha abaixo:
-                // trailCoordinates = []; map.getSource('user-trail').setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: [] } });
             }
+        });
+
+        // --- BOTÃO DELETAR RASTRO DO INDEXEDDB ---
+        btnDeleteTrail.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            if(confirm('Tem certeza que deseja apagar todo o rastro gravado?')) {
+                trailCoordinates = [];
+                
+                // Apaga do Banco de Dados
+                await deleteDataFromDB(TRAIL_STORE_NAME, 'current_trail');
+
+                // Limpa do Mapa
+                const source = map.getSource('user-trail');
+                if(source) {
+                    source.setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: [] } });
+                }
+                
+                trailPointCount.textContent = '0';
+                
+                if(chkUserTrail.checked) {
+                    chkUserTrail.click(); // Desativa o switch se estiver ligado
+                }
+                alert('Rastro apagado com sucesso.');
+            }
+        });
+
+        // Botão do Menu de Rastro
+        btnTrailMenu.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleVisibility(trailMenu);
         });
 
         offlineToggle.addEventListener('change', (event) => {
@@ -1330,12 +1428,12 @@
         document.getElementById('btnSupport').addEventListener('click', (e) => { e.stopPropagation(); window.open('https://chat.whatsapp.com/KmBQvO3u5Pm53cV3XWz2dX', '_blank'); });
 
         function toggleVisibility(element) {
-            [kmzMenu, lineMenu, loadedFilesMenu, styleMenu, markerGroupMenu, offlineMenu, routePanel, storageMenu, toolsMenu].forEach(menu => {
+            [kmzMenu, lineMenu, loadedFilesMenu, styleMenu, markerGroupMenu, offlineMenu, routePanel, storageMenu, toolsMenu, trailMenu].forEach(menu => {
                 if (menu !== element) {
                     if (menu === routePanel && state.isRoutePlanning) {} else { menu.style.display = 'none'; }
                 }
             });
-            if ([routePanel, offlineMenu, storageMenu, toolsMenu].includes(element)) {
+            if ([routePanel, offlineMenu, storageMenu, toolsMenu, trailMenu].includes(element)) {
                 if (element === routePanel) element.style.display = state.isRoutePlanning ? 'flex' : 'none';
                 else element.style.display = (element.style.display === 'flex') ? 'none' : 'flex';
             } else {
