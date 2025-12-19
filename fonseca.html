@@ -81,7 +81,6 @@
         .switch { position: relative; display: inline-block; width: 50px; height: 24px; flex-shrink: 0; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; }
-        .slider.round { border-radius: 24px; }
         .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; }
         input:checked + .slider { background-color: #4285F4; }
         input:checked + .slider:before { transform: translateX(26px); }
@@ -1118,7 +1117,7 @@
                         directionsBtn.addEventListener('click', () => {
                             const lat = coordinates[1];
                             const lng = coordinates[0];
-                            const url = `http://googleusercontent.com/maps.google.com/maps?daddr=${lat},${lng}&travelmode=driving`;
+                            const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
                             window.open(url, '_blank');
                         });
                     }
@@ -1309,15 +1308,12 @@
 
         // --- FUNÇÃO CORRIGIDA PARA ATUALIZAR CORES ---
         function applyColorUpdate(groupName, sourceId, newColor) {
-            // 1. Atualizar o mapa global de cores
             groupColorMap.set(groupName, newColor);
             saveGroupColorMap();
 
-            // 2. Encontrar o arquivo correto no estado
             const file = state.files.find(f => f.sourceId === sourceId);
             if (!file) return;
 
-            // 3. Atualizar as features do GeoJSON diretamente
             let hasChanges = false;
             file.lineFeatures.features.forEach(feature => {
                 const featureGroup = feature.properties[file.groupingProperty];
@@ -1327,7 +1323,6 @@
                 }
             });
 
-            // 4. Forçar a atualização no mapa
             if (hasChanges) {
                 const source = map.getSource(file.sourceId + '-lines');
                 if (source) {
@@ -1335,8 +1330,6 @@
                 }
             }
 
-            // 5. Sincronizar com os inputs do menu lateral
-            // Usamos try-catch para evitar erros se o seletor for inválido
             try {
                 const menuInputs = document.querySelectorAll(`input[type="color"][data-group-name="${groupName}"][data-source-id="${sourceId}"]`);
                 menuInputs.forEach(input => input.value = newColor);
@@ -1814,7 +1807,7 @@
                             const directionsBtn = popupElement.querySelector(`#popup-directions-btn-${featureId}`);
                             if (directionsBtn) {
                                 directionsBtn.addEventListener('click', () => {
-                                    const url = `http://googleusercontent.com/maps.google.com/maps?daddr=${coordinates[1]},${coordinates[0]}&travelmode=driving`;
+                                    const url = `https://www.google.com/maps/dir/?api=1&destination=${coordinates[1]},${coordinates[0]}&travelmode=driving`;
                                     window.open(url, '_blank');
                                 });
                             }
@@ -1832,7 +1825,7 @@
                     e.stopPropagation();
                     const center = getFeatureCenter(result);
                     if (center) {
-                        const url = `http://googleusercontent.com/maps.google.com/maps?daddr=${center[1]},${center[0]}&travelmode=driving`;
+                        const url = `https://www.google.com/maps/dir/?api=1&destination=${center[1]},${center[0]}&travelmode=driving`;
                         window.open(url, '_blank');
                     } else { alert('Coordenadas inválidas.'); }
                 };
@@ -1920,7 +1913,7 @@
         function generateGoogleMapsUrl() {
              if (routeWaypoints.length < 1) return alert("Adicione pontos.");
              const dest = routeWaypoints[routeWaypoints.length - 1];
-             let url = `http://googleusercontent.com/maps.google.com/maps?daddr=${dest.coordinates[1]},${dest.coordinates[0]}&travelmode=driving`;
+             let url = `https://www.google.com/maps/dir/?api=1&destination=${dest.coordinates[1]},${dest.coordinates[0]}&travelmode=driving`;
              if (routeWaypoints.length > 1) {
                  const wps = routeWaypoints.slice(0, -1).map(wp => `${wp.coordinates[1]},${wp.coordinates[0]}`).join('|');
                  url += `&waypoints=${wps}`;
