@@ -54,7 +54,7 @@
         .tools-menu { width: 280px; flex-direction: column; gap: 15px; padding: 15px; }
         .tools-menu h3 { margin: 0 0 10px 0; font-size: 16px; text-align: center; border-bottom: 1px solid #eee; padding-bottom: 5px; }
         .tool-item { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
-        .tool-item label { font-size: 13px; font-weight: bold; color: #333; display: flex; justify-content: space-between; }
+        .tool-item label { font-size: 13px; font-weight: bold; color: #333; display: flex; justify-content: space-between; align-items: center; }
         .tool-item input[type="range"] { width: 100%; cursor: pointer; }
 
         .kmz-menu ul, .line-menu ul, .loaded-files-menu ul, .style-menu ul, .marker-group-menu ul { list-style: none; margin: 0; padding: 0; }
@@ -241,6 +241,13 @@
 
     <div class="tools-menu" id="toolsMenu" style="display: none;">
         <h3>Ferramentas de Visualização</h3>
+        
+        <div class="tool-item">
+            <label style="cursor: pointer;">
+                <span>Gravar Rastro de Inspeção</span>
+                <input type="checkbox" id="chkUserTrail" style="width: auto;">
+            </label>
+        </div>
         <div class="tool-item">
             <label>Espessura da Linha: <span id="valLineWidth">4</span>px</label>
             <input type="range" id="rngLineWidth" min="1" max="15" value="4">
@@ -348,6 +355,10 @@
         const MAX_WAYPOINTS = 10;
         let routeWaypoints = [];
         let routeMarkers = [];
+        
+        // VARIÁVEIS PARA O RASTRO DO USUÁRIO
+        let trailCoordinates = [];
+        let trailWatchId = null;
 
         const SYNONYM_MAP = {
             'fusivel': 'fu', 'fusiveis': 'fu', 'fusível': 'fu', 'fusíveis': 'fu',
@@ -500,6 +511,9 @@
         const btnTools = document.getElementById('btnTools');
         const toolsMenu = document.getElementById('toolsMenu');
         
+        // NOVO ELEMENTO DO CHECKBOX DE RASTRO
+        const chkUserTrail = document.getElementById('chkUserTrail');
+
         const rngLineWidth = document.getElementById('rngLineWidth');
         const valLineWidth = document.getElementById('valLineWidth');
         const rngMarkerSize = document.getElementById('rngMarkerSize');
@@ -1009,6 +1023,30 @@
             legends.forEach(legend => { legend.style.display = 'block'; });
             setTimeout(() => { legends.forEach(legend => { legend.style.display = 'none'; }); }, 5000);
 
+            // --- SOURCE PARA O RASTRO DO USUÁRIO ---
+            map.addSource('user-trail', {
+                type: 'geojson',
+                data: {
+                    type: 'Feature',
+                    geometry: {
+                        type: 'LineString',
+                        coordinates: []
+                    }
+                }
+            });
+
+            // --- LAYER PARA O RASTRO DO USUÁRIO (ROSA CHOQUE PARA DESTAQUE) ---
+            map.addLayer({
+                id: 'user-trail-layer',
+                type: 'line',
+                source: 'user-trail',
+                paint: {
+                    'line-color': '#d63384', 
+                    'line-width': 5,
+                    'line-opacity': 0.8
+                }
+            });
+
             map.addSource('dynamic-markers', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
             dynamicMarkerSource = map.getSource('dynamic-markers');
 
@@ -1127,6 +1165,56 @@
             map.on('mouseenter', 'dynamic-marker-circles', () => { map.getCanvas().style.cursor = 'pointer'; });
             map.on('mouseleave', 'dynamic-marker-circles', () => { if (!state.isRoutePlanning) map.getCanvas().style.cursor = ''; });
         }); 
+
+        // --- FUNÇÃO PARA CONTROLAR O RASTRO DE INSPEÇÃO ---
+        chkUserTrail.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                // Iniciar gravação
+                if (navigator.geolocation) {
+                    alert("Iniciando gravação do rastro de inspeção...");
+                    trailWatchId = navigator.geolocation.watchPosition((pos) => {
+                        const coord = [pos.coords.longitude, pos.coords.latitude];
+                        
+                        // Opcional: Adicionar lógica para só adicionar se tiver se movido X metros
+                        // Para simplificar, vamos adicionar tudo e deixar o mapa desenhar
+                        trailCoordinates.push(coord);
+
+                        // Atualiza a fonte de dados do mapa
+                        const source = map.getSource('user-trail');
+                        if(source) {
+                            source.setData({
+                                type: 'Feature',
+                                geometry: {
+                                    type: 'LineString',
+                                    coordinates: trailCoordinates
+                                }
+                            });
+                        }
+                    }, (err) => {
+                        console.error("Erro no GPS:", err);
+                        alert("Erro ao acessar GPS para o rastro.");
+                        e.target.checked = false;
+                    }, {
+                        enableHighAccuracy: true,
+                        maximumAge: 0,
+                        timeout: 5000
+                    });
+                } else {
+                    alert("Geolocalização não suportada neste navegador.");
+                    e.target.checked = false;
+                }
+            } else {
+                // Parar gravação
+                if (trailWatchId !== null) {
+                    navigator.geolocation.clearWatch(trailWatchId);
+                    trailWatchId = null;
+                    alert("Gravação do rastro parada.");
+                }
+                // Nota: O rastro continua desenhado na tela até recarregar a página
+                // Se quiser limpar ao desligar, descomente a linha abaixo:
+                // trailCoordinates = []; map.getSource('user-trail').setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: [] } });
+            }
+        });
 
         offlineToggle.addEventListener('change', (event) => {
             const isChecked = event.target.checked;
@@ -1664,6 +1752,32 @@
                     });
                 }
 
+                // --- RESTAURA O RASTRO DE USUÁRIO AO MUDAR DE ESTILO ---
+                if (!map.getSource('user-trail')) {
+                    map.addSource('user-trail', {
+                        type: 'geojson',
+                        data: {
+                            type: 'Feature',
+                            geometry: {
+                                type: 'LineString',
+                                coordinates: trailCoordinates
+                            }
+                        }
+                    });
+                }
+                if (!map.getLayer('user-trail-layer')) {
+                    map.addLayer({
+                        id: 'user-trail-layer',
+                        type: 'line',
+                        source: 'user-trail',
+                        paint: {
+                            'line-color': '#d63384', 
+                            'line-width': 5,
+                            'line-opacity': 0.8
+                        }
+                    });
+                }
+
                 state.files.forEach(file => {
                     if (file.hasLines) {
                         const sourceIdLines = file.sourceId + '-lines';
@@ -1690,6 +1804,7 @@
                     }
                 });
 
+                if (map.getLayer('user-trail-layer')) map.moveLayer('user-trail-layer');
                 if (map.getLayer('dynamic-marker-circles')) map.moveLayer('dynamic-marker-circles');
                 if (map.getLayer('dynamic-marker-labels')) map.moveLayer('dynamic-marker-labels');
 
