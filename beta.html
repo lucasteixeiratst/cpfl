@@ -81,6 +81,7 @@
         .switch { position: relative; display: inline-block; width: 50px; height: 24px; flex-shrink: 0; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; }
+        .slider.round { border-radius: 24px; }
         .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; }
         input:checked + .slider { background-color: #4285F4; }
         input:checked + .slider:before { transform: translateX(26px); }
@@ -396,9 +397,7 @@
         let dynamicMarkerSource = null;
         let updateMarkersTimeout;
 
-        // --- ESTILOS ESRI (CORRIGIDO) ---
-        
-        // Opção 1: Limpo (Só Imagem)
+        // --- ESTILOS ESRI ---
         const esriSatelliteCleanStyle = {
             'version': 8,
             'sources': {
@@ -416,7 +415,6 @@
             'glyphs': 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf'
         };
 
-        // Opção 2: Híbrido (Imagem + Ruas + Nomes)
         const esriSatelliteHybridStyle = {
             'version': 8,
             'sources': {
@@ -1120,7 +1118,7 @@
                         directionsBtn.addEventListener('click', () => {
                             const lat = coordinates[1];
                             const lng = coordinates[0];
-                            const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
+                            const url = `http://googleusercontent.com/maps.google.com/maps?daddr=${lat},${lng}&travelmode=driving`;
                             window.open(url, '_blank');
                         });
                     }
@@ -1309,26 +1307,40 @@
             return toGeoJSON.kml(new DOMParser().parseFromString(kmlContent, 'text/xml'));
         }
 
+        // --- FUNÇÃO CORRIGIDA PARA ATUALIZAR CORES ---
         function applyColorUpdate(groupName, sourceId, newColor) {
+            // 1. Atualizar o mapa global de cores
             groupColorMap.set(groupName, newColor);
             saveGroupColorMap();
+
+            // 2. Encontrar o arquivo correto no estado
             const file = state.files.find(f => f.sourceId === sourceId);
             if (!file) return;
 
-            let featuresUpdated = false;
+            // 3. Atualizar as features do GeoJSON diretamente
+            let hasChanges = false;
             file.lineFeatures.features.forEach(feature => {
-                if (feature.properties && feature.properties[file.groupingProperty] === groupName) {
+                const featureGroup = feature.properties[file.groupingProperty];
+                if (featureGroup === groupName) {
                     feature.properties.color = newColor;
-                    featuresUpdated = true;
+                    hasChanges = true;
                 }
             });
 
-            if (featuresUpdated) {
+            // 4. Forçar a atualização no mapa
+            if (hasChanges) {
                 const source = map.getSource(file.sourceId + '-lines');
-                if (source) source.setData(file.lineFeatures);
+                if (source) {
+                    source.setData(file.lineFeatures);
+                }
             }
-            const menuInput = document.querySelector(`input[type="color"][data-group-name="${groupName}"][data-source-id="${sourceId}"]`);
-            if (menuInput) menuInput.value = newColor;
+
+            // 5. Sincronizar com os inputs do menu lateral
+            // Usamos try-catch para evitar erros se o seletor for inválido
+            try {
+                const menuInputs = document.querySelectorAll(`input[type="color"][data-group-name="${groupName}"][data-source-id="${sourceId}"]`);
+                menuInputs.forEach(input => input.value = newColor);
+            } catch(e) { console.log("Erro ao atualizar input do menu"); }
         }
 
         function handleColorChange(event) {
@@ -1414,13 +1426,15 @@
             }
             if (groupingProperty && groupsSet.size > 0) state.selectedGroups.set(sourceId, new Set(groupsSet));
 
-            state.files.push({
+            // CRIAÇÃO DO OBJETO FILE
+            const newFileEntry = {
                 name: fileName,
                 sourceId: sourceId,
                 hasLines: lineFeatures.features.length > 0,
                 groupingProperty: groupingProperty,
                 lineFeatures: lineFeatures
-            });
+            };
+            state.files.push(newFileEntry);
 
             if (lineFeatures.features.length > 0) {
                 if (!map.getSource(sourceId + '-lines')) map.addSource(sourceId + '-lines', { type: 'geojson', data: lineFeatures });
@@ -1435,20 +1449,32 @@
                          layout: { 'visibility': state.linesVisible ? 'visible' : 'none' } 
                      });
                      
+                     // --- CORREÇÃO DO EVENTO DE CLIQUE NA LINHA ---
                      map.on('click', lineLayerId, (e) => {
                          e.originalEvent.stopPropagation(); 
                          const feature = e.features[0];
                          const name = feature.properties.Alimentador || feature.properties.name || 'Sem Nome';
                          const groupName = feature.properties[groupingProperty];
                          const currentColor = groupColorMap.get(groupName) || '#000000';
+                         
                          const popupContainer = document.createElement('div');
                          popupContainer.innerHTML = `<strong>${name}</strong><br><label style="font-size:12px;margin-right:5px">Mudar Cor:</label>`;
+                         
                          const colorInput = document.createElement('input');
-                         colorInput.type = 'color'; colorInput.value = currentColor; colorInput.style.cursor = 'pointer';
-                         colorInput.addEventListener('change', (ev) => applyColorUpdate(groupName, file.sourceId, ev.target.value));
+                         colorInput.type = 'color'; 
+                         colorInput.value = currentColor; 
+                         colorInput.style.cursor = 'pointer';
+                         
+                         // Usa 'input' para mudar em tempo real
+                         colorInput.addEventListener('input', (ev) => {
+                             // Passa o ID correto do arquivo recém criado
+                             applyColorUpdate(groupName, newFileEntry.sourceId, ev.target.value);
+                         });
+                         
                          popupContainer.appendChild(colorInput);
                          new maplibregl.Popup().setLngLat(e.lngLat).setDOMContent(popupContainer).addTo(map);
                      });
+
                      map.on('mouseenter', lineLayerId, () => map.getCanvas().style.cursor = 'pointer');
                      map.on('mouseleave', lineLayerId, () => { if (!state.isRoutePlanning) map.getCanvas().style.cursor = ''; });
                 }
@@ -1744,13 +1770,59 @@
                 const actionsDiv = document.createElement('div');
                 actionsDiv.className = 'result-actions';
 
+                // --- BOTÃO VER (MODIFICADO) ---
                 const btnVer = document.createElement('button');
                 btnVer.textContent = 'Ver';
                 btnVer.onclick = (e) => {
                     e.stopPropagation();
                     const center = getFeatureCenter(result);
-                    if(center) { map.flyTo({ center: center, zoom: 16 }); searchResults.style.display = 'none'; } 
-                    else { alert('Localização inválida.'); }
+                    
+                    if(center) { 
+                        // 1. Move a câmera para o local
+                        map.flyTo({ center: center, zoom: 16 }); 
+                        searchResults.style.display = 'none'; 
+
+                        // 2. LÓGICA DO POPUP (ADICIONADA)
+                        const coordinates = center;
+                        const properties = result.properties;
+                        const displayName = properties.name || properties.Alimentador || 'Sem nome';
+                        // Gera um ID único para os botões dentro do popup
+                        const featureId = result.id || (displayName + coordinates.join('')).replace(/[^a-z0-9]/gi, '');
+
+                        let popupHTML;
+                        if (state.isRoutePlanning) {
+                            popupHTML = `<div><strong>${displayName}</strong><br><button id="popup-add-route-btn-${featureId}" style="margin-top: 5px; padding: 3px 8px; font-size: 11px; cursor: pointer; background-color: #f7b731; color: black; border: none; border-radius: 3px;">Adicionar à Rota</button></div>`;
+                        } else {
+                            popupHTML = `<div><strong>${displayName}</strong><br><button id="popup-directions-btn-${featureId}" style="margin-top: 5px; padding: 3px 8px; font-size: 11px; cursor: pointer;">Obter Rota (Google Maps)</button></div>`;
+                        }
+
+                        // Cria e adiciona o popup ao mapa
+                        const popup = new maplibregl.Popup({ closeOnClick: true, offset: 15 })
+                            .setLngLat(coordinates)
+                            .setHTML(popupHTML)
+                            .addTo(map);
+
+                        // Adiciona os eventos de clique aos botões DENTRO do popup recém-criado
+                        const popupElement = popup.getElement();
+
+                        if (state.isRoutePlanning) {
+                            const addRouteBtn = popupElement.querySelector(`#popup-add-route-btn-${featureId}`);
+                            if (addRouteBtn) {
+                                addRouteBtn.addEventListener('click', () => { addWaypointToRoute(result); popup.remove(); });
+                            }
+                        } else {
+                            const directionsBtn = popupElement.querySelector(`#popup-directions-btn-${featureId}`);
+                            if (directionsBtn) {
+                                directionsBtn.addEventListener('click', () => {
+                                    const url = `http://googleusercontent.com/maps.google.com/maps?daddr=${coordinates[1]},${coordinates[0]}&travelmode=driving`;
+                                    window.open(url, '_blank');
+                                });
+                            }
+                        }
+
+                    } else { 
+                        alert('Localização inválida.'); 
+                    }
                 };
 
                 const btnRota = document.createElement('button');
@@ -1760,7 +1832,7 @@
                     e.stopPropagation();
                     const center = getFeatureCenter(result);
                     if (center) {
-                        const url = `https://www.google.com/maps/dir/?api=1&destination=${center[1]},${center[0]}&travelmode=driving`;
+                        const url = `http://googleusercontent.com/maps.google.com/maps?daddr=${center[1]},${center[0]}&travelmode=driving`;
                         window.open(url, '_blank');
                     } else { alert('Coordenadas inválidas.'); }
                 };
@@ -1848,7 +1920,7 @@
         function generateGoogleMapsUrl() {
              if (routeWaypoints.length < 1) return alert("Adicione pontos.");
              const dest = routeWaypoints[routeWaypoints.length - 1];
-             let url = `https://www.google.com/maps/dir/?api=1&destination=${dest.coordinates[1]},${dest.coordinates[0]}&travelmode=driving`;
+             let url = `http://googleusercontent.com/maps.google.com/maps?daddr=${dest.coordinates[1]},${dest.coordinates[0]}&travelmode=driving`;
              if (routeWaypoints.length > 1) {
                  const wps = routeWaypoints.slice(0, -1).map(wp => `${wp.coordinates[1]},${wp.coordinates[0]}`).join('|');
                  url += `&waypoints=${wps}`;
