@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Visualizador de Mapas</title>
+    <title>Visualizador de Mapas Pro</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: Arial, sans-serif; position: relative; }
@@ -50,20 +50,31 @@
         .loaded-files-menu { width: 220px; }
         .style-menu { width: 200px; }
         .marker-group-menu { width: 240px; }
-        .trail-menu { width: 250px; flex-direction: column; gap: 10px; padding: 15px; }
+        .trail-menu { width: 300px; flex-direction: column; gap: 10px; padding: 15px; }
         
         .tools-menu { width: 280px; flex-direction: column; gap: 15px; padding: 15px; }
         .tools-menu h3, .trail-menu h3 { margin: 0 0 10px 0; font-size: 16px; text-align: center; border-bottom: 1px solid #eee; padding-bottom: 5px; }
         .tool-item { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
         .tool-item label { font-size: 13px; font-weight: bold; color: #333; display: flex; justify-content: space-between; align-items: center; }
-        .tool-item input[type="range"] { width: 100%; cursor: pointer; }
+        .tool-item input[type="range"], .tool-item select, .tool-item input[type="color"] { width: 100%; cursor: pointer; }
+        .tool-item select { padding: 5px; border-radius: 4px; border: 1px solid #ccc; }
 
-        .kmz-menu ul, .line-menu ul, .loaded-files-menu ul, .style-menu ul, .marker-group-menu ul { list-style: none; margin: 0; padding: 0; }
+        .kmz-menu ul, .line-menu ul, .loaded-files-menu ul, .style-menu ul, .marker-group-menu ul, .trail-list { list-style: none; margin: 0; padding: 0; }
         .kmz-menu li, .line-menu li, .style-menu li, .marker-group-menu li { padding: 8px 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0; }
         .kmz-menu li:hover, .style-menu li:hover { background-color: #f0f0f0; }
         
         .loaded-files-menu li { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #f0f0f0; }
         .loaded-files-menu li button { background-color: #e74c3c; color: white; border: none; padding: 3px 6px; border-radius: 4px; cursor: pointer; font-size: 10px; }
+
+        /* Lista de Rastros */
+        .trail-list li { padding: 8px 0; border-bottom: 1px solid #eee; display: flex; flex-direction: column; gap: 5px; }
+        .trail-item-header { display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 13px; }
+        .trail-item-actions { display: flex; gap: 5px; justify-content: flex-end; }
+        .trail-item-actions button { background: #eee; border: 1px solid #ccc; border-radius: 4px; padding: 4px 8px; font-size: 11px; cursor: pointer; }
+        .trail-item-actions button:hover { background: #ddd; }
+        .btn-kml { background-color: #e8f5e9 !important; color: #2e7d32; border-color: #a5d6a7 !important; }
+        .btn-del { background-color: #ffebee !important; color: #c62828; border-color: #ef9a9a !important; }
+        .btn-view { background-color: #e3f2fd !important; color: #1565c0; border-color: #90caf9 !important; }
 
         /* Menu Offline */
         .offline-menu { width: 300px; max-height: 450px; flex-direction: column; }
@@ -247,19 +258,38 @@
 
     <div class="trail-menu" id="trailMenu" style="display: none;">
         <h3>Rastro de Inspeção</h3>
-        <div class="tool-item" style="flex-direction: row; align-items: center; justify-content: space-between;">
-            <span>Ativar Gravação</span>
+        
+        <div class="tool-item">
+            <label>Cor da Linha:</label>
+            <input type="color" id="trailColor" value="#d63384" style="height:30px; padding:0;">
+        </div>
+
+        <div class="tool-item">
+            <label>Velocidade de Gravação:</label>
+            <select id="trailInterval">
+                <option value="2000">Alta Precisão (2s)</option>
+                <option value="5000" selected>Padrão (5s)</option>
+                <option value="10000">Econômico (10s)</option>
+                <option value="30000">Longo Percurso (30s)</option>
+            </select>
+        </div>
+
+        <div class="tool-item" style="flex-direction: row; align-items: center; justify-content: space-between; border-top: 1px solid #eee; padding-top: 10px; margin-top: 5px;">
+            <span>Gravar Rastro</span>
             <label class="switch">
                 <input type="checkbox" id="chkUserTrail">
                 <span class="slider round"></span>
             </label>
         </div>
-        <p style="font-size: 11px; color: #555; text-align: center; margin-top: 5px;">
-            Seu trajeto será salvo automaticamente no banco de dados.
-        </p>
-        <div style="font-size: 12px; margin-top: 10px;">
-            Pontos gravados: <span id="trailPointCount">0</span>
+        
+        <div style="font-size: 11px; text-align: center; margin-top: 5px; color:#555;">
+            Pontos atuais: <span id="trailPointCount">0</span>
         </div>
+
+        <h3 style="margin-top: 15px; font-size: 14px;">Rastros Salvos</h3>
+        <ul id="savedTrailsList" class="trail-list" style="max-height: 150px; overflow-y: auto;">
+            <li style="text-align:center; color:#999; font-size:11px;">Nenhum rastro salvo.</li>
+        </ul>
     </div>
 
     <div class="tools-menu" id="toolsMenu" style="display: none;">
@@ -346,9 +376,9 @@
         <h3>Gerenciar Armazenamento</h3>
         <p>Use com cuidado. Isso removerá dados salvos no seu navegador para este site.</p>
         <div class="storage-buttons">
-            <button id="btnDeleteTrail" class="btn-warning">
-                Apagar Rastro de Inspeção
-                <small>Remove o caminho gravado da memória.</small>
+            <button id="btnDeleteAllTrails" class="btn-warning">
+                Apagar Todos os Rastros Salvos
+                <small>Limpa a lista de histórico de inspeção.</small>
             </button>
 
             <button id="btnResetOfflineDB" class="btn-danger">
@@ -370,17 +400,18 @@
     </footer>
     <script>
         const DB_NAME = 'KMZOfflineDB';
-        const DB_VERSION = 4; // VERSÃO ATUALIZADA PARA CRIAR NOVA TABELA
+        const DB_VERSION = 4; 
         const GEOJSON_STORE_NAME = 'geojson_files';
         const SPATIAL_INDEX_STORE_NAME = 'spatial_index';
-        const TRAIL_STORE_NAME = 'user_trails'; // NOVA TABELA
+        const TRAIL_STORE_NAME = 'user_trails'; 
         const MAX_WAYPOINTS = 10;
         let routeWaypoints = [];
         let routeMarkers = [];
         
         // VARIÁVEIS PARA O RASTRO DO USUÁRIO
-        let trailCoordinates = [];
+        let currentTrailCoordinates = [];
         let trailWatchId = null;
+        let lastTrailUpdateTime = 0;
 
         const SYNONYM_MAP = {
             'fusivel': 'fu', 'fusiveis': 'fu', 'fusível': 'fu', 'fusíveis': 'fu',
@@ -435,9 +466,9 @@
                     if (!db.objectStoreNames.contains(SPATIAL_INDEX_STORE_NAME)) {
                         db.createObjectStore(SPATIAL_INDEX_STORE_NAME, { keyPath: 'name' });
                     }
-                    // NOVA STORE PARA O RASTRO
                     if (!db.objectStoreNames.contains(TRAIL_STORE_NAME)) {
-                        db.createObjectStore(TRAIL_STORE_NAME, { keyPath: 'name' });
+                        // KeyPath é 'id' (timestamp) para podermos ter vários rastros
+                        db.createObjectStore(TRAIL_STORE_NAME, { keyPath: 'id' });
                     }
                 };
                 request.onsuccess = event => resolve(event.target.result);
@@ -477,6 +508,17 @@
                 request.onerror = () => reject(request.error);
             });
         }
+        
+        async function clearStore(storeName) {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([storeName], 'readwrite');
+                const store = transaction.objectStore(storeName);
+                const request = store.clear();
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject(request.error);
+            });
+        }
 
         async function countDBItems(storeName) {
             const db = await openDB();
@@ -489,26 +531,116 @@
             });
         }
 
-        // CARREGAR RASTRO SALVO DO INDEXEDDB
-        async function loadSavedTrail() {
+        // --- ATUALIZA A LISTA DE RASTROS SALVOS NA UI ---
+        async function updateSavedTrailsList() {
+            const listEl = document.getElementById('savedTrailsList');
+            listEl.innerHTML = '';
             try {
-                const savedData = await getDataFromDB(TRAIL_STORE_NAME, 'current_trail');
-                if (savedData && savedData.coordinates) {
-                    trailCoordinates = savedData.coordinates;
-                    document.getElementById('trailPointCount').textContent = trailCoordinates.length;
-                    
-                    // Se o mapa já estiver carregado, atualiza
-                    if (map && map.getSource('user-trail')) {
-                        map.getSource('user-trail').setData({
-                            type: 'Feature',
-                            geometry: { type: 'LineString', coordinates: trailCoordinates }
-                        });
-                    }
+                const trails = await getDataFromDB(TRAIL_STORE_NAME);
+                if (!trails || trails.length === 0) {
+                    listEl.innerHTML = '<li style="text-align:center; color:#999; font-size:11px;">Nenhum rastro salvo.</li>';
+                    return;
                 }
-            } catch(e) { console.error("Erro ao carregar rastro do DB", e); }
+                
+                // Ordenar do mais recente para o mais antigo
+                trails.sort((a, b) => b.id - a.id);
+
+                trails.forEach(trail => {
+                    const li = document.createElement('li');
+                    
+                    const header = document.createElement('div');
+                    header.className = 'trail-item-header';
+                    const date = new Date(trail.id).toLocaleDateString('pt-BR');
+                    const time = new Date(trail.id).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+                    header.innerHTML = `<span>${trail.name || 'Rastro'} (${date} ${time})</span>`;
+                    
+                    const actions = document.createElement('div');
+                    actions.className = 'trail-item-actions';
+                    
+                    // Botão Ver
+                    const btnView = document.createElement('button');
+                    btnView.textContent = 'Ver';
+                    btnView.className = 'btn-view';
+                    btnView.onclick = () => {
+                        // Carrega no mapa
+                        const source = map.getSource('user-trail');
+                        if(source) {
+                            source.setData({
+                                type: 'Feature',
+                                geometry: { type: 'LineString', coordinates: trail.coordinates }
+                            });
+                            // Muda a cor da linha para a cor salva
+                            if(trail.color) {
+                                map.setPaintProperty('user-trail-layer', 'line-color', trail.color);
+                                document.getElementById('trailColor').value = trail.color;
+                            }
+                            // Zoom na linha
+                            const bounds = new maplibregl.LngLatBounds();
+                            trail.coordinates.forEach(coord => bounds.extend(coord));
+                            map.fitBounds(bounds, { padding: 50 });
+                        }
+                    };
+
+                    // Botão KML
+                    const btnKml = document.createElement('button');
+                    btnKml.textContent = 'KML';
+                    btnKml.className = 'btn-kml';
+                    btnKml.onclick = () => exportTrailToKML(trail);
+
+                    // Botão Excluir
+                    const btnDel = document.createElement('button');
+                    btnDel.textContent = 'X';
+                    btnDel.className = 'btn-del';
+                    btnDel.onclick = async () => {
+                        if(confirm('Apagar este rastro?')) {
+                            await deleteDataFromDB(TRAIL_STORE_NAME, trail.id);
+                            updateSavedTrailsList();
+                        }
+                    };
+
+                    actions.appendChild(btnView);
+                    actions.appendChild(btnKml);
+                    actions.appendChild(btnDel);
+                    
+                    li.appendChild(header);
+                    li.appendChild(actions);
+                    listEl.appendChild(li);
+                });
+            } catch(e) { console.error("Erro ao listar rastros", e); }
         }
-        // Tenta carregar ao iniciar
-        loadSavedTrail();
+
+        // --- FUNÇÃO DE EXPORTAR KML ---
+        function exportTrailToKML(trail) {
+            const coordsString = trail.coordinates.map(c => `${c[0]},${c[1]},0`).join(' ');
+            const kmlContent = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>${trail.name}</name>
+    <Style id="trailStyle">
+      <LineStyle>
+        <color>ff${trail.color.replace('#','')}00</color>
+        <width>4</width>
+      </LineStyle>
+    </Style>
+    <Placemark>
+      <name>${trail.name}</name>
+      <styleUrl>#trailStyle</styleUrl>
+      <LineString>
+        <tessellate>1</tessellate>
+        <coordinates>${coordsString}</coordinates>
+      </LineString>
+    </Placemark>
+  </Document>
+</kml>`;
+            
+            const blob = new Blob([kmlContent], { type: 'application/vnd.google-earth.kml+xml' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `Rastro_${new Date(trail.id).toISOString().slice(0,10)}.kml`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
 
         let spatialIndex = [];
         let allPointFeatures = [];
@@ -619,12 +751,14 @@
         const btnTools = document.getElementById('btnTools');
         const toolsMenu = document.getElementById('toolsMenu');
         
-        // NOVO BOTÃO DE RASTRO E MENU
+        // ELEMENTOS DO RASTRO
         const btnTrailMenu = document.getElementById('btnTrailMenu');
         const trailMenu = document.getElementById('trailMenu');
         const chkUserTrail = document.getElementById('chkUserTrail');
         const trailPointCount = document.getElementById('trailPointCount');
-        const btnDeleteTrail = document.getElementById('btnDeleteTrail');
+        const btnDeleteAllTrails = document.getElementById('btnDeleteAllTrails');
+        const trailColorInput = document.getElementById('trailColor');
+        const trailIntervalSelect = document.getElementById('trailInterval');
 
         const rngLineWidth = document.getElementById('rngLineWidth');
         const valLineWidth = document.getElementById('valLineWidth');
@@ -1080,6 +1214,7 @@
         displayFileList();
         updateMarkerGroupMenu();
         populateOfflineFileList();
+        updateSavedTrailsList();
 
         map.on('load', () => {
             const legends = document.querySelectorAll('.button-legend');
@@ -1093,7 +1228,7 @@
                     type: 'Feature',
                     geometry: {
                         type: 'LineString',
-                        coordinates: trailCoordinates
+                        coordinates: []
                     }
                 }
             });
@@ -1104,7 +1239,7 @@
                 type: 'line',
                 source: 'user-trail',
                 paint: {
-                    'line-color': '#d63384', 
+                    'line-color': '#d63384', // Cor inicial
                     'line-width': 5,
                     'line-opacity': 0.8
                 }
@@ -1160,12 +1295,10 @@
                     filesToLoad.forEach(fileName => {
                         const file = predefinedFiles.find(f => f.name === fileName);
                         if (file) {
-                            // Tenta carregar primeiro do CACHE (ignorando URL para evitar erro file://)
                             getKMZFromCache(fileName).then(cachedData => {
                                 if (cachedData) {
                                     addDataToMap(cachedData, fileName);
                                 } else {
-                                    // Se não tiver no cache, aí sim tenta URL (pode falhar no Android file://)
                                     loadKMZFromURL(file.url, file.name);
                                 }
                             });
@@ -1229,41 +1362,63 @@
             map.on('mouseleave', 'dynamic-marker-circles', () => { if (!state.isRoutePlanning) map.getCanvas().style.cursor = ''; });
         }); 
 
+        // --- ATUALIZAR COR DO RASTRO EM TEMPO REAL ---
+        trailColorInput.addEventListener('input', (e) => {
+            const color = e.target.value;
+            if(map.getLayer('user-trail-layer')) {
+                map.setPaintProperty('user-trail-layer', 'line-color', color);
+            }
+        });
+
         // --- FUNÇÃO PARA CONTROLAR O RASTRO DE INSPEÇÃO ---
         chkUserTrail.addEventListener('change', (e) => {
             if (e.target.checked) {
-                // Ao ativar, tenta carregar o que já existe no banco
-                loadSavedTrail();
+                // Iniciar gravação - Limpa o array atual para começar novo trajeto
+                currentTrailCoordinates = [];
+                trailPointCount.textContent = '0';
+                const chosenColor = trailColorInput.value;
+                const interval = parseInt(trailIntervalSelect.value);
 
-                // Iniciar gravação
+                // Configura cor no mapa
+                if(map.getLayer('user-trail-layer')) {
+                    map.setPaintProperty('user-trail-layer', 'line-color', chosenColor);
+                    // Reseta o visual do mapa
+                    const source = map.getSource('user-trail');
+                    if(source) source.setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: [] } });
+                }
+
                 if (navigator.geolocation) {
-                    alert("Iniciando gravação do rastro de inspeção...");
+                    alert(`Iniciando gravação (Intervalo: ${interval/1000}s)...`);
+                    
                     trailWatchId = navigator.geolocation.watchPosition((pos) => {
+                        const now = Date.now();
+                        // THROTTLING: Verifica se passou tempo suficiente desde o último ponto
+                        if (now - lastTrailUpdateTime < interval) {
+                            return;
+                        }
+                        lastTrailUpdateTime = now;
+
                         const coord = [pos.coords.longitude, pos.coords.latitude];
-                        
-                        // Adiciona ao array local
-                        trailCoordinates.push(coord);
-                        
-                        // Atualiza contador na UI
-                        trailPointCount.textContent = trailCoordinates.length;
+                        currentTrailCoordinates.push(coord);
+                        trailPointCount.textContent = currentTrailCoordinates.length;
 
-                        // SALVA NO INDEXEDDB
-                        saveDataToDB(TRAIL_STORE_NAME, { name: 'current_trail', coordinates: trailCoordinates });
-
-                        // Atualiza a fonte de dados do mapa
+                        // Atualiza mapa
                         const source = map.getSource('user-trail');
                         if(source) {
                             source.setData({
                                 type: 'Feature',
-                                geometry: {
-                                    type: 'LineString',
-                                    coordinates: trailCoordinates
-                                }
+                                geometry: { type: 'LineString', coordinates: currentTrailCoordinates }
                             });
                         }
+                        
+                        // Centraliza no usuário se for o primeiro ponto
+                        if(currentTrailCoordinates.length === 1) {
+                            map.flyTo({ center: coord, zoom: 16 });
+                        }
+
                     }, (err) => {
                         console.error("Erro no GPS:", err);
-                        alert("Erro ao acessar GPS para o rastro.");
+                        alert("Erro ao acessar GPS.");
                         e.target.checked = false;
                     }, {
                         enableHighAccuracy: true,
@@ -1271,40 +1426,46 @@
                         timeout: 5000
                     });
                 } else {
-                    alert("Geolocalização não suportada neste navegador.");
+                    alert("GPS não suportado.");
                     e.target.checked = false;
                 }
             } else {
-                // Parar gravação (mas mantém o desenho e o salvo)
+                // Parar gravação e SALVAR no Banco
                 if (trailWatchId !== null) {
                     navigator.geolocation.clearWatch(trailWatchId);
                     trailWatchId = null;
-                    alert("Gravação do rastro parada (dados mantidos).");
+                    
+                    if (currentTrailCoordinates.length > 0) {
+                        const trailData = {
+                            id: Date.now(),
+                            name: `Rastro ${new Date().toLocaleDateString('pt-BR')}`,
+                            color: trailColorInput.value,
+                            coordinates: [...currentTrailCoordinates] // Copia
+                        };
+                        
+                        saveDataToDB(TRAIL_STORE_NAME, trailData).then(() => {
+                            alert("Rastro salvo com sucesso!");
+                            updateSavedTrailsList();
+                        });
+                    } else {
+                        alert("Gravação parada. Nenhum ponto capturado.");
+                    }
                 }
             }
         });
 
-        // --- BOTÃO DELETAR RASTRO DO INDEXEDDB ---
-        btnDeleteTrail.addEventListener('click', async (e) => {
+        // --- BOTÃO DELETAR TODOS OS RASTROS ---
+        btnDeleteAllTrails.addEventListener('click', async (e) => {
             e.stopPropagation();
-            if(confirm('Tem certeza que deseja apagar todo o rastro gravado?')) {
-                trailCoordinates = [];
+            if(confirm('ATENÇÃO: Isso apagará TODOS os rastros salvos no histórico. Continuar?')) {
+                await clearStore(TRAIL_STORE_NAME);
+                updateSavedTrailsList();
                 
-                // Apaga do Banco de Dados
-                await deleteDataFromDB(TRAIL_STORE_NAME, 'current_trail');
-
-                // Limpa do Mapa
+                // Limpa visual
                 const source = map.getSource('user-trail');
-                if(source) {
-                    source.setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: [] } });
-                }
+                if(source) source.setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: [] } });
                 
-                trailPointCount.textContent = '0';
-                
-                if(chkUserTrail.checked) {
-                    chkUserTrail.click(); // Desativa o switch se estiver ligado
-                }
-                alert('Rastro apagado com sucesso.');
+                alert('Histórico de rastros apagado.');
             }
         });
 
@@ -1846,32 +2007,6 @@
                             'text-color': '#000000',
                             'text-halo-color': '#FFFFFF',
                             'text-halo-width': 2
-                        }
-                    });
-                }
-
-                // --- RESTAURA O RASTRO DE USUÁRIO AO MUDAR DE ESTILO ---
-                if (!map.getSource('user-trail')) {
-                    map.addSource('user-trail', {
-                        type: 'geojson',
-                        data: {
-                            type: 'Feature',
-                            geometry: {
-                                type: 'LineString',
-                                coordinates: trailCoordinates
-                            }
-                        }
-                    });
-                }
-                if (!map.getLayer('user-trail-layer')) {
-                    map.addLayer({
-                        id: 'user-trail-layer',
-                        type: 'line',
-                        source: 'user-trail',
-                        paint: {
-                            'line-color': '#d63384', 
-                            'line-width': 5,
-                            'line-opacity': 0.8
                         }
                     });
                 }
