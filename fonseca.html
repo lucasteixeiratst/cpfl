@@ -50,7 +50,7 @@
         .loaded-files-menu { width: 220px; }
         .style-menu { width: 200px; }
         .marker-group-menu { width: 240px; }
-        .trail-menu { width: 300px; flex-direction: column; gap: 10px; padding: 15px; }
+        .trail-menu { width: 320px; flex-direction: column; gap: 10px; padding: 15px; } /* Aumentei a largura */
         
         .tools-menu { width: 280px; flex-direction: column; gap: 15px; padding: 15px; }
         .tools-menu h3, .trail-menu h3 { margin: 0 0 10px 0; font-size: 16px; text-align: center; border-bottom: 1px solid #eee; padding-bottom: 5px; }
@@ -68,11 +68,12 @@
 
         /* Lista de Rastros */
         .trail-list li { padding: 8px 0; border-bottom: 1px solid #eee; display: flex; flex-direction: column; gap: 5px; }
-        .trail-item-header { display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 13px; }
+        .trail-item-header { display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 12px; }
         .trail-item-actions { display: flex; gap: 5px; justify-content: flex-end; }
         .trail-item-actions button { background: #eee; border: 1px solid #ccc; border-radius: 4px; padding: 4px 8px; font-size: 11px; cursor: pointer; }
         .trail-item-actions button:hover { background: #ddd; }
         .btn-kml { background-color: #e8f5e9 !important; color: #2e7d32; border-color: #a5d6a7 !important; }
+        .btn-whatsapp { background-color: #25D366 !important; color: #fff; border-color: #128C7E !important; font-weight: bold; }
         .btn-del { background-color: #ffebee !important; color: #c62828; border-color: #ef9a9a !important; }
         .btn-view { background-color: #e3f2fd !important; color: #1565c0; border-color: #90caf9 !important; }
 
@@ -587,6 +588,12 @@
                     btnKml.className = 'btn-kml';
                     btnKml.onclick = () => exportTrailToKML(trail);
 
+                    // Botão WHATSAPP
+                    const btnZap = document.createElement('button');
+                    btnZap.innerHTML = '<img src="ícones/share-2.svg" style="width:12px; height:12px; filter: brightness(0) invert(1);">';
+                    btnZap.className = 'btn-whatsapp';
+                    btnZap.onclick = () => shareTrailOnWhatsApp(trail);
+
                     // Botão Excluir
                     const btnDel = document.createElement('button');
                     btnDel.textContent = 'X';
@@ -600,6 +607,7 @@
 
                     actions.appendChild(btnView);
                     actions.appendChild(btnKml);
+                    actions.appendChild(btnZap); // Adiciona botão zap
                     actions.appendChild(btnDel);
                     
                     li.appendChild(header);
@@ -609,8 +617,8 @@
             } catch(e) { console.error("Erro ao listar rastros", e); }
         }
 
-        // --- FUNÇÃO DE EXPORTAR KML ---
-        function exportTrailToKML(trail) {
+        // --- FUNÇÃO DE EXPORTAR KML (Retorna blob ou baixa) ---
+        function createKMLBlob(trail) {
             const coordsString = trail.coordinates.map(c => `${c[0]},${c[1]},0`).join(' ');
             const kmlContent = `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
@@ -632,14 +640,44 @@
     </Placemark>
   </Document>
 </kml>`;
-            
-            const blob = new Blob([kmlContent], { type: 'application/vnd.google-earth.kml+xml' });
+            return new Blob([kmlContent], { type: 'application/vnd.google-earth.kml+xml' });
+        }
+
+        function exportTrailToKML(trail) {
+            const blob = createKMLBlob(trail);
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
             link.download = `Rastro_${new Date(trail.id).toISOString().slice(0,10)}.kml`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+        }
+
+        // --- FUNÇÃO DE COMPARTILHAR WHATSAPP ---
+        async function shareTrailOnWhatsApp(trail) {
+            const blob = createKMLBlob(trail);
+            const file = new File([blob], `Rastro_${trail.name}.kml`, { type: 'application/vnd.google-earth.kml+xml' });
+
+            // Tenta usar o compartilhamento nativo (Celular)
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({
+                        files: [file],
+                        title: 'Rastro de Inspeção',
+                        text: `Segue o arquivo KML do rastro: ${trail.name}`
+                    });
+                } catch (error) {
+                    console.log('Erro ao compartilhar ou cancelado:', error);
+                }
+            } else {
+                // Fallback para Desktop (Link com texto e coordenadas de início)
+                const startCoord = trail.coordinates[0];
+                const date = new Date(trail.id).toLocaleDateString('pt-BR');
+                const text = `*Rastro de Inspeção*\nNome: ${trail.name}\nData: ${date}\nInício: https://www.google.com/maps/search/?api=1&query=${startCoord[1]},${startCoord[0]}`;
+                const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+                window.open(url, '_blank');
+                alert("No computador, o WhatsApp Web não permite anexar arquivos automaticamente. O link com a localização inicial foi aberto.");
+            }
         }
 
         let spatialIndex = [];
