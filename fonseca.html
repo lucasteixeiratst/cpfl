@@ -50,7 +50,15 @@
         .loaded-files-menu { width: 220px; }
         .style-menu { width: 200px; }
         .marker-group-menu { width: 240px; }
-        .trail-menu { width: 320px; flex-direction: column; gap: 10px; padding: 15px; } /* Aumentei a largura */
+        
+        /* AJUSTE NO CSS DO MENU DE RASTRO */
+        .trail-menu { 
+            width: 280px; /* Diminuído para caber na tela */ 
+            max-height: 65vh; /* Aumentado para descer mais */
+            flex-direction: column; 
+            gap: 10px; 
+            padding: 15px; 
+        }
         
         .tools-menu { width: 280px; flex-direction: column; gap: 15px; padding: 15px; }
         .tools-menu h3, .trail-menu h3 { margin: 0 0 10px 0; font-size: 16px; text-align: center; border-bottom: 1px solid #eee; padding-bottom: 5px; }
@@ -288,7 +296,7 @@
         </div>
 
         <h3 style="margin-top: 15px; font-size: 14px;">Rastros Salvos</h3>
-        <ul id="savedTrailsList" class="trail-list" style="max-height: 150px; overflow-y: auto;">
+        <ul id="savedTrailsList" class="trail-list" style="max-height: 350px; overflow-y: auto;">
             <li style="text-align:center; color:#999; font-size:11px;">Nenhum rastro salvo.</li>
         </ul>
     </div>
@@ -673,7 +681,7 @@
                 // Fallback para Desktop (Link com texto e coordenadas de início)
                 const startCoord = trail.coordinates[0];
                 const date = new Date(trail.id).toLocaleDateString('pt-BR');
-                const text = `*Rastro de Inspeção*\nNome: ${trail.name}\nData: ${date}\nInício: https://www.google.com/maps/search/?api=1&query=${startCoord[1]},${startCoord[0]}`;
+                const text = `*Rastro de Inspeção*\nNome: ${trail.name}\nData: ${date}\nInício: https://www.google.com/maps/dir/?api=1&destination=${startCoord[1]},${startCoord[0]}`;
                 const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
                 window.open(url, '_blank');
                 alert("No computador, o WhatsApp Web não permite anexar arquivos automaticamente. O link com a localização inicial foi aberto.");
