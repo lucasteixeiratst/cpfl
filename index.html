@@ -53,8 +53,8 @@
         
         /* AJUSTE NO CSS DO MENU DE RASTRO */
         .trail-menu { 
-            width: 280px; /* Diminuído para caber na tela */ 
-            max-height: 65vh; /* Aumentado para descer mais */
+            width: 280px; 
+            max-height: 65vh; 
             flex-direction: column; 
             gap: 10px; 
             padding: 15px; 
@@ -322,6 +322,7 @@
     </div>
 
     <div class="line-menu" id="lineMenu">
+        <input type="text" id="lineGroupSearch" placeholder="Buscar alimentador..." style="width: 93%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; display: block;">
         <div class="visibility-toggle">
             <label>
                 <input type="checkbox" id="toggleAllLinesVisibility"> Exibir Todas as Linhas
@@ -1578,6 +1579,22 @@
         document.getElementById('btnStorageMenu').addEventListener('click', (e) => { e.stopPropagation(); toggleVisibility(storageMenu); });
         btnToggleUI.addEventListener('click', (e) => { e.stopPropagation(); mainMenu.classList.toggle('hidden'); });
         btnTools.addEventListener('click', (e) => { e.stopPropagation(); toggleVisibility(toolsMenu); });
+
+        // --- LÓGICA DE FILTRO DO MENU DE LINHAS (NOVA) ---
+        document.getElementById('lineGroupSearch').addEventListener('input', function(e) {
+            const term = normalizeText(e.target.value);
+            const items = lineGroupsList.querySelectorAll('li');
+            
+            items.forEach(item => {
+                const text = normalizeText(item.textContent);
+                // Exibe se o texto corresponder ou se for um cabeçalho (que não tem checkbox)
+                if (text.includes(term)) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
 
         function updateMapVisuals() {
             state.files.forEach(file => {
