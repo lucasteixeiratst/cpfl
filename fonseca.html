@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Visualizador de Mapas Pro</title>
+    <title>Visualizador de Mapas</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: Arial, sans-serif; position: relative; }
@@ -1320,7 +1320,7 @@
                 paint: {
                     'text-color': '#000000',
                     'text-halo-color': '#FFFFFF',
-                    'text-halo-width': 1
+                    'text-halo-width': 2
                 }
             });
 
@@ -1823,19 +1823,24 @@
             state.files.push(newFileEntry);
 
             if (lineFeatures.features.length > 0) {
-                if (!map.getSource(sourceId + '-lines')) map.addSource(sourceId + '-lines', { type: 'geojson', data: lineFeatures });
-                else map.getSource(sourceId + '-lines').setData(lineFeatures);
+                const sourceIdLines = sourceId + '-lines';
+                if (!map.getSource(sourceIdLines)) map.addSource(sourceIdLines, { type: 'geojson', data: lineFeatures });
+                else map.getSource(sourceIdLines).setData(lineFeatures);
                 
                 if (!map.getLayer(lineLayerId)) { 
+                     // --- CORREÇÃO AQUI ---
+                     // Verifica se existe a camada de marcadores para colocar a linha ABAIXO dela
+                     const layerBelow = map.getLayer('dynamic-marker-circles') ? 'dynamic-marker-circles' : undefined;
+
                      map.addLayer({ 
                          id: lineLayerId, 
                          type: 'line', 
-                         source: sourceId + '-lines', 
+                         source: sourceIdLines, 
                          paint: { 'line-color': ['get', 'color'], 'line-width': parseInt(state.visualSettings.lineWidth) }, 
                          layout: { 'visibility': state.linesVisible ? 'visible' : 'none' } 
-                     });
-                     
-                     // --- CORREÇÃO DO EVENTO DE CLIQUE NA LINHA ---
+                     }, layerBelow); 
+                      
+                     // Evento de clique na linha
                      map.on('click', lineLayerId, (e) => {
                          e.originalEvent.stopPropagation(); 
                          const feature = e.features[0];
@@ -1851,9 +1856,7 @@
                          colorInput.value = currentColor; 
                          colorInput.style.cursor = 'pointer';
                          
-                         // Usa 'input' para mudar em tempo real
                          colorInput.addEventListener('input', (ev) => {
-                             // Passa o ID correto do arquivo recém criado
                              applyColorUpdate(groupName, newFileEntry.sourceId, ev.target.value);
                          });
                          
@@ -1870,6 +1873,28 @@
             updateLoadedFilesList(fileName);
             updateVisibleMarkers();
             if (!state.isOfflineMode) cacheKMZData(fileName, geojson);
+
+            // --- REFORÇO DA ORDEM DAS CAMADAS ---
+            // Isso garante que mesmo camadas antigas sejam reorganizadas corretamente
+            
+            // 1. Linhas ficam embaixo
+            state.files.forEach(file => {
+                if (file.hasLines) {
+                    const lineId = `lines-${file.sourceId}`;
+                    if (map.getLayer(lineId)) map.moveLayer(lineId); // Move para o topo da pilha de linhas
+                }
+            });
+
+            // 2. Rastro do usuário acima das linhas de rede
+            if (map.getLayer('user-trail-layer')) map.moveLayer('user-trail-layer');
+            
+            // 3. Círculos dos marcadores acima dos rastros e linhas
+            if (map.getLayer('dynamic-marker-circles')) map.moveLayer('dynamic-marker-circles');
+            
+            // 4. Texto (Nomes) SEMPRE no topo absoluto
+            if (map.getLayer('dynamic-marker-labels')) map.moveLayer('dynamic-marker-labels');
+            
+            applyGroupFilter(); // Reaplica filtros visuais
         }
 
         function removeFileFromMap(fileName) {
