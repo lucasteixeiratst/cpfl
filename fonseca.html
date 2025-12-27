@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Visualizador de Mapas</title>
+    <title>Visualizador de Mapas Pro</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: Arial, sans-serif; position: relative; }
@@ -43,33 +43,30 @@
         .search-results button { background-color: #4285F4; color: white; border: none; padding: 5px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; }
 
         /* MENUS FLUTUANTES */
-        .kmz-menu, .line-menu, .loaded-files-menu, .style-menu, .marker-group-menu, .offline-menu, .storage-menu, .tools-menu, .trail-menu {
+        .maps-menu, .line-menu, .loaded-files-menu, .style-menu, .marker-group-menu, .storage-menu, .tools-menu, .trail-menu {
             position: absolute; top: 80px; left: 70px; background: #fff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); z-index: 2000; padding: 10px; display: none; max-height: 400px; overflow-y: auto;
         }
-        .kmz-menu, .line-menu { width: 300px; }
+        .maps-menu, .line-menu { width: 300px; }
         .loaded-files-menu { width: 220px; }
         .style-menu { width: 200px; }
         .marker-group-menu { width: 240px; }
         
-        /* AJUSTE NO CSS DO MENU DE RASTRO */
-        .trail-menu { 
-            width: 280px; /* Diminuído para caber na tela */ 
-            max-height: 65vh; /* Aumentado para descer mais */
-            flex-direction: column; 
-            gap: 10px; 
-            padding: 15px; 
-        }
-        
+        .trail-menu { width: 280px; max-height: 65vh; flex-direction: column; gap: 10px; padding: 15px; }
         .tools-menu { width: 280px; flex-direction: column; gap: 15px; padding: 15px; }
-        .tools-menu h3, .trail-menu h3 { margin: 0 0 10px 0; font-size: 16px; text-align: center; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        .tools-menu h3, .trail-menu h3, .maps-menu h3 { margin: 0 0 10px 0; font-size: 16px; text-align: center; border-bottom: 1px solid #eee; padding-bottom: 5px; }
         .tool-item { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
         .tool-item label { font-size: 13px; font-weight: bold; color: #333; display: flex; justify-content: space-between; align-items: center; }
         .tool-item input[type="range"], .tool-item select, .tool-item input[type="color"] { width: 100%; cursor: pointer; }
-        .tool-item select { padding: 5px; border-radius: 4px; border: 1px solid #ccc; }
 
-        .kmz-menu ul, .line-menu ul, .loaded-files-menu ul, .style-menu ul, .marker-group-menu ul, .trail-list { list-style: none; margin: 0; padding: 0; }
-        .kmz-menu li, .line-menu li, .style-menu li, .marker-group-menu li { padding: 8px 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0; }
-        .kmz-menu li:hover, .style-menu li:hover { background-color: #f0f0f0; }
+        .maps-menu ul, .line-menu ul, .loaded-files-menu ul, .style-menu ul, .marker-group-menu ul, .trail-list { list-style: none; margin: 0; padding: 0; }
+        .maps-menu li, .line-menu li, .style-menu li, .marker-group-menu li { padding: 8px 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0; }
+        .maps-menu li:hover, .style-menu li:hover { background-color: #f0f0f0; }
+        
+        /* Estilo da lista de mapas */
+        .maps-menu li { display: flex; justify-content: space-between; align-items: center; }
+        .maps-menu .map-status { font-size: 10px; padding: 2px 5px; border-radius: 4px; margin-left: 10px; }
+        .status-saved { background-color: #e6fffa; color: #047857; border: 1px solid #a7f3d0; }
+        .status-cloud { background-color: #f3f4f6; color: #6b7280; border: 1px solid #e5e7eb; }
         
         .loaded-files-menu li { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #f0f0f0; }
         .loaded-files-menu li button { background-color: #e74c3c; color: white; border: none; padding: 3px 6px; border-radius: 4px; cursor: pointer; font-size: 10px; }
@@ -84,19 +81,6 @@
         .btn-whatsapp { background-color: #25D366 !important; color: #fff; border-color: #128C7E !important; font-weight: bold; }
         .btn-del { background-color: #ffebee !important; color: #c62828; border-color: #ef9a9a !important; }
         .btn-view { background-color: #e3f2fd !important; color: #1565c0; border-color: #90caf9 !important; }
-
-        /* Menu Offline */
-        .offline-menu { width: 300px; max-height: 450px; flex-direction: column; }
-        .offline-menu h3 { margin: 10px 0; font-size: 16px; text-align: center; border-top: 1px solid #eee; padding-top: 15px; }
-        .offline-menu .offline-toggle-buttons { display: flex; gap: 10px; margin-bottom: 10px; }
-        .offline-menu .offline-toggle-buttons button { background-color: #eee; border: 1px solid #ccc; color: #333; padding: 5px; border-radius: 5px; cursor: pointer; flex: 1; font-size: 12px; }
-        .offline-menu-content { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-bottom: 10px; border-bottom: 1px solid #eee; }
-        .offline-menu-label { font-weight: bold; font-size: 14px; flex-grow: 1; }
-        .offline-file-list { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex-grow: 1; max-height: 300px; }
-        .offline-file-list li { padding: 6px 5px; font-size: 13px; border-bottom: 1px solid #f0f0f0; }
-        .offline-file-list li label { cursor: pointer; display: flex; align-items: center; gap: 8px; }
-        .offline-controls { margin-top: 15px; padding-top: 10px; border-top: 1px solid #eee; text-align: center; }
-        .offline-controls button { background-color: #4285F4; color: #fff; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; width: 100%; }
 
         /* Toggle Switch */
         .switch { position: relative; display: inline-block; width: 50px; height: 24px; flex-shrink: 0; }
@@ -167,8 +151,8 @@
 
     <div id="progressOverlay" class="progress-overlay" style="display: none;">
         <div class="progress-content">
-            <h3>Construindo Cache Offline...</h3>
-            <p>Isso pode levar alguns minutos. Por favor, não feche a aba.</p>
+            <h3>Salvando no Banco de Dados...</h3>
+            <p>Os arquivos estão sendo processados.</p>
             <div class="progress-bar-container">
                 <div id="progressBar" class="progress-bar"></div>
             </div>
@@ -186,9 +170,9 @@
     </button>
 
     <div class="menu" id="mainMenu">
-        <button id="btnKMZ" aria-label="Carregar arquivo KMZ ou KML">
-            <img src="ícones/upload.svg" alt="Carregar KMZ/KML">
-            <div class="button-legend">Carregar KMZ/KML</div>
+        <button id="btnMaps" aria-label="Gerenciar Mapas">
+            <img src="ícones/map.svg" alt="Mapas">
+            <div class="button-legend">Gerenciar Mapas</div>
         </button>
 
         <button id="btnMarkerGroups" aria-label="Filtrar por grupos de postos">
@@ -234,10 +218,7 @@
             <img src="ícones/route.svg" alt="Planejar Rota"> 
             <div class="button-legend">Planejar Rota</div>
         </button>
-        <button id="btnOfflineMenu" aria-label="Mudar modo offline">
-            <img src="ícones/wifi-off.svg" alt="Modo Offline"> 
-            <div class="button-legend">Modo Offline</div>
-        </button>
+
         <button id="btnStorageMenu" aria-label="Gerenciar Armazenamento">
             <img src="ícones/database-zap.svg" alt="Limpar Dados"> 
             <div class="button-legend">Limpar Dados</div>
@@ -251,17 +232,19 @@
 
     <div id="searchResults" class="search-results"></div>
 
-    <div class="kmz-menu" id="kmzMenu">
-        <div class="offline-menu-content" style="padding: 5px 10px; border-bottom: 1px solid #f0f0f0; margin-bottom: 5px;">
-            <span class="offline-menu-label">Modo Offline</span>
-            <label class="switch">
-                <input type="checkbox" id="offlineToggle">
-                <span class="slider round"></span>
-            </label>
+    <div class="maps-menu" id="mapsMenu">
+        <h3>Gerenciar Mapas</h3>
+        <input type="text" id="mapListSearch" placeholder="Filtrar lista..." style="width: 93%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+        
+        <div style="font-size:11px; color:#666; margin-bottom:10px; text-align:center;">
+            Ao clicar, o arquivo será salvo no banco e exibido.
         </div>
+        
         <ul id="kmzList"></ul>
-        <ul>
-            <li id="selectDevice">Selecionar do dispositivo...</li>
+        <ul style="border-top: 1px solid #eee; margin-top: 10px; padding-top: 5px;">
+            <li id="selectDevice" style="font-weight:bold; color:#4285F4;">
+                <span>📂 Carregar do Dispositivo...</span>
+            </li>
         </ul>
     </div>
 
@@ -322,6 +305,7 @@
     </div>
 
     <div class="line-menu" id="lineMenu">
+        <input type="text" id="lineGroupSearch" placeholder="Buscar alimentador..." style="width: 93%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; display: block;">
         <div class="visibility-toggle">
             <label>
                 <input type="checkbox" id="toggleAllLinesVisibility"> Exibir Todas as Linhas
@@ -340,18 +324,6 @@
 
     <div class="style-menu" id="styleMenu">
         <ul id="styleList"></ul>
-    </div>
-
-    <div class="offline-menu" id="offlineMenu">
-        <h3>Arquivos para Cache</h3>
-        <div class="offline-toggle-buttons">
-            <button id="btnOfflineSelectAll">Selecionar Todos</button>
-            <button id="btnOfflineDeselectAll">Desselecionar Todos</button>
-        </div>
-        <ul id="offlineFileList" class="offline-file-list"></ul>
-        <div class="offline-controls">
-            <button id="btnSaveOfflineCache">Salvar no Cache</button>
-        </div>
     </div>
     
     <div class="marker-group-menu" id="markerGroupMenu">
@@ -391,7 +363,7 @@
             </button>
 
             <button id="btnResetOfflineDB" class="btn-danger">
-                Limpar Cache de Mapas (Offline)
+                Limpar Banco de Mapas
                 <small>Remove todos os mapas KMZ salvos.</small>
             </button>
             <button id="btnResetLocalStorage" class="btn-warning">
@@ -429,7 +401,6 @@
         };
 
         const state = {
-            isOfflineMode: false,
             isRoutePlanning: false, 
             markersVisible: true,
             namesVisible: true,
@@ -476,7 +447,6 @@
                         db.createObjectStore(SPATIAL_INDEX_STORE_NAME, { keyPath: 'name' });
                     }
                     if (!db.objectStoreNames.contains(TRAIL_STORE_NAME)) {
-                        // KeyPath é 'id' (timestamp) para podermos ter vários rastros
                         db.createObjectStore(TRAIL_STORE_NAME, { keyPath: 'id' });
                     }
                 };
@@ -551,7 +521,6 @@
                     return;
                 }
                 
-                // Ordenar do mais recente para o mais antigo
                 trails.sort((a, b) => b.id - a.id);
 
                 trails.forEach(trail => {
@@ -566,43 +535,36 @@
                     const actions = document.createElement('div');
                     actions.className = 'trail-item-actions';
                     
-                    // Botão Ver
                     const btnView = document.createElement('button');
                     btnView.textContent = 'Ver';
                     btnView.className = 'btn-view';
                     btnView.onclick = () => {
-                        // Carrega no mapa
                         const source = map.getSource('user-trail');
                         if(source) {
                             source.setData({
                                 type: 'Feature',
                                 geometry: { type: 'LineString', coordinates: trail.coordinates }
                             });
-                            // Muda a cor da linha para a cor salva
                             if(trail.color) {
                                 map.setPaintProperty('user-trail-layer', 'line-color', trail.color);
                                 document.getElementById('trailColor').value = trail.color;
                             }
-                            // Zoom na linha
                             const bounds = new maplibregl.LngLatBounds();
                             trail.coordinates.forEach(coord => bounds.extend(coord));
                             map.fitBounds(bounds, { padding: 50 });
                         }
                     };
 
-                    // Botão KML
                     const btnKml = document.createElement('button');
                     btnKml.textContent = 'KML';
                     btnKml.className = 'btn-kml';
                     btnKml.onclick = () => exportTrailToKML(trail);
 
-                    // Botão WHATSAPP
                     const btnZap = document.createElement('button');
                     btnZap.innerHTML = '<img src="ícones/share-2.svg" style="width:12px; height:12px; filter: brightness(0) invert(1);">';
                     btnZap.className = 'btn-whatsapp';
                     btnZap.onclick = () => shareTrailOnWhatsApp(trail);
 
-                    // Botão Excluir
                     const btnDel = document.createElement('button');
                     btnDel.textContent = 'X';
                     btnDel.className = 'btn-del';
@@ -615,7 +577,7 @@
 
                     actions.appendChild(btnView);
                     actions.appendChild(btnKml);
-                    actions.appendChild(btnZap); // Adiciona botão zap
+                    actions.appendChild(btnZap);
                     actions.appendChild(btnDel);
                     
                     li.appendChild(header);
@@ -661,12 +623,10 @@
             document.body.removeChild(link);
         }
 
-        // --- FUNÇÃO DE COMPARTILHAR WHATSAPP ---
         async function shareTrailOnWhatsApp(trail) {
             const blob = createKMLBlob(trail);
             const file = new File([blob], `Rastro_${trail.name}.kml`, { type: 'application/vnd.google-earth.kml+xml' });
 
-            // Tenta usar o compartilhamento nativo (Celular)
             if (navigator.canShare && navigator.canShare({ files: [file] })) {
                 try {
                     await navigator.share({
@@ -678,7 +638,6 @@
                     console.log('Erro ao compartilhar ou cancelado:', error);
                 }
             } else {
-                // Fallback para Desktop (Link com texto e coordenadas de início)
                 const startCoord = trail.coordinates[0];
                 const date = new Date(trail.id).toLocaleDateString('pt-BR');
                 const text = `*Rastro de Inspeção*\nNome: ${trail.name}\nData: ${date}\nInício: https://www.google.com/maps/dir/?api=1&destination=${startCoord[1]},${startCoord[0]}`;
@@ -783,8 +742,11 @@
 
         const searchInput = document.getElementById('searchInput');
         const searchResults = document.getElementById('searchResults');
-        const kmzMenu = document.getElementById('kmzMenu');
+        
+        const btnMaps = document.getElementById('btnMaps');
+        const mapsMenu = document.getElementById('mapsMenu');
         const kmzList = document.getElementById('kmzList');
+        
         const lineMenu = document.getElementById('lineMenu');
         const lineGroupsList = document.getElementById('lineGroupsList');
         const loadedFilesMenu = document.getElementById('loadedFilesMenu');
@@ -822,11 +784,6 @@
         const btnGenerateRoute = document.getElementById('btnGenerateRoute');
         const btnCancelRoute = document.getElementById('btnCancelRoute');
         
-        const offlineMenu = document.getElementById('offlineMenu');
-        const offlineToggle = document.getElementById('offlineToggle');
-        const offlineFileList = document.getElementById('offlineFileList'); 
-        const btnSaveOfflineCache = document.getElementById('btnSaveOfflineCache'); 
-
         const storageMenu = document.getElementById('storageMenu');
         const btnResetOfflineDB = document.getElementById('btnResetOfflineDB');
         const btnResetLocalStorage = document.getElementById('btnResetLocalStorage');
@@ -1008,8 +965,6 @@
         async function updateVisibleLayers() {
             clearTimeout(updateTimeout);
             updateTimeout = setTimeout(async () => {
-                if (!state.isOfflineMode) return;
-
                 const mapBounds = map.getBounds();
                 const mapCenter = map.getCenter();
                 const loadedFileNames = new Set(state.files.map(f => f.name));
@@ -1061,37 +1016,6 @@
             updateVisibleMarkers();
         }
 
-        async function handleModeChange(isOffline) {
-            clearMap();
-            state.isOfflineMode = isOffline;
-            
-            const kmzListUl = document.getElementById('kmzList');
-            const selectDeviceLi = document.getElementById('selectDevice');
-            
-            if (isOffline) {
-                kmzListUl.style.pointerEvents = 'none';
-                kmzListUl.style.opacity = '0.5';
-                selectDeviceLi.style.display = 'none';
-            } else {
-                kmzListUl.style.pointerEvents = 'auto';
-                kmzListUl.style.opacity = '1';
-                selectDeviceLi.style.display = 'block';
-            }
-
-            if (isOffline) {
-                console.log("Ativando modo offline dinâmico...");
-                map.on('moveend', updateVisibleLayers);
-                
-                spatialIndex = await getDataFromDB(SPATIAL_INDEX_STORE_NAME);
-                updateVisibleLayers();
-                
-            } else {
-                console.log("Desativando modo offline...");
-                map.off('moveend', updateVisibleLayers);
-                spatialIndex = [];
-            }
-        }
-
         function updateVisibleMarkers() {
             clearTimeout(updateMarkersTimeout);
             updateMarkersTimeout = setTimeout(() => {
@@ -1121,37 +1045,6 @@
             }, 150);
         }
 
-        async function buildOfflineDatabase(filesToCache) {
-            if (!filesToCache || filesToCache.length === 0) {
-                alert("Nenhum arquivo selecionado para salvar no cache.");
-                return;
-            }
-            
-            progressOverlay.style.display = 'flex';
-            progressBar.style.width = `0%`;
-            progressText.textContent = `0 / ${filesToCache.length}`;
-            
-            let count = 0;
-            for (const file of filesToCache) {
-                try {
-                    const geojson = await parseKMZFromUrl(file.url);
-                    await saveDataToDB(GEOJSON_STORE_NAME, { name: file.name, geojson });
-                    const bounds = calculateBounds(geojson);
-                    if (bounds) {
-                        await saveDataToDB(SPATIAL_INDEX_STORE_NAME, { name: file.name, bounds });
-                    }
-                    count++;
-                    const percentage = (count / filesToCache.length) * 100;
-                    progressBar.style.width = `${percentage}%`;
-                    progressText.textContent = `${count} / ${filesToCache.length}`;
-                } catch (error) {
-                    console.error(`Erro ao processar ${file.name}:`, error);
-                }
-            }
-            progressOverlay.style.display = 'none';
-            alert('Cache offline construído com sucesso para os arquivos selecionados!');
-        }
-
         async function parseKMZFromUrl(url) {
             try {
                 const response = await fetch(url);
@@ -1163,6 +1056,7 @@
             }
         }
 
+        // SALVA SEMPRE NO DB
         async function cacheKMZData(fileName, geojson) {
             try {
                 await saveDataToDB(GEOJSON_STORE_NAME, { name: fileName, geojson: geojson });
@@ -1171,6 +1065,10 @@
                 if (bounds) {
                     await saveDataToDB(SPATIAL_INDEX_STORE_NAME, { name: fileName, bounds: bounds });
                 }
+                // Atualiza o índice em memória
+                spatialIndex = await getDataFromDB(SPATIAL_INDEX_STORE_NAME);
+                // Atualiza a lista visual para mostrar o status "Salvo"
+                displayFileList();
             } catch (e) { console.error(e); }
        }
 
@@ -1181,14 +1079,13 @@
        }
 
         map.on('click', (e) => { 
-            if (!e.originalEvent.target.closest('.menu, .search-bar, .search-results, .kmz-menu, .line-menu, .loaded-files-menu, .style-menu, .marker-group-menu, .offline-menu, .maplibregl-popup, .route-panel, .storage-menu, .toggle-menu-btn, .tools-menu, .trail-menu')) {
-                kmzMenu.style.display = 'none';
+            if (!e.originalEvent.target.closest('.menu, .search-bar, .search-results, .maps-menu, .line-menu, .loaded-files-menu, .style-menu, .marker-group-menu, .maplibregl-popup, .route-panel, .storage-menu, .toggle-menu-btn, .tools-menu, .trail-menu')) {
+                mapsMenu.style.display = 'none';
                 lineMenu.style.display = 'none';
                 loadedFilesMenu.style.display = 'none';
                 styleMenu.style.display = 'none';
                 searchResults.style.display = 'none';
                 markerGroupMenu.style.display = 'none';
-                offlineMenu.style.display = 'none'; 
                 storageMenu.style.display = 'none';
                 toolsMenu.style.display = 'none'; 
                 trailMenu.style.display = 'none';
@@ -1211,55 +1108,60 @@
             localStorage.setItem('recentExternalFiles', JSON.stringify(recentFiles));
         }
 
-        function displayFileList() {
+        // --- EXIBIÇÃO DA LISTA DE MAPAS UNIFICADA ---
+        async function displayFileList() {
             kmzList.innerHTML = '';
-            const recentFiles = JSON.parse(localStorage.getItem('recentFiles') || '[]');
-            const recentFileSet = new Set(recentFiles);
+            
+            // Verifica quais arquivos já estão no banco
+            const cachedFiles = new Set();
+            if(spatialIndex) {
+                spatialIndex.forEach(idx => cachedFiles.add(idx.name));
+            }
 
-            const recent = predefinedFiles.filter(file => recentFileSet.has(file.name));
-            const others = predefinedFiles.filter(file => !recentFileSet.has(file.name));
-
-            const sortedRecent = recent.sort((a, b) => recentFiles.indexOf(a.name) - recentFiles.indexOf(b.name));
-            const sortedOthers = others.sort((a, b) => a.name.localeCompare(b.name));
-            const sortedFiles = [...sortedRecent, ...sortedOthers];
-
-            sortedFiles.forEach((file) => {
-                const li = document.createElement('li');
-                li.textContent = file.name;
-                li.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    loadKMZFromURL(file.url, file.name);
-                    localStorage.setItem('lastSelectedFile', file.name);
-                    updateRecentFiles(file.name);
-                    displayFileList();
-                    kmzMenu.style.display = 'none';
-                });
-                kmzList.appendChild(li);
-            });
-        }
-        
-        function populateOfflineFileList() {
-            if (!offlineFileList) return;
-            offlineFileList.innerHTML = '';
             const sortedFiles = [...predefinedFiles].sort((a, b) => a.name.localeCompare(b.name));
 
             sortedFiles.forEach((file) => {
                 const li = document.createElement('li');
-                const label = document.createElement('label');
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.name = 'offlineFile';
-                checkbox.value = file.name;
-                label.appendChild(checkbox);
-                label.appendChild(document.createTextNode(file.name));
-                li.appendChild(label);
-                offlineFileList.appendChild(li);
+                
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = file.name;
+                
+                const statusSpan = document.createElement('span');
+                statusSpan.className = 'map-status';
+                
+                if (cachedFiles.has(file.name)) {
+                    statusSpan.textContent = 'Salvo';
+                    statusSpan.classList.add('status-saved');
+                } else {
+                    statusSpan.textContent = 'Nuvem';
+                    statusSpan.classList.add('status-cloud');
+                }
+
+                li.appendChild(nameSpan);
+                li.appendChild(statusSpan);
+                
+                li.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    loadKMZFromURL(file.url, file.name);
+                    updateRecentFiles(file.name);
+                    // O menu não fecha automaticamente para permitir ver o status mudando
+                });
+                
+                kmzList.appendChild(li);
             });
         }
+        
+        // Filtro da lista de mapas
+        document.getElementById('mapListSearch').addEventListener('input', function(e) {
+            const term = normalizeText(e.target.value);
+            const items = kmzList.querySelectorAll('li');
+            items.forEach(item => {
+                const text = normalizeText(item.textContent);
+                item.style.display = text.includes(term) ? 'flex' : 'none';
+            });
+        });
 
-        displayFileList();
         updateMarkerGroupMenu();
-        populateOfflineFileList();
         updateSavedTrailsList();
 
         map.on('load', () => {
@@ -1268,28 +1170,8 @@
             setTimeout(() => { legends.forEach(legend => { legend.style.display = 'none'; }); }, 5000);
 
             // --- SOURCE PARA O RASTRO DO USUÁRIO ---
-            map.addSource('user-trail', {
-                type: 'geojson',
-                data: {
-                    type: 'Feature',
-                    geometry: {
-                        type: 'LineString',
-                        coordinates: []
-                    }
-                }
-            });
-
-            // --- LAYER PARA O RASTRO DO USUÁRIO ---
-            map.addLayer({
-                id: 'user-trail-layer',
-                type: 'line',
-                source: 'user-trail',
-                paint: {
-                    'line-color': '#d63384', // Cor inicial
-                    'line-width': 5,
-                    'line-opacity': 0.8
-                }
-            });
+            map.addSource('user-trail', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] } } });
+            map.addLayer({ id: 'user-trail-layer', type: 'line', source: 'user-trail', paint: { 'line-color': '#d63384', 'line-width': 5, 'line-opacity': 0.8 } });
 
             map.addSource('dynamic-markers', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
             dynamicMarkerSource = map.getSource('dynamic-markers');
@@ -1328,39 +1210,31 @@
             toggleAllMarkersVisibilityCheckbox.checked = state.markersVisible;
             toggleAllLinesVisibilityCheckbox.checked = state.linesVisible;
 
-            const savedMode = localStorage.getItem('offlineMode') === 'true';
-            offlineToggle.checked = savedMode;
-            setTimeout(() => handleModeChange(savedMode), 100); 
-
-            // --- LÓGICA CORRIGIDA DE RECARREGAMENTO AUTOMÁTICO ---
-            if (!savedMode) {
-                const recentFiles = JSON.parse(localStorage.getItem('recentFiles') || '[]');
-                const filesToLoad = recentFiles.slice(0, 2); 
-                
-                if (filesToLoad.length > 0) {
-                    filesToLoad.forEach(fileName => {
-                        const file = predefinedFiles.find(f => f.name === fileName);
-                        if (file) {
-                            getKMZFromCache(fileName).then(cachedData => {
-                                if (cachedData) {
-                                    addDataToMap(cachedData, fileName);
-                                } else {
-                                    loadKMZFromURL(file.url, file.name);
-                                }
-                            });
-                        }
-                    });
+            // --- INICIALIZAÇÃO DB ---
+            (async () => {
+                try {
+                    // 1. Carrega o índice espacial
+                    spatialIndex = await getDataFromDB(SPATIAL_INDEX_STORE_NAME);
+                    // 2. Atualiza a lista visual (para mostrar o que está "Salvo")
+                    displayFileList();
+                    // 3. Inicia o listener de navegação
+                    map.on('moveend', updateVisibleLayers);
+                    // 4. Carga inicial
+                    updateVisibleLayers();
+                } catch (e) {
+                    console.error("Erro ao inicializar banco de dados:", e);
                 }
+            })();
 
-                const recentExternalFiles = JSON.parse(localStorage.getItem('recentExternalFiles') || '[]');
-                if (recentExternalFiles.length > 0) {
-                    (async () => {
-                        for (const fileName of recentExternalFiles) {
-                            const cachedData = await getKMZFromCache(fileName); 
-                            if (cachedData) addDataToMap(cachedData, fileName);
-                        }
-                    })();
-                }
+            // Carregamento de arquivos externos recentes
+            const recentExternalFiles = JSON.parse(localStorage.getItem('recentExternalFiles') || '[]');
+            if (recentExternalFiles.length > 0) {
+                (async () => {
+                    for (const fileName of recentExternalFiles) {
+                        const cachedData = await getKMZFromCache(fileName); 
+                        if (cachedData) addDataToMap(cachedData, fileName);
+                    }
+                })();
             }
 
             map.on('click', 'dynamic-marker-circles', (e) => {
@@ -1410,25 +1284,19 @@
 
         // --- ATUALIZAR COR DO RASTRO EM TEMPO REAL ---
         trailColorInput.addEventListener('input', (e) => {
-            const color = e.target.value;
-            if(map.getLayer('user-trail-layer')) {
-                map.setPaintProperty('user-trail-layer', 'line-color', color);
-            }
+            if(map.getLayer('user-trail-layer')) map.setPaintProperty('user-trail-layer', 'line-color', e.target.value);
         });
 
         // --- FUNÇÃO PARA CONTROLAR O RASTRO DE INSPEÇÃO ---
         chkUserTrail.addEventListener('change', (e) => {
             if (e.target.checked) {
-                // Iniciar gravação - Limpa o array atual para começar novo trajeto
                 currentTrailCoordinates = [];
                 trailPointCount.textContent = '0';
                 const chosenColor = trailColorInput.value;
                 const interval = parseInt(trailIntervalSelect.value);
 
-                // Configura cor no mapa
                 if(map.getLayer('user-trail-layer')) {
                     map.setPaintProperty('user-trail-layer', 'line-color', chosenColor);
-                    // Reseta o visual do mapa
                     const source = map.getSource('user-trail');
                     if(source) source.setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: [] } });
                 }
@@ -1438,17 +1306,13 @@
                     
                     trailWatchId = navigator.geolocation.watchPosition((pos) => {
                         const now = Date.now();
-                        // THROTTLING: Verifica se passou tempo suficiente desde o último ponto
-                        if (now - lastTrailUpdateTime < interval) {
-                            return;
-                        }
+                        if (now - lastTrailUpdateTime < interval) return;
                         lastTrailUpdateTime = now;
 
                         const coord = [pos.coords.longitude, pos.coords.latitude];
                         currentTrailCoordinates.push(coord);
                         trailPointCount.textContent = currentTrailCoordinates.length;
 
-                        // Atualiza mapa
                         const source = map.getSource('user-trail');
                         if(source) {
                             source.setData({
@@ -1456,103 +1320,62 @@
                                 geometry: { type: 'LineString', coordinates: currentTrailCoordinates }
                             });
                         }
-                        
-                        // Centraliza no usuário se for o primeiro ponto
-                        if(currentTrailCoordinates.length === 1) {
-                            map.flyTo({ center: coord, zoom: 16 });
-                        }
+                        if(currentTrailCoordinates.length === 1) map.flyTo({ center: coord, zoom: 16 });
 
                     }, (err) => {
-                        console.error("Erro no GPS:", err);
-                        alert("Erro ao acessar GPS.");
-                        e.target.checked = false;
-                    }, {
-                        enableHighAccuracy: true,
-                        maximumAge: 0,
-                        timeout: 5000
-                    });
-                } else {
-                    alert("GPS não suportado.");
-                    e.target.checked = false;
-                }
+                        console.error("Erro no GPS:", err); alert("Erro ao acessar GPS."); e.target.checked = false;
+                    }, { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 });
+                } else { alert("GPS não suportado."); e.target.checked = false; }
             } else {
-                // Parar gravação e SALVAR no Banco
                 if (trailWatchId !== null) {
                     navigator.geolocation.clearWatch(trailWatchId);
                     trailWatchId = null;
-                    
                     if (currentTrailCoordinates.length > 0) {
-                        const trailData = {
-                            id: Date.now(),
-                            name: `Rastro ${new Date().toLocaleDateString('pt-BR')}`,
-                            color: trailColorInput.value,
-                            coordinates: [...currentTrailCoordinates] // Copia
-                        };
-                        
-                        saveDataToDB(TRAIL_STORE_NAME, trailData).then(() => {
-                            alert("Rastro salvo com sucesso!");
-                            updateSavedTrailsList();
-                        });
-                    } else {
-                        alert("Gravação parada. Nenhum ponto capturado.");
-                    }
+                        const trailData = { id: Date.now(), name: `Rastro ${new Date().toLocaleDateString('pt-BR')}`, color: trailColorInput.value, coordinates: [...currentTrailCoordinates] };
+                        saveDataToDB(TRAIL_STORE_NAME, trailData).then(() => { alert("Rastro salvo com sucesso!"); updateSavedTrailsList(); });
+                    } else { alert("Gravação parada. Nenhum ponto capturado."); }
                 }
             }
         });
 
-        // --- BOTÃO DELETAR TODOS OS RASTROS ---
         btnDeleteAllTrails.addEventListener('click', async (e) => {
             e.stopPropagation();
-            if(confirm('ATENÇÃO: Isso apagará TODOS os rastros salvos no histórico. Continuar?')) {
+            if(confirm('ATENÇÃO: Isso apagará TODOS os rastros salvos. Continuar?')) {
                 await clearStore(TRAIL_STORE_NAME);
                 updateSavedTrailsList();
-                
-                // Limpa visual
                 const source = map.getSource('user-trail');
                 if(source) source.setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: [] } });
-                
-                alert('Histórico de rastros apagado.');
+                alert('Histórico apagado.');
             }
         });
 
-        // Botão do Menu de Rastro
-        btnTrailMenu.addEventListener('click', (e) => {
+        btnTrailMenu.addEventListener('click', (e) => { e.stopPropagation(); toggleVisibility(trailMenu); });
+
+        document.getElementById('btnMaps').addEventListener('click', (e) => { e.stopPropagation(); toggleVisibility(mapsMenu); });
+        
+        // --- FUNÇÃO CORRIGIDA PARA O BOTÃO DE NOMES ---
+        function toggleNames() {
+            // 1. Inverte o estado atual
+            state.namesVisible = !state.namesVisible;
+            
+            // 2. Aplica ao mapa se a camada existir
+            if (map.getLayer('dynamic-marker-labels')) {
+                map.setLayoutProperty('dynamic-marker-labels', 'visibility', state.namesVisible ? 'visible' : 'none');
+            }
+
+            // 3. Feedback visual no botão (Muda para cinza quando desligado)
+            const btn = document.getElementById('btnNames');
+            if (btn) {
+                btn.style.backgroundColor = state.namesVisible ? '#ffffff' : '#d1d1d1';
+            }
+        }
+
+        // Listener do botão de nomes
+        document.getElementById('btnNames').addEventListener('click', (e) => { 
             e.stopPropagation();
-            toggleVisibility(trailMenu);
+            toggleNames(); 
         });
 
-        offlineToggle.addEventListener('change', (event) => {
-            const isChecked = event.target.checked;
-            if (typeof gtag === 'function') gtag('event', 'offline_toggle', { 'status': isChecked ? 'enabled' : 'disabled' });
-            localStorage.setItem('offlineMode', isChecked);
-            handleModeChange(isChecked);
-        });
-
-        btnSaveOfflineCache.addEventListener('click', (e) => {
-            e.stopPropagation(); 
-            const checkedBoxes = offlineFileList.querySelectorAll('input[type="checkbox"]:checked');
-            const filesToCache = [];
-            checkedBoxes.forEach(box => {
-                const fileName = box.value;
-                const file = predefinedFiles.find(f => f.name === fileName);
-                if (file) filesToCache.push(file);
-            });
-            if (filesToCache.length > 0) buildOfflineDatabase(filesToCache);
-            else alert("Nenhum arquivo selecionado.");
-        });
-
-        document.getElementById('btnOfflineSelectAll').addEventListener('click', (e) => {
-            e.stopPropagation(); 
-            offlineFileList.querySelectorAll('input[type="checkbox"]').forEach(box => box.checked = true);
-        });
-
-        document.getElementById('btnOfflineDeselectAll').addEventListener('click', (e) => {
-            e.stopPropagation(); 
-            offlineFileList.querySelectorAll('input[type="checkbox"]').forEach(box => box.checked = false);
-        });
-
-        document.getElementById('btnKMZ').addEventListener('click', (e) => { e.stopPropagation(); toggleVisibility(kmzMenu); });
-        document.getElementById('btnNames').addEventListener('click', () => toggleNames());
         document.getElementById('btnReset').addEventListener('click', resetView);
         document.getElementById('btnLocation').addEventListener('click', goToCurrentLocation);
         document.getElementById('btnLineGroups').addEventListener('click', (e) => {
@@ -1567,7 +1390,6 @@
         document.getElementById('showAll').addEventListener('click', showAllGroups);
         document.getElementById('btnStyles').addEventListener('click', (e) => { e.stopPropagation(); displayStyleList(); toggleVisibility(styleMenu); });
         document.getElementById('btnMarkerGroups').addEventListener('click', (e) => { e.stopPropagation(); toggleVisibility(markerGroupMenu); });
-        document.getElementById('btnOfflineMenu').addEventListener('click', (e) => { e.stopPropagation(); toggleVisibility(offlineMenu); });
         btnRoutePlanner.addEventListener('click', (e) => { e.stopPropagation(); toggleRoutePlanning(); });
         btnGenerateRoute.addEventListener('click', generateGoogleMapsUrl);
         btnCancelRoute.addEventListener('click', cancelRoutePlanning);
@@ -1578,6 +1400,15 @@
         document.getElementById('btnStorageMenu').addEventListener('click', (e) => { e.stopPropagation(); toggleVisibility(storageMenu); });
         btnToggleUI.addEventListener('click', (e) => { e.stopPropagation(); mainMenu.classList.toggle('hidden'); });
         btnTools.addEventListener('click', (e) => { e.stopPropagation(); toggleVisibility(toolsMenu); });
+
+        document.getElementById('lineGroupSearch').addEventListener('input', function(e) {
+            const term = normalizeText(e.target.value);
+            const items = lineGroupsList.querySelectorAll('li');
+            items.forEach(item => {
+                const text = normalizeText(item.textContent);
+                item.style.display = text.includes(term) ? 'block' : 'none';
+            });
+        });
 
         function updateMapVisuals() {
             state.files.forEach(file => {
@@ -1590,32 +1421,15 @@
             if (map.getLayer('dynamic-marker-labels')) map.setLayoutProperty('dynamic-marker-labels', 'text-size', parseInt(state.visualSettings.textSize));
         }
 
-        rngLineWidth.addEventListener('input', (e) => {
-            valLineWidth.textContent = e.target.value;
-            state.visualSettings.lineWidth = e.target.value;
-            updateMapVisuals();
-        });
-        rngMarkerSize.addEventListener('input', (e) => {
-            valMarkerSize.textContent = e.target.value;
-            state.visualSettings.markerSize = e.target.value;
-            updateMapVisuals();
-        });
-        rngTextSize.addEventListener('input', (e) => {
-            valTextSize.textContent = e.target.value;
-            state.visualSettings.textSize = e.target.value;
-            updateMapVisuals();
-        });
-        rngMarkerLimit.addEventListener('input', (e) => {
-            valMarkerLimit.textContent = e.target.value;
-            state.visualSettings.markerLimit = e.target.value;
-            updateVisibleMarkers(); 
-        });
+        rngLineWidth.addEventListener('input', (e) => { valLineWidth.textContent = e.target.value; state.visualSettings.lineWidth = e.target.value; updateMapVisuals(); });
+        rngMarkerSize.addEventListener('input', (e) => { valMarkerSize.textContent = e.target.value; state.visualSettings.markerSize = e.target.value; updateMapVisuals(); });
+        rngTextSize.addEventListener('input', (e) => { valTextSize.textContent = e.target.value; state.visualSettings.textSize = e.target.value; updateMapVisuals(); });
+        rngMarkerLimit.addEventListener('input', (e) => { valMarkerLimit.textContent = e.target.value; state.visualSettings.markerLimit = e.target.value; updateVisibleMarkers(); });
 
         btnResetOfflineDB.addEventListener('click', (e) => {
             e.stopPropagation();
-            if (confirm('TEM CERTEZA? Isso limpará o cache offline.')) {
-                const deleteRequest = indexedDB.deleteDatabase(DB_NAME);
-                deleteRequest.onsuccess = () => { alert('Cache limpo.'); location.reload(); };
+            if (confirm('TEM CERTEZA? Isso limpará o banco de dados.')) {
+                indexedDB.deleteDatabase(DB_NAME).onsuccess = () => { alert('Banco limpo.'); location.reload(); };
             }
         });
 
@@ -1635,12 +1449,12 @@
         document.getElementById('btnSupport').addEventListener('click', (e) => { e.stopPropagation(); window.open('https://chat.whatsapp.com/KmBQvO3u5Pm53cV3XWz2dX', '_blank'); });
 
         function toggleVisibility(element) {
-            [kmzMenu, lineMenu, loadedFilesMenu, styleMenu, markerGroupMenu, offlineMenu, routePanel, storageMenu, toolsMenu, trailMenu].forEach(menu => {
+            [mapsMenu, lineMenu, loadedFilesMenu, styleMenu, markerGroupMenu, routePanel, storageMenu, toolsMenu, trailMenu].forEach(menu => {
                 if (menu !== element) {
                     if (menu === routePanel && state.isRoutePlanning) {} else { menu.style.display = 'none'; }
                 }
             });
-            if ([routePanel, offlineMenu, storageMenu, toolsMenu, trailMenu].includes(element)) {
+            if ([routePanel, storageMenu, toolsMenu, trailMenu].includes(element)) {
                 if (element === routePanel) element.style.display = state.isRoutePlanning ? 'flex' : 'none';
                 else element.style.display = (element.style.display === 'flex') ? 'none' : 'flex';
             } else {
@@ -1649,8 +1463,7 @@
         }
 
         function selectFromDevice() {
-            if (state.isOfflineMode) return;
-            kmzMenu.style.display = 'none';
+            mapsMenu.style.display = 'none';
             const input = document.createElement('input');
             input.type = 'file';
             input.accept = '.kml,.kmz';
@@ -1659,33 +1472,63 @@
         }
 
         async function loadKMZFromURL(url, fileName) {
-            if (typeof gtag === 'function') gtag('event', 'map_load', { 'file_name': fileName, 'load_source': 'server', 'is_offline_mode': state.isOfflineMode });
-            if (state.isOfflineMode) return;
+            if (typeof gtag === 'function') gtag('event', 'map_load', { 'file_name': fileName, 'load_source': 'server' });
+            
+            // PRIMEIRO, verifica se JÁ ESTÁ no cache
             try {
                 const cachedData = await getKMZFromCache(fileName); 
-                if (cachedData) { addDataToMap(cachedData, fileName); return; }
+                if (cachedData) { 
+                    addDataToMap(cachedData, fileName); 
+                    return; 
+                }
+                
+                // SE NÃO, baixa e SALVA
+                progressOverlay.style.display = 'flex';
+                progressText.textContent = "Baixando...";
+                
                 const geojson = await parseKMZFromUrl(url);
-                if(geojson) addDataToMap(geojson, fileName);
+                if(geojson) {
+                    // Salva no DB
+                    await cacheKMZData(fileName, geojson);
+                    addDataToMap(geojson, fileName);
+                    updateVisibleLayers(); // Força atualização visual
+                }
+                
+                progressOverlay.style.display = 'none';
+                
             } catch (error) {
-                console.log(`Não foi possível carregar "${fileName}" automaticamente via URL (provável bloqueio de protocolo local). Use 'Selecionar do Dispositivo'.`);
+                console.log(`Erro ao carregar "${fileName}":`, error);
+                progressOverlay.style.display = 'none';
+                alert("Erro ao baixar o mapa. Verifique sua conexão.");
             }
         }
 
         function handleFile(event) {
-            if (state.isOfflineMode) return;
             const file = event.target.files[0];
             if (!file) return;
-            if (typeof gtag === 'function') gtag('event', 'map_load', { 'file_name': file.name, 'load_source': 'device', 'is_offline_mode': state.isOfflineMode });
+            if (typeof gtag === 'function') gtag('event', 'map_load', { 'file_name': file.name, 'load_source': 'device' });
+            
+            progressOverlay.style.display = 'flex';
+            progressText.textContent = "Processando arquivo...";
 
             const reader = new FileReader();
             reader.onload = async () => {
                 try {
                     const data = file.name.endsWith('.kmz') ? await parseKMZ(reader.result) : toGeoJSON.kml(new DOMParser().parseFromString(reader.result, 'text/xml'));
+                    
+                    // SALVA SEMPRE NO DB
+                    await cacheKMZData(file.name, data);
+                    
                     addDataToMap(data, file.name);
                     updateRecentExternalFiles(file.name); 
-                    // IMPORTANTE: Salva no cache para funcionar no recarregamento automático
-                    cacheKMZData(file.name, data);
-                } catch (error) { alert('Erro ao processar arquivo.'); }
+                    updateVisibleLayers();
+                    
+                    progressOverlay.style.display = 'none';
+                } catch (error) { 
+                    console.error(error);
+                    progressOverlay.style.display = 'none';
+                    alert('Erro ao processar arquivo.'); 
+                }
             };
             if (file.name.endsWith('.kmz')) reader.readAsArrayBuffer(file);
             else reader.readAsText(file);
@@ -1828,7 +1671,6 @@
                 else map.getSource(sourceIdLines).setData(lineFeatures);
                 
                 if (!map.getLayer(lineLayerId)) { 
-                     // --- CORREÇÃO AQUI ---
                      // Verifica se existe a camada de marcadores para colocar a linha ABAIXO dela
                      const layerBelow = map.getLayer('dynamic-marker-circles') ? 'dynamic-marker-circles' : undefined;
 
@@ -1869,32 +1711,22 @@
                 }
             }
 
-            updateGroupMenu();
             updateLoadedFilesList(fileName);
             updateVisibleMarkers();
-            if (!state.isOfflineMode) cacheKMZData(fileName, geojson);
 
-            // --- REFORÇO DA ORDEM DAS CAMADAS ---
-            // Isso garante que mesmo camadas antigas sejam reorganizadas corretamente
-            
-            // 1. Linhas ficam embaixo
+            // REFORÇO DA ORDEM DAS CAMADAS
             state.files.forEach(file => {
                 if (file.hasLines) {
                     const lineId = `lines-${file.sourceId}`;
-                    if (map.getLayer(lineId)) map.moveLayer(lineId); // Move para o topo da pilha de linhas
+                    if (map.getLayer(lineId)) map.moveLayer(lineId); 
                 }
             });
 
-            // 2. Rastro do usuário acima das linhas de rede
             if (map.getLayer('user-trail-layer')) map.moveLayer('user-trail-layer');
-            
-            // 3. Círculos dos marcadores acima dos rastros e linhas
             if (map.getLayer('dynamic-marker-circles')) map.moveLayer('dynamic-marker-circles');
-            
-            // 4. Texto (Nomes) SEMPRE no topo absoluto
             if (map.getLayer('dynamic-marker-labels')) map.moveLayer('dynamic-marker-labels');
             
-            applyGroupFilter(); // Reaplica filtros visuais
+            applyGroupFilter(); 
         }
 
         function removeFileFromMap(fileName) {
@@ -1913,45 +1745,13 @@
             const liToRemove = [...loadedFilesList.children].find(li => li.textContent.startsWith(fileName));
             if (liToRemove) liToRemove.remove();
             state.files.splice(fileIndex, 1);
+            
+            // Re-renderiza a lista de grupos se o arquivo removido tinha grupos
             updateGroupMenu();
             updateVisibleMarkers();
         }
 
-        function updateMarkerGroupMenu() {
-            markerGroupsList.innerHTML = '';
-            Object.keys(state.markerGroups).forEach(groupKey => {
-                if (groupKey === 'default') return;
-                const group = state.markerGroups[groupKey];
-                const li = document.createElement('li');
-                const lbl = document.createElement('label');
-                lbl.style.display = 'flex'; lbl.style.alignItems = 'center'; lbl.style.width = '100%'; lbl.dataset.groupLabel = groupKey;
-                const chk = document.createElement('input');
-                chk.type = 'checkbox'; chk.checked = group.visible; chk.style.marginRight = '10px';
-                chk.onchange = () => { state.markerGroups[groupKey].visible = chk.checked; updateVisibleMarkers(); };
-                const textSpan = document.createElement('span');
-                textSpan.textContent = groupKey; textSpan.style.fontWeight = 'bold'; textSpan.style.color = group.color; textSpan.style.flexGrow = '1';
-                const colorInput = document.createElement('input');
-                colorInput.type = 'color'; colorInput.value = group.color; colorInput.style.border = 'none'; colorInput.style.width = '30px'; colorInput.style.height = '25px'; colorInput.style.padding = '0'; colorInput.style.cursor = 'pointer'; colorInput.style.background = 'none';
-                colorInput.addEventListener('input', (e) => { textSpan.style.color = e.target.value; changeMarkerGroupColor(groupKey, e.target.value); });
-                colorInput.addEventListener('click', (e) => e.stopPropagation());
-                lbl.appendChild(chk); lbl.appendChild(textSpan); lbl.appendChild(colorInput);
-                li.appendChild(lbl); markerGroupsList.appendChild(li);
-            });
-        }
-
-        function applyMarkerGroupFilter() { updateVisibleMarkers(); }
-        function toggleAllMarkerGroups(visible) { Object.keys(state.markerGroups).forEach(groupKey => { state.markerGroups[groupKey].visible = visible; }); updateMarkerGroupMenu(); updateVisibleMarkers(); }
-        function toggleMarkers(visible) {
-            state.markersVisible = (typeof visible === 'boolean') ? visible : !state.markersVisible;
-            toggleAllMarkersVisibilityCheckbox.checked = state.markersVisible;
-            if (map.getLayer('dynamic-marker-circles')) map.setLayoutProperty('dynamic-marker-circles', 'visibility', state.markersVisible ? 'visible' : 'none');
-            toggleNames(state.markersVisible && state.namesVisible);
-        }
-        function toggleNames(forceVisibility) {
-            state.namesVisible = (typeof forceVisibility === 'boolean') ? forceVisibility : !state.namesVisible;
-            if (map.getLayer('dynamic-marker-labels')) map.setLayoutProperty('dynamic-marker-labels', 'visibility', state.namesVisible ? 'visible' : 'none');
-        }
-        
+        // --- ATUALIZAÇÃO DO MENU DE GRUPOS DE LINHA ---
         function updateGroupMenu() {
             lineGroupsList.innerHTML = '';
             state.files.forEach(file => {
@@ -1981,6 +1781,39 @@
                     });
                 }
             });
+        }
+        
+        function updateMarkerGroupMenu() {
+            markerGroupsList.innerHTML = '';
+            Object.keys(state.markerGroups).forEach(groupKey => {
+                if (groupKey === 'default') return;
+                const group = state.markerGroups[groupKey];
+                const li = document.createElement('li');
+                const lbl = document.createElement('label');
+                lbl.style.display = 'flex'; lbl.style.alignItems = 'center'; lbl.style.width = '100%'; lbl.dataset.groupLabel = groupKey;
+                const chk = document.createElement('input');
+                chk.type = 'checkbox'; chk.checked = group.visible; chk.style.marginRight = '10px';
+                chk.onchange = () => { state.markerGroups[groupKey].visible = chk.checked; updateVisibleMarkers(); };
+                const textSpan = document.createElement('span');
+                textSpan.textContent = groupKey; textSpan.style.fontWeight = 'bold'; textSpan.style.color = group.color; textSpan.style.flexGrow = '1';
+                const colorInput = document.createElement('input');
+                colorInput.type = 'color'; colorInput.value = group.color; colorInput.style.border = 'none'; colorInput.style.width = '30px'; colorInput.style.height = '25px'; colorInput.style.padding = '0'; colorInput.style.cursor = 'pointer'; colorInput.style.background = 'none';
+                colorInput.addEventListener('input', (e) => { textSpan.style.color = e.target.value; changeMarkerGroupColor(groupKey, e.target.value); });
+                colorInput.addEventListener('click', (e) => e.stopPropagation());
+                lbl.appendChild(chk); lbl.appendChild(textSpan); lbl.appendChild(colorInput);
+                li.appendChild(lbl); markerGroupsList.appendChild(li);
+            });
+        }
+
+        function applyMarkerGroupFilter() { updateVisibleMarkers(); }
+        function toggleAllMarkerGroups(visible) { Object.keys(state.markerGroups).forEach(groupKey => { state.markerGroups[groupKey].visible = visible; }); updateMarkerGroupMenu(); updateVisibleMarkers(); }
+        
+        function toggleMarkers(visible) {
+            state.markersVisible = (typeof visible === 'boolean') ? visible : !state.markersVisible;
+            if(toggleAllMarkersVisibilityCheckbox) toggleAllMarkersVisibilityCheckbox.checked = state.markersVisible;
+            if (map.getLayer('dynamic-marker-circles')) {
+                map.setLayoutProperty('dynamic-marker-circles', 'visibility', state.markersVisible ? 'visible' : 'none');
+            }
         }
 
         function updateLoadedFilesList(fileName) {
@@ -2041,44 +1874,20 @@
 
             map.once('styledata', () => {
                 if (!map.getSource('dynamic-markers')) {
-                    map.addSource('dynamic-markers', {
-                        type: 'geojson',
-                        data: { type: 'FeatureCollection', features: [] }
-                    });
+                    map.addSource('dynamic-markers', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
                     dynamicMarkerSource = map.getSource('dynamic-markers');
                 }
-
                 if (!map.getLayer('dynamic-marker-circles')) {
                     map.addLayer({
-                        id: 'dynamic-marker-circles',
-                        type: 'circle',
-                        source: 'dynamic-markers',
-                        paint: {
-                            'circle-radius': parseInt(state.visualSettings.markerSize),
-                            'circle-color': ['get', 'color'],
-                            'circle-stroke-width': 2,
-                            'circle-stroke-color': '#FFFFFF'
-                        }
+                        id: 'dynamic-marker-circles', type: 'circle', source: 'dynamic-markers',
+                        paint: { 'circle-radius': parseInt(state.visualSettings.markerSize), 'circle-color': ['get', 'color'], 'circle-stroke-width': 2, 'circle-stroke-color': '#FFFFFF' }
                     });
                 }
-
                 if (!map.getLayer('dynamic-marker-labels')) {
                     map.addLayer({
-                        id: 'dynamic-marker-labels',
-                        type: 'symbol',
-                        source: 'dynamic-markers',
-                        layout: {
-                            'text-field': ['coalesce', ['get', 'name'], ['get', 'Alimentador']],
-                            'text-font': ['Open Sans Bold'],
-                            'text-size': parseInt(state.visualSettings.textSize),
-                            'text-offset': [0, 1.5],
-                            'visibility': state.namesVisible ? 'visible' : 'none'
-                        },
-                        paint: {
-                            'text-color': '#000000',
-                            'text-halo-color': '#FFFFFF',
-                            'text-halo-width': 2
-                        }
+                        id: 'dynamic-marker-labels', type: 'symbol', source: 'dynamic-markers',
+                        layout: { 'text-field': ['coalesce', ['get', 'name'], ['get', 'Alimentador']], 'text-font': ['Open Sans Bold'], 'text-size': parseInt(state.visualSettings.textSize), 'text-offset': [0, 1.5], 'visibility': state.namesVisible ? 'visible' : 'none' },
+                        paint: { 'text-color': '#000000', 'text-halo-color': '#FFFFFF', 'text-halo-width': 2 }
                     });
                 }
 
@@ -2090,9 +1899,7 @@
                         if (!map.getSource(sourceIdLines)) map.addSource(sourceIdLines, { type: 'geojson', data: file.lineFeatures });
                         if (!map.getLayer(lineLayerId)) {
                              map.addLayer({ 
-                                 id: lineLayerId, 
-                                 type: 'line', 
-                                 source: sourceIdLines, 
+                                 id: lineLayerId, type: 'line', source: sourceIdLines, 
                                  paint: { 'line-color': ['get', 'color'], 'line-width': parseInt(state.visualSettings.lineWidth) }, 
                                  layout: { 'visibility': state.linesVisible ? 'visible' : 'none' } 
                              });
@@ -2101,13 +1908,7 @@
                 });
 
                 // ORDEM DAS CAMADAS
-                state.files.forEach(file => {
-                    if (file.hasLines) {
-                        const lineId = `lines-${file.sourceId}`;
-                        if (map.getLayer(lineId)) map.moveLayer(lineId);
-                    }
-                });
-
+                state.files.forEach(file => { if (file.hasLines) { const lineId = `lines-${file.sourceId}`; if (map.getLayer(lineId)) map.moveLayer(lineId); } });
                 if (map.getLayer('user-trail-layer')) map.moveLayer('user-trail-layer');
                 if (map.getLayer('dynamic-marker-circles')) map.moveLayer('dynamic-marker-circles');
                 if (map.getLayer('dynamic-marker-labels')) map.moveLayer('dynamic-marker-labels');
@@ -2115,7 +1916,10 @@
                 updateVisibleMarkers();
                 applyGroupFilter();
                 toggleLines(state.linesVisible);
-                toggleNames(state.namesVisible && state.markersVisible);
+                // toggleNames(state.namesVisible && state.markersVisible); // REMOVIDO PARA EVITAR CONFLITO
+                if(map.getLayer('dynamic-marker-labels')) {
+                    map.setLayoutProperty('dynamic-marker-labels', 'visibility', state.namesVisible ? 'visible' : 'none');
+                }
             });
         }
 
@@ -2182,7 +1986,6 @@
                 const actionsDiv = document.createElement('div');
                 actionsDiv.className = 'result-actions';
 
-                // --- BOTÃO VER (MODIFICADO) ---
                 const btnVer = document.createElement('button');
                 btnVer.textContent = 'Ver';
                 btnVer.onclick = (e) => {
@@ -2190,15 +1993,12 @@
                     const center = getFeatureCenter(result);
                     
                     if(center) { 
-                        // 1. Move a câmera para o local
                         map.flyTo({ center: center, zoom: 16 }); 
                         searchResults.style.display = 'none'; 
 
-                        // 2. LÓGICA DO POPUP (ADICIONADA)
                         const coordinates = center;
                         const properties = result.properties;
                         const displayName = properties.name || properties.Alimentador || 'Sem nome';
-                        // Gera um ID único para os botões dentro do popup
                         const featureId = result.id || (displayName + coordinates.join('')).replace(/[^a-z0-9]/gi, '');
 
                         let popupHTML;
@@ -2208,13 +2008,7 @@
                             popupHTML = `<div><strong>${displayName}</strong><br><button id="popup-directions-btn-${featureId}" style="margin-top: 5px; padding: 3px 8px; font-size: 11px; cursor: pointer;">Obter Rota (Google Maps)</button></div>`;
                         }
 
-                        // Cria e adiciona o popup ao mapa
-                        const popup = new maplibregl.Popup({ closeOnClick: true, offset: 15 })
-                            .setLngLat(coordinates)
-                            .setHTML(popupHTML)
-                            .addTo(map);
-
-                        // Adiciona os eventos de clique aos botões DENTRO do popup recém-criado
+                        const popup = new maplibregl.Popup({ closeOnClick: true, offset: 15 }).setLngLat(coordinates).setHTML(popupHTML).addTo(map);
                         const popupElement = popup.getElement();
 
                         if (state.isRoutePlanning) {
@@ -2232,9 +2026,7 @@
                             }
                         }
 
-                    } else { 
-                        alert('Localização inválida.'); 
-                    }
+                    } else { alert('Localização inválida.'); }
                 };
 
                 const btnRota = document.createElement('button');
