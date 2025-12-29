@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Visualizador de Mapas Pro</title>
+    <title>Visualizador de Mapas Pro - Otimizado</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: Arial, sans-serif; position: relative; }
@@ -62,16 +62,19 @@
         .maps-menu li, .line-menu li, .style-menu li, .marker-group-menu li { padding: 8px 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0; }
         .maps-menu li:hover, .style-menu li:hover { background-color: #f0f0f0; }
         
-        /* Estilo da lista de mapas */
-        .maps-menu li { display: flex; justify-content: space-between; align-items: center; }
-        .maps-menu .map-status { font-size: 10px; padding: 2px 5px; border-radius: 4px; margin-left: 10px; }
+        .maps-menu .batch-actions { display: flex; align-items: center; justify-content: space-between; padding: 5px 0; margin-bottom: 5px; border-bottom: 1px solid #eee; font-size: 12px; }
+        .maps-menu .batch-actions button { background-color: #4285F4; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; }
+        .maps-menu li { display: flex; align-items: center; gap: 8px; }
+        .maps-menu li input[type="checkbox"] { cursor: pointer; }
+        .maps-menu li span.file-name { flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        .maps-menu .map-status { font-size: 10px; padding: 2px 5px; border-radius: 4px; margin-left: 5px; white-space: nowrap; }
         .status-saved { background-color: #e6fffa; color: #047857; border: 1px solid #a7f3d0; }
         .status-cloud { background-color: #f3f4f6; color: #6b7280; border: 1px solid #e5e7eb; }
         
         .loaded-files-menu li { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #f0f0f0; }
         .loaded-files-menu li button { background-color: #e74c3c; color: white; border: none; padding: 3px 6px; border-radius: 4px; cursor: pointer; font-size: 10px; }
 
-        /* Lista de Rastros */
         .trail-list li { padding: 8px 0; border-bottom: 1px solid #eee; display: flex; flex-direction: column; gap: 5px; }
         .trail-item-header { display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 12px; }
         .trail-item-actions { display: flex; gap: 5px; justify-content: flex-end; }
@@ -82,7 +85,6 @@
         .btn-del { background-color: #ffebee !important; color: #c62828; border-color: #ef9a9a !important; }
         .btn-view { background-color: #e3f2fd !important; color: #1565c0; border-color: #90caf9 !important; }
 
-        /* Toggle Switch */
         .switch { position: relative; display: inline-block; width: 50px; height: 24px; flex-shrink: 0; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; }
@@ -92,13 +94,11 @@
         .slider.round { border-radius: 24px; }
         .slider.round:before { border-radius: 50%; }
 
-        /* Progress Bar */
         .progress-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 9999; display: flex; justify-content: center; align-items: center; color: white; }
         .progress-content { background: #333; padding: 30px; border-radius: 10px; text-align: center; width: 400px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
         .progress-bar-container { width: 100%; background-color: #555; border-radius: 5px; margin: 15px 0; }
         .progress-bar { width: 0%; height: 20px; background-color: #4285F4; border-radius: 5px; transition: width 0.2s linear; }
 
-        /* Route Panel */
         .route-panel { position: absolute; top: 20px; right: 20px; background: #fff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); z-index: 2000; padding: 15px; width: 280px; max-height: 400px; display: none; flex-direction: column; }
         .route-panel h3 { margin: 0 0 10px 0; font-size: 16px; text-align: center; }
         .route-panel p { font-size: 12px; color: #555; margin: 0 0 10px 0; border-bottom: 1px solid #f0f0f0; padding-bottom: 10px; }
@@ -111,7 +111,6 @@
         .route-panel button { background-color: #ccc; color: #333; border: none; padding: 8px; border-radius: 5px; cursor: pointer; font-size: 13px; flex-basis: 48%; }
         .route-panel button#btnGenerateRoute { background-color: #4285F4; color: white; font-weight: bold; }
 
-        /* Storage Menu */
         .storage-menu { width: 300px; display: none; flex-direction: column; gap: 10px; }
         .storage-menu h3 { margin: 0 0 5px 0; font-size: 16px; text-align: center; }
         .storage-menu p { font-size: 12px; color: #555; text-align: center; margin: 0 0 10px 0; border-bottom: 1px solid #f0f0f0; padding-bottom: 10px; }
@@ -234,18 +233,26 @@
 
     <div class="maps-menu" id="mapsMenu">
         <h3>Gerenciar Mapas</h3>
-        <input type="text" id="mapListSearch" placeholder="Filtrar lista..." style="width: 93%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+        
+        <div id="selectDevice" style="font-weight:bold; color:#4285F4; border-bottom:1px solid #eee; padding-bottom:8px; margin-bottom:8px; cursor:pointer; display:flex; align-items:center;">
+            <img src="ícones/upload.svg" style="width:16px; margin-right:8px;" alt="Upload">
+            <span>📂 Carregar do Dispositivo...</span>
+        </div>
+
+        <input type="text" id="mapListSearch" placeholder="Filtrar lista..." style="width: 93%; padding: 8px; margin-bottom: 5px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+        
+        <div class="batch-actions">
+            <label style="cursor:pointer; display:flex; align-items:center;">
+                <input type="checkbox" id="chkSelectAllMaps" style="margin-right:5px;"> Todos
+            </label>
+            <button id="btnLoadSelectedMaps">Carregar Selecionados</button>
+        </div>
         
         <div style="font-size:11px; color:#666; margin-bottom:10px; text-align:center;">
-            Ao clicar, o arquivo será salvo no banco e exibido.
+            Marque para carregar vários ou clique no nome para carregar um.
         </div>
         
         <ul id="kmzList"></ul>
-        <ul style="border-top: 1px solid #eee; margin-top: 10px; padding-top: 5px;">
-            <li id="selectDevice" style="font-weight:bold; color:#4285F4;">
-                <span>📂 Carregar do Dispositivo...</span>
-            </li>
-        </ul>
     </div>
 
     <div class="trail-menu" id="trailMenu" style="display: none;">
@@ -386,19 +393,15 @@
         const SPATIAL_INDEX_STORE_NAME = 'spatial_index';
         const TRAIL_STORE_NAME = 'user_trails'; 
         const MAX_WAYPOINTS = 10;
+        
+        const BATCH_SIZE = 2000;
+
         let routeWaypoints = [];
         let routeMarkers = [];
         
-        // VARIÁVEIS PARA O RASTRO DO USUÁRIO
         let currentTrailCoordinates = [];
         let trailWatchId = null;
         let lastTrailUpdateTime = 0;
-
-        const SYNONYM_MAP = {
-            'fusivel': 'fu', 'fusiveis': 'fu', 'fusível': 'fu', 'fusíveis': 'fu',
-            'religador': 're', 'religadores': 're', 'chave': 'ch', 'chaves': 'ch',
-            'banco': 'bc', 'bancos': 'bc'
-        };
 
         const state = {
             isRoutePlanning: false, 
@@ -499,18 +502,6 @@
             });
         }
 
-        async function countDBItems(storeName) {
-            const db = await openDB();
-            return new Promise((resolve, reject) => {
-                const transaction = db.transaction([storeName], 'readonly');
-                const store = transaction.objectStore(storeName);
-                const request = store.count();
-                request.onsuccess = () => resolve(request.result);
-                request.onerror = () => reject(request.error);
-            });
-        }
-
-        // --- ATUALIZA A LISTA DE RASTROS SALVOS NA UI ---
         async function updateSavedTrailsList() {
             const listEl = document.getElementById('savedTrailsList');
             listEl.innerHTML = '';
@@ -587,7 +578,6 @@
             } catch(e) { console.error("Erro ao listar rastros", e); }
         }
 
-        // --- FUNÇÃO DE EXPORTAR KML (Retorna blob ou baixa) ---
         function createKMLBlob(trail) {
             const coordsString = trail.coordinates.map(c => `${c[0]},${c[1]},0`).join(' ');
             const kmlContent = `<?xml version="1.0" encoding="UTF-8"?>
@@ -652,7 +642,6 @@
         let dynamicMarkerSource = null;
         let updateMarkersTimeout;
 
-        // --- ESTILOS ESRI ---
         const esriSatelliteCleanStyle = {
             'version': 8,
             'sources': {
@@ -759,7 +748,6 @@
         const btnTools = document.getElementById('btnTools');
         const toolsMenu = document.getElementById('toolsMenu');
         
-        // ELEMENTOS DO RASTRO
         const btnTrailMenu = document.getElementById('btnTrailMenu');
         const trailMenu = document.getElementById('trailMenu');
         const chkUserTrail = document.getElementById('chkUserTrail');
@@ -798,8 +786,10 @@
 
         const toggleAllMarkersVisibilityCheckbox = document.getElementById('toggleAllMarkersVisibility');
         const toggleAllLinesVisibilityCheckbox = document.getElementById('toggleAllLinesVisibility');
+        
+        const chkSelectAllMaps = document.getElementById('chkSelectAllMaps');
+        const btnLoadSelectedMaps = document.getElementById('btnLoadSelectedMaps');
 
-        // LISTA COMPLETA DE 116 ARQUIVOS
         const predefinedFiles = [
              { name: 'AGUAS DE LINDOIA.kmz', url: './AGUAS DE LINDOIA.kmz' },
              { name: 'AGUDOS.kmz', url: './AGUDOS.kmz' },
@@ -1000,7 +990,7 @@
                     if (!loadedFileNames.has(requiredFile)) {
                         const data = await getDataFromDB(GEOJSON_STORE_NAME, requiredFile);
                         if (data) {
-                            addDataToMap(data.geojson, data.name);
+                            processGeoJSONBatched(data.geojson, data.name, false); 
                         }
                     }
                 }
@@ -1056,7 +1046,6 @@
             }
         }
 
-        // SALVA SEMPRE NO DB
         async function cacheKMZData(fileName, geojson) {
             try {
                 await saveDataToDB(GEOJSON_STORE_NAME, { name: fileName, geojson: geojson });
@@ -1065,18 +1054,16 @@
                 if (bounds) {
                     await saveDataToDB(SPATIAL_INDEX_STORE_NAME, { name: fileName, bounds: bounds });
                 }
-                // Atualiza o índice em memória
                 spatialIndex = await getDataFromDB(SPATIAL_INDEX_STORE_NAME);
-                // Atualiza a lista visual para mostrar o status "Salvo"
                 displayFileList();
             } catch (e) { console.error(e); }
-       }
+        }
 
         async function getKMZFromCache(fileName) {
             const data = await getDataFromDB(GEOJSON_STORE_NAME, fileName);
             if (data && data.geojson) return data.geojson;
             return null;
-       }
+        }
 
         map.on('click', (e) => { 
             if (!e.originalEvent.target.closest('.menu, .search-bar, .search-results, .maps-menu, .line-menu, .loaded-files-menu, .style-menu, .marker-group-menu, .maplibregl-popup, .route-panel, .storage-menu, .toggle-menu-btn, .tools-menu, .trail-menu')) {
@@ -1108,11 +1095,9 @@
             localStorage.setItem('recentExternalFiles', JSON.stringify(recentFiles));
         }
 
-        // --- EXIBIÇÃO DA LISTA DE MAPAS UNIFICADA ---
         async function displayFileList() {
             kmzList.innerHTML = '';
             
-            // Verifica quais arquivos já estão no banco
             const cachedFiles = new Set();
             if(spatialIndex) {
                 spatialIndex.forEach(idx => cachedFiles.add(idx.name));
@@ -1123,7 +1108,14 @@
             sortedFiles.forEach((file) => {
                 const li = document.createElement('li');
                 
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = file.name;
+                checkbox.className = 'map-select-checkbox';
+                checkbox.dataset.url = file.url;
+                
                 const nameSpan = document.createElement('span');
+                nameSpan.className = 'file-name';
                 nameSpan.textContent = file.name;
                 
                 const statusSpan = document.createElement('span');
@@ -1137,26 +1129,60 @@
                     statusSpan.classList.add('status-cloud');
                 }
 
+                li.appendChild(checkbox);
                 li.appendChild(nameSpan);
                 li.appendChild(statusSpan);
                 
-                li.addEventListener('click', (e) => {
+                nameSpan.addEventListener('click', (e) => {
                     e.stopPropagation();
                     loadKMZFromURL(file.url, file.name);
                     updateRecentFiles(file.name);
-                    // O menu não fecha automaticamente para permitir ver o status mudando
                 });
                 
                 kmzList.appendChild(li);
             });
         }
         
-        // Filtro da lista de mapas
+        function toggleSelectAllMaps() {
+            const checkboxes = document.querySelectorAll('.map-select-checkbox');
+            const isChecked = chkSelectAllMaps.checked;
+            checkboxes.forEach(chk => {
+                if(chk.closest('li').style.display !== 'none') {
+                    chk.checked = isChecked;
+                }
+            });
+        }
+
+        async function loadSelectedMaps() {
+            const checkboxes = document.querySelectorAll('.map-select-checkbox:checked');
+            if (checkboxes.length === 0) return alert("Selecione pelo menos um mapa.");
+            
+            mapsMenu.style.display = 'none'; 
+            
+            for (let i = 0; i < checkboxes.length; i++) {
+                const chk = checkboxes[i];
+                const fileName = chk.value;
+                const url = chk.dataset.url;
+                
+                if (state.files.find(f => f.name === fileName)) continue;
+
+                try {
+                    await loadKMZFromURL(url, fileName);
+                } catch (e) {
+                    console.error(`Erro ao carregar lote: ${fileName}`, e);
+                }
+            }
+            alert("Processamento em lote finalizado.");
+        }
+
+        chkSelectAllMaps.addEventListener('change', toggleSelectAllMaps);
+        btnLoadSelectedMaps.addEventListener('click', loadSelectedMaps);
+        
         document.getElementById('mapListSearch').addEventListener('input', function(e) {
             const term = normalizeText(e.target.value);
             const items = kmzList.querySelectorAll('li');
             items.forEach(item => {
-                const text = normalizeText(item.textContent);
+                const text = normalizeText(item.querySelector('.file-name').textContent);
                 item.style.display = text.includes(term) ? 'flex' : 'none';
             });
         });
@@ -1169,7 +1195,6 @@
             legends.forEach(legend => { legend.style.display = 'block'; });
             setTimeout(() => { legends.forEach(legend => { legend.style.display = 'none'; }); }, 5000);
 
-            // --- SOURCE PARA O RASTRO DO USUÁRIO ---
             map.addSource('user-trail', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] } } });
             map.addLayer({ id: 'user-trail-layer', type: 'line', source: 'user-trail', paint: { 'line-color': '#d63384', 'line-width': 5, 'line-opacity': 0.8 } });
 
@@ -1210,29 +1235,23 @@
             toggleAllMarkersVisibilityCheckbox.checked = state.markersVisible;
             toggleAllLinesVisibilityCheckbox.checked = state.linesVisible;
 
-            // --- INICIALIZAÇÃO DB ---
             (async () => {
                 try {
-                    // 1. Carrega o índice espacial
                     spatialIndex = await getDataFromDB(SPATIAL_INDEX_STORE_NAME);
-                    // 2. Atualiza a lista visual (para mostrar o que está "Salvo")
                     displayFileList();
-                    // 3. Inicia o listener de navegação
                     map.on('moveend', updateVisibleLayers);
-                    // 4. Carga inicial
                     updateVisibleLayers();
                 } catch (e) {
                     console.error("Erro ao inicializar banco de dados:", e);
                 }
             })();
 
-            // Carregamento de arquivos externos recentes
             const recentExternalFiles = JSON.parse(localStorage.getItem('recentExternalFiles') || '[]');
             if (recentExternalFiles.length > 0) {
                 (async () => {
                     for (const fileName of recentExternalFiles) {
                         const cachedData = await getKMZFromCache(fileName); 
-                        if (cachedData) addDataToMap(cachedData, fileName);
+                        if (cachedData) processGeoJSONBatched(cachedData, fileName, false);
                     }
                 })();
             }
@@ -1282,12 +1301,10 @@
             map.on('mouseleave', 'dynamic-marker-circles', () => { if (!state.isRoutePlanning) map.getCanvas().style.cursor = ''; });
         }); 
 
-        // --- ATUALIZAR COR DO RASTRO EM TEMPO REAL ---
         trailColorInput.addEventListener('input', (e) => {
             if(map.getLayer('user-trail-layer')) map.setPaintProperty('user-trail-layer', 'line-color', e.target.value);
         });
 
-        // --- FUNÇÃO PARA CONTROLAR O RASTRO DE INSPEÇÃO ---
         chkUserTrail.addEventListener('change', (e) => {
             if (e.target.checked) {
                 currentTrailCoordinates = [];
@@ -1353,24 +1370,17 @@
 
         document.getElementById('btnMaps').addEventListener('click', (e) => { e.stopPropagation(); toggleVisibility(mapsMenu); });
         
-        // --- FUNÇÃO CORRIGIDA PARA O BOTÃO DE NOMES ---
         function toggleNames() {
-            // 1. Inverte o estado atual
             state.namesVisible = !state.namesVisible;
-            
-            // 2. Aplica ao mapa se a camada existir
             if (map.getLayer('dynamic-marker-labels')) {
                 map.setLayoutProperty('dynamic-marker-labels', 'visibility', state.namesVisible ? 'visible' : 'none');
             }
-
-            // 3. Feedback visual no botão (Muda para cinza quando desligado)
             const btn = document.getElementById('btnNames');
             if (btn) {
                 btn.style.backgroundColor = state.namesVisible ? '#ffffff' : '#d1d1d1';
             }
         }
 
-        // Listener do botão de nomes
         document.getElementById('btnNames').addEventListener('click', (e) => { 
             e.stopPropagation();
             toggleNames(); 
@@ -1385,7 +1395,9 @@
         });
         btnLoadedFiles.addEventListener('click', (e) => { e.stopPropagation(); toggleVisibility(loadedFilesMenu); });
         document.getElementById('btnSearch').addEventListener('click', searchFeatures);
+        
         document.getElementById('selectDevice').addEventListener('click', (e) => { e.stopPropagation(); selectFromDevice(); });
+        
         document.getElementById('hideAll').addEventListener('click', hideAllGroups);
         document.getElementById('showAll').addEventListener('click', showAllGroups);
         document.getElementById('btnStyles').addEventListener('click', (e) => { e.stopPropagation(); displayStyleList(); toggleVisibility(styleMenu); });
@@ -1474,32 +1486,27 @@
         async function loadKMZFromURL(url, fileName) {
             if (typeof gtag === 'function') gtag('event', 'map_load', { 'file_name': fileName, 'load_source': 'server' });
             
-            // PRIMEIRO, verifica se JÁ ESTÁ no cache
             try {
                 const cachedData = await getKMZFromCache(fileName); 
                 if (cachedData) { 
-                    addDataToMap(cachedData, fileName); 
+                    processGeoJSONBatched(cachedData, fileName, false); 
                     return; 
                 }
                 
-                // SE NÃO, baixa e SALVA
                 progressOverlay.style.display = 'flex';
-                progressText.textContent = "Baixando...";
+                progressText.textContent = "Baixando " + fileName + "...";
                 
                 const geojson = await parseKMZFromUrl(url);
                 if(geojson) {
-                    // Salva no DB
-                    await cacheKMZData(fileName, geojson);
-                    addDataToMap(geojson, fileName);
-                    updateVisibleLayers(); // Força atualização visual
+                    processGeoJSONBatched(geojson, fileName, true); 
+                } else {
+                    progressOverlay.style.display = 'none';
                 }
-                
-                progressOverlay.style.display = 'none';
                 
             } catch (error) {
                 console.log(`Erro ao carregar "${fileName}":`, error);
                 progressOverlay.style.display = 'none';
-                alert("Erro ao baixar o mapa. Verifique sua conexão.");
+                alert("Erro ao baixar o mapa: " + fileName);
             }
         }
 
@@ -1509,21 +1516,14 @@
             if (typeof gtag === 'function') gtag('event', 'map_load', { 'file_name': file.name, 'load_source': 'device' });
             
             progressOverlay.style.display = 'flex';
-            progressText.textContent = "Processando arquivo...";
+            progressText.textContent = "Lendo arquivo...";
 
             const reader = new FileReader();
             reader.onload = async () => {
                 try {
                     const data = file.name.endsWith('.kmz') ? await parseKMZ(reader.result) : toGeoJSON.kml(new DOMParser().parseFromString(reader.result, 'text/xml'));
-                    
-                    // SALVA SEMPRE NO DB
-                    await cacheKMZData(file.name, data);
-                    
-                    addDataToMap(data, file.name);
+                    processGeoJSONBatched(data, file.name, true);
                     updateRecentExternalFiles(file.name); 
-                    updateVisibleLayers();
-                    
-                    progressOverlay.style.display = 'none';
                 } catch (error) { 
                     console.error(error);
                     progressOverlay.style.display = 'none';
@@ -1542,7 +1542,219 @@
             return toGeoJSON.kml(new DOMParser().parseFromString(kmlContent, 'text/xml'));
         }
 
-        // --- FUNÇÃO CORRIGIDA PARA ATUALIZAR CORES ---
+        // ========================================================
+        // CORREÇÃO: DETECÇÃO AUTOMÁTICA DE "ALIMENTADOR" / "ALIMENTADO" / "LAYER"
+        // ========================================================
+
+        async function processGeoJSONBatched(geojson, fileName, saveToDB) {
+            const sanitizedFileName = fileName.replace(/\s+/g, '_').replace(/[^\w\-]/g, '');
+            const sourceId = `source-${sanitizedFileName}`;
+            
+            if (state.files.find(file => file.name === fileName)) {
+                progressOverlay.style.display = 'none';
+                return;
+            }
+
+            progressOverlay.style.display = 'flex';
+            progressBar.style.width = '0%';
+            
+            const features = geojson.features;
+            const total = features.length;
+            let currentIndex = 0;
+
+            const pointFeaturesToAdd = [];
+            const lineFeaturesArray = [];
+            
+            // --- LÓGICA DE DETECÇÃO MELHORADA ---
+            let groupingProperty = null;
+            // Lista de propriedades comuns para agrupar
+            const potentialProps = ['Alimentador', 'Alimentado', 'ALIMENTADOR', 'Feeder', 'layer'];
+            
+            // Procura nos primeiros 50 itens para achar um padrão (não precisa varrer tudo agora)
+            for (let i = 0; i < Math.min(features.length, 50); i++) {
+                const f = features[i];
+                if (f.properties) {
+                    const found = potentialProps.find(p => f.properties[p]);
+                    if (found) {
+                        groupingProperty = found;
+                        break;
+                    }
+                }
+            }
+            // Se não achar nada específico, usa o 'name' (padrão antigo)
+            if (!groupingProperty) groupingProperty = 'name';
+            // ------------------------------------
+
+            function extractGeometries(feature) {
+                const geometries = [];
+                if (feature.geometry && feature.geometry.type === 'GeometryCollection') {
+                    feature.geometry.geometries.forEach(geom => geometries.push({ ...feature, geometry: geom }));
+                } else if (feature.geometry) {
+                    geometries.push(feature);
+                }
+                return geometries;
+            }
+
+            function processBatch() {
+                const endIndex = Math.min(currentIndex + BATCH_SIZE, total);
+                
+                for (let i = currentIndex; i < endIndex; i++) {
+                    const feature = features[i];
+                    const explodedFeatures = extractGeometries(feature);
+
+                    explodedFeatures.forEach(f => {
+                        if (!f.geometry) return;
+
+                        if (f.geometry.type === 'Point') {
+                            const name = (f.properties.name || '').toUpperCase();
+                            let groupKey = 'default';
+                            if (name.endsWith('-FU')) groupKey = '-FU';
+                            else if (name.endsWith('-FA')) groupKey = '-FA';
+                            else if (name.endsWith('-RE')) groupKey = '-RE';
+                            else if (name.endsWith('KVA') || name.includes('TR')) groupKey = 'TR';
+
+                            f.properties.group = groupKey;
+                            f.properties.color = state.markerGroups[groupKey] ? state.markerGroups[groupKey].color : state.markerGroups['default'].color;
+                            f.properties.fileName = fileName;
+                            pointFeaturesToAdd.push(f);
+                        } 
+                        else if (['LineString', 'MultiLineString', 'Polygon', 'MultiPolygon'].includes(f.geometry.type)) {
+                            f.properties = f.properties || {};
+                            
+                            // Tenta pegar o valor da propriedade detectada. Se falhar, usa 'Sem Grupo'
+                            const groupName = f.properties[groupingProperty] || 'Outros';
+                            
+                            let color = groupColorMap.get(groupName);
+                            if (!color) {
+                                color = colorPalette[groupColorMap.size % colorPalette.length];
+                                groupColorMap.set(groupName, color);
+                            }
+                            f.properties.color = color;
+                            lineFeaturesArray.push(f);
+                        }
+                    });
+                }
+
+                currentIndex = endIndex;
+                const percentage = Math.round((currentIndex / total) * 100);
+                progressBar.style.width = `${percentage}%`;
+                progressText.textContent = `Processando: ${currentIndex} / ${total} itens`;
+
+                if (currentIndex < total) {
+                    setTimeout(processBatch, 0); 
+                } else {
+                    saveGroupColorMap(); 
+                    finalizeMapLoading(fileName, sourceId, groupingProperty, pointFeaturesToAdd, lineFeaturesArray, geojson, saveToDB);
+                }
+            }
+
+            setTimeout(processBatch, 0);
+        }
+
+        function finalizeMapLoading(fileName, sourceId, groupingProperty, points, lines, originalGeojson, saveToDB) {
+            const lineLayerId = `lines-${sourceId}`;
+
+            allPointFeatures.push(...points);
+
+            const lineFeatures = { type: 'FeatureCollection', features: lines };
+            
+            const groupsSet = new Set();
+            if (lines.length > 0 && groupingProperty) {
+                lines.forEach(f => {
+                    if (f.properties) {
+                         // Usa o mesmo fallback 'Outros' definido no loop
+                         const val = f.properties[groupingProperty] || 'Outros';
+                         groupsSet.add(val);
+                    }
+                });
+            }
+            if (groupsSet.size > 0) state.selectedGroups.set(sourceId, new Set(groupsSet));
+
+            const newFileEntry = {
+                name: fileName,
+                sourceId: sourceId,
+                hasLines: lines.length > 0,
+                groupingProperty: groupingProperty,
+                lineFeatures: lineFeatures
+            };
+            state.files.push(newFileEntry);
+
+            if (lines.length > 0) {
+                const sourceIdLines = sourceId + '-lines';
+                if (!map.getSource(sourceIdLines)) map.addSource(sourceIdLines, { type: 'geojson', data: lineFeatures });
+                else map.getSource(sourceIdLines).setData(lineFeatures);
+                
+                if (!map.getLayer(lineLayerId)) { 
+                    const layerBelow = map.getLayer('dynamic-marker-circles') ? 'dynamic-marker-circles' : undefined;
+
+                    map.addLayer({ 
+                        id: lineLayerId, 
+                        type: 'line', 
+                        source: sourceIdLines, 
+                        paint: { 'line-color': ['get', 'color'], 'line-width': parseInt(state.visualSettings.lineWidth) }, 
+                        layout: { 'visibility': state.linesVisible ? 'visible' : 'none' } 
+                    }, layerBelow); 
+                    
+                    map.on('click', lineLayerId, (e) => {
+                        e.originalEvent.stopPropagation(); 
+                        const feature = e.features[0];
+                        const name = feature.properties.Alimentador || feature.properties.name || 'Sem Nome';
+                        // Usa a propriedade detectada corretamente
+                        const groupName = feature.properties[groupingProperty] || 'Outros';
+                        const currentColor = groupColorMap.get(groupName) || '#000000';
+                        
+                        const popupContainer = document.createElement('div');
+                        popupContainer.innerHTML = `<strong>${name}</strong><br><label style="font-size:12px;margin-right:5px">Mudar Cor:</label>`;
+                        
+                        const colorInput = document.createElement('input');
+                        colorInput.type = 'color'; 
+                        colorInput.value = currentColor; 
+                        colorInput.style.cursor = 'pointer';
+                        
+                        colorInput.addEventListener('input', (ev) => {
+                            applyColorUpdate(groupName, newFileEntry.sourceId, ev.target.value);
+                        });
+                        
+                        popupContainer.appendChild(colorInput);
+                        new maplibregl.Popup().setLngLat(e.lngLat).setDOMContent(popupContainer).addTo(map);
+                    });
+
+                    map.on('mouseenter', lineLayerId, () => map.getCanvas().style.cursor = 'pointer');
+                    map.on('mouseleave', lineLayerId, () => { if (!state.isRoutePlanning) map.getCanvas().style.cursor = ''; });
+                }
+            }
+
+            updateLoadedFilesList(fileName);
+            updateVisibleMarkers(); 
+            applyGroupFilter(); 
+
+            state.files.forEach(file => {
+                if (file.hasLines) {
+                    const lineId = `lines-${file.sourceId}`;
+                    if (map.getLayer(lineId)) map.moveLayer(lineId); 
+                }
+            });
+            if (map.getLayer('user-trail-layer')) map.moveLayer('user-trail-layer');
+            if (map.getLayer('dynamic-marker-circles')) map.moveLayer('dynamic-marker-circles');
+            if (map.getLayer('dynamic-marker-labels')) map.moveLayer('dynamic-marker-labels');
+
+            if (saveToDB) {
+                progressText.textContent = "Salvando no Banco de Dados...";
+                setTimeout(async () => {
+                    await cacheKMZData(fileName, originalGeojson);
+                    progressOverlay.style.display = 'none';
+                    originalGeojson = null; 
+                }, 100);
+            } else {
+                progressOverlay.style.display = 'none';
+            }
+            
+            points = null;
+            lines = null;
+        }
+
+        // ========================================================
+
         function applyColorUpdate(groupName, sourceId, newColor) {
             groupColorMap.set(groupName, newColor);
             saveGroupColorMap();
@@ -1589,146 +1801,6 @@
             if(labelText) labelText.style.color = newColor;
         }
 
-        function addDataToMap(geojson, fileName) {
-            const sanitizedFileName = fileName.replace(/\s+/g, '_').replace(/[^\w\-]/g, '');
-            const sourceId = `source-${sanitizedFileName}`;
-            const lineLayerId = `lines-${sourceId}`;
-
-            if (state.files.find(file => file.name === fileName)) return;
-
-            const pointFeaturesToAdd = [];
-            const lineFeaturesArray = [];
-
-            function extractGeometries(feature) {
-                const geometries = [];
-                if (feature.geometry && feature.geometry.type === 'GeometryCollection') {
-                    feature.geometry.geometries.forEach(geom => geometries.push({ ...feature, geometry: geom }));
-                } else if (feature.geometry) {
-                    geometries.push(feature);
-                }
-                return geometries;
-            }
-
-            let groupingProperty = null;
-            const exampleFeature = geojson.features.find(f => f.properties && (f.properties.Alimentador || f.properties.name));
-            if (exampleFeature) groupingProperty = exampleFeature.properties.Alimentador ? 'Alimentador' : 'name';
-
-            geojson.features.forEach(feature => {
-                const features = extractGeometries(feature);
-                features.forEach(f => {
-                    if (f.geometry.type === 'Point') {
-                        const name = (f.properties.name || '').toUpperCase();
-                        
-                        let groupKey = 'default';
-                        if (name.endsWith('-FU')) groupKey = '-FU';
-                        else if (name.endsWith('-FA')) groupKey = '-FA';
-                        else if (name.endsWith('-RE')) groupKey = '-RE';
-                        else if (name.endsWith('KVA') || name.includes('TR')) groupKey = 'TR'; 
-
-                        f.properties.group = groupKey;
-                        f.properties.color = state.markerGroups[groupKey] ? state.markerGroups[groupKey].color : state.markerGroups['default'].color;
-                        f.properties.fileName = fileName;
-                        pointFeaturesToAdd.push(f);
-                    } else if (['LineString', 'MultiLineString', 'Polygon', 'MultiPolygon'].includes(f.geometry.type)) {
-                        f.properties = f.properties || {};
-                        const groupName = f.properties[groupingProperty];
-                        let color = groupColorMap.get(groupName);
-                        if (!color) {
-                            color = colorPalette[groupColorMap.size % colorPalette.length];
-                            groupColorMap.set(groupName, color);
-                            saveGroupColorMap(); 
-                        }
-                        f.properties.color = color;
-                        lineFeaturesArray.push(f);
-                    }
-                });
-            });
-
-            allPointFeatures.push(...pointFeaturesToAdd);
-
-            const lineFeatures = { type: 'FeatureCollection', features: lineFeaturesArray };
-            const groupsSet = new Set();
-            if (lineFeatures.features.length > 0 && groupingProperty) {
-                lineFeatures.features.forEach(f => {
-                    if (f.properties && f.properties[groupingProperty]) groupsSet.add(f.properties[groupingProperty]);
-                });
-            }
-            if (groupingProperty && groupsSet.size > 0) state.selectedGroups.set(sourceId, new Set(groupsSet));
-
-            // CRIAÇÃO DO OBJETO FILE
-            const newFileEntry = {
-                name: fileName,
-                sourceId: sourceId,
-                hasLines: lineFeatures.features.length > 0,
-                groupingProperty: groupingProperty,
-                lineFeatures: lineFeatures
-            };
-            state.files.push(newFileEntry);
-
-            if (lineFeatures.features.length > 0) {
-                const sourceIdLines = sourceId + '-lines';
-                if (!map.getSource(sourceIdLines)) map.addSource(sourceIdLines, { type: 'geojson', data: lineFeatures });
-                else map.getSource(sourceIdLines).setData(lineFeatures);
-                
-                if (!map.getLayer(lineLayerId)) { 
-                     // Verifica se existe a camada de marcadores para colocar a linha ABAIXO dela
-                     const layerBelow = map.getLayer('dynamic-marker-circles') ? 'dynamic-marker-circles' : undefined;
-
-                     map.addLayer({ 
-                         id: lineLayerId, 
-                         type: 'line', 
-                         source: sourceIdLines, 
-                         paint: { 'line-color': ['get', 'color'], 'line-width': parseInt(state.visualSettings.lineWidth) }, 
-                         layout: { 'visibility': state.linesVisible ? 'visible' : 'none' } 
-                     }, layerBelow); 
-                      
-                     // Evento de clique na linha
-                     map.on('click', lineLayerId, (e) => {
-                         e.originalEvent.stopPropagation(); 
-                         const feature = e.features[0];
-                         const name = feature.properties.Alimentador || feature.properties.name || 'Sem Nome';
-                         const groupName = feature.properties[groupingProperty];
-                         const currentColor = groupColorMap.get(groupName) || '#000000';
-                         
-                         const popupContainer = document.createElement('div');
-                         popupContainer.innerHTML = `<strong>${name}</strong><br><label style="font-size:12px;margin-right:5px">Mudar Cor:</label>`;
-                         
-                         const colorInput = document.createElement('input');
-                         colorInput.type = 'color'; 
-                         colorInput.value = currentColor; 
-                         colorInput.style.cursor = 'pointer';
-                         
-                         colorInput.addEventListener('input', (ev) => {
-                             applyColorUpdate(groupName, newFileEntry.sourceId, ev.target.value);
-                         });
-                         
-                         popupContainer.appendChild(colorInput);
-                         new maplibregl.Popup().setLngLat(e.lngLat).setDOMContent(popupContainer).addTo(map);
-                     });
-
-                     map.on('mouseenter', lineLayerId, () => map.getCanvas().style.cursor = 'pointer');
-                     map.on('mouseleave', lineLayerId, () => { if (!state.isRoutePlanning) map.getCanvas().style.cursor = ''; });
-                }
-            }
-
-            updateLoadedFilesList(fileName);
-            updateVisibleMarkers();
-
-            // REFORÇO DA ORDEM DAS CAMADAS
-            state.files.forEach(file => {
-                if (file.hasLines) {
-                    const lineId = `lines-${file.sourceId}`;
-                    if (map.getLayer(lineId)) map.moveLayer(lineId); 
-                }
-            });
-
-            if (map.getLayer('user-trail-layer')) map.moveLayer('user-trail-layer');
-            if (map.getLayer('dynamic-marker-circles')) map.moveLayer('dynamic-marker-circles');
-            if (map.getLayer('dynamic-marker-labels')) map.moveLayer('dynamic-marker-labels');
-            
-            applyGroupFilter(); 
-        }
-
         function removeFileFromMap(fileName) {
             const fileIndex = state.files.findIndex(file => file.name === fileName);
             if (fileIndex === -1) return;
@@ -1746,12 +1818,10 @@
             if (liToRemove) liToRemove.remove();
             state.files.splice(fileIndex, 1);
             
-            // Re-renderiza a lista de grupos se o arquivo removido tinha grupos
             updateGroupMenu();
             updateVisibleMarkers();
         }
 
-        // --- ATUALIZAÇÃO DO MENU DE GRUPOS DE LINHA ---
         function updateGroupMenu() {
             lineGroupsList.innerHTML = '';
             state.files.forEach(file => {
@@ -1907,7 +1977,6 @@
                     }
                 });
 
-                // ORDEM DAS CAMADAS
                 state.files.forEach(file => { if (file.hasLines) { const lineId = `lines-${file.sourceId}`; if (map.getLayer(lineId)) map.moveLayer(lineId); } });
                 if (map.getLayer('user-trail-layer')) map.moveLayer('user-trail-layer');
                 if (map.getLayer('dynamic-marker-circles')) map.moveLayer('dynamic-marker-circles');
@@ -1916,7 +1985,6 @@
                 updateVisibleMarkers();
                 applyGroupFilter();
                 toggleLines(state.linesVisible);
-                // toggleNames(state.namesVisible && state.markersVisible); // REMOVIDO PARA EVITAR CONFLITO
                 if(map.getLayer('dynamic-marker-labels')) {
                     map.setLayoutProperty('dynamic-marker-labels', 'visibility', state.namesVisible ? 'visible' : 'none');
                 }
@@ -1960,11 +2028,53 @@
         async function searchFeatures() {
             const term = searchInput.value.toLowerCase().trim();
             if (!term) return alert('Digite um termo para buscar.');
-            const matches = allPointFeatures.filter(f => {
-                const name = f.properties.name || f.properties.Alimentador || '';
-                return normalizeText(name).includes(normalizeText(term));
-            }).slice(0, 15);
-            displaySearchResults(matches);
+
+            const btn = document.getElementById('btnSearch');
+            const originalText = btn.textContent;
+            btn.textContent = 'Buscando...';
+            btn.disabled = true;
+
+            const normalizedTerm = normalizeText(term);
+            const matches = [];
+
+            try {
+                const db = await openDB();
+                const transaction = db.transaction([GEOJSON_STORE_NAME], 'readonly');
+                const store = transaction.objectStore(GEOJSON_STORE_NAME);
+
+                await new Promise((resolve, reject) => {
+                    const request = store.openCursor();
+                    request.onsuccess = (event) => {
+                        const cursor = event.target.result;
+                        if (cursor) {
+                            const fileData = cursor.value; 
+                            if (fileData.geojson && Array.isArray(fileData.geojson.features)) {
+                                for (const feature of fileData.geojson.features) {
+                                    const p = feature.properties || {};
+                                    const name = p.name || p.Alimentador || '';
+                                    if (name && normalizeText(name).includes(normalizedTerm)) {
+                                        const featureResult = JSON.parse(JSON.stringify(feature));
+                                        featureResult.properties.fileName = fileData.name;
+                                        matches.push(featureResult);
+                                    }
+                                    if (matches.length >= 20) { resolve(); return; }
+                                }
+                            }
+                            cursor.continue();
+                        } else { resolve(); }
+                    };
+                    request.onerror = () => reject(request.error);
+                });
+
+                displaySearchResults(matches);
+
+            } catch (err) {
+                console.error("Erro na busca:", err);
+                alert("Erro ao buscar no banco de dados.");
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
         }
 
         function displaySearchResults(results) {
