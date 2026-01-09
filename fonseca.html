@@ -124,7 +124,7 @@
         }
         .file-list-integrated span.file-name:hover { color: #4285F4; font-weight: bold; }
         
-        /* Indicador de Cache */
+        /* Indicador de Cache (Verde) */
         .file-list-integrated li.is-cached { background-color: #f1f8e9; }
         .file-list-integrated li.is-cached span.file-name { color: #2e7d32; }
 
@@ -1112,6 +1112,7 @@
             localStorage.setItem('recentExternalFiles', JSON.stringify(recentFiles));
         }
 
+        // --- FUNÇÃO DE EXIBIÇÃO DA LISTA (HÍBRIDA) ---
         async function displayFileList() {
             const listElement = document.getElementById('kmzList');
             listElement.innerHTML = ''; 
@@ -1130,40 +1131,44 @@
                 
                 if (isOffline) li.classList.add('is-cached');
 
-                // Checkbox (Offline Manager)
+                // 1. Checkbox: Só gerencia Offline (não carrega no mapa)
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 checkbox.checked = isOffline;
                 checkbox.value = file.name;
-                checkbox.title = "Marcar para baixar e deixar disponível offline";
+                checkbox.title = "Marcar: Baixar para Offline | Desmarcar: Apagar do Cache";
                 
                 checkbox.addEventListener('change', async (e) => {
                     e.stopPropagation(); 
+                    
+                    // Se marcar, apenas deixa marcado visualmente (para processamento em lote)
+                    // OU baixa silenciosamente se desejar (opcional, mas aqui não faremos nada além da UI)
                     if (e.target.checked) {
+                        // Opcional: Se quiser baixar imediatamente ao marcar (sem carregar no mapa):
+                        /*
                         try {
                             document.getElementById('progressOverlay').style.display = 'flex';
                             document.getElementById('progressText').textContent = `Baixando ${file.name}...`;
-                            await getGeoJSONFromFile(file); // Pipeline único
+                            await getGeoJSONFromFile(file); 
                             li.classList.add('is-cached');
-                        } catch (err) {
-                            console.error(err);
-                            e.target.checked = false;
-                            alert("Erro ao baixar.");
-                        } finally {
-                            document.getElementById('progressOverlay').style.display = 'none';
-                        }
+                        } catch(err) { e.target.checked = false; alert("Erro ao baixar."); }
+                        finally { document.getElementById('progressOverlay').style.display = 'none'; }
+                        */
                     } else {
-                        if(confirm(`Remover "${file.name}" do offline?`)) {
-                            await deleteDataFromDB(GEOJSON_STORE_NAME, file.name);
-                            await deleteDataFromDB(SPATIAL_INDEX_STORE_NAME, file.name);
-                            li.classList.remove('is-cached');
-                        } else {
-                            e.target.checked = true;
+                        // Se desmarcar algo que já está salvo (verde), confirma deleção
+                        if(li.classList.contains('is-cached')) {
+                            if(confirm(`Remover "${file.name}" do armazenamento offline?`)) {
+                                await deleteDataFromDB(GEOJSON_STORE_NAME, file.name);
+                                await deleteDataFromDB(SPATIAL_INDEX_STORE_NAME, file.name);
+                                li.classList.remove('is-cached');
+                            } else {
+                                e.target.checked = true; // Cancela
+                            }
                         }
                     }
                 });
 
-                // Texto (Loader)
+                // 2. Nome: Carrega no Mapa (e baixa se necessário)
                 const span = document.createElement('span');
                 span.className = 'file-name';
                 span.textContent = file.name;
@@ -1173,12 +1178,14 @@
                         const isCached = li.classList.contains('is-cached');
                         if (!isCached) {
                             document.getElementById('progressOverlay').style.display = 'flex';
-                            document.getElementById('progressText').textContent = "Obtendo arquivo...";
+                            document.getElementById('progressText').textContent = "Baixando e carregando...";
                         }
 
-                        const { geojson, source } = await getGeoJSONFromFile(file); // Pipeline único
+                        // Aqui chamamos e usamos o retorno para carregar no mapa
+                        const { geojson, source } = await getGeoJSONFromFile(file); 
                         addDataToMap(geojson, file.name);
                         
+                        // Atualiza visual
                         li.classList.add('is-cached');
                         checkbox.checked = true;
                         updateRecentFiles(file.name);
