@@ -175,11 +175,66 @@
         .slider.round { border-radius: 24px; }
         .slider.round:before { border-radius: 50%; }
 
-        /* Progress Bar Overlay */
-        .progress-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 9999; display: flex; justify-content: center; align-items: center; color: white; }
-        .progress-content { background: #333; padding: 30px; border-radius: 10px; text-align: center; width: 400px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
-        .progress-bar-container { width: 100%; background-color: #555; border-radius: 5px; margin: 15px 0; }
-        .progress-bar { width: 0%; height: 20px; background-color: #4285F4; border-radius: 5px; transition: width 0.2s linear; }
+        /* --- LOADER MODERNO (Estilo Toast) --- */
+        .progress-overlay {
+            position: absolute;
+            bottom: 100px; /* AUMENTADO PARA FICAR MAIS ALTO */
+            left: 50%;
+            transform: translateX(-50%) translateY(150%); /* Começa escondido para baixo */
+            background: rgba(255, 255, 255, 0.95);
+            padding: 12px 20px;
+            border-radius: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            z-index: 3000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 320px;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.27);
+            pointer-events: auto;
+        }
+
+        /* Classe para fazer ele aparecer */
+        .progress-overlay.active {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .spinner {
+            width: 14px;
+            height: 14px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #4285F4;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 6px;
+            background-color: #eee;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 0;
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #4285F4, #34A853);
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         /* Route Panel */
         .route-panel { position: absolute; top: 20px; right: 20px; background: #fff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); z-index: 2000; padding: 15px; width: 280px; max-height: 400px; display: none; flex-direction: column; }
@@ -231,14 +286,13 @@
 <body>
     <div id="map"></div>
 
-    <div id="progressOverlay" class="progress-overlay" style="display: none;">
-        <div class="progress-content">
-            <h3>Processando...</h3>
-            <p>Por favor, não feche a aba.</p>
-            <div class="progress-bar-container">
-                <div id="progressBar" class="progress-bar"></div>
-            </div>
-            <p id="progressText">0%</p>
+    <div id="progressOverlay" class="progress-overlay">
+        <div class="progress-header">
+            <span id="progressText">Processando...</span>
+            <div class="spinner"></div>
+        </div>
+        <div class="progress-bar-container">
+            <div id="progressBar" class="progress-bar"></div>
         </div>
     </div>
 
@@ -1141,19 +1195,8 @@
                 checkbox.addEventListener('change', async (e) => {
                     e.stopPropagation(); 
                     
-                    // Se marcar, apenas deixa marcado visualmente (para processamento em lote)
-                    // OU baixa silenciosamente se desejar (opcional, mas aqui não faremos nada além da UI)
                     if (e.target.checked) {
-                        // Opcional: Se quiser baixar imediatamente ao marcar (sem carregar no mapa):
-                        /*
-                        try {
-                            document.getElementById('progressOverlay').style.display = 'flex';
-                            document.getElementById('progressText').textContent = `Baixando ${file.name}...`;
-                            await getGeoJSONFromFile(file); 
-                            li.classList.add('is-cached');
-                        } catch(err) { e.target.checked = false; alert("Erro ao baixar."); }
-                        finally { document.getElementById('progressOverlay').style.display = 'none'; }
-                        */
+                        // Lógica futura se quiser baixar ao marcar
                     } else {
                         // Se desmarcar algo que já está salvo (verde), confirma deleção
                         if(li.classList.contains('is-cached')) {
@@ -1174,31 +1217,39 @@
                 span.textContent = file.name;
                 
                 span.addEventListener('click', async () => {
-                     try {
+                      try {
                         const isCached = li.classList.contains('is-cached');
                         if (!isCached) {
-                            document.getElementById('progressOverlay').style.display = 'flex';
+                            const overlay = document.getElementById('progressOverlay');
+                            overlay.classList.add('active'); 
                             document.getElementById('progressText').textContent = "Baixando e carregando...";
+                            document.getElementById('progressBar').style.width = '30%'; 
                         }
 
-                        // Aqui chamamos e usamos o retorno para carregar no mapa
                         const { geojson, source } = await getGeoJSONFromFile(file); 
+                        
+                        document.getElementById('progressBar').style.width = '100%';
+                        
                         addDataToMap(geojson, file.name);
                         
-                        // Atualiza visual
                         li.classList.add('is-cached');
                         checkbox.checked = true;
                         updateRecentFiles(file.name);
                         
-                        if (source === 'network') alert(`Arquivo baixado e carregado!`);
+                        if (source === 'network') {
+                             setTimeout(() => alert(`Arquivo baixado e carregado!`), 300);
+                        }
                         localStorage.setItem('lastSelectedFile', file.name);
                         kmzMenu.style.display = 'none';
 
-                     } catch (error) {
+                      } catch (error) {
                         alert("Erro ao carregar arquivo.");
-                     } finally {
-                        document.getElementById('progressOverlay').style.display = 'none';
-                     }
+                      } finally {
+                        setTimeout(() => {
+                            document.getElementById('progressOverlay').classList.remove('active');
+                            document.getElementById('progressBar').style.width = '0%'; 
+                        }, 500); 
+                      }
                 });
 
                 li.appendChild(checkbox);
@@ -1229,7 +1280,7 @@
             const loadingMsg = document.getElementById('progressOverlay');
             const loadingText = document.getElementById('progressText');
             const loadingBar = document.getElementById('progressBar');
-            loadingMsg.style.display = 'flex';
+            loadingMsg.classList.add('active'); 
             
             let count = 0;
             const total = checkedBoxes.length;
@@ -1245,7 +1296,7 @@
                     loadingBar.style.width = `${(count / total) * 100}%`;
 
                     try {
-                        const { geojson } = await getGeoJSONFromFile(file); // Pipeline único
+                        const { geojson } = await getGeoJSONFromFile(file);
                         addDataToMap(geojson, file.name);
                         const li = box.closest('li');
                         if(li) li.classList.add('is-cached');
@@ -1255,9 +1306,13 @@
                 }
             }
             
-            loadingMsg.style.display = 'none';
-            kmzMenu.style.display = 'none';
-            alert("Concluído!");
+            loadingBar.style.width = '100%';
+            setTimeout(() => {
+                loadingMsg.classList.remove('active');
+                loadingBar.style.width = '0%';
+                kmzMenu.style.display = 'none';
+                alert("Concluído!");
+            }, 500);
         });
         
         updateMarkerGroupMenu();
@@ -1334,7 +1389,6 @@
                 filesToLoad.forEach(async fileName => {
                     const file = predefinedFiles.find(f => f.name === fileName);
                     if (file) {
-                        // Tenta carregar usando o pipeline mestre
                         try {
                             const { geojson } = await getGeoJSONFromFile(file);
                             addDataToMap(geojson, fileName);
