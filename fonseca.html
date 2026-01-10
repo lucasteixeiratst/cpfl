@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-    <title>Visualizador de Mapas Pro</title>
+    <title>Visualizador de Mapas Pro - Full DB</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; position: relative; }
@@ -216,7 +216,6 @@
 
         /* --- RESPONSIVIDADE PROFISSIONAL (MOBILE APP STYLE) --- */
         @media (max-width: 768px) {
-            /* Transforma o menu lateral em barra inferior */
             .menu {
                 top: auto; bottom: 0; left: 0;
                 transform: none !important;
@@ -236,7 +235,6 @@
             .menu button { margin: 0; box-shadow: none; background: transparent; width: 50px; height: 50px; }
             .button-legend { display: none !important; }
 
-            /* Menus Flutuantes como Cards Centralizados */
             .kmz-menu, .line-menu, .loaded-files-menu, .style-menu, 
             .marker-group-menu, .storage-menu, .tools-menu, .trail-menu, .route-panel {
                 top: auto !important; bottom: 80px !important; left: 50% !important;
@@ -248,7 +246,7 @@
             .search-bar { width: calc(100% - 70px); top: 10px; left: 10px; }
             .toggle-menu-btn { top: 10px; left: auto; right: 10px; }
             .search-results { width: 95%; left: 2.5%; top: 60px; }
-            footer { display: none; } /* Oculta footer no mobile para ganhar espaço */
+            footer { display: none; }
         }
     </style>
     <link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet" />
@@ -1151,34 +1149,13 @@
             }
         });
 
-        function updateRecentFiles(fileName) {
-            let recentFiles = JSON.parse(localStorage.getItem('recentFiles') || '[]');
-            recentFiles = recentFiles.filter(f => f !== fileName);
-            recentFiles.unshift(fileName);
-            recentFiles = recentFiles.slice(0, 5);
-            localStorage.setItem('recentFiles', JSON.stringify(recentFiles));
-        }
-
-        function updateRecentExternalFiles(fileName) {
-            let recentFiles = JSON.parse(localStorage.getItem('recentExternalFiles') || '[]');
-            recentFiles = recentFiles.filter(f => f !== fileName);
-            recentFiles.unshift(fileName);
-            recentFiles = recentFiles.slice(0, 5);
-            localStorage.setItem('recentExternalFiles', JSON.stringify(recentFiles));
-        }
-
         // --- FUNÇÃO DE EXIBIÇÃO DA LISTA (HÍBRIDA) ---
         async function displayFileList() {
             const listElement = document.getElementById('kmzList');
             listElement.innerHTML = ''; 
 
-            const recentFiles = JSON.parse(localStorage.getItem('recentFiles') || '[]');
-            const recentFileSet = new Set(recentFiles);
-            const recent = predefinedFiles.filter(file => recentFileSet.has(file.name));
-            const others = predefinedFiles.filter(file => !recentFileSet.has(file.name));
-            const sortedRecent = recent.sort((a, b) => recentFiles.indexOf(a.name) - recentFiles.indexOf(b.name));
-            const sortedOthers = others.sort((a, b) => a.name.localeCompare(b.name));
-            const sortedFiles = [...sortedRecent, ...sortedOthers];
+            // Ordena alfabeticamente agora, já que não usamos mais "recentes"
+            const sortedFiles = predefinedFiles.sort((a, b) => a.name.localeCompare(b.name));
 
             for (const file of sortedFiles) {
                 const li = document.createElement('li');
@@ -1232,10 +1209,8 @@
                         // Atualiza visual
                         li.classList.add('is-cached');
                         checkbox.checked = true;
-                        updateRecentFiles(file.name);
                         
                         if (source === 'network') alert(`Arquivo baixado e carregado!`);
-                        localStorage.setItem('lastSelectedFile', file.name);
                         kmzMenu.style.display = 'none';
 
                       } catch (error) {
@@ -1371,30 +1346,15 @@
             toggleAllMarkersVisibilityCheckbox.checked = state.markersVisible;
             toggleAllLinesVisibilityCheckbox.checked = state.linesVisible;
 
-            const recentFiles = JSON.parse(localStorage.getItem('recentFiles') || '[]');
-            const filesToLoad = recentFiles.slice(0, 2); 
-            
-            if (filesToLoad.length > 0) {
-                filesToLoad.forEach(async fileName => {
-                    const file = predefinedFiles.find(f => f.name === fileName);
-                    if (file) {
-                        try {
-                            const { geojson } = await getGeoJSONFromFile(file);
-                            addDataToMap(geojson, fileName);
-                        } catch(e) { console.log("Erro ao carregar recente:", fileName); }
+            // --- CARREGAR TUDO DO DB AO INICIAR ---
+            (async () => {
+                const allFiles = await getDataFromDB(GEOJSON_STORE_NAME);
+                if (allFiles && allFiles.length > 0) {
+                    for (const entry of allFiles) {
+                        addDataToMap(entry.geojson, entry.name);
                     }
-                });
-            }
-
-            const recentExternalFiles = JSON.parse(localStorage.getItem('recentExternalFiles') || '[]');
-            if (recentExternalFiles.length > 0) {
-                (async () => {
-                    for (const fileName of recentExternalFiles) {
-                        const cachedEntry = await getDataFromDB(GEOJSON_STORE_NAME, fileName); 
-                        if (cachedEntry) addDataToMap(cachedEntry.geojson, fileName);
-                    }
-                })();
-            }
+                }
+            })();
 
             map.on('click', 'dynamic-marker-circles', (e) => {
                 e.originalEvent.stopPropagation();
@@ -1693,7 +1653,6 @@
                     await saveDataToDB(GEOJSON_STORE_NAME, { name: file.name, geojson: data });
                     
                     addDataToMap(data, file.name);
-                    updateRecentExternalFiles(file.name); 
                 } catch (error) { alert('Erro ao processar arquivo.'); }
             };
             if (file.name.endsWith('.kmz')) reader.readAsArrayBuffer(file);
@@ -1891,7 +1850,7 @@
             applyGroupFilter(); 
         }
 
-        // --- FUNÇÕES RECUPERADAS (ESSAS ESTAVAM FALTANDO) ---
+        // --- FUNÇÕES QUE FALTAVAM ---
 
         function updateMarkerGroupMenu() {
             markerGroupsList.innerHTML = '';
