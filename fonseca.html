@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Visualizador de Mapas Pro</title>
+    <title>Visualizador de Mapas Pro - Modo DB</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: Arial, sans-serif; position: relative; }
@@ -178,9 +178,9 @@
         /* --- LOADER MODERNO (Estilo Toast) --- */
         .progress-overlay {
             position: absolute;
-            bottom: 100px; /* AUMENTADO PARA FICAR MAIS ALTO */
+            bottom: 100px;
             left: 50%;
-            transform: translateX(-50%) translateY(150%); /* Começa escondido para baixo */
+            transform: translateX(-50%) translateY(150%);
             background: rgba(255, 255, 255, 0.95);
             padding: 12px 20px;
             border-radius: 30px;
@@ -194,7 +194,6 @@
             pointer-events: auto;
         }
 
-        /* Classe para fazer ele aparecer */
         .progress-overlay.active {
             transform: translateX(-50%) translateY(0);
         }
@@ -1318,7 +1317,7 @@
         updateMarkerGroupMenu();
         updateSavedTrailsList();
 
-        map.on('load', () => {
+        map.on('load', async () => {
             const legends = document.querySelectorAll('.button-legend');
             legends.forEach(legend => { legend.style.display = 'block'; });
             setTimeout(() => { legends.forEach(legend => { legend.style.display = 'none'; }); }, 5000);
@@ -1382,30 +1381,33 @@
             toggleAllMarkersVisibilityCheckbox.checked = state.markersVisible;
             toggleAllLinesVisibilityCheckbox.checked = state.linesVisible;
 
-            const recentFiles = JSON.parse(localStorage.getItem('recentFiles') || '[]');
-            const filesToLoad = recentFiles.slice(0, 2); 
-            
-            if (filesToLoad.length > 0) {
-                filesToLoad.forEach(async fileName => {
-                    const file = predefinedFiles.find(f => f.name === fileName);
-                    if (file) {
-                        try {
-                            const { geojson } = await getGeoJSONFromFile(file);
-                            addDataToMap(geojson, fileName);
-                        } catch(e) { console.log("Erro ao carregar recente:", fileName); }
+            // --- NOVA LÓGICA: Carregar TUDO que está no Banco de Dados ---
+            try {
+                const allCachedFiles = await getDataFromDB(GEOJSON_STORE_NAME);
+                
+                if (allCachedFiles && allCachedFiles.length > 0) {
+                    const overlay = document.getElementById('progressOverlay');
+                    overlay.classList.add('active'); 
+                    document.getElementById('progressText').textContent = `Restaurando ${allCachedFiles.length} arquivos...`;
+                    
+                    let loadedCount = 0;
+                    for (const entry of allCachedFiles) {
+                        loadedCount++;
+                        document.getElementById('progressBar').style.width = `${(loadedCount / allCachedFiles.length) * 100}%`;
+                        
+                        // Adiciona ao mapa sem baixar da rede
+                        addDataToMap(entry.geojson, entry.name);
                     }
-                });
-            }
 
-            const recentExternalFiles = JSON.parse(localStorage.getItem('recentExternalFiles') || '[]');
-            if (recentExternalFiles.length > 0) {
-                (async () => {
-                    for (const fileName of recentExternalFiles) {
-                        const cachedEntry = await getDataFromDB(GEOJSON_STORE_NAME, fileName); 
-                        if (cachedEntry) addDataToMap(cachedEntry.geojson, fileName);
-                    }
-                })();
+                    setTimeout(() => {
+                        overlay.classList.remove('active');
+                        document.getElementById('progressBar').style.width = '0%';
+                    }, 800);
+                }
+            } catch (e) {
+                console.error("Erro ao carregar do banco de dados:", e);
             }
+            // -------------------------------------------------------------
 
             map.on('click', 'dynamic-marker-circles', (e) => {
                 e.originalEvent.stopPropagation();
