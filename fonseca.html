@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Visualizador de Mapas Pro - Modo DB</title>
+    <title>Visualizador de Mapas Pro - Otimizado</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: Arial, sans-serif; position: relative; }
@@ -190,12 +190,17 @@
             flex-direction: column;
             gap: 8px;
             width: 320px;
-            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.27);
-            pointer-events: auto;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.27), opacity 0.4s ease;
+            
+            /* Sume totalmente quando não ativo */
+            opacity: 0;
+            pointer-events: none;
         }
 
         .progress-overlay.active {
             transform: translateX(-50%) translateY(0);
+            opacity: 1;
+            pointer-events: auto;
         }
 
         .progress-header {
@@ -1229,7 +1234,8 @@
                         
                         document.getElementById('progressBar').style.width = '100%';
                         
-                        addDataToMap(geojson, file.name);
+                        // Agora addDataToMap é assíncrono (await)
+                        await addDataToMap(geojson, file.name);
                         
                         li.classList.add('is-cached');
                         checkbox.checked = true;
@@ -1242,6 +1248,7 @@
                         kmzMenu.style.display = 'none';
 
                       } catch (error) {
+                        console.error(error);
                         alert("Erro ao carregar arquivo.");
                       } finally {
                         setTimeout(() => {
@@ -1296,7 +1303,7 @@
 
                     try {
                         const { geojson } = await getGeoJSONFromFile(file);
-                        addDataToMap(geojson, file.name);
+                        await addDataToMap(geojson, file.name); // Await aqui para processar em lote
                         const li = box.closest('li');
                         if(li) li.classList.add('is-cached');
                     } catch (err) {
@@ -1381,7 +1388,7 @@
             toggleAllMarkersVisibilityCheckbox.checked = state.markersVisible;
             toggleAllLinesVisibilityCheckbox.checked = state.linesVisible;
 
-            // --- NOVA LÓGICA: Carregar TUDO que está no Banco de Dados ---
+            // --- NOVA LÓGICA: Carregar TUDO do Banco de Dados ---
             try {
                 const allCachedFiles = await getDataFromDB(GEOJSON_STORE_NAME);
                 
@@ -1395,8 +1402,8 @@
                         loadedCount++;
                         document.getElementById('progressBar').style.width = `${(loadedCount / allCachedFiles.length) * 100}%`;
                         
-                        // Adiciona ao mapa sem baixar da rede
-                        addDataToMap(entry.geojson, entry.name);
+                        // Adiciona ao mapa em Lotes
+                        await addDataToMap(entry.geojson, entry.name);
                     }
 
                     setTimeout(() => {
@@ -1766,7 +1773,8 @@
             if(labelText) labelText.style.color = newColor;
         }
 
-        function addDataToMap(geojson, fileName) {
+        // --- FUNÇÃO ADD DATA TO MAP (CHUNKED / ASYNC) ---
+        async function addDataToMap(geojson, fileName) {
             const sanitizedFileName = fileName.replace(/\s+/g, '_').replace(/[^\w\-]/g, '');
             const sourceId = `source-${sanitizedFileName}`;
             const lineLayerId = `lines-${sourceId}`;
@@ -1790,36 +1798,50 @@
             const exampleFeature = geojson.features.find(f => f.properties && (f.properties.Alimentador || f.properties.name));
             if (exampleFeature) groupingProperty = exampleFeature.properties.Alimentador ? 'Alimentador' : 'name';
 
-            geojson.features.forEach(feature => {
-                const features = extractGeometries(feature);
-                features.forEach(f => {
-                    if (f.geometry.type === 'Point') {
-                        const name = (f.properties.name || '').toUpperCase();
-                        
-                        let groupKey = 'default';
-                        if (name.endsWith('-FU')) groupKey = '-FU';
-                        else if (name.endsWith('-FA')) groupKey = '-FA';
-                        else if (name.endsWith('-RE')) groupKey = '-RE';
-                        else if (name.endsWith('KVA') || name.includes('TR')) groupKey = 'TR'; 
+            // --- PROCESSAMENTO EM LOTE (CHUNKING) ---
+            const BATCH_SIZE = 2000;
+            const totalFeatures = geojson.features.length;
 
-                        f.properties.group = groupKey;
-                        f.properties.color = state.markerGroups[groupKey] ? state.markerGroups[groupKey].color : state.markerGroups['default'].color;
-                        f.properties.fileName = fileName;
-                        pointFeaturesToAdd.push(f);
-                    } else if (['LineString', 'MultiLineString', 'Polygon', 'MultiPolygon'].includes(f.geometry.type)) {
-                        f.properties = f.properties || {};
-                        const groupName = f.properties[groupingProperty];
-                        let color = groupColorMap.get(groupName);
-                        if (!color) {
-                            color = colorPalette[groupColorMap.size % colorPalette.length];
-                            groupColorMap.set(groupName, color);
-                            saveGroupColorMap(); 
+            for (let i = 0; i < totalFeatures; i += BATCH_SIZE) {
+                // Pega um pedaço do array
+                const batch = geojson.features.slice(i, i + BATCH_SIZE);
+                
+                // Processa o pedaço
+                batch.forEach(feature => {
+                    const features = extractGeometries(feature);
+                    features.forEach(f => {
+                        if (f.geometry.type === 'Point') {
+                            const name = (f.properties.name || '').toUpperCase();
+                            
+                            let groupKey = 'default';
+                            if (name.endsWith('-FU')) groupKey = '-FU';
+                            else if (name.endsWith('-FA')) groupKey = '-FA';
+                            else if (name.endsWith('-RE')) groupKey = '-RE';
+                            else if (name.endsWith('KVA') || name.includes('TR')) groupKey = 'TR'; 
+
+                            f.properties.group = groupKey;
+                            f.properties.color = state.markerGroups[groupKey] ? state.markerGroups[groupKey].color : state.markerGroups['default'].color;
+                            f.properties.fileName = fileName;
+                            pointFeaturesToAdd.push(f);
+                        } else if (['LineString', 'MultiLineString', 'Polygon', 'MultiPolygon'].includes(f.geometry.type)) {
+                            f.properties = f.properties || {};
+                            const groupName = f.properties[groupingProperty];
+                            let color = groupColorMap.get(groupName);
+                            if (!color) {
+                                color = colorPalette[groupColorMap.size % colorPalette.length];
+                                groupColorMap.set(groupName, color);
+                                saveGroupColorMap(); 
+                            }
+                            f.properties.color = color;
+                            lineFeaturesArray.push(f);
                         }
-                        f.properties.color = color;
-                        lineFeaturesArray.push(f);
-                    }
+                    });
                 });
-            });
+
+                // --- PAUSA PARA O NAVEGADOR RESPIRAR ---
+                await new Promise(resolve => setTimeout(resolve, 0));
+            }
+            // ----------------------------------------
 
             allPointFeatures.push(...pointFeaturesToAdd);
 
