@@ -1799,7 +1799,7 @@
             if (exampleFeature) groupingProperty = exampleFeature.properties.Alimentador ? 'Alimentador' : 'name';
 
             // --- PROCESSAMENTO EM LOTE (CHUNKING) ---
-            const BATCH_SIZE = 2000;
+            const BATCH_SIZE = 5000;
             const totalFeatures = geojson.features.length;
 
             for (let i = 0; i < totalFeatures; i += BATCH_SIZE) {
