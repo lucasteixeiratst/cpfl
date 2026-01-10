@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-    <title>Visualizador de Mapas Pro - Full DB</title>
+    <title>Visualizador de Mapas Pro - Busca Inteligente</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; position: relative; }
@@ -1850,7 +1850,7 @@
             applyGroupFilter(); 
         }
 
-        // --- FUNÇÕES QUE FALTAVAM ---
+        // --- FUNÇÕES DE CONTROLE DE MARCADORES (OBRIGATÓRIAS) ---
 
         function updateMarkerGroupMenu() {
             markerGroupsList.innerHTML = '';
@@ -2098,13 +2098,39 @@
             return [avgLng, avgLat];
         }
 
+        // --- BUSCA INTELIGENTE (NOVA) ---
         async function searchFeatures() {
-            const term = searchInput.value.toLowerCase().trim();
+            const term = searchInput.value.trim();
             if (!term) return alert('Digite um termo para buscar.');
+            
+            const normalizedTerm = normalizeText(term);
+            
             const matches = allPointFeatures.filter(f => {
                 const name = f.properties.name || f.properties.Alimentador || '';
-                return normalizeText(name).includes(normalizeText(term));
+                const normalizedName = normalizeText(name);
+                
+                // Busca exata tem prioridade, depois busca parcial
+                return normalizedName.includes(normalizedTerm);
+            }).sort((a, b) => {
+                const nameA = normalizeText(a.properties.name || a.properties.Alimentador || '');
+                const nameB = normalizeText(b.properties.name || b.properties.Alimentador || '');
+                
+                // Prioridade 1: Começa com o termo exato
+                const aStarts = nameA.startsWith(normalizedTerm);
+                const bStarts = nameB.startsWith(normalizedTerm);
+                if (aStarts && !bStarts) return -1;
+                if (!aStarts && bStarts) return 1;
+                
+                // Prioridade 2: Match exato
+                const aExact = nameA === normalizedTerm;
+                const bExact = nameB === normalizedTerm;
+                if (aExact && !bExact) return -1;
+                if (!aExact && bExact) return 1;
+                
+                // Prioridade 3: Alfabética
+                return nameA.localeCompare(nameB);
             }).slice(0, 15);
+            
             displaySearchResults(matches);
         }
 
