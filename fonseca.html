@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-    <title>Visualizador de Mapas Pro - Busca Inteligente</title>
+    <title>Visualizador de Mapas Pro - Spatial Querying</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; position: relative; }
@@ -399,6 +399,23 @@
 
     <div class="tools-menu" id="toolsMenu">
         <h3>Ferramentas de Visualização</h3>
+
+        <div class="tool-item" style="border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <label style="font-weight: bold; color: #4285F4;">Carga Dinâmica (Auto):</label>
+                <label class="switch">
+                    <input type="checkbox" id="chkAutoLoad">
+                    <span class="slider round"></span>
+                </label>
+            </div>
+            <div style="margin-top: 8px;">
+                <label>Manter arquivos próximos: <span id="valAutoLoadLimit">3</span></label>
+                <input type="range" id="rngAutoLoadLimit" min="1" max="10" value="3" step="1">
+                <small style="color: #666; font-size: 10px; display: block; margin-top: 2px;">
+                    Carrega os mais próximos e remove os distantes automaticamente ao mover o mapa.
+                </small>
+            </div>
+        </div>
         <div class="tool-item">
             <label>Espessura da Linha: <span id="valLineWidth">4</span>px</label>
             <input type="range" id="rngLineWidth" min="1" max="15" value="4">
@@ -868,6 +885,11 @@
         const valTextSize = document.getElementById('valTextSize');
         const rngMarkerLimit = document.getElementById('rngMarkerLimit');
         const valMarkerLimit = document.getElementById('valMarkerLimit');
+        
+        // --- SPATIAL QUERYING CONTROLS ---
+        const rngAutoLoadLimit = document.getElementById('rngAutoLoadLimit');
+        const valAutoLoadLimit = document.getElementById('valAutoLoadLimit');
+        const chkAutoLoad = document.getElementById('chkAutoLoad');
 
         const btnRoutePlanner = document.getElementById('btnRoutePlanner');
         const routePanel = document.getElementById('routePanel');
@@ -1342,11 +1364,15 @@
                 }
             });
 
-            map.on('moveend', updateVisibleMarkers);
+            // MOVIDO PARA BAIXO PARA INCLUIR LOGICA ESPACIAL
+            // map.on('moveend', updateVisibleMarkers);
+
             toggleAllMarkersVisibilityCheckbox.checked = state.markersVisible;
             toggleAllLinesVisibilityCheckbox.checked = state.linesVisible;
 
             // --- CARREGAR TUDO DO DB AO INICIAR ---
+            // (Comentado ou mantido, dependendo se o usuario quer que carregue tudo ou use a lógica espacial)
+            // Vou manter o padrão de carregar tudo, a menos que Spatial Querying seja ativado
             (async () => {
                 const allFiles = await getDataFromDB(GEOJSON_STORE_NAME);
                 if (allFiles && allFiles.length > 0) {
@@ -1582,6 +1608,117 @@
             state.visualSettings.markerLimit = e.target.value;
             updateVisibleMarkers(); 
         });
+        
+        // --- SPATIAL QUERYING EVENT LISTENERS ---
+        rngAutoLoadLimit.addEventListener('input', (e) => {
+            valAutoLoadLimit.textContent = e.target.value;
+            checkAndLoadNearestFiles();
+        });
+
+        chkAutoLoad.addEventListener('change', (e) => {
+            if(e.target.checked) {
+                alert("Modo Dinâmico Ativado: O mapa carregará/removerá cidades conforme você navega.");
+                checkAndLoadNearestFiles();
+            }
+        });
+        
+        let spatialQueryDebounce = null;
+        map.on('moveend', () => {
+            // 1. Atualização visual padrão
+            updateVisibleMarkers();
+
+            // 2. Nova carga espacial
+            if (chkAutoLoad.checked) {
+                if (spatialQueryDebounce) clearTimeout(spatialQueryDebounce);
+                spatialQueryDebounce = setTimeout(() => {
+                    checkAndLoadNearestFiles();
+                }, 800); // 800ms de atraso
+            }
+        });
+
+        // --- FUNÇÕES NOVAS DE SPATIAL QUERYING ---
+        
+        function removeFileFromMap(fileName) {
+            const fileIndex = state.files.findIndex(f => f.name === fileName);
+            if (fileIndex === -1) return; // Arquivo não está carregado
+
+            const fileEntry = state.files[fileIndex];
+
+            // 1. Remove Camadas e Fontes de Linhas
+            if (fileEntry.hasLines) {
+                const lineLayerId = `lines-${fileEntry.sourceId}`;
+                const sourceIdLines = `${fileEntry.sourceId}-lines`;
+                
+                if (map.getLayer(lineLayerId)) map.removeLayer(lineLayerId);
+                if (map.getSource(sourceIdLines)) map.removeSource(sourceIdLines);
+            }
+
+            // 2. Remove Pontos (Filtra a lista global de features)
+            allPointFeatures = allPointFeatures.filter(f => f.properties.fileName !== fileName);
+
+            // 3. Remove do Estado
+            state.files.splice(fileIndex, 1);
+            
+            // 4. Remove da lista visual de "Arquivos Carregados"
+            const loadedListItems = document.querySelectorAll('#loadedFilesList li');
+            loadedListItems.forEach(li => {
+                if (li.textContent.includes(fileName)) li.remove();
+            });
+
+            // 5. Atualiza o mapa visualmente
+            updateVisibleMarkers(); 
+            updateGroupMenu(); 
+        }
+
+        async function checkAndLoadNearestFiles() {
+            const isAutoLoadActive = document.getElementById('chkAutoLoad').checked;
+            if (!isAutoLoadActive) return;
+
+            const center = map.getCenter();
+            const limit = parseInt(document.getElementById('rngAutoLoadLimit').value); 
+            
+            const indexData = await getDataFromDB(SPATIAL_INDEX_STORE_NAME);
+            
+            if (!indexData || indexData.length === 0) return;
+
+            const distances = indexData.map(item => {
+                const fileCenterLng = (item.bounds[0] + item.bounds[2]) / 2;
+                const fileCenterLat = (item.bounds[1] + item.bounds[3]) / 2;
+                const dist = Math.pow(center.lng - fileCenterLng, 2) + Math.pow(center.lat - fileCenterLat, 2);
+                return { name: item.name, dist: dist };
+            });
+
+            distances.sort((a, b) => a.dist - b.dist);
+
+            const filesToKeep = distances.slice(0, limit).map(d => d.name);
+            
+            // LOAD
+            for (const fileName of filesToKeep) {
+                const isLoaded = state.files.some(f => f.name === fileName);
+                
+                if (!isLoaded) {
+                    console.log(`Auto-carregando: ${fileName}`);
+                    const fileRef = predefinedFiles.find(f => f.name === fileName);
+                    if (fileRef) {
+                        try {
+                            const { geojson } = await getGeoJSONFromFile(fileRef);
+                            addDataToMap(geojson, fileName);
+                            
+                            const checkbox = document.querySelector(`input[value="${fileName}"]`);
+                            if(checkbox) checkbox.closest('li').classList.add('is-cached'); 
+                        } catch (e) { console.error(`Erro no auto-load de ${fileName}`, e); }
+                    }
+                }
+            }
+
+            // UNLOAD
+            [...state.files].forEach(file => {
+                if (!filesToKeep.includes(file.name)) {
+                    console.log(`Auto-removendo: ${file.name}`);
+                    removeFileFromMap(file.name);
+                }
+            });
+        }
 
         btnResetOfflineDB.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -1626,7 +1763,7 @@
             input.type = 'file';
             input.accept = '.kml,.kmz';
             input.onchange = handleFile;
-            input.value = ''; // FIX: Reset input to allow re-selection of same file
+            input.value = ''; 
             input.click();
         }
 
@@ -1794,41 +1931,41 @@
                 else map.getSource(sourceIdLines).setData(lineFeatures);
                 
                 if (!map.getLayer(lineLayerId)) { 
-                     const layerBelow = map.getLayer('dynamic-marker-circles') ? 'dynamic-marker-circles' : undefined;
+                      const layerBelow = map.getLayer('dynamic-marker-circles') ? 'dynamic-marker-circles' : undefined;
 
-                     map.addLayer({ 
-                         id: lineLayerId, 
-                         type: 'line', 
-                         source: sourceIdLines, 
-                         paint: { 'line-color': ['get', 'color'], 'line-width': parseInt(state.visualSettings.lineWidth) }, 
-                         layout: { 'visibility': state.linesVisible ? 'visible' : 'none' } 
-                     }, layerBelow); 
-                     
-                     map.on('click', lineLayerId, (e) => {
-                         e.originalEvent.stopPropagation(); 
-                         const feature = e.features[0];
-                         const name = feature.properties.Alimentador || feature.properties.name || 'Sem Nome';
-                         const groupName = feature.properties[groupingProperty];
-                         const currentColor = groupColorMap.get(groupName) || '#000000';
-                         
-                         const popupContainer = document.createElement('div');
-                         popupContainer.innerHTML = `<strong>${name}</strong><br><label style="font-size:12px;margin-right:5px">Mudar Cor:</label>`;
-                         
-                         const colorInput = document.createElement('input');
-                         colorInput.type = 'color'; 
-                         colorInput.value = currentColor; 
-                         colorInput.style.cursor = 'pointer';
-                         
-                         colorInput.addEventListener('input', (ev) => {
-                             applyColorUpdate(groupName, newFileEntry.sourceId, ev.target.value);
-                         });
-                         
-                         popupContainer.appendChild(colorInput);
-                         new maplibregl.Popup().setLngLat(e.lngLat).setDOMContent(popupContainer).addTo(map);
-                     });
+                      map.addLayer({ 
+                          id: lineLayerId, 
+                          type: 'line', 
+                          source: sourceIdLines, 
+                          paint: { 'line-color': ['get', 'color'], 'line-width': parseInt(state.visualSettings.lineWidth) }, 
+                          layout: { 'visibility': state.linesVisible ? 'visible' : 'none' } 
+                      }, layerBelow); 
+                      
+                      map.on('click', lineLayerId, (e) => {
+                          e.originalEvent.stopPropagation(); 
+                          const feature = e.features[0];
+                          const name = feature.properties.Alimentador || feature.properties.name || 'Sem Nome';
+                          const groupName = feature.properties[groupingProperty];
+                          const currentColor = groupColorMap.get(groupName) || '#000000';
+                          
+                          const popupContainer = document.createElement('div');
+                          popupContainer.innerHTML = `<strong>${name}</strong><br><label style="font-size:12px;margin-right:5px">Mudar Cor:</label>`;
+                          
+                          const colorInput = document.createElement('input');
+                          colorInput.type = 'color'; 
+                          colorInput.value = currentColor; 
+                          colorInput.style.cursor = 'pointer';
+                          
+                          colorInput.addEventListener('input', (ev) => {
+                              applyColorUpdate(groupName, newFileEntry.sourceId, ev.target.value);
+                          });
+                          
+                          popupContainer.appendChild(colorInput);
+                          new maplibregl.Popup().setLngLat(e.lngLat).setDOMContent(popupContainer).addTo(map);
+                      });
 
-                     map.on('mouseenter', lineLayerId, () => map.getCanvas().style.cursor = 'pointer');
-                     map.on('mouseleave', lineLayerId, () => { if (!state.isRoutePlanning) map.getCanvas().style.cursor = ''; });
+                      map.on('mouseenter', lineLayerId, () => map.getCanvas().style.cursor = 'pointer');
+                      map.on('mouseleave', lineLayerId, () => { if (!state.isRoutePlanning) map.getCanvas().style.cursor = ''; });
                 }
             }
 
@@ -1849,8 +1986,6 @@
             
             applyGroupFilter(); 
         }
-
-        // --- FUNÇÕES DE CONTROLE DE MARCADORES (OBRIGATÓRIAS) ---
 
         function updateMarkerGroupMenu() {
             markerGroupsList.innerHTML = '';
