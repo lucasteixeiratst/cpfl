@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-    <title>Visualizador de Mapas Pro - Spatial Querying</title>
+    <title>Visualizador de Mapas</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; position: relative; }
@@ -2233,7 +2233,7 @@
             return [avgLng, avgLat];
         }
 
-        // --- BUSCA INTELIGENTE (NOVA) ---
+        // --- BUSCA INTELIGENTE (ATUALIZADA) ---
         async function searchFeatures() {
             const term = searchInput.value.trim();
             if (!term) return alert('Digite um termo para buscar.');
@@ -2244,26 +2244,42 @@
                 const name = f.properties.name || f.properties.Alimentador || '';
                 const normalizedName = normalizeText(name);
                 
-                // Busca exata tem prioridade, depois busca parcial
+                // Filtra qualquer coisa que contenha o termo
                 return normalizedName.includes(normalizedTerm);
             }).sort((a, b) => {
                 const nameA = normalizeText(a.properties.name || a.properties.Alimentador || '');
                 const nameB = normalizeText(b.properties.name || b.properties.Alimentador || '');
                 
-                // Prioridade 1: Começa com o termo exato
-                const aStarts = nameA.startsWith(normalizedTerm);
-                const bStarts = nameB.startsWith(normalizedTerm);
-                if (aStarts && !bStarts) return -1;
-                if (!aStarts && bStarts) return 1;
-                
-                // Prioridade 2: Match exato
+                // 1. MATCH EXATO (Prioridade absoluta)
                 const aExact = nameA === normalizedTerm;
                 const bExact = nameB === normalizedTerm;
                 if (aExact && !bExact) return -1;
                 if (!aExact && bExact) return 1;
+
+                // 2. MATCH DE "PALAVRA INTEIRA" / INÍCIO SEGUIDO DE NÃO-NÚMERO
+                // Ex: "771fu" (do 771-FU) vs "7710". 
+                // "771fu" -> próximo char é 'f' (ok). "7710" -> próximo char é '0' (não ok).
                 
-                // Prioridade 3: Alfabética
+                const aStartsWith = nameA.startsWith(normalizedTerm);
+                const bStartsWith = nameB.startsWith(normalizedTerm);
+
+                const charAfterA = nameA.charAt(normalizedTerm.length);
+                const charAfterB = nameB.charAt(normalizedTerm.length);
+
+                // Verifica se é uma "fronteira" (fim da string ou caractere não numérico)
+                const aIsBoundary = aStartsWith && (charAfterA === '' || isNaN(parseInt(charAfterA)));
+                const bIsBoundary = bStartsWith && (charAfterB === '' || isNaN(parseInt(charAfterB)));
+
+                if (aIsBoundary && !bIsBoundary) return -1;
+                if (!aIsBoundary && bIsBoundary) return 1;
+
+                // 3. COMEÇA COM (Mas é continuação numérica, ex: 7710)
+                if (aStartsWith && !bStartsWith) return -1;
+                if (!aStartsWith && bStartsWith) return 1;
+                
+                // 4. ORDEM ALFABÉTICA (Desempate final)
                 return nameA.localeCompare(nameB);
+
             }).slice(0, 15);
             
             displaySearchResults(matches);
