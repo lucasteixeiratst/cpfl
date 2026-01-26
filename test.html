@@ -3,327 +3,419 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GeoScanner v5.0 [DSP Filters]</title>
+    <title>GeoScanner Ultimate v8.1</title>
     <style>
-        :root { --bg: #050505; --panel: #151515; --gold: #ffd700; --water: #00bfff; --text: #eee; --alert: #ff3333; --on: #0f0; }
+        :root { 
+            --bg: #050505; --panel: #111; --border: #333; 
+            --gold: #ffcc00; --cyan: #00ffff; --red: #ff3333; --green: #00ff66;
+            --text: #e0e0e0; 
+        }
+        * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
+        
         body {
             margin: 0; background: var(--bg); color: var(--text);
-            font-family: 'Consolas', monospace; height: 100vh;
-            display: flex; flex-direction: column; overflow: hidden; user-select: none;
+            font-family: 'Segoe UI', 'Roboto', monospace;
+            /* Usa 100dvh para ignorar a barra de endereço do navegador */
+            height: 100vh; height: 100dvh; 
+            display: flex; flex-direction: column; overflow: hidden;
         }
 
-        /* --- UI ELEMENTS --- */
-        #hud {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 4px;
-            padding: 5px; background: var(--panel); border-bottom: 1px solid #333;
+        /* --- CABEÇALHO (HUD) - Fixo no topo --- */
+        #hud-top {
+            flex-shrink: 0; /* Não deixa encolher */
+            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px;
+            padding: 8px; background: var(--panel); border-bottom: 2px solid var(--border);
         }
-        .hud-box { background: #222; padding: 5px; border-left: 3px solid #444; }
-        .val { font-size: 1.1em; font-weight: bold; display: block; }
-        .label { font-size: 0.7em; color: #888; }
-        .active-filter { border-left-color: var(--on); color: var(--on); }
-
-        #viewport { flex-grow: 1; position: relative; background: #000; }
-        canvas { display: block; width: 100%; }
-        #specCanvas { height: 40%; border-bottom: 1px solid #333; }
-        #waterCanvas { height: 60%; }
-
-        #controls {
-            display: flex; gap: 8px; padding: 8px; background: var(--panel); border-top: 1px solid #333;
+        .stat-box {
+            background: #1a1a1a; padding: 5px; border-radius: 4px; text-align: center;
+            border-bottom: 2px solid #555;
         }
-        button.ctrl {
-            flex: 1; padding: 12px 0; border: none; border-radius: 4px;
-            background: #333; color: white; font-weight: bold; font-size: 0.8rem;
-        }
-        button.active { background: var(--gold); color: black; }
+        .stat-box.active-mag { border-color: var(--gold); color: var(--gold); }
+        .stat-box.active-vlf { border-color: var(--cyan); color: var(--cyan); }
         
-        /* MENU DE AJUSTES (FILTROS) */
-        #dsp-panel {
-            background: #1a1a1a; padding: 15px; display: none;
-            border-top: 2px solid var(--gold);
-        }
-        .dsp-row {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 5px;
-        }
-        .switch {
-            position: relative; display: inline-block; width: 50px; height: 24px;
-        }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider {
-            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #ccc; transition: .4s; border-radius: 24px;
-        }
-        .slider:before {
-            position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px;
-            background-color: white; transition: .4s; border-radius: 50%;
-        }
-        input:checked + .slider { background-color: var(--gold); }
-        input:checked + .slider:before { transform: translateX(26px); }
+        .stat-label { font-size: 0.65rem; color: #888; text-transform: uppercase; display: block; }
+        .stat-val { font-size: 1.1rem; font-weight: bold; }
+        .stat-unit { font-size: 0.7rem; color: #aaa; }
 
+        /* --- VISUALIZADOR - Flexível --- */
+        #viewport {
+            flex-grow: 1; /* Ocupa todo o espaço que sobrar */
+            min-height: 0; /* Permite encolher se a tela for pequena */
+            position: relative; background: #000;
+            display: flex; flex-direction: column;
+        }
+        canvas { width: 100%; display: block; }
+        /* Dividimos o espaço disponível igualmente entre os gráficos */
+        #scopeCanvas { flex: 1; border-bottom: 1px solid #222; }
+        #specCanvas { flex: 1; border-bottom: 1px solid #222; }
+        #waterCanvas { flex: 2; /* Cachoeira maior */ }
+        
+        #rec-indicator {
+            position: absolute; top: 10px; right: 10px;
+            background: var(--red); color: white; padding: 5px 10px;
+            border-radius: 4px; font-weight: bold; font-size: 0.8rem;
+            display: none; animation: pulse 1s infinite;
+        }
+
+        /* --- MENUS E BOTÕES (Parte Inferior Fixa) --- */
+        #bottom-container {
+            flex-shrink: 0; /* Garante que nunca suma */
+            background: var(--panel);
+            display: flex; flex-direction: column;
+        }
+
+        /* Abas */
+        #modules-nav {
+            display: flex; border-top: 1px solid var(--border);
+        }
+        .mod-tab {
+            flex: 1; padding: 12px; background: #1a1a1a; border: none;
+            color: #666; font-weight: bold; border-bottom: 3px solid transparent;
+            cursor: pointer; transition: 0.2s; font-size: 0.9rem;
+        }
+        .mod-tab.active { color: white; border-bottom-color: var(--cyan); background: #222; }
+
+        /* Painel de Controle (Área de rolagem interna) */
+        #control-deck {
+            height: 180px; /* Altura fixa segura */
+            overflow-y: auto; /* Permite rolar só os botões se precisar */
+            padding: 10px; background: #151515; border-top: 1px solid #222;
+        }
+        .panel { display: none; }
+        .panel.active { display: block; }
+
+        /* Estilo dos Botões e Sliders */
+        .ctrl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+        .full-row { grid-column: span 2; }
+        
+        button.btn {
+            padding: 12px; border: none; border-radius: 6px; font-weight: bold;
+            background: #333; color: #ccc; cursor: pointer; display: flex;
+            align-items: center; justify-content: center; gap: 8px; font-size: 0.85rem;
+        }
+        button.btn.btn-toggle.on { background: var(--green); color: black; box-shadow: 0 0 10px rgba(0,255,100,0.3); }
+        button.btn.btn-action { background: var(--cyan); color: black; }
+        button.btn.btn-danger { background: var(--red); color: white; }
+
+        .slider-group { margin-bottom: 12px; background: #222; padding: 8px; border-radius: 6px; }
+        .slider-header { display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 5px; color: #aaa; }
+        input[type=range] { width: 100%; height: 20px; /* Área de toque maior */ background: transparent; -webkit-appearance: none; }
+        /* Trilho do slider */
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 6px; background: #444; border-radius: 3px; }
+        /* Bolinha do slider */
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; margin-top: -7px; width: 20px; height: 20px; background: var(--cyan); border-radius: 50%; }
+
+        /* Botão Mestre (Sempre visível no rodapé) */
+        #power-btn {
+            width: 100%; padding: 18px; background: #222; color: #fff;
+            border: none; border-top: 2px solid var(--border);
+            font-size: 1rem; font-weight: bold; text-transform: uppercase;
+            /* Garante que não fique embaixo da barra do iPhone/Android */
+            padding-bottom: max(18px, env(safe-area-inset-bottom)); 
+        }
+        #power-btn.running { background: #003300; color: var(--green); }
+
+        @keyframes pulse { 50% { opacity: 0.5; } }
     </style>
 </head>
 <body>
 
-    <div id="hud">
-        <div class="hud-box">
-            <span class="label">MAG ANOMALIA</span>
-            <span id="val-mag" class="val">--</span>
+    <div id="hud-top">
+        <div class="stat-box active-mag">
+            <span class="stat-label">Mag Delta</span>
+            <span id="val-mag">0.00</span> <span class="stat-unit">µT</span>
         </div>
-        <div class="hud-box">
-            <span class="label">VLF SIGNAL</span>
-            <span id="val-vlf" class="val">--</span>
+        <div class="stat-box active-vlf">
+            <span class="stat-label">VLF Signal</span>
+            <span id="val-vlf">--</span> <span class="stat-unit">dB</span>
         </div>
-        <div class="hud-box" id="box-filter-60">
-            <span class="label">FILTRO 60Hz</span>
-            <span class="val">OFF</span>
-        </div>
-        <div class="hud-box" id="box-filter-hp">
-            <span class="label">FILTRO RUMBLE</span>
-            <span class="val">OFF</span>
-        </div>
-    </div>
-
-    <div id="dsp-panel">
-        <div class="dsp-row">
-            <span>🔌 KILL 60Hz (Rede Elétrica)</span>
-            <label class="switch">
-                <input type="checkbox" id="chk-60hz" onchange="updateFilters()">
-                <span class="slider"></span>
-            </label>
-        </div>
-        <div class="dsp-row">
-            <span>🛑 KILL 120Hz (Harmônico)</span>
-            <label class="switch">
-                <input type="checkbox" id="chk-120hz" onchange="updateFilters()">
-                <span class="slider"></span>
-            </label>
-        </div>
-        <div class="dsp-row">
-            <span>💨 Low Cut (>100Hz)</span>
-            <label class="switch">
-                <input type="checkbox" id="chk-hp" onchange="updateFilters()">
-                <span class="slider"></span>
-            </label>
-        </div>
-        <div style="text-align: center; color: #888; font-size: 0.8em;">
-            Ative para limpar o gráfico em áreas urbanas.
+        <div class="stat-box">
+            <span class="stat-label">GPS Accuracy</span>
+            <span id="val-gps">Wait</span> <span class="stat-unit">m</span>
         </div>
     </div>
 
     <div id="viewport">
+        <div id="rec-indicator">REC ●</div>
+        <canvas id="scopeCanvas"></canvas>
         <canvas id="specCanvas"></canvas>
         <canvas id="waterCanvas"></canvas>
     </div>
 
-    <div id="controls">
-        <button class="ctrl" onclick="toggleDSP()">⚙️ FILTROS</button>
-        <button class="ctrl" onclick="tare()">ZERAR</button>
-        <button class="ctrl" id="btn-audio" onclick="toggleAudio()">🔊 SOM</button>
-        <button class="ctrl" onclick="startApp()">LIGAR</button>
+    <div id="bottom-container">
+        <div id="modules-nav">
+            <button class="mod-tab active" onclick="switchTab('filters')">FILTROS</button>
+            <button class="mod-tab" onclick="switchTab('tuner')">SINTONIA</button>
+            <button class="mod-tab" onclick="switchTab('audio')">ÁUDIO</button>
+            <button class="mod-tab" onclick="switchTab('data')">DADOS</button>
+        </div>
+
+        <div id="control-deck">
+            
+            <div id="tab-filters" class="panel active">
+                <div class="ctrl-grid">
+                    <button class="btn btn-toggle" id="btn-f60" onclick="toggleFilter('f60')">🔌 KILL 60Hz</button>
+                    <button class="btn btn-toggle" id="btn-f120" onclick="toggleFilter('f120')">⚡ KILL 120Hz</button>
+                    <button class="btn btn-toggle" id="btn-hp" onclick="toggleFilter('hp')">💨 RUMBLE CUT</button>
+                    <button class="btn btn-action" onclick="tareMag()">⚖️ TARA MAG</button>
+                </div>
+                <div style="font-size: 0.75rem; color: #666; text-align: center; margin-top: 5px;">
+                    Limpa ruídos elétricos para ver o sinal puro.
+                </div>
+            </div>
+
+            <div id="tab-tuner" class="panel">
+                <div class="slider-group">
+                    <div class="slider-header"><span>FREQ: <b id="lbl-freq">1000 Hz</b></span></div>
+                    <input type="range" id="rng-freq" min="100" max="22000" step="10" value="1000" oninput="updateTuner()">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-header"><span>LARGURA (Q): <b id="lbl-q">1.0</b></span></div>
+                    <input type="range" id="rng-q" min="0.1" max="20" step="0.1" value="1.0" oninput="updateTuner()">
+                </div>
+                <button class="btn btn-toggle full-row" id="btn-iso" onclick="toggleFilter('iso')">🎯 ATIVAR ISOLAMENTO</button>
+            </div>
+
+            <div id="tab-audio" class="panel">
+                <div class="ctrl-grid">
+                    <button class="btn btn-toggle" id="btn-mon" onclick="toggleMonitor()">🎧 VLF (OUVIR)</button>
+                    <button class="btn btn-toggle" id="btn-synth" onclick="toggleSynth()">☢️ METAL (BIP)</button>
+                </div>
+                <div class="slider-group">
+                    <div class="slider-header"><span>GANHO (PRE-AMP): <b id="lbl-gain" style="color:var(--red)">1x</b></span></div>
+                    <input type="range" id="rng-gain" min="1" max="100" value="1" oninput="updateGain()">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-header"><span>VOLUME: <b id="lbl-vol">50%</b></span></div>
+                    <input type="range" id="rng-vol" min="0" max="100" value="50" oninput="updateVol()">
+                </div>
+            </div>
+
+            <div id="tab-data" class="panel">
+                <div class="ctrl-grid">
+                    <button class="btn btn-danger full-row" id="btn-rec" onclick="toggleRec()">🔴 GRAVAR (CSV)</button>
+                    <button class="btn btn-action full-row" onclick="downloadData()">💾 BAIXAR ARQUIVO</button>
+                </div>
+                <div style="margin-top: 10px; font-family: monospace; font-size: 0.7rem; color: #888; text-align: center;">
+                    PONTOS: <span id="log-count">0</span> | GPS: <span id="log-lat">--</span>, <span id="log-lon">--</span>
+                </div>
+            </div>
+        </div>
+
+        <button id="power-btn" onclick="toggleSystem()">LIGAR SISTEMA</button>
     </div>
 
 <script>
-    // --- AUDIO CONTEXT GLOBAL ---
-    let audioCtx, micSource, analyser;
-    // Nodos de Filtro
-    let filter60, filter120, filterHP, gainNode;
-    let synthOsc, synthGain; // Para o som de feedback
-    
-    let STATE = {
-        running: false,
-        audioOn: false,
-        magBase: 0,
-        filters: { f60: false, f120: false, hp: false }
+    // --- LÓGICA DO SISTEMA ---
+    const STATE = {
+        running: false, recording: false,
+        magBase: 0, magCurrent: 0,
+        logs: [], gps: { lat: 0, lon: 0, acc: 0 },
+        settings: { f60: false, f120: false, hp: false, iso: false, monitor: false, synth: false, freq: 1000, q: 1.0, gain: 1, vol: 0.5 }
     };
 
-    const ui = {
-        mag: document.getElementById('val-mag'),
-        vlf: document.getElementById('val-vlf'),
-        dsp: document.getElementById('dsp-panel'),
-        box60: document.getElementById('box-filter-60'),
-        boxHP: document.getElementById('box-filter-hp'),
-        cSpec: document.getElementById('specCanvas'),
-        cWater: document.getElementById('waterCanvas')
+    const UI = {
+        mag: document.getElementById('val-mag'), vlf: document.getElementById('val-vlf'), gps: document.getElementById('val-gps'),
+        recInd: document.getElementById('rec-indicator'), logCount: document.getElementById('log-count'),
+        logLat: document.getElementById('log-lat'), logLon: document.getElementById('log-lon'),
+        powerBtn: document.getElementById('power-btn'),
+        scope: document.getElementById('scopeCanvas'), spec: document.getElementById('specCanvas'), water: document.getElementById('waterCanvas')
     };
-    const ctxS = ui.cSpec.getContext('2d');
-    const ctxW = ui.cWater.getContext('2d');
 
-    // --- 1. INICIALIZAÇÃO DE ÁUDIO COM DSP ---
-    async function startApp() {
-        if(STATE.running) return;
-        
+    const ctxScope = UI.scope.getContext('2d');
+    const ctxSpec = UI.spec.getContext('2d');
+    const ctxWater = UI.water.getContext('2d');
+
+    let ac, mic, analyser, nodes = {}, synth = { osc: null, gain: null };
+
+    async function initAudio() {
         try {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const stream = await navigator.mediaDevices.getUserMedia({ 
-                audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } 
-            });
+            ac = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, latency: 0 } });
+
+            mic = ac.createMediaStreamSource(stream);
+            analyser = ac.createAnalyser(); analyser.fftSize = 2048;
+
+            // Filtros
+            nodes.hp = ac.createBiquadFilter(); nodes.hp.type = 'highpass'; nodes.hp.frequency.value = 100;
+            nodes.f60 = ac.createBiquadFilter(); nodes.f60.type = 'notch'; nodes.f60.frequency.value = 60; nodes.f60.Q.value = 10;
+            nodes.f120 = ac.createBiquadFilter(); nodes.f120.type = 'notch'; nodes.f120.frequency.value = 120; nodes.f120.Q.value = 10;
+            nodes.iso = ac.createBiquadFilter(); nodes.iso.type = 'bandpass'; nodes.iso.frequency.value = STATE.settings.freq; nodes.iso.Q.value = STATE.settings.q;
             
-            // Criação da Cadeia de Áudio
-            micSource = audioCtx.createMediaStreamSource(stream);
-            analyser = audioCtx.createAnalyser();
-            analyser.fftSize = 2048;
+            nodes.preAmp = ac.createGain(); nodes.preAmp.gain.value = STATE.settings.gain;
+            nodes.compressor = ac.createDynamicsCompressor();
+            nodes.masterVol = ac.createGain(); nodes.masterVol.gain.value = 0;
 
-            // Criar Filtros (Ainda desconectados)
-            createFilters();
+            // Conexão
+            mic.connect(nodes.hp).connect(nodes.f60).connect(nodes.f120).connect(nodes.preAmp).connect(nodes.iso).connect(nodes.compressor).connect(analyser).connect(nodes.masterVol).connect(ac.destination);
 
-            // Conectar Tudo: Mic -> Filtros -> Analyser
-            reconnectChain();
-            
-            // Iniciar Magnetômetro
-            initMag();
-            
-            STATE.running = true;
-            loop();
-        } catch(e) { alert("Erro: " + e); }
+            updateFiltersPhysically();
+            return true;
+        } catch (e) { alert("Erro Áudio: " + e.message); return false; }
     }
 
-    function createFilters() {
-        // Filtro Notch 60Hz (Corte Cirúrgico)
-        filter60 = audioCtx.createBiquadFilter();
-        filter60.type = 'notch';
-        filter60.frequency.value = 60;
-        filter60.Q.value = 10; // Q alto = corte estreito (não estraga o resto)
-
-        // Filtro Notch 120Hz (Primeiro Harmônico)
-        filter120 = audioCtx.createBiquadFilter();
-        filter120.type = 'notch';
-        filter120.frequency.value = 120;
-        filter120.Q.value = 10;
-
-        // Filtro HighPass (Remove rumble < 100Hz)
-        filterHP = audioCtx.createBiquadFilter();
-        filterHP.type = 'highpass';
-        filterHP.frequency.value = 100;
-        filterHP.Q.value = 0.5;
+    function updateFiltersPhysically() {
+        if(!ac) return;
+        nodes.hp.type = STATE.settings.hp ? 'highpass' : 'allpass';
+        nodes.f60.frequency.value = STATE.settings.f60 ? 60 : 0;
+        nodes.f120.frequency.value = STATE.settings.f120 ? 120 : 0;
+        nodes.iso.type = STATE.settings.iso ? 'bandpass' : 'allpass';
     }
 
-    // --- 2. LÓGICA DE CONEXÃO DOS FILTROS ---
-    function updateFilters() {
-        STATE.filters.f60 = document.getElementById('chk-60hz').checked;
-        STATE.filters.f120 = document.getElementById('chk-120hz').checked;
-        STATE.filters.hp = document.getElementById('chk-hp').checked;
-
-        // Atualiza UI
-        ui.box60.querySelector('.val').innerText = STATE.filters.f60 ? "ON" : "OFF";
-        ui.box60.classList.toggle('active-filter', STATE.filters.f60);
-        ui.boxHP.querySelector('.val').innerText = STATE.filters.hp ? "ON" : "OFF";
-        ui.boxHP.classList.toggle('active-filter', STATE.filters.hp);
-
-        if(audioCtx) reconnectChain();
-    }
-
-    function reconnectChain() {
-        // Desconecta tudo primeiro para evitar erros
-        micSource.disconnect();
-        filter60.disconnect();
-        filter120.disconnect();
-        filterHP.disconnect();
-
-        // Recria a corrente baseada nos checkboxes
-        let currentNode = micSource;
-
-        if (STATE.filters.hp) {
-            currentNode.connect(filterHP);
-            currentNode = filterHP;
-        }
-        if (STATE.filters.f60) {
-            currentNode.connect(filter60);
-            currentNode = filter60;
-        }
-        if (STATE.filters.f120) {
-            currentNode.connect(filter120);
-            currentNode = filter120;
-        }
-
-        // Finaliza no Analisador
-        currentNode.connect(analyser);
-    }
-
-    // --- 3. MAGNETÔMETRO ---
+    // Magnetômetro
     let magSensor;
     function initMag() {
         if ('Magnetometer' in window) {
             magSensor = new Magnetometer({ frequency: 60 });
             magSensor.addEventListener('reading', () => {
                 let raw = Math.sqrt(magSensor.x**2 + magSensor.y**2 + magSensor.z**2);
+                STATE.magCurrent = raw;
                 let delta = raw - STATE.magBase;
-                ui.mag.innerText = (delta > 0 ? "+" : "") + delta.toFixed(2) + " µT";
-                
-                // Feedback Sonoro
-                if(STATE.audioOn && synthOsc) {
-                    let pitch = 200 + (Math.abs(delta) * 50);
-                    let vol = Math.min(Math.abs(delta) / 20, 1);
-                    if(Math.abs(delta) < 1) vol = 0; // Noise gate
-                    
-                    synthOsc.frequency.setTargetAtTime(pitch, audioCtx.currentTime, 0.1);
-                    synthGain.gain.setTargetAtTime(vol, audioCtx.currentTime, 0.1);
-                }
+                UI.mag.innerText = (delta > 0 ? "+" : "") + delta.toFixed(2);
+                if(STATE.settings.synth && STATE.running) processGeiger(Math.abs(delta));
             });
             magSensor.start();
         }
     }
-    function tare() { 
-        if(magSensor) STATE.magBase = Math.sqrt(magSensor.x**2 + magSensor.y**2 + magSensor.z**2); 
+
+    function processGeiger(intensity) {
+        if(intensity < 1) { if(synth.gain) synth.gain.gain.setTargetAtTime(0, ac.currentTime, 0.1); return; }
+        if(!synth.osc) {
+            synth.osc = ac.createOscillator(); synth.gain = ac.createGain();
+            synth.osc.connect(synth.gain).connect(ac.destination); synth.osc.start();
+        }
+        let pitch = 200 + (intensity * 50); let vol = Math.min(intensity / 20, 0.5);
+        synth.osc.frequency.setTargetAtTime(pitch, ac.currentTime, 0.1);
+        synth.gain.gain.setTargetAtTime(vol, ac.currentTime, 0.1);
     }
 
-    // --- 4. ÁUDIO FEEDBACK ---
-    function toggleAudio() {
-        STATE.audioOn = !STATE.audioOn;
-        document.getElementById('btn-audio').classList.toggle('active');
-        
-        if(STATE.audioOn && audioCtx) {
-            synthOsc = audioCtx.createOscillator();
-            synthGain = audioCtx.createGain();
-            synthOsc.connect(synthGain);
-            synthGain.connect(audioCtx.destination);
-            synthGain.gain.value = 0;
-            synthOsc.start();
-        } else if(synthOsc) {
-            synthOsc.stop();
-            synthOsc = null;
+    // Controles UI
+    function toggleSystem() {
+        if(!STATE.running) {
+            initAudio().then(ok => { if(ok) { initMag(); initGPS(); STATE.running = true; UI.powerBtn.innerText = "SISTEMA ONLINE"; UI.powerBtn.classList.add('running'); loop(); } });
+        } else {
+            if(ac) ac.close(); STATE.running = false; UI.powerBtn.innerText = "LIGAR SISTEMA"; UI.powerBtn.classList.remove('running');
         }
     }
 
-    // --- LOOP VISUAL ---
+    function switchTab(id) {
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        document.getElementById('tab-'+id).classList.add('active');
+        document.querySelectorAll('.mod-tab').forEach(t => t.classList.remove('active'));
+        event.target.classList.add('active');
+    }
+
+    function toggleFilter(k) {
+        STATE.settings[k] = !STATE.settings[k];
+        document.getElementById('btn-'+k).classList.toggle('on', STATE.settings[k]);
+        updateFiltersPhysically();
+    }
+
+    function updateTuner() {
+        STATE.settings.freq = document.getElementById('rng-freq').value;
+        STATE.settings.q = document.getElementById('rng-q').value;
+        document.getElementById('lbl-freq').innerText = STATE.settings.freq + " Hz";
+        document.getElementById('lbl-q').innerText = STATE.settings.q;
+        if(nodes.iso) { nodes.iso.frequency.setValueAtTime(STATE.settings.freq, ac.currentTime); nodes.iso.Q.setValueAtTime(STATE.settings.q, ac.currentTime); }
+    }
+
+    function toggleMonitor() {
+        STATE.settings.monitor = !STATE.settings.monitor;
+        document.getElementById('btn-mon').classList.toggle('on', STATE.settings.monitor);
+        updateVol();
+    }
+
+    function toggleSynth() {
+        STATE.settings.synth = !STATE.settings.synth;
+        document.getElementById('btn-synth').classList.toggle('on', STATE.settings.synth);
+        if(!STATE.settings.synth && synth.gain) synth.gain.gain.value = 0;
+    }
+
+    function updateGain() {
+        let val = document.getElementById('rng-gain').value;
+        STATE.settings.gain = val; document.getElementById('lbl-gain').innerText = val + "x";
+        if(nodes.preAmp) nodes.preAmp.gain.setTargetAtTime(val, ac.currentTime, 0.1);
+    }
+
+    function updateVol() {
+        let val = document.getElementById('rng-vol').value;
+        STATE.settings.vol = val / 100; document.getElementById('lbl-vol').innerText = val + "%";
+        if(nodes.masterVol) nodes.masterVol.gain.setTargetAtTime(STATE.settings.monitor ? STATE.settings.vol : 0, ac.currentTime, 0.1);
+    }
+
+    function tareMag() { STATE.magBase = STATE.magCurrent; }
+
+    function initGPS() {
+        if('geolocation' in navigator) navigator.geolocation.watchPosition(p => {
+            STATE.gps = { lat: p.coords.latitude, lon: p.coords.longitude, acc: p.coords.accuracy };
+            UI.gps.innerText = Math.round(STATE.gps.acc); UI.logLat.innerText = STATE.gps.lat.toFixed(4); UI.logLon.innerText = STATE.gps.lon.toFixed(4);
+        }, null, { enableHighAccuracy: true });
+    }
+
+    function toggleRec() {
+        STATE.recording = !STATE.recording;
+        UI.recInd.style.display = STATE.recording ? 'block' : 'none';
+        document.getElementById('btn-rec').innerText = STATE.recording ? "PARAR" : "🔴 GRAVAR (CSV)";
+    }
+
+    function downloadData() {
+        if(STATE.logs.length === 0) return alert("Sem dados.");
+        let csv = "TIME,LAT,LON,ACC,MAG,DELTA\n" + STATE.logs.join("\n");
+        let a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], {type: 'text/csv'})); a.download = 'geodata.csv'; a.click();
+    }
+
+    // Loops Visuais
     const dataArray = new Uint8Array(2048);
+    const timeArray = new Uint8Array(2048);
+
     function loop() {
+        if(!STATE.running) return;
         requestAnimationFrame(loop);
+
         analyser.getByteFrequencyData(dataArray);
+        analyser.getByteTimeDomainData(timeArray);
 
-        // Setup Canvas
-        ui.cSpec.width = ui.cSpec.clientWidth; ui.cSpec.height = ui.cSpec.clientHeight;
-        ui.cWater.width = ui.cWater.clientWidth; ui.cWater.height = ui.cWater.clientHeight;
+        // Resize Canvas dinâmico
+        [UI.scope, UI.spec, UI.water].forEach(c => { c.width = c.clientWidth; c.height = c.clientHeight; });
 
-        // Espectro
-        ctxS.fillStyle = "#000"; ctxS.fillRect(0,0,ui.cSpec.width, ui.cSpec.height);
-        ctxS.lineWidth = 2; ctxS.strokeStyle = "#ffd700"; ctxS.beginPath();
-        let sum = 0;
-        for(let i=0; i<dataArray.length; i++) {
-            let v = dataArray[i];
-            let x = (i/dataArray.length) * ui.cSpec.width;
-            let y = ui.cSpec.height - (v/255)*ui.cSpec.height;
-            if(i===0) ctxS.moveTo(x,y); else ctxS.lineTo(x,y);
-            sum += v;
+        // 1. Osciloscópio
+        ctxScope.fillStyle = "#000"; ctxScope.fillRect(0,0,UI.scope.width, UI.scope.height);
+        ctxScope.lineWidth = 2; ctxScope.strokeStyle = "#00ff66"; ctxScope.beginPath();
+        let sl = UI.scope.width / 2048; let x=0;
+        for(let i=0; i<2048; i+=2) { // Otimizado: desenha a cada 2 pontos
+            let y = (timeArray[i]/128.0) * (UI.scope.height/2);
+            if(i===0) ctxScope.moveTo(x,y); else ctxScope.lineTo(x,y); x+=sl*2;
         }
-        ctxS.stroke();
-        ui.vlf.innerText = Math.round(sum/dataArray.length);
+        ctxScope.stroke();
 
-        // Waterfall
-        ctxW.drawImage(ui.cWater, 0, 0, ui.cWater.width, ui.cWater.height-1, 0, 1, ui.cWater.width, ui.cWater.height-1);
-        let imgData = ctxW.createImageData(ui.cWater.width, 1);
-        for(let i=0; i<ui.cWater.width; i++) {
-            let idx = Math.floor((i/ui.cWater.width)*dataArray.length);
-            let val = dataArray[idx];
-            let p = i*4;
-            imgData.data[p] = val; imgData.data[p+1] = val>120?val:0; imgData.data[p+2] = 0; imgData.data[p+3] = 255;
+        // 2. Espectro
+        ctxSpec.fillStyle = "#000"; ctxSpec.fillRect(0,0,UI.spec.width, UI.spec.height);
+        ctxSpec.beginPath(); let sum=0;
+        for(let i=0; i<2048; i+=2) {
+            let px = (i/2048)*UI.spec.width; let py = UI.spec.height - (dataArray[i]/255)*UI.spec.height;
+            if(i===0) ctxSpec.moveTo(px,py); else ctxSpec.lineTo(px,py);
+            let freq = i * (ac.sampleRate/2) / 2048;
+            let dist = Math.abs(freq - STATE.settings.freq);
+            ctxSpec.strokeStyle = (STATE.settings.iso && dist < 500/STATE.settings.q) ? "#00ffff" : "#ffcc00";
+            sum += dataArray[i];
         }
-        ctxW.putImageData(imgData, 0, 0);
-    }
+        ctxSpec.stroke();
+        UI.vlf.innerText = "-" + (100 - (sum/2048/2.55).toFixed(0));
 
-    function toggleDSP() {
-        let p = ui.dsp; p.style.display = p.style.display==='block'?'none':'block';
-    }
+        // 3. Waterfall
+        ctxWater.drawImage(UI.water, 0, 0, UI.water.width, UI.water.height-1, 0, 1, UI.water.width, UI.water.height-1);
+        let imgData = ctxWater.createImageData(UI.water.width, 1);
+        for(let i=0; i<UI.water.width; i++) {
+            let idx = Math.floor((i/UI.water.width)*2048); let val = dataArray[idx]; let p = i*4;
+            imgData.data[p]=val; imgData.data[p+1]=val>150?val:0; imgData.data[p+2]=255-val; imgData.data[p+3]=255;
+        }
+        ctxWater.putImageData(imgData, 0, 0);
 
+        if(STATE.recording && Math.random()>0.95) {
+            let row = [new Date().toLocaleTimeString(), STATE.gps.lat, STATE.gps.lon, STATE.gps.acc, STATE.magCurrent.toFixed(2), (STATE.magCurrent-STATE.magBase).toFixed(2)];
+            STATE.logs.push(row.join(",")); UI.logCount.innerText = STATE.logs.length;
+        }
+    }
 </script>
 </body>
 </html>
