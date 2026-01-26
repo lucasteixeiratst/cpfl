@@ -2,377 +2,91 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GeoScanner v8.2 [Fixed]</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Sensor</title>
     <style>
-        /* --- CONFIGURAÇÕES VISUAIS --- */
-        :root { 
-            --bg: #050505; --panel: #1a1a1a; --border: #333; 
-            --gold: #ffcc00; --cyan: #00ffff; --red: #ff4444; --green: #00ff66;
-            --text: #e0e0e0; 
-        }
-        * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
-        
-        body {
-            margin: 0; background: var(--bg); color: var(--text);
-            font-family: sans-serif;
-            height: 100vh; height: 100dvh; /* Garante tela cheia real */
-            display: flex; flex-direction: column; overflow: hidden;
-        }
-
-        /* 1. TOPO (Status) */
-        #hud-top {
-            flex-shrink: 0; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px;
-            padding: 8px; background: #111; border-bottom: 2px solid var(--border);
-            z-index: 50;
-        }
-        .stat-box {
-            background: #222; padding: 5px; border-radius: 4px; text-align: center;
-            border-bottom: 2px solid #555;
-        }
-        .stat-label { font-size: 0.6rem; color: #888; display: block; }
-        .stat-val { font-size: 1rem; font-weight: bold; }
-
-        /* 2. ÁREA DE GRÁFICOS (Flexível) */
-        #viewport {
-            flex-grow: 1; position: relative; background: #000;
-            display: flex; flex-direction: column; min-height: 0;
-            z-index: 1; /* Fica atrás dos controles */
-        }
-        canvas { width: 100%; display: block; }
-        #scopeCanvas { flex: 1; border-bottom: 1px solid #222; }
-        #specCanvas { flex: 1; border-bottom: 1px solid #222; }
-        #waterCanvas { flex: 2; }
-        
-        #rec-ind {
-            position: absolute; top: 10px; right: 10px;
-            background: var(--red); color: white; padding: 4px 8px;
-            border-radius: 4px; font-weight: bold; font-size: 0.7rem; display: none;
-        }
-
-        /* 3. PAINEL DE CONTROLE (Fixo embaixo) */
-        #bottom-container {
-            flex-shrink: 0; background: var(--panel);
-            display: flex; flex-direction: column;
-            border-top: 2px solid var(--border);
-            z-index: 100; /* CRÍTICO: Garante que fique acima de tudo */
-            box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
-        }
-
-        /* Abas de Navegação */
-        #tabs-bar { display: flex; border-bottom: 1px solid #333; }
-        .tab-btn {
-            flex: 1; padding: 15px 0; background: #222; border: none;
-            color: #666; font-weight: bold; font-size: 0.9rem;
-            border-bottom: 4px solid transparent; transition: 0.2s;
-        }
-        .tab-btn.active { 
-            color: white; background: #2a2a2a; border-bottom-color: var(--cyan); 
-        }
-
-        /* Área de Conteúdo das Abas */
-        #deck {
-            height: 190px; overflow-y: auto; padding: 12px; background: #151515;
-        }
-        .panel { display: none; animation: fadeIn 0.3s; }
-        .panel.active { display: block; }
-
-        /* Botões e Sliders */
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-        .full { grid-column: span 2; }
-        
-        button.act-btn {
-            padding: 12px; border: none; border-radius: 6px; font-weight: bold;
-            background: #333; color: #ccc; width: 100%; font-size: 0.85rem;
-            display: flex; justify-content: center; align-items: center; gap: 5px;
-        }
-        button.act-btn.on { background: var(--green); color: black; box-shadow: 0 0 8px var(--green); }
-        button.act-btn.cyan { background: var(--cyan); color: black; }
-        button.act-btn.red { background: var(--red); color: white; }
-
-        /* Sliders Melhorados */
-        .slider-box { background: #252525; padding: 8px 12px; border-radius: 8px; margin-bottom: 10px; }
-        .slider-head { display: flex; justify-content: space-between; font-size: 0.8rem; color: #aaa; margin-bottom: 5px; }
-        input[type=range] { width: 100%; height: 25px; background: transparent; -webkit-appearance: none; }
-        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 6px; background: #444; border-radius: 3px; }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; margin-top: -7px; width: 20px; height: 20px; background: var(--cyan); border-radius: 50%; border: 2px solid #fff; }
-
-        /* Botão Ligar */
-        #power-btn {
-            width: 100%; padding: 18px; background: #111; color: #fff; border: none;
-            border-top: 1px solid #444; font-size: 1.1rem; font-weight: bold;
-            padding-bottom: max(18px, env(safe-area-inset-bottom));
-        }
-        #power-btn.on { background: #004400; color: #0f0; }
-
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        body { background: #000; color: #0f0; font-family: monospace; padding: 20px; font-size: 1.2rem; }
+        .error { color: #f00; border: 1px solid #f00; padding: 10px; margin-top: 10px; }
+        .success { color: #0f0; border: 1px solid #0f0; padding: 10px; margin-top: 10px; }
+        button { padding: 15px; font-size: 1rem; width: 100%; margin-bottom: 20px; }
     </style>
 </head>
 <body>
 
-    <div id="hud-top">
-        <div class="stat-box" style="color:var(--gold); border-color:var(--gold)">
-            <span class="stat-label">MAGNETISMO</span>
-            <span id="v-mag" class="stat-val">0.00</span>
-        </div>
-        <div class="stat-box" style="color:var(--cyan); border-color:var(--cyan)">
-            <span class="stat-label">SINAL VLF</span>
-            <span id="v-vlf" class="stat-val">--</span>
-        </div>
-        <div class="stat-box">
-            <span class="stat-label">GPS (M)</span>
-            <span id="v-gps" class="stat-val">--</span>
-        </div>
-    </div>
+    <h1>DIAGNÓSTICO DE SENSOR</h1>
+    <button onclick="startTest()">INICIAR TESTE</button>
 
-    <div id="viewport">
-        <div id="rec-ind">GRAVANDO</div>
-        <canvas id="scopeCanvas"></canvas>
-        <canvas id="specCanvas"></canvas>
-        <canvas id="waterCanvas"></canvas>
-    </div>
-
-    <div id="bottom-container">
-        <div id="tabs-bar">
-            <button class="tab-btn active" onclick="openTab(this, 'p-filters')">FILTROS</button>
-            <button class="tab-btn" onclick="openTab(this, 'p-tuner')">SINTONIA</button>
-            <button class="tab-btn" onclick="openTab(this, 'p-audio')">ÁUDIO</button>
-            <button class="tab-btn" onclick="openTab(this, 'p-data')">DADOS</button>
-        </div>
-
-        <div id="deck">
-            
-            <div id="p-filters" class="panel active">
-                <div class="grid-2">
-                    <button class="act-btn" id="b-f60" onclick="togFilter('f60')">🔌 60Hz CUT</button>
-                    <button class="act-btn" id="b-f120" onclick="togFilter('f120')">⚡ 120Hz CUT</button>
-                    <button class="act-btn" id="b-hp" onclick="togFilter('hp')">💨 RUMBLE</button>
-                    <button class="act-btn cyan" onclick="tare()">⚖️ TARA MAG</button>
-                </div>
-                <div style="text-align:center; color:#666; font-size:0.75rem; margin-top:5px">Elimina ruído da rede elétrica.</div>
-            </div>
-
-            <div id="p-tuner" class="panel">
-                <div class="slider-box">
-                    <div class="slider-head"><span>FREQ CENTRAL</span><b id="l-freq">1000 Hz</b></div>
-                    <input type="range" id="r-freq" min="100" max="22000" step="10" value="1000" oninput="updTuner()">
-                </div>
-                <div class="slider-box">
-                    <div class="slider-head"><span>LARGURA (Q)</span><b id="l-q">1.0</b></div>
-                    <input type="range" id="r-q" min="0.1" max="20" step="0.1" value="1.0" oninput="updTuner()">
-                </div>
-                <button class="act-btn" id="b-iso" onclick="togFilter('iso')">🎯 ATIVAR ISOLAMENTO</button>
-            </div>
-
-            <div id="p-audio" class="panel">
-                <div class="grid-2">
-                    <button class="act-btn" id="b-mon" onclick="togSet('monitor')">🎧 MONITOR</button>
-                    <button class="act-btn" id="b-syn" onclick="togSet('synth')">☢️ METAL BIP</button>
-                </div>
-                <div class="slider-box">
-                    <div class="slider-head"><span>GANHO (PRE-AMP)</span><b id="l-gain" style="color:var(--red)">1x</b></div>
-                    <input type="range" id="r-gain" min="1" max="100" value="1" oninput="updAudio()">
-                </div>
-                <div class="slider-box">
-                    <div class="slider-head"><span>VOLUME</span><b id="l-vol">50%</b></div>
-                    <input type="range" id="r-vol" min="0" max="100" value="50" oninput="updAudio()">
-                </div>
-            </div>
-
-            <div id="p-data" class="panel">
-                <div class="grid-2">
-                    <button class="act-btn red full" id="b-rec" onclick="togRec()">🔴 GRAVAR CSV</button>
-                    <button class="act-btn cyan full" onclick="saveData()">💾 BAIXAR ARQUIVO</button>
-                </div>
-                <div style="text-align:center; color:#888; font-family:monospace; margin-top:10px; font-size:0.8rem">
-                    PONTOS: <span id="l-pts">0</span>
-                </div>
-            </div>
-        </div>
-
-        <button id="power-btn" onclick="togglePower()">LIGAR SISTEMA</button>
-    </div>
+    <div id="log">Aguardando...</div>
 
 <script>
-    // --- ESTADO ---
-    const S = { run: false, rec: false, mBase: 0, mCur: 0, logs: [], gps: {acc:0, lat:0, lon:0}, cfg: { f60:0, f120:0, hp:0, iso:0, monitor:0, synth:0, freq:1000, q:1, gain:1, vol:0.5 } };
-    
-    // UI Refs
-    const el = (id) => document.getElementById(id);
-    const UI = {
-        mag: el('v-mag'), vlf: el('v-vlf'), gps: el('v-gps'), pts: el('l-pts'), rec: el('rec-ind'),
-        pwr: el('power-btn'), scope: el('scopeCanvas'), spec: el('specCanvas'), water: el('waterCanvas')
-    };
-    const cxScope = UI.scope.getContext('2d'), cxSpec = UI.spec.getContext('2d'), cxWater = UI.water.getContext('2d');
+    const logDiv = document.getElementById('log');
 
-    // --- ÁUDIO ENGINE ---
-    let ac, mic, anl, nds = {}, osc = {o:null, g:null};
-
-    async function startAudio() {
-        try {
-            ac = new (window.AudioContext || window.webkitAudioContext)({latencyHint:'interactive'});
-            const stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false, noiseSuppression:false, autoGainControl:false, latency:0}});
-            
-            mic = ac.createMediaStreamSource(stream);
-            anl = ac.createAnalyser(); anl.fftSize = 2048;
-
-            // Nodos
-            nds.hp = ac.createBiquadFilter(); nds.hp.type='highpass'; nds.hp.frequency.value=100;
-            nds.f60 = ac.createBiquadFilter(); nds.f60.type='notch'; nds.f60.frequency.value=60; nds.f60.Q.value=10;
-            nds.f120 = ac.createBiquadFilter(); nds.f120.type='notch'; nds.f120.frequency.value=120; nds.f120.Q.value=10;
-            nds.iso = ac.createBiquadFilter(); nds.iso.type='bandpass'; nds.iso.frequency.value=S.cfg.freq; nds.iso.Q.value=S.cfg.q;
-            nds.pre = ac.createGain(); nds.pre.gain.value = S.cfg.gain;
-            nds.cmp = ac.createDynamicsCompressor();
-            nds.mst = ac.createGain(); nds.mst.gain.value = 0; // Inicia mudo
-
-            // Conexão: Mic -> HP -> 60 -> 120 -> Pre -> Iso -> Comp -> Anl -> Master -> Out
-            mic.connect(nds.hp).connect(nds.f60).connect(nds.f120).connect(nds.pre).connect(nds.iso).connect(nds.cmp).connect(anl).connect(nds.mst).connect(ac.destination);
-            
-            applyFilters();
-            return true;
-        } catch(e) { alert("Erro Microfone: " + e); return false; }
+    function log(msg, type='normal') {
+        const div = document.createElement('div');
+        div.innerText = "> " + msg;
+        if(type==='err') div.className = 'error';
+        if(type==='ok') div.className = 'success';
+        logDiv.appendChild(div);
     }
 
-    function applyFilters() {
-        if(!ac) return;
-        nds.hp.type = S.cfg.hp ? 'highpass' : 'allpass';
-        nds.f60.frequency.value = S.cfg.f60 ? 60 : 0;
-        nds.f120.frequency.value = S.cfg.f120 ? 120 : 0;
-        nds.iso.type = S.cfg.iso ? 'bandpass' : 'allpass';
-    }
+    async function startTest() {
+        logDiv.innerHTML = "";
+        log("Iniciando testes...");
 
-    // --- MAGNETÔMETRO ---
-    let mag;
-    function startMag() {
-        if('Magnetometer' in window) {
-            mag = new Magnetometer({frequency:60});
-            mag.addEventListener('reading', () => {
-                let raw = Math.sqrt(mag.x**2 + mag.y**2 + mag.z**2);
-                S.mCur = raw;
-                let d = raw - S.mBase;
-                UI.mag.innerText = (d>0?"+":"") + d.toFixed(2);
-                if(S.cfg.synth && S.run) runSynth(Math.abs(d));
-            });
-            mag.start();
-        }
-    }
-
-    function runSynth(val) {
-        if(val<1) { if(osc.g) osc.g.gain.setTargetAtTime(0, ac.currentTime, 0.1); return; }
-        if(!osc.o) { osc.o=ac.createOscillator(); osc.g=ac.createGain(); osc.o.connect(osc.g).connect(ac.destination); osc.o.start(); }
-        osc.o.frequency.setTargetAtTime(200+(val*50), ac.currentTime, 0.1);
-        osc.g.gain.setTargetAtTime(Math.min(val/20, 0.5), ac.currentTime, 0.1);
-    }
-
-    // --- UI ACTIONS ---
-    window.openTab = function(btn, pid) {
-        document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-        el(pid).classList.add('active');
-        document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-        btn.classList.add('active');
-    };
-
-    window.togglePower = function() {
-        if(!S.run) {
-            startAudio().then(ok => { 
-                if(ok) { 
-                    startMag(); initGPS(); S.run=true; 
-                    UI.pwr.innerText="SISTEMA LIGADO"; UI.pwr.classList.add('on'); loop(); 
-                } 
-            });
+        // 1. Checa HTTPS
+        if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+            log("ERRO CRÍTICO: Você não está usando HTTPS nem Localhost.", 'err');
+            log("O Chrome bloqueia sensores em " + location.protocol, 'err');
+            return;
         } else {
-            if(ac) ac.close(); S.run=false;
-            UI.pwr.innerText="LIGAR SISTEMA"; UI.pwr.classList.remove('on');
+            log("Conexão Segura (HTTPS/Local): OK", 'ok');
         }
-    };
 
-    window.togFilter = function(k) {
-        S.cfg[k] = !S.cfg[k]; el('b-'+k).classList.toggle('on', S.cfg[k]); applyFilters();
-    };
-    
-    window.togSet = function(k) {
-        S.cfg[k] = !S.cfg[k]; el(k==='monitor'?'b-mon':'b-syn').classList.toggle('on', S.cfg[k]);
-        updAudio();
-        if(k==='synth' && !S.cfg.synth && osc.g) osc.g.gain.value=0;
-    };
-
-    window.updTuner = function() {
-        S.cfg.freq = el('r-freq').value; S.cfg.q = el('r-q').value;
-        el('l-freq').innerText = S.cfg.freq+" Hz"; el('l-q').innerText = S.cfg.q;
-        if(nds.iso) { nds.iso.frequency.setValueAtTime(S.cfg.freq, ac.currentTime); nds.iso.Q.setValueAtTime(S.cfg.q, ac.currentTime); }
-    };
-
-    window.updAudio = function() {
-        S.cfg.gain = el('r-gain').value; S.cfg.vol = el('r-vol').value/100;
-        el('l-gain').innerText = S.cfg.gain+"x"; el('l-vol').innerText = Math.round(S.cfg.vol*100)+"%";
-        if(nds.pre) nds.pre.gain.setTargetAtTime(S.cfg.gain, ac.currentTime, 0.1);
-        if(nds.mst) nds.mst.gain.setTargetAtTime(S.cfg.monitor ? S.cfg.vol : 0, ac.currentTime, 0.1);
-    };
-
-    window.tare = function() { S.mBase = S.mCur; };
-    
-    window.togRec = function() {
-        S.rec = !S.rec; UI.rec.style.display = S.rec?'block':'none';
-        el('b-rec').innerText = S.rec ? "PARAR" : "🔴 GRAVAR CSV";
-    };
-
-    window.saveData = function() {
-        if(!S.logs.length) return alert('Sem dados.');
-        let blob = new Blob(["TIME,LAT,LON,ACC,MAG,DELTA\n"+S.logs.join("\n")], {type:'text/csv'});
-        let a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'geo.csv'; a.click();
-    };
-
-    function initGPS() {
-        if('geolocation' in navigator) navigator.geolocation.watchPosition(p=>{
-            S.gps = {acc:p.coords.accuracy, lat:p.coords.latitude, lon:p.coords.longitude};
-            UI.gps.innerText = Math.round(S.gps.acc);
-        }, null, {enableHighAccuracy:true});
-    }
-
-    // --- VISUAL LOOP ---
-    const dFreq = new Uint8Array(2048), dTime = new Uint8Array(2048);
-    function loop() {
-        if(!S.run) return;
-        requestAnimationFrame(loop);
-
-        anl.getByteFrequencyData(dFreq); anl.getByteTimeDomainData(dTime);
-        [UI.scope, UI.spec, UI.water].forEach(c => { c.width = c.clientWidth; c.height = c.clientHeight; });
-
-        // 1. Osciloscópio
-        cxScope.fillStyle="#000"; cxScope.fillRect(0,0,UI.scope.width,UI.scope.height);
-        cxScope.strokeStyle="#0f0"; cxScope.lineWidth=2; cxScope.beginPath();
-        let sl=UI.scope.width/2048, x=0;
-        for(let i=0; i<2048; i+=4) {
-            let y = (dTime[i]/128.0)*(UI.scope.height/2);
-            i===0?cxScope.moveTo(x,y):cxScope.lineTo(x,y); x+=sl*4;
+        // 2. Checa Suporte do Navegador
+        if (!('Magnetometer' in window)) {
+            log("ERRO: Seu navegador não conhece a API 'Magnetometer'.", 'err');
+            log("Tente ativar a flag: chrome://flags/#enable-generic-sensor-extra-classes", 'err');
+            
+            // Tenta fallback antigo
+            log("Tentando método antigo (DeviceOrientation)...");
+            window.addEventListener('deviceorientation', (e) => {
+                if(e.alpha) log(`Método Antigo Funcionando! Alpha: ${e.alpha.toFixed(0)}`, 'ok');
+            });
+            return;
+        } else {
+            log("API Magnetometer detectada no navegador.", 'ok');
         }
-        cxScope.stroke();
 
-        // 2. Espectro
-        cxSpec.fillStyle="#000"; cxSpec.fillRect(0,0,UI.spec.width,UI.spec.height);
-        cxSpec.beginPath(); let sum=0;
-        for(let i=0; i<2048; i+=2) {
-            let px = (i/2048)*UI.spec.width; let py = UI.spec.height - (dFreq[i]/255)*UI.spec.height;
-            i===0?cxSpec.moveTo(px,py):cxSpec.lineTo(px,py);
-            let f = i*(ac.sampleRate/2)/2048; 
-            cxSpec.strokeStyle = (S.cfg.iso && Math.abs(f-S.cfg.freq)<500/S.cfg.q) ? "#0ff" : "#fc0";
-            sum+=dFreq[i];
+        // 3. Tenta Ler Permissões
+        try {
+            const result = await navigator.permissions.query({ name: 'magnetometer' });
+            log("Status da Permissão: " + result.state);
+            if (result.state === 'denied') {
+                log("ERRO: Permissão negada pelo usuário. Limpe os dados do site e tente de novo.", 'err');
+                return;
+            }
+        } catch (error) {
+            log("Não foi possível checar permissão (comum em alguns Androids). Ignorando...");
         }
-        cxSpec.stroke();
-        UI.vlf.innerText = "-"+(100-(sum/2048/2.55).toFixed(0));
 
-        // 3. Waterfall
-        cxWater.drawImage(UI.water,0,0,UI.water.width,UI.water.height-1,0,1,UI.water.width,UI.water.height-1);
-        let idt = cxWater.createImageData(UI.water.width,1);
-        for(let i=0; i<UI.water.width; i++) {
-            let v = dFreq[Math.floor((i/UI.water.width)*2048)]; let p=i*4;
-            idt.data[p]=v; idt.data[p+1]=v>150?v:0; idt.data[p+2]=255-v; idt.data[p+3]=255;
-        }
-        cxWater.putImageData(idt,0,0);
+        // 4. Tenta Ligar o Sensor
+        try {
+            const mag = new Magnetometer({ frequency: 60 });
+            
+            mag.addEventListener('error', event => {
+                log("ERRO NO SENSOR: " + event.error.name, 'err');
+                log("Mensagem: " + event.error.message, 'err');
+            });
 
-        if(S.rec && Math.random()>0.95) {
-            S.logs.push([new Date().toLocaleTimeString(), S.gps.lat, S.gps.lon, S.gps.acc, S.mCur.toFixed(2), (S.mCur-S.mBase).toFixed(2)].join(","));
-            UI.pts.innerText = S.logs.length;
+            mag.addEventListener('reading', () => {
+                log(`SUCESSO! Leitura: ${mag.x.toFixed(2)}`, 'ok');
+                mag.stop(); // Para após ler
+            });
+
+            mag.start();
+            log("Solicitando sensor... aguarde...");
+        } catch (error) {
+            log("Erro fatal ao iniciar: " + error, 'err');
         }
     }
 </script>
