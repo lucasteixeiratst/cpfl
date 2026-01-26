@@ -3,66 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GeoScanner v4.0 [Audio Feedback]</title>
+    <title>GeoScanner v5.0 [DSP Filters]</title>
     <style>
-        :root { --bg: #050505; --panel: #151515; --gold: #ffd700; --water: #00bfff; --text: #eee; --alert: #ff3333; }
+        :root { --bg: #050505; --panel: #151515; --gold: #ffd700; --water: #00bfff; --text: #eee; --alert: #ff3333; --on: #0f0; }
         body {
             margin: 0; background: var(--bg); color: var(--text);
             font-family: 'Consolas', monospace; height: 100vh;
             display: flex; flex-direction: column; overflow: hidden; user-select: none;
         }
 
-        /* --- TOPO E MODOS --- */
-        #mode-selector {
-            display: grid; grid-template-columns: 1fr 1fr;
-            background: #000; border-bottom: 2px solid #333;
-        }
-        .mode-btn {
-            padding: 15px; border: none; background: #222; color: #555;
-            font-weight: bold; font-size: 1rem; cursor: pointer;
-        }
-        .mode-btn.active-gold { background: #332b00; color: var(--gold); border-bottom: 4px solid var(--gold); }
-        .mode-btn.active-water { background: #001a33; color: var(--water); border-bottom: 4px solid var(--water); }
-
-        /* --- HUD --- */
+        /* --- UI ELEMENTS --- */
         #hud {
             display: grid; grid-template-columns: 1fr 1fr; gap: 4px;
-            padding: 5px; background: var(--panel); font-size: 0.8rem;
+            padding: 5px; background: var(--panel); border-bottom: 1px solid #333;
         }
-        .hud-box { background: #222; padding: 6px; border-radius: 4px; border-left: 2px solid #444; }
-        .val { font-size: 1.2em; font-weight: bold; display: block; }
+        .hud-box { background: #222; padding: 5px; border-left: 3px solid #444; }
+        .val { font-size: 1.1em; font-weight: bold; display: block; }
         .label { font-size: 0.7em; color: #888; }
+        .active-filter { border-left-color: var(--on); color: var(--on); }
 
-        /* --- GRÁFICOS --- */
         #viewport { flex-grow: 1; position: relative; background: #000; }
         canvas { display: block; width: 100%; }
         #specCanvas { height: 40%; border-bottom: 1px solid #333; }
         #waterCanvas { height: 60%; }
 
-        /* --- CONTROLES --- */
         #controls {
             display: flex; gap: 8px; padding: 8px; background: var(--panel); border-top: 1px solid #333;
         }
         button.ctrl {
-            flex: 1; padding: 15px 0; border: none; border-radius: 4px;
-            background: #333; color: white; font-weight: bold; font-size: 0.9rem;
+            flex: 1; padding: 12px 0; border: none; border-radius: 4px;
+            background: #333; color: white; font-weight: bold; font-size: 0.8rem;
         }
-        button.active-audio { background: var(--gold); color: black; box-shadow: 0 0 10px var(--gold); }
-        button.rec-active { background: var(--alert); color: white; }
-
-        /* Ajustes */
-        #tunning { padding: 10px; background: #111; display: none; border-top: 1px solid #444; }
-        .slider-row { display: flex; justify-content: space-between; margin-bottom: 10px; }
-        input[type=range] { width: 60%; }
+        button.active { background: var(--gold); color: black; }
+        
+        /* MENU DE AJUSTES (FILTROS) */
+        #dsp-panel {
+            background: #1a1a1a; padding: 15px; display: none;
+            border-top: 2px solid var(--gold);
+        }
+        .dsp-row {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 5px;
+        }
+        .switch {
+            position: relative; display: inline-block; width: 50px; height: 24px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc; transition: .4s; border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px;
+            background-color: white; transition: .4s; border-radius: 50%;
+        }
+        input:checked + .slider { background-color: var(--gold); }
+        input:checked + .slider:before { transform: translateX(26px); }
 
     </style>
 </head>
 <body>
-
-    <div id="mode-selector">
-        <button class="mode-btn active-gold" onclick="setMode('gold')">MODO OURO</button>
-        <button class="mode-btn" onclick="setMode('water')">MODO ÁGUA</button>
-    </div>
 
     <div id="hud">
         <div class="hud-box">
@@ -70,22 +70,44 @@
             <span id="val-mag" class="val">--</span>
         </div>
         <div class="hud-box">
-            <span class="label">INTENSIDADE VLF</span>
+            <span class="label">VLF SIGNAL</span>
             <span id="val-vlf" class="val">--</span>
         </div>
-        <div class="hud-box">
-            <span class="label">PROBABILIDADE</span>
-            <span id="val-prob" class="val">0%</span>
+        <div class="hud-box" id="box-filter-60">
+            <span class="label">FILTRO 60Hz</span>
+            <span class="val">OFF</span>
         </div>
-        <div class="hud-box">
-            <span class="label">ÁUDIO FREQ</span>
-            <span id="val-freq" class="val">OFF</span>
+        <div class="hud-box" id="box-filter-hp">
+            <span class="label">FILTRO RUMBLE</span>
+            <span class="val">OFF</span>
         </div>
     </div>
 
-    <div id="tunning">
-        <div class="slider-row"><span>Sensibilidade Mag</span> <input type="range" min="1" max="100" value="20" id="sens-mag"></div>
-        <div class="slider-row"><span>Volume Áudio</span> <input type="range" min="0" max="100" value="50" id="vol-audio"></div>
+    <div id="dsp-panel">
+        <div class="dsp-row">
+            <span>🔌 KILL 60Hz (Rede Elétrica)</span>
+            <label class="switch">
+                <input type="checkbox" id="chk-60hz" onchange="updateFilters()">
+                <span class="slider"></span>
+            </label>
+        </div>
+        <div class="dsp-row">
+            <span>🛑 KILL 120Hz (Harmônico)</span>
+            <label class="switch">
+                <input type="checkbox" id="chk-120hz" onchange="updateFilters()">
+                <span class="slider"></span>
+            </label>
+        </div>
+        <div class="dsp-row">
+            <span>💨 Low Cut (>100Hz)</span>
+            <label class="switch">
+                <input type="checkbox" id="chk-hp" onchange="updateFilters()">
+                <span class="slider"></span>
+            </label>
+        </div>
+        <div style="text-align: center; color: #888; font-size: 0.8em;">
+            Ative para limpar o gráfico em áreas urbanas.
+        </div>
     </div>
 
     <div id="viewport">
@@ -94,157 +116,187 @@
     </div>
 
     <div id="controls">
-        <button class="ctrl" onclick="toggleTunning()">⚙️</button>
-        <button class="ctrl" onclick="tare()">TARA</button>
-        <button class="ctrl" id="btn-audio" onclick="toggleAudio()">🔊 ÁUDIO</button>
+        <button class="ctrl" onclick="toggleDSP()">⚙️ FILTROS</button>
+        <button class="ctrl" onclick="tare()">ZERAR</button>
+        <button class="ctrl" id="btn-audio" onclick="toggleAudio()">🔊 SOM</button>
         <button class="ctrl" onclick="startApp()">LIGAR</button>
     </div>
 
 <script>
-    // --- ESTADO GLOBAL ---
-    let CONFIG = { mode: 'gold', running: false, audioEnabled: false };
-    let STATE = { magBase: 0, magRaw: 0, vlfRaw: 0, lastBeep: 0 };
+    // --- AUDIO CONTEXT GLOBAL ---
+    let audioCtx, micSource, analyser;
+    // Nodos de Filtro
+    let filter60, filter120, filterHP, gainNode;
+    let synthOsc, synthGain; // Para o som de feedback
     
-    // UI References
+    let STATE = {
+        running: false,
+        audioOn: false,
+        magBase: 0,
+        filters: { f60: false, f120: false, hp: false }
+    };
+
     const ui = {
         mag: document.getElementById('val-mag'),
         vlf: document.getElementById('val-vlf'),
-        prob: document.getElementById('val-prob'),
-        freq: document.getElementById('val-freq'),
-        btnAudio: document.getElementById('btn-audio'),
+        dsp: document.getElementById('dsp-panel'),
+        box60: document.getElementById('box-filter-60'),
+        boxHP: document.getElementById('box-filter-hp'),
         cSpec: document.getElementById('specCanvas'),
         cWater: document.getElementById('waterCanvas')
     };
     const ctxS = ui.cSpec.getContext('2d');
     const ctxW = ui.cWater.getContext('2d');
 
-    // --- ÁUDIO SYNTH (SINTETIZADOR) ---
-    let synthCtx, oscillator, gainNode;
-
-    function initSynth() {
-        if(synthCtx) return;
-        synthCtx = new (window.AudioContext || window.webkitAudioContext)();
-        oscillator = synthCtx.createOscillator();
-        gainNode = synthCtx.createGain();
-        
-        oscillator.type = 'sine'; // Onda senoidal (suave)
-        oscillator.frequency.value = 0; // Começa mudo
-        gainNode.gain.value = 0; // Volume zero
-        
-        oscillator.connect(gainNode);
-        gainNode.connect(synthCtx.destination);
-        oscillator.start();
-    }
-
-    function toggleAudio() {
-        CONFIG.audioEnabled = !CONFIG.audioEnabled;
-        ui.btnAudio.classList.toggle('active-audio');
-        if(CONFIG.audioEnabled) {
-            initSynth();
-            if(synthCtx.state === 'suspended') synthCtx.resume();
-        } else {
-            if(gainNode) gainNode.gain.setTargetAtTime(0, synthCtx.currentTime, 0.1);
-            ui.freq.innerText = "OFF";
-        }
-    }
-
-    // --- SENSORES ---
-    let micCtx, analyser, magSensor;
-
+    // --- 1. INICIALIZAÇÃO DE ÁUDIO COM DSP ---
     async function startApp() {
-        if(CONFIG.running) return;
-        CONFIG.running = true;
-
-        // 1. MIC (VLF)
+        if(STATE.running) return;
+        
         try {
-            micCtx = new (window.AudioContext || window.webkitAudioContext)();
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             const stream = await navigator.mediaDevices.getUserMedia({ 
                 audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } 
             });
-            const src = micCtx.createMediaStreamSource(stream);
-            analyser = micCtx.createAnalyser();
+            
+            // Criação da Cadeia de Áudio
+            micSource = audioCtx.createMediaStreamSource(stream);
+            analyser = audioCtx.createAnalyser();
             analyser.fftSize = 2048;
-            src.connect(analyser);
+
+            // Criar Filtros (Ainda desconectados)
+            createFilters();
+
+            // Conectar Tudo: Mic -> Filtros -> Analyser
+            reconnectChain();
+            
+            // Iniciar Magnetômetro
+            initMag();
+            
+            STATE.running = true;
             loop();
-        } catch(e) { alert("Erro Mic: " + e); }
+        } catch(e) { alert("Erro: " + e); }
+    }
 
-        // 2. MAG
+    function createFilters() {
+        // Filtro Notch 60Hz (Corte Cirúrgico)
+        filter60 = audioCtx.createBiquadFilter();
+        filter60.type = 'notch';
+        filter60.frequency.value = 60;
+        filter60.Q.value = 10; // Q alto = corte estreito (não estraga o resto)
+
+        // Filtro Notch 120Hz (Primeiro Harmônico)
+        filter120 = audioCtx.createBiquadFilter();
+        filter120.type = 'notch';
+        filter120.frequency.value = 120;
+        filter120.Q.value = 10;
+
+        // Filtro HighPass (Remove rumble < 100Hz)
+        filterHP = audioCtx.createBiquadFilter();
+        filterHP.type = 'highpass';
+        filterHP.frequency.value = 100;
+        filterHP.Q.value = 0.5;
+    }
+
+    // --- 2. LÓGICA DE CONEXÃO DOS FILTROS ---
+    function updateFilters() {
+        STATE.filters.f60 = document.getElementById('chk-60hz').checked;
+        STATE.filters.f120 = document.getElementById('chk-120hz').checked;
+        STATE.filters.hp = document.getElementById('chk-hp').checked;
+
+        // Atualiza UI
+        ui.box60.querySelector('.val').innerText = STATE.filters.f60 ? "ON" : "OFF";
+        ui.box60.classList.toggle('active-filter', STATE.filters.f60);
+        ui.boxHP.querySelector('.val').innerText = STATE.filters.hp ? "ON" : "OFF";
+        ui.boxHP.classList.toggle('active-filter', STATE.filters.hp);
+
+        if(audioCtx) reconnectChain();
+    }
+
+    function reconnectChain() {
+        // Desconecta tudo primeiro para evitar erros
+        micSource.disconnect();
+        filter60.disconnect();
+        filter120.disconnect();
+        filterHP.disconnect();
+
+        // Recria a corrente baseada nos checkboxes
+        let currentNode = micSource;
+
+        if (STATE.filters.hp) {
+            currentNode.connect(filterHP);
+            currentNode = filterHP;
+        }
+        if (STATE.filters.f60) {
+            currentNode.connect(filter60);
+            currentNode = filter60;
+        }
+        if (STATE.filters.f120) {
+            currentNode.connect(filter120);
+            currentNode = filter120;
+        }
+
+        // Finaliza no Analisador
+        currentNode.connect(analyser);
+    }
+
+    // --- 3. MAGNETÔMETRO ---
+    let magSensor;
+    function initMag() {
         if ('Magnetometer' in window) {
-            try {
-                magSensor = new Magnetometer({ frequency: 60 });
-                magSensor.addEventListener('reading', onMagReading);
-                magSensor.start();
-            } catch(e) {}
+            magSensor = new Magnetometer({ frequency: 60 });
+            magSensor.addEventListener('reading', () => {
+                let raw = Math.sqrt(magSensor.x**2 + magSensor.y**2 + magSensor.z**2);
+                let delta = raw - STATE.magBase;
+                ui.mag.innerText = (delta > 0 ? "+" : "") + delta.toFixed(2) + " µT";
+                
+                // Feedback Sonoro
+                if(STATE.audioOn && synthOsc) {
+                    let pitch = 200 + (Math.abs(delta) * 50);
+                    let vol = Math.min(Math.abs(delta) / 20, 1);
+                    if(Math.abs(delta) < 1) vol = 0; // Noise gate
+                    
+                    synthOsc.frequency.setTargetAtTime(pitch, audioCtx.currentTime, 0.1);
+                    synthGain.gain.setTargetAtTime(vol, audioCtx.currentTime, 0.1);
+                }
+            });
+            magSensor.start();
         }
-        setMode('gold');
+    }
+    function tare() { 
+        if(magSensor) STATE.magBase = Math.sqrt(magSensor.x**2 + magSensor.y**2 + magSensor.z**2); 
     }
 
-    function onMagReading() {
-        let raw = Math.sqrt(magSensor.x**2 + magSensor.y**2 + magSensor.z**2);
-        STATE.magRaw = raw;
-        let delta = raw - STATE.magBase;
+    // --- 4. ÁUDIO FEEDBACK ---
+    function toggleAudio() {
+        STATE.audioOn = !STATE.audioOn;
+        document.getElementById('btn-audio').classList.toggle('active');
         
-        ui.mag.innerText = (delta > 0 ? "+" : "") + delta.toFixed(2) + " µT";
-        
-        processAudio(delta, STATE.vlfRaw);
-    }
-
-    function tare() { STATE.magBase = STATE.magRaw; }
-
-    // --- CÉREBRO DO SOM (SONIFICAÇÃO) ---
-    function processAudio(magDelta, vlfLevel) {
-        if(!CONFIG.audioEnabled || !oscillator) return;
-
-        let volumeInput = document.getElementById('vol-audio').value / 100; // 0.0 a 1.0
-        let sensitivity = document.getElementById('sens-mag').value;
-
-        // FÍSICA DO SOM
-        // Queremos que o tom suba quanto maior for a anomalia
-        let pitch = 0;
-        let volume = 0;
-        let absDelta = Math.abs(magDelta);
-
-        if (CONFIG.mode === 'gold') {
-            // MODO OURO: Som estilo Detector de Metal (Pitch sobe com Magnetismo)
-            // Se Delta < 1 (ruído natural), silêncio.
-            if (absDelta > 1) {
-                // Mapeia anomalia (1 a 50uT) para frequência (200Hz a 2000Hz)
-                pitch = 200 + (absDelta * (sensitivity * 2)); 
-                volume = Math.min((absDelta / 10) * volumeInput, volumeInput);
-                ui.freq.innerText = Math.round(pitch) + " Hz";
-            } else {
-                volume = 0; // Silêncio no "Threshold"
-                ui.freq.innerText = "Quiet";
-            }
-        } 
-        else {
-            // MODO ÁGUA: Som contínuo que CAI quando acha água
-            // Base 400Hz. Se VLF cair (condutor), pitch desce.
-            pitch = 400 + (vlfLevel * 2); 
-            volume = 0.1 * volumeInput; // Som de fundo constante
-            ui.freq.innerText = "VLF Mon";
+        if(STATE.audioOn && audioCtx) {
+            synthOsc = audioCtx.createOscillator();
+            synthGain = audioCtx.createGain();
+            synthOsc.connect(synthGain);
+            synthGain.connect(audioCtx.destination);
+            synthGain.gain.value = 0;
+            synthOsc.start();
+        } else if(synthOsc) {
+            synthOsc.stop();
+            synthOsc = null;
         }
-
-        // Aplica ao sintetizador (Suavizado para não estalar)
-        oscillator.frequency.setTargetAtTime(pitch, synthCtx.currentTime, 0.1);
-        gainNode.gain.setTargetAtTime(volume, synthCtx.currentTime, 0.1);
     }
 
-    // --- VISUAL LOOP ---
-    const dataArray = new Uint8Array(1024);
+    // --- LOOP VISUAL ---
+    const dataArray = new Uint8Array(2048);
     function loop() {
         requestAnimationFrame(loop);
         analyser.getByteFrequencyData(dataArray);
 
-        // UI Setup
+        // Setup Canvas
         ui.cSpec.width = ui.cSpec.clientWidth; ui.cSpec.height = ui.cSpec.clientHeight;
         ui.cWater.width = ui.cWater.clientWidth; ui.cWater.height = ui.cWater.clientHeight;
 
-        // Desenha Espectro
+        // Espectro
         ctxS.fillStyle = "#000"; ctxS.fillRect(0,0,ui.cSpec.width, ui.cSpec.height);
-        ctxS.lineWidth = 2; ctxS.strokeStyle = CONFIG.mode === 'gold' ? '#ffd700' : '#00bfff';
-        ctxS.beginPath();
-        
+        ctxS.lineWidth = 2; ctxS.strokeStyle = "#ffd700"; ctxS.beginPath();
         let sum = 0;
         for(let i=0; i<dataArray.length; i++) {
             let v = dataArray[i];
@@ -254,8 +306,7 @@
             sum += v;
         }
         ctxS.stroke();
-        STATE.vlfRaw = sum / dataArray.length;
-        ui.vlf.innerText = Math.round(STATE.vlfRaw);
+        ui.vlf.innerText = Math.round(sum/dataArray.length);
 
         // Waterfall
         ctxW.drawImage(ui.cWater, 0, 0, ui.cWater.width, ui.cWater.height-1, 0, 1, ui.cWater.width, ui.cWater.height-1);
@@ -264,15 +315,14 @@
             let idx = Math.floor((i/ui.cWater.width)*dataArray.length);
             let val = dataArray[idx];
             let p = i*4;
-            if(CONFIG.mode === 'gold') { imgData.data[p]=val; imgData.data[p+1]=val>100?val:0; imgData.data[p+2]=0; }
-            else { imgData.data[p]=0; imgData.data[p+1]=val; imgData.data[p+2]=val; }
-            imgData.data[p+3]=255;
+            imgData.data[p] = val; imgData.data[p+1] = val>120?val:0; imgData.data[p+2] = 0; imgData.data[p+3] = 255;
         }
         ctxW.putImageData(imgData, 0, 0);
     }
 
-    function setMode(m) { CONFIG.mode = m; document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active-gold', m==='gold' && b.innerText.includes('OURO'))); }
-    function toggleTunning() { let t = document.getElementById('tunning'); t.style.display = t.style.display==='block'?'none':'block'; }
+    function toggleDSP() {
+        let p = ui.dsp; p.style.display = p.style.display==='block'?'none':'block';
+    }
 
 </script>
 </body>
