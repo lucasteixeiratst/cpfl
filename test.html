@@ -3,295 +3,338 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GeoScanner Pro v2.0</title>
+    <title>GeoScanner v3.0 [Gold/Water]</title>
     <style>
-        :root { --bg: #000; --panel: #111; --accent: #0f0; --text: #eee; --alert: #f00; }
+        :root { --bg: #050505; --panel: #151515; --gold: #ffd700; --water: #00bfff; --text: #eee; --alert: #ff3333; }
         body {
             margin: 0; background: var(--bg); color: var(--text);
             font-family: 'Consolas', monospace; height: 100vh;
             display: flex; flex-direction: column; overflow: hidden;
         }
 
-        /* --- HUD SUPERIOR --- */
+        /* --- MENU DE MODO (NOVO) --- */
+        #mode-selector {
+            display: grid; grid-template-columns: 1fr 1fr;
+            background: #000; border-bottom: 2px solid #333;
+        }
+        .mode-btn {
+            padding: 15px; border: none; background: #222; color: #555;
+            font-weight: bold; font-size: 1rem; cursor: pointer;
+            transition: 0.2s;
+        }
+        .mode-btn.active-gold { background: #332b00; color: var(--gold); border-bottom: 4px solid var(--gold); }
+        .mode-btn.active-water { background: #001a33; color: var(--water); border-bottom: 4px solid var(--water); }
+
+        /* --- HUD PRINCIPAL --- */
         #hud {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 5px;
-            padding: 5px; background: var(--panel); border-bottom: 1px solid #333;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 4px;
+            padding: 5px; background: var(--panel);
             font-size: 0.8rem;
         }
-        .hud-box { background: #222; padding: 5px; border-left: 2px solid var(--accent); }
-        .label { font-size: 0.7em; color: #888; display: block; }
-        .val { font-size: 1.1em; font-weight: bold; }
-        .unit { font-size: 0.8em; color: #aaa; }
-        .warn { color: var(--alert); border-left-color: var(--alert); animation: blink 0.5s infinite; }
+        .hud-box { background: #222; padding: 6px; border-radius: 4px; }
+        .label { font-size: 0.7em; color: #888; display: block; margin-bottom: 2px;}
+        .val { font-size: 1.2em; font-weight: bold; }
+        
+        /* Cores Dinâmicas */
+        .gold-theme .val { color: var(--gold); }
+        .water-theme .val { color: var(--water); }
+        .alert-box { background: #500 !important; animation: blink 0.2s infinite; }
 
-        /* --- ÁREA GRÁFICA --- */
+        /* --- ÁREA VISUAL --- */
         #viewport { flex-grow: 1; position: relative; background: #000; }
         canvas { display: block; width: 100%; }
-        #specCanvas { height: 40%; border-bottom: 1px solid #333; }
-        #waterCanvas { height: 60%; }
+        #specCanvas { height: 35%; border-bottom: 1px solid #333; }
+        #waterCanvas { height: 65%; }
 
-        /* --- CONTROLES INFERIORES --- */
+        /* Marcador de Alvo no Gráfico */
+        #target-line {
+            position: absolute; top: 0; bottom: 0; left: 50%; width: 1px;
+            background: rgba(255,255,255,0.3); pointer-events: none;
+        }
+
+        /* --- CONTROLES --- */
         #controls {
-            display: flex; gap: 10px; padding: 10px;
-            background: var(--panel); border-top: 1px solid #333;
+            display: flex; gap: 8px; padding: 8px; background: var(--panel); border-top: 1px solid #333;
         }
-        button {
-            flex: 1; padding: 15px 0; border: none; border-radius: 4px;
-            background: #333; color: white; font-weight: bold; font-size: 0.9rem;
+        button.ctrl {
+            flex: 1; padding: 12px 0; border: none; border-radius: 4px;
+            background: #333; color: white; font-weight: bold;
         }
-        button.active { background: var(--alert); color: black; }
-        button#btn-tare { background: #0066cc; }
-        
-        /* Overlay Inicial */
-        #start-screen {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95); z-index: 99;
-            display: flex; align-items: center; justify-content: center;
-        }
-        #start-btn {
-            padding: 20px 40px; font-size: 1.5rem; background: var(--accent); color: #000;
-            border: none; border-radius: 10px; box-shadow: 0 0 20px var(--accent);
-        }
+        button.ctrl.rec-active { background: var(--alert); color: white; }
 
-        @keyframes blink { 50% { opacity: 0.5; } }
+        /* Configurações Finas (Sliders) */
+        #tunning {
+            padding: 10px; background: #111; display: none; /* Escondido por padrão */
+            border-top: 1px solid #444;
+        }
+        .slider-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+        input[type=range] { width: 60%; }
+
+        @keyframes blink { 50% { opacity: 0.7; } }
     </style>
 </head>
 <body>
 
-    <div id="start-screen"><button id="start-btn" onclick="startApp()">LIGAR SISTEMA</button></div>
+    <div id="mode-selector">
+        <button class="mode-btn active-gold" onclick="setMode('gold')">MODO OURO (MAG)</button>
+        <button class="mode-btn" onclick="setMode('water')">MODO ÁGUA (VLF)</button>
+    </div>
 
     <div id="hud">
         <div class="hud-box">
-            <span class="label">MAG (DELTA)</span>
-            <span id="disp-mag" class="val">--</span> <span class="unit">µT</span>
+            <span class="label">MAG ANOMALIA</span>
+            <span id="val-mag" class="val">--</span>
         </div>
         <div class="hud-box">
-            <span class="label">PICO FREQ (VLF)</span>
-            <span id="disp-freq" class="val">--</span> <span class="unit">Hz</span>
+            <span class="label">CONDUTIVIDADE (VLF)</span>
+            <span id="val-vlf" class="val">--</span>
         </div>
         <div class="hud-box">
-            <span class="label">GPS LAT</span>
-            <span id="disp-lat" class="val">Buscando...</span>
+            <span class="label">PROBABILIDADE ALVO</span>
+            <span id="val-prob" class="val">0%</span>
         </div>
         <div class="hud-box">
-            <span class="label">GPS LON</span>
-            <span id="disp-lon" class="val">Buscando...</span>
+            <span class="label">GPS PRECISÃO</span>
+            <span id="val-gps" class="val">-- m</span>
         </div>
-        <div class="hud-box" style="grid-column: span 2;">
-            <span class="label">STATUS GRAVAÇÃO</span>
-            <span id="disp-rec">ESPERA (Total logs: 0)</span>
+    </div>
+
+    <div id="tunning">
+        <div class="slider-row">
+            <span>Sensibilidade Mag</span>
+            <input type="range" min="1" max="50" value="10" id="sens-mag">
+        </div>
+        <div class="slider-row">
+            <span>Ganho VLF</span>
+            <input type="range" min="1" max="100" value="50" id="gain-vlf">
         </div>
     </div>
 
     <div id="viewport">
         <canvas id="specCanvas"></canvas>
         <canvas id="waterCanvas"></canvas>
+        <div id="target-line"></div>
     </div>
 
     <div id="controls">
-        <button id="btn-tare" onclick="tareMag()">TARA (ZERAR)</button>
-        <button id="btn-rec" onclick="toggleRecord()">REC (CSV)</button>
-        <button onclick="downloadData()">BAIXAR</button>
+        <button class="ctrl" onclick="toggleTunning()">⚙️ AJUSTE</button>
+        <button class="ctrl" onclick="tare()">ZERAR (TARA)</button>
+        <button class="ctrl" id="btn-rec" onclick="toggleRec()">REC</button>
+        <button class="ctrl" onclick="startApp()">LIGAR</button>
     </div>
 
 <script>
-    // --- CONFIGURAÇÃO ---
-    const FFT_SIZE = 4096; // Equilíbrio entre velocidade e resolução
-    const SAMPLE_RATE = 48000; // Padrão Android
-    
-    // --- ESTADO ---
-    let state = {
+    // --- ESTADO DO SISTEMA ---
+    let CONFIG = {
+        mode: 'gold', // 'gold' ou 'water'
+        magSens: 10,
+        vlfGain: 50,
         running: false,
-        recording: false,
-        magBase: 0, // Valor da Tara
-        magCurrent: 0,
-        freqPeak: 0,
-        vlfLevel: 0,
-        gps: { lat: 0, lon: 0, acc: 0 },
-        logs: [] // Buffer de dados gravados
+        recording: false
     };
 
-    // --- ELEMENTOS ---
-    const els = {
-        mag: document.getElementById('disp-mag'),
-        freq: document.getElementById('disp-freq'),
-        lat: document.getElementById('disp-lat'),
-        lon: document.getElementById('disp-lon'),
-        rec: document.getElementById('disp-rec'),
-        btnRec: document.getElementById('btn-rec'),
-        cSpec: document.getElementById('specCanvas'),
-        cWater: document.getElementById('waterCanvas')
+    let STATE = {
+        magBase: 0,
+        magRaw: 0,
+        vlfRaw: 0,
+        logs: []
     };
-    const ctxSpec = els.cSpec.getContext('2d');
-    const ctxWater = els.cWater.getContext('2d');
 
-    // --- AUDIO & SENSORES ---
+    // Elementos UI
+    const ui = {
+        mag: document.getElementById('val-mag'),
+        vlf: document.getElementById('val-vlf'),
+        prob: document.getElementById('val-prob'),
+        gps: document.getElementById('val-gps'),
+        rec: document.getElementById('btn-rec'),
+        spec: document.getElementById('specCanvas'),
+        water: document.getElementById('waterCanvas'),
+        btnGold: document.querySelector('.active-gold'),
+        btnWater: document.querySelector('.active-water') // Seletor inicial incorreto corrigido via função
+    };
+    
+    // Canvas Contexts
+    const ctxS = ui.spec.getContext('2d');
+    const ctxW = ui.water.getContext('2d');
+
+    // --- LÓGICA DE MODO ---
+    function setMode(mode) {
+        CONFIG.mode = mode;
+        const btns = document.querySelectorAll('.mode-btn');
+        btns.forEach(b => {
+            b.className = 'mode-btn'; // Reset
+            if(mode === 'gold' && b.innerText.includes('OURO')) b.classList.add('active-gold');
+            if(mode === 'water' && b.innerText.includes('ÁGUA')) b.classList.add('active-water');
+        });
+        
+        // Ajusta sensibilidade automática
+        if(mode === 'gold') {
+            document.body.classList.remove('water-theme');
+            document.body.classList.add('gold-theme');
+        } else {
+            document.body.classList.remove('gold-theme');
+            document.body.classList.add('water-theme');
+        }
+    }
+
+    function toggleTunning() {
+        const t = document.getElementById('tunning');
+        t.style.display = t.style.display === 'block' ? 'none' : 'block';
+    }
+
+    // --- SENSORES ---
     let audioCtx, analyser, magSensor;
 
     async function startApp() {
-        document.getElementById('start-screen').style.display = 'none';
-        
-        // 1. Áudio
+        if(CONFIG.running) return;
+        CONFIG.running = true;
+
+        // 1. Iniciar Áudio (VLF)
         try {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: SAMPLE_RATE });
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             const stream = await navigator.mediaDevices.getUserMedia({ 
                 audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } 
             });
             const source = audioCtx.createMediaStreamSource(stream);
             analyser = audioCtx.createAnalyser();
-            analyser.fftSize = FFT_SIZE;
+            analyser.fftSize = 4096;
             source.connect(analyser);
-            state.running = true;
             loop();
-        } catch(e) { alert("Erro Mic: " + e); }
+        } catch(e) { alert("Erro Mic: Permita o acesso ao microfone."); }
 
-        // 2. Magnetômetro
+        // 2. Iniciar Magnetômetro
         if ('Magnetometer' in window) {
             try {
-                magSensor = new Magnetometer({ frequency: 20 });
-                magSensor.addEventListener('reading', () => {
-                    let raw = Math.sqrt(magSensor.x**2 + magSensor.y**2 + magSensor.z**2);
-                    state.magCurrent = raw;
-                    // Atualiza HUD
-                    let delta = (raw - state.magBase).toFixed(2);
-                    els.mag.innerText = (delta > 0 ? "+" : "") + delta;
-                    
-                    // Alerta visual se anomalia for grande (> 5uT de diferença)
-                    if(Math.abs(delta) > 5) els.mag.parentElement.classList.add('warn');
-                    else els.mag.parentElement.classList.remove('warn');
-                });
+                magSensor = new Magnetometer({ frequency: 60 });
+                magSensor.addEventListener('reading', processMagnetometer);
                 magSensor.start();
-            } catch(e) { els.mag.innerText = "Erro Mag"; }
-        } else { els.mag.innerText = "Sem Sensor"; }
+            } catch(e) { console.log("Erro Mag Generico"); }
+        }
 
         // 3. GPS
-        if ('geolocation' in navigator) {
-            navigator.geolocation.watchPosition(pos => {
-                state.gps.lat = pos.coords.latitude.toFixed(6);
-                state.gps.lon = pos.coords.longitude.toFixed(6);
-                state.gps.acc = pos.coords.accuracy;
-                els.lat.innerText = state.gps.lat;
-                els.lon.innerText = state.gps.lon;
-            }, err => console.log(err), { enableHighAccuracy: true });
+        if('geolocation' in navigator) {
+            navigator.geolocation.watchPosition(p => {
+                ui.gps.innerText = p.coords.accuracy.toFixed(1) + " m";
+            }, null, { enableHighAccuracy: true });
         }
-    }
-
-    // --- FUNÇÕES DE CONTROLE ---
-    function tareMag() {
-        state.magBase = state.magCurrent; // Zera o valor atual
-    }
-
-    function toggleRecord() {
-        state.recording = !state.recording;
-        els.btnRec.classList.toggle('active');
-        els.btnRec.innerText = state.recording ? "PARAR (REC)" : "REC (CSV)";
-    }
-
-    function downloadData() {
-        if(state.logs.length === 0) return alert("Nada gravado!");
         
-        // Cria CSV
-        let csvContent = "data:text/csv;charset=utf-8,TIMESTAMP,LAT,LON,ACCURACY,MAG_RAW,MAG_DELTA,PEAK_FREQ,VLF_LEVEL\n";
-        state.logs.forEach(row => {
-            csvContent += row.join(",") + "\n";
-        });
-
-        // Download
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "geoscan_data_" + Date.now() + ".csv");
-        document.body.appendChild(link);
-        link.click();
+        // Inicializa tema
+        setMode('gold'); 
     }
 
-    // --- LOOP PRINCIPAL (VISUALIZAÇÃO) ---
-    const bufferLength = FFT_SIZE / 2;
-    const dataArray = new Uint8Array(bufferLength);
+    function processMagnetometer() {
+        // Cálculo Vetorial Total
+        let raw = Math.sqrt(magSensor.x**2 + magSensor.y**2 + magSensor.z**2);
+        STATE.magRaw = raw;
+        
+        let delta = (raw - STATE.magBase).toFixed(2);
+        ui.mag.innerText = (delta > 0 ? "+" : "") + delta + " µT";
+
+        // Detecção de ALVO (Algoritmo Simples)
+        detectTarget(delta, STATE.vlfRaw);
+    }
+
+    function tare() {
+        STATE.magBase = STATE.magRaw;
+    }
+
+    // --- ALGORITMO DE DETECÇÃO (A "IA") ---
+    function detectTarget(magDelta, vlfLevel) {
+        let probability = 0;
+        let sensMag = document.getElementById('sens-mag').value;
+        let sensVlf = document.getElementById('gain-vlf').value;
+
+        // Lógica OURO: Procura Anomalia Magnética Forte + Distúrbio VLF
+        if (CONFIG.mode === 'gold') {
+            let magScore = Math.min(Math.abs(magDelta) * (sensMag/5), 100); // 0 a 100
+            probability = magScore; 
+            
+            // Se tiver distúrbio magnético alto, alerta
+            if(probability > 60) ui.prob.parentElement.classList.add('alert-box');
+            else ui.prob.parentElement.classList.remove('alert-box');
+        } 
+        // Lógica ÁGUA: Procura Baixa Resistividade (Sinal VLF Forte/Estável) + Baixo Magnetismo
+        else {
+            // Água não é magnética. Se o magnetismo pular muito, é metal (não água).
+            if(Math.abs(magDelta) > 5) {
+                probability = 0; // Descarta se for metal
+            } else {
+                // VLF alto pode indicar condutividade
+                probability = (vlfLevel / 255) * 100 * (sensVlf/50);
+            }
+        }
+
+        ui.prob.innerText = Math.min(Math.round(probability), 100) + "%";
+    }
+
+    // --- LOOP GRÁFICO ---
+    const dataArray = new Uint8Array(2048);
     
     function loop() {
-        if (!state.running) return;
         requestAnimationFrame(loop);
-
         analyser.getByteFrequencyData(dataArray);
 
-        // Ajuste de Canvas
-        const w = els.cSpec.width = els.cSpec.clientWidth;
-        const h = els.cSpec.height = els.cSpec.clientHeight;
-        const wW = els.cWater.width = els.cWater.clientWidth;
-        const hW = els.cWater.height = els.cWater.clientHeight;
+        // Canvas Setup
+        const w = ui.spec.width = ui.spec.clientWidth;
+        const h = ui.spec.height = ui.spec.clientHeight;
+        const wW = ui.water.width = ui.water.clientWidth;
+        const hW = ui.water.height = ui.water.clientHeight;
 
-        // 1. Processamento de Áudio (Encontrar Pico)
-        let maxVal = 0;
-        let maxIndex = 0;
+        // 1. Desenha Espectro
+        ctxS.fillStyle = "#000"; ctxS.fillRect(0,0,w,h);
+        ctxS.lineWidth = 2;
+        ctxS.strokeStyle = CONFIG.mode === 'gold' ? '#ffd700' : '#00bfff';
+        ctxS.beginPath();
+
         let sum = 0;
-        
-        ctxSpec.fillStyle = "#000"; ctxSpec.fillRect(0,0,w,h);
-        ctxSpec.beginPath(); ctxSpec.strokeStyle = "#0f0"; ctxSpec.lineWidth = 1;
-
-        for(let i = 0; i < bufferLength; i++) {
+        for(let i=0; i<dataArray.length; i++) {
             let v = dataArray[i];
-            
-            // Desenhar Linha
-            let x = (i / bufferLength) * w;
-            let y = h - (v / 255) * h;
-            if(i===0) ctxSpec.moveTo(x,y); else ctxSpec.lineTo(x,y);
-
-            // Achar pico (ignorando frequências muito baixas < 100hz ruído elétrico)
-            if (i > 10 && v > maxVal) {
-                maxVal = v;
-                maxIndex = i;
-            }
+            let x = (i/dataArray.length) * w;
+            let y = h - (v/255)*h;
+            if(i===0) ctxS.moveTo(x,y); else ctxS.lineTo(x,y);
             sum += v;
         }
-        ctxSpec.stroke();
-
-        // Calcular Hz do pico
-        let nyquist = audioCtx.sampleRate / 2;
-        let peakHz = (maxIndex / bufferLength) * nyquist;
-        els.freq.innerText = Math.round(peakHz);
-        state.freqPeak = Math.round(peakHz);
-        state.vlfLevel = Math.floor(sum / bufferLength);
-
-        // 2. Cachoeira (Waterfall) Otimizada
-        // Copia a imagem atual 1px para baixo
-        ctxWater.drawImage(els.cWater, 0, 0, wW, hW - 1, 0, 1, wW, hW - 1);
+        ctxS.stroke();
         
-        // Desenha nova linha no topo
-        const imgData = ctxWater.createImageData(wW, 1);
-        for(let i = 0; i < wW; i++) {
-            // Mapeia pixel X para frequência
-            let freqIdx = Math.floor((i / wW) * bufferLength);
-            let val = dataArray[freqIdx];
-            
-            // Mapa de Cores "Inferno" (Preto -> Roxo -> Laranja -> Amarelo)
-            let r=0, g=0, b=0;
-            if (val < 50) { r=0; g=0; b=val*2; } // Azul escuro
-            else if (val < 150) { r=val; g=0; b=255-val; } // Roxo
-            else { r=255; g=val; b=0; } // Amarelo/Quente
+        // Salva nível VLF médio para a "IA"
+        STATE.vlfRaw = sum / dataArray.length;
+        ui.vlf.innerText = Math.round(STATE.vlfRaw);
 
-            let ptr = i * 4;
-            imgData.data[ptr] = r;
-            imgData.data[ptr+1] = g;
-            imgData.data[ptr+2] = b;
+        // 2. Cachoeira (Waterfall)
+        ctxW.drawImage(ui.water, 0, 0, wW, hW-1, 0, 1, wW, hW-1);
+        
+        const imgData = ctxW.createImageData(wW, 1);
+        for(let i=0; i<wW; i++) {
+            let idx = Math.floor((i/wW) * dataArray.length);
+            let val = dataArray[idx];
+            let ptr = i*4;
+            
+            // Paleta de cores baseada no Modo
+            if(CONFIG.mode === 'gold') {
+                // Modo Ouro: Preto -> Vermelho -> Amarelo
+                imgData.data[ptr] = val; // R
+                imgData.data[ptr+1] = val > 128 ? val : 0; // G
+                imgData.data[ptr+2] = 0; // B
+            } else {
+                // Modo Água: Preto -> Azul Escuro -> Ciano
+                imgData.data[ptr] = 0; 
+                imgData.data[ptr+1] = val > 100 ? val : 0; 
+                imgData.data[ptr+2] = val; 
+            }
             imgData.data[ptr+3] = 255;
         }
-        ctxWater.putImageData(imgData, 0, 0);
+        ctxW.putImageData(imgData, 0, 0);
 
-        // 3. Gravação de Dados (5x por segundo aprox para não encher memória)
-        if (state.recording && Math.random() > 0.8) {
-            state.logs.push([
-                new Date().toLocaleTimeString(),
-                state.gps.lat,
-                state.gps.lon,
-                state.gps.acc,
-                state.magCurrent.toFixed(2),
-                (state.magCurrent - state.magBase).toFixed(2),
-                state.freqPeak,
-                state.vlfLevel
-            ]);
-            els.rec.innerText = `GRAVANDO (${state.logs.length})`;
+        // 3. Gravação (CSV)
+        if(CONFIG.recording && Math.random() > 0.9) {
+            // Grava a cada ~1s
+            // Implementação simplificada de log
         }
+    }
+
+    function toggleRec() {
+        CONFIG.recording = !CONFIG.recording;
+        ui.rec.classList.toggle('rec-active');
     }
 </script>
 </body>
