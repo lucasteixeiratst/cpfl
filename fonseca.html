@@ -258,6 +258,14 @@
             .search-results { width: 95%; left: 2.5%; top: 60px; }
             footer { display: none; }
         }
+
+        /* YOUTUBE STYLE LOADER */
+        .youtube-loader {
+            position: fixed; top: 0; left: 0; height: 4px; background-color: #ff0000; width: 0%; z-index: 99999; transition: width 0.2s ease; box-shadow: 0 0 10px #ff0000; display: none;
+        }
+        .youtube-percentage {
+            position: fixed; top: 10px; right: 10px; color: #ff0000; font-weight: bold; font-size: 14px; z-index: 99999; display: none; text-shadow: 1px 1px 0 #fff;
+        }
     </style>
     <link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet" />
     
@@ -275,6 +283,9 @@
 </head>
 <body>
     <div id="map"></div>
+    
+    <div id="youtube-loader" class="youtube-loader"></div>
+    <div id="youtube-percentage" class="youtube-percentage">0%</div>
 
     <div id="progressOverlay" class="progress-overlay" style="display: none;">
         <div class="progress-content">
@@ -972,6 +983,9 @@
         const toggleAllMarkersVisibilityCheckbox = document.getElementById('toggleAllMarkersVisibility');
         const toggleAllLinesVisibilityCheckbox = document.getElementById('toggleAllLinesVisibility');
 
+        const ytLoader = document.getElementById('youtube-loader');
+        const ytPercent = document.getElementById('youtube-percentage');
+
         // LISTA DE ARQUIVOS
         const predefinedFiles = [
              { name: 'AGUAS DE LINDOIA.kmz', url: './AGUAS DE LINDOIA.kmz' },
@@ -1432,14 +1446,46 @@
             // --- CARREGAR TUDO DO DB AO INICIAR COM TRATAMENTO DE ERRO ---
             (async () => {
                 try {
+                    ytLoader.style.display = 'block';
+                    ytPercent.style.display = 'block';
+                    ytLoader.style.width = '0%';
+                    ytPercent.textContent = '0%';
+
                     const allFiles = await getDataFromDB(GEOJSON_STORE_NAME);
                     if (allFiles && allFiles.length > 0) {
-                        for (const entry of allFiles) {
-                            addDataToMap(entry.geojson, entry.name);
+                        const total = allFiles.length;
+                        let index = 0;
+                        const BATCH_SIZE = 1;
+
+                        function loadNextBatch() {
+                            const end = Math.min(index + BATCH_SIZE, total);
+                            for (let i = index; i < end; i++) {
+                                const entry = allFiles[i];
+                                addDataToMap(entry.geojson, entry.name);
+                            }
+                            index = end;
+                            const progress = Math.round((index / total) * 100);
+                            ytLoader.style.width = progress + '%';
+                            ytPercent.textContent = progress + '%';
+
+                            if (index < total) {
+                                requestAnimationFrame(loadNextBatch);
+                            } else {
+                                setTimeout(() => {
+                                    ytLoader.style.display = 'none';
+                                    ytPercent.style.display = 'none';
+                                }, 500);
+                            }
                         }
+                        loadNextBatch();
+                    } else {
+                        ytLoader.style.display = 'none';
+                        ytPercent.style.display = 'none';
                     }
                 } catch (err) {
                     console.error("Erro crítico ao carregar dados iniciais:", err);
+                    ytLoader.style.display = 'none';
+                    ytPercent.style.display = 'none';
                     // O erro de abertura do DB já é capturado no openDB, mas aqui pegamos corrupção de dados
                     document.getElementById('updateRescueModal').style.display = 'flex';
                 }
