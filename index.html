@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-    <title>Visualizador de Mapas v5.3</title>
+    <title>Visualizador de Mapas v5.3 (Final)</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; position: relative; }
@@ -1188,6 +1188,12 @@
 
             debounceTimer = setTimeout(() => {
                 if (!dynamicMarkerSource) return;
+                
+                // Se o mapa estiver se movendo, não atualize ainda para não travar
+                if (map.isMoving()) {
+                    updateVisibleMarkers();
+                    return;
+                }
 
                 const visibleGroups = Object.keys(state.markerGroups).filter(g => state.markerGroups[g].visible);
 
@@ -1202,7 +1208,7 @@
 
                 const limit = parseInt(state.visualSettings.markerLimit);
                 
-                // Otimização: Uso de distSq (Euclidiana Quadrada) para evitar raiz quadrada no loop de sort
+                // Otimização Item 2: Uso de distSq (Euclidiana Quadrada) para evitar raiz quadrada no loop de sort
                 const sortedFeatures = allPointFeatures
                     .filter(feature => visibleGroups.includes(feature.properties.group))
                     .map(feature => {
@@ -1784,7 +1790,7 @@
             checkAndLoadNearestFiles();
         });
 
-        // --- EVENTO MODIFICADO (v5.3): CARGA DINÂMICA vs CARGA TOTAL ---
+        // --- CORREÇÃO DE PERFORMANCE: CARGA EM LOTE SUAVE ---
         chkAutoLoad.addEventListener('change', async (e) => {
             if(e.target.checked) {
                 // MODO ATIVADO: Limpa o excesso e foca nos próximos
@@ -1792,51 +1798,90 @@
                 checkAndLoadNearestFiles();
             } else {
                 // MODO DESATIVADO: Carrega TUDO que está no cache
-                if(confirm("Desativar Carga Dinâmica?\n\nIsso irá carregar TODOS os arquivos que estão salvos no cache (verdes) para o mapa de uma vez.\n\nSe houver muitos arquivos, o mapa pode ficar lento.")) {
+                if(confirm("ATENÇÃO: Desativar a Carga Dinâmica pode deixar o mapa lento em dispositivos fracos.\n\nDeseja carregar TODOS os arquivos salvos agora?")) {
                     
                     const loadingMsg = document.getElementById('progressOverlay');
                     const loadingText = document.getElementById('progressText');
                     const loadingBar = document.getElementById('progressBar');
                     
                     loadingMsg.style.display = 'flex';
-                    loadingText.textContent = "Carregando todo o cache...";
-                    loadingBar.style.width = "100%";
+                    loadingText.textContent = "Preparando...";
+                    loadingBar.style.width = "0%";
+
+                    // Trava processos concorrentes
+                    isProcessingBatch = true;
 
                     try {
-                        // 1. Busca tudo que está salvo no IndexedDB
                         const allCachedFiles = await getDataFromDB(GEOJSON_STORE_NAME);
                         
                         if (allCachedFiles && allCachedFiles.length > 0) {
-                            // Pausa a lógica de renderização automática para não conflitar
-                            isProcessingBatch = true;
-
-                            let count = 0;
                             const total = allCachedFiles.length;
+                            let count = 0;
 
-                            for (const fileData of allCachedFiles) {
-                                count++;
-                                loadingText.textContent = `Carregando ${count}/${total}: ${fileData.name}`;
+                            // Função recursiva para processar um por vez sem travar o navegador
+                            function processNextBatch() {
+                                if (count >= total) {
+                                    // FINALIZADO: Atualiza a interface visual UMA VEZ SÓ no final
+                                    loadingText.textContent = "Finalizando renderização...";
+                                    
+                                    // Pequeno delay para garantir que o mapa recebeu os dados
+                                    setTimeout(() => {
+                                        updateGroupMenu();       
+                                        updateVisibleMarkers(); 
+                                        applyGroupFilter();      
+                                        
+                                        // Garante ordem das camadas (opcional, mas bom para visual)
+                                        if (map.getLayer('user-trail-layer')) map.moveLayer('user-trail-layer');
+                                        if (map.getLayer('dynamic-marker-circles')) map.moveLayer('dynamic-marker-circles');
+                                        if (map.getLayer('dynamic-marker-labels')) map.moveLayer('dynamic-marker-labels');
+
+                                        isProcessingBatch = false;
+                                        loadingMsg.style.display = 'none';
+                                        alert("Todos os arquivos foram carregados.");
+                                    }, 500);
+                                    return;
+                                }
+
+                                // Processa o arquivo atual
+                                const fileData = allCachedFiles[count];
                                 
-                                // addDataToMap(geojson, nome, false) -> O 'false' força a renderização visual
-                                addDataToMap(fileData.geojson, fileData.name, false);
+                                // OTIMIZAÇÃO CRÍTICA: skipRender = true
+                                // Carregamos os dados no mapa, mas NÃO recalculamos marcadores nem menus ainda
+                                addDataToMap(fileData.geojson, fileData.name, true);
 
-                                // Marca o checkbox na lista visualmente
+                                // Marca o checkbox na lista visualmente (sem disparar eventos)
                                 const checkbox = document.querySelector(`input[value="${fileData.name}"]`);
                                 if(checkbox) {
                                     checkbox.checked = true;
                                     checkbox.closest('li').classList.add('is-cached');
                                 }
+
+                                // Atualiza barra de progresso
+                                count++;
+                                const percent = Math.round((count / total) * 100);
+                                loadingBar.style.width = `${percent}%`;
+                                loadingText.textContent = `Carregando ${count}/${total}: ${fileData.name}`;
+
+                                // Agenda o próximo para o próximo frame de animação (evita travamento)
+                                requestAnimationFrame(processNextBatch);
                             }
+
+                            // Inicia o processo
+                            processNextBatch();
+
+                        } else {
+                            isProcessingBatch = false;
+                            loadingMsg.style.display = 'none';
+                            alert("Nenhum arquivo no cache para carregar.");
                         }
                     } catch (err) {
                         console.error("Erro ao carregar tudo:", err);
                         alert("Erro ao tentar carregar todos os arquivos.");
-                    } finally {
                         isProcessingBatch = false;
                         loadingMsg.style.display = 'none';
                     }
                 } else {
-                    // Se o usuário cancelar no confirm, volta o botão para ligado
+                    // Cancelou
                     e.target.checked = true;
                 }
             }
@@ -1901,6 +1946,12 @@
             const center = map.getCenter();
             const limit = parseInt(document.getElementById('rngAutoLoadLimit').value); 
             
+            // OTIMIZAÇÃO Item 3: Histerese (Buffer)
+            // Mantemos na memória um pouco mais do que o limite para evitar que um arquivo
+            // seja descarregado só porque você moveu o mapa 1 metro para o lado.
+            const UNLOAD_BUFFER = 2; 
+            const unloadThreshold = limit + UNLOAD_BUFFER;
+
             // ATIVA A TRAVA
             isProcessingBatch = true;
 
@@ -1916,11 +1967,16 @@
                 });
 
                 distances.sort((a, b) => a.dist - b.dist);
-                const filesToKeep = distances.slice(0, limit).map(d => d.name);
+                
+                // Arquivos que DEVEM estar carregados (Top 'limit')
+                const filesToLoad = distances.slice(0, limit).map(d => d.name);
+                
+                // Arquivos que PODEM ficar na memória (Top 'limit' + 'buffer')
+                const filesToKeepInMemory = distances.slice(0, unloadThreshold).map(d => d.name);
                 
                 let changesMade = false;
 
-                const loadTasks = filesToKeep.map(async (fileName) => {
+                const loadTasks = filesToLoad.map(async (fileName) => {
                     const isLoaded = state.files.some(f => f.name === fileName);
                     if (!isLoaded) {
                         const fileRef = predefinedFiles.find(f => f.name === fileName);
@@ -1945,10 +2001,11 @@
                 const results = await Promise.all(loadTasks);
                 if (results.some(r => r === true)) changesMade = true;
 
-                // --- REMOÇÃO ---
+                // --- REMOÇÃO COM HISTERESE ---
+                // Só removemos se o arquivo NÃO estiver na lista estendida (filesToKeepInMemory)
                 [...state.files].forEach(file => {
-                    if (!filesToKeep.includes(file.name)) {
-                        console.log(`Removendo: ${file.name}`);
+                    if (!filesToKeepInMemory.includes(file.name)) {
+                        console.log(`Removendo (fora do buffer): ${file.name}`);
                         removeFileFromMap(file.name, true);
                         changesMade = true;
                     }
@@ -2132,6 +2189,9 @@
                     if (f.geometry.type === 'Point') {
                         const name = (f.properties.name || '').toUpperCase();
                         
+                        // OTIMIZAÇÃO Item 4: Pre-cálculo da chave de busca
+                        f.properties.searchKey = normalizeText(f.properties.name || f.properties.Alimentador || '');
+
                         let groupKey = 'default';
                         if (name.endsWith('-FU')) groupKey = '-FU';
                         else if (name.endsWith('-FA')) groupKey = '-FA';
@@ -2487,47 +2547,36 @@
             return [avgLng, avgLat];
         }
 
-        // --- BUSCA INTELIGENTE (ATUALIZADA) ---
+        // --- BUSCA INTELIGENTE (OTIMIZADA Item 4) ---
         async function searchFeatures() {
             const term = searchInput.value.trim();
             if (!term) return alert('Digite um termo para buscar.');
             
             const normalizedTerm = normalizeText(term);
             
+            // OTIMIZAÇÃO: Usa o .searchKey pré-calculado
             const matches = allPointFeatures.filter(f => {
-                const name = f.properties.name || f.properties.Alimentador || '';
-                const normalizedName = normalizeText(name);
-                
-                // Filtra qualquer coisa que contenha o termo
-                return normalizedName.includes(normalizedTerm);
+                // Se a chave não existir (arquivos antigos em cache sem migração), calcula na hora
+                const key = f.properties.searchKey || normalizeText(f.properties.name || f.properties.Alimentador || '');
+                return key.includes(normalizedTerm);
             }).sort((a, b) => {
                 const nameA = normalizeText(a.properties.name || a.properties.Alimentador || '');
                 const nameB = normalizeText(b.properties.name || b.properties.Alimentador || '');
                 
-                // 1. MATCH EXATO (Prioridade absoluta)
+                // 1. MATCH EXATO
                 const aExact = nameA === normalizedTerm;
                 const bExact = nameB === normalizedTerm;
                 if (aExact && !bExact) return -1;
                 if (!aExact && bExact) return 1;
 
-                // 2. MATCH DE "PALAVRA INTEIRA" / INÍCIO SEGUIDO DE NÃO-NÚMERO
+                // 2. MATCH DE INÍCIO
                 const aStartsWith = nameA.startsWith(normalizedTerm);
                 const bStartsWith = nameB.startsWith(normalizedTerm);
 
-                const charAfterA = nameA.charAt(normalizedTerm.length);
-                const charAfterB = nameB.charAt(normalizedTerm.length);
-
-                const aIsBoundary = aStartsWith && (charAfterA === '' || isNaN(parseInt(charAfterA)));
-                const bIsBoundary = bStartsWith && (charAfterB === '' || isNaN(parseInt(charAfterB)));
-
-                if (aIsBoundary && !bIsBoundary) return -1;
-                if (!aIsBoundary && bIsBoundary) return 1;
-
-                // 3. COMEÇA COM 
                 if (aStartsWith && !bStartsWith) return -1;
                 if (!aStartsWith && bStartsWith) return 1;
                 
-                // 4. ORDEM ALFABÉTICA
+                // 3. ORDEM ALFABÉTICA
                 return nameA.localeCompare(nameB);
 
             }).slice(0, 15);
