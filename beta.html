@@ -181,6 +181,16 @@
         .progress-bar-container { width: 100%; background-color: #555; border-radius: 5px; margin: 15px 0; }
         .progress-bar { width: 0%; height: 20px; background-color: #4285F4; border-radius: 5px; transition: width 0.2s linear; }
 
+        /* RESCUE MODAL (NOVO) */
+        .rescue-modal { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 10000; display: none; justify-content: center; align-items: center; color: #333; }
+        .rescue-content { background: #fff; padding: 25px; border-radius: 12px; text-align: center; width: 90%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border-top: 5px solid #e74c3c; }
+        .rescue-content h2 { margin-top: 0; color: #c0392b; }
+        .rescue-content p { font-size: 14px; color: #555; line-height: 1.5; margin: 15px 0; }
+        .rescue-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+        .btn-rescue-reset { background-color: #e74c3c; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
+        .btn-rescue-reset:hover { background-color: #c0392b; }
+        .btn-rescue-cancel { background-color: #eee; color: #333; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+
         /* Route Panel */
         .route-panel { position: absolute; top: 20px; right: 20px; background: #fff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); z-index: 2000; padding: 15px; width: 280px; max-height: 400px; display: none; flex-direction: column; }
         .route-panel h3 { margin: 0 0 10px 0; font-size: 16px; text-align: center; }
@@ -248,6 +258,14 @@
             .search-results { width: 95%; left: 2.5%; top: 60px; }
             footer { display: none; }
         }
+
+        /* YOUTUBE STYLE LOADER */
+        .youtube-loader {
+            position: fixed; top: 0; left: 0; height: 4px; background-color: #ff0000; width: 0%; z-index: 99999; transition: width 0.2s ease; box-shadow: 0 0 10px #ff0000; display: none;
+        }
+        .youtube-percentage {
+            position: fixed; top: 10px; right: 10px; color: #ff0000; font-weight: bold; font-size: 14px; z-index: 99999; display: none; text-shadow: 1px 1px 0 #fff;
+        }
     </style>
     <link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet" />
     
@@ -265,6 +283,9 @@
 </head>
 <body>
     <div id="map"></div>
+    
+    <div id="youtube-loader" class="youtube-loader"></div>
+    <div id="youtube-percentage" class="youtube-percentage">0%</div>
 
     <div id="progressOverlay" class="progress-overlay" style="display: none;">
         <div class="progress-content">
@@ -274,6 +295,18 @@
                 <div id="progressBar" class="progress-bar"></div>
             </div>
             <p id="progressText">0%</p>
+        </div>
+    </div>
+
+    <div id="updateRescueModal" class="rescue-modal">
+        <div class="rescue-content">
+            <h2>Atualização Detectada!</h2>
+            <p>A estrutura do banco de dados mudou (v5) e pode haver conflito com dados antigos.</p>
+            <p>Se você notar erros ou o mapa não carregar, clique no botão abaixo para limpar tudo e começar do zero.</p>
+            <div class="rescue-actions">
+                <button id="btnRescueReset" class="btn-rescue-reset">Limpar Dados e Reiniciar</button>
+                <button id="btnRescueCancel" class="btn-rescue-cancel">Tentar Continuar Assim</button>
+            </div>
         </div>
     </div>
 
@@ -514,7 +547,8 @@
     </footer>
     <script>
         const DB_NAME = 'KMZOfflineDB';
-        const DB_VERSION = 4; 
+        // ATUALIZAÇÃO: Versão alterada para 5
+        const DB_VERSION = 5; 
         const GEOJSON_STORE_NAME = 'geojson_files';
         const SPATIAL_INDEX_STORE_NAME = 'spatial_index';
         const TRAIL_STORE_NAME = 'user_trails'; 
@@ -562,11 +596,22 @@
         }
         loadSavedMarkerColors();
 
+        // --- LÓGICA DE ABERTURA DO BANCO ATUALIZADA ---
         function openDB() {
             return new Promise((resolve, reject) => {
                 const request = indexedDB.open(DB_NAME, DB_VERSION);
+                
                 request.onupgradeneeded = event => {
                     const db = event.target.result;
+                    // LÓGICA DE LIMPEZA NA ATUALIZAÇÃO:
+                    // Se a versão mudou, podemos limpar stores antigos para evitar conflitos de cache
+                    if (event.oldVersion > 0 && event.oldVersion < 5) {
+                        console.log("Atualizando DB para versão 5. Limpando dados antigos para compatibilidade.");
+                        if (db.objectStoreNames.contains(GEOJSON_STORE_NAME)) db.deleteObjectStore(GEOJSON_STORE_NAME);
+                        if (db.objectStoreNames.contains(SPATIAL_INDEX_STORE_NAME)) db.deleteObjectStore(SPATIAL_INDEX_STORE_NAME);
+                        // User trails geralmente queremos manter, então só recriamos se não existir
+                    }
+
                     if (!db.objectStoreNames.contains(GEOJSON_STORE_NAME)) {
                         db.createObjectStore(GEOJSON_STORE_NAME, { keyPath: 'name' });
                     }
@@ -577,24 +622,33 @@
                         db.createObjectStore(TRAIL_STORE_NAME, { keyPath: 'id' });
                     }
                 };
+                
                 request.onsuccess = event => resolve(event.target.result);
-                request.onerror = event => reject(event.target.error);
+                request.onerror = event => {
+                    console.error("Erro ao abrir DB:", event.target.error);
+                    // Aciona o Modal de Resgate se houver erro crítico
+                    document.getElementById('updateRescueModal').style.display = 'flex';
+                    reject(event.target.error);
+                };
             });
         }
 
         async function saveDataToDB(storeName, data) {
-            const db = await openDB();
-            return new Promise((resolve, reject) => {
-                const transaction = db.transaction([storeName], 'readwrite');
-                const store = transaction.objectStore(storeName);
-                const request = store.put(data);
-                request.onsuccess = () => resolve();
-                request.onerror = () => reject(request.error);
-            });
+            try {
+                const db = await openDB();
+                return new Promise((resolve, reject) => {
+                    const transaction = db.transaction([storeName], 'readwrite');
+                    const store = transaction.objectStore(storeName);
+                    const request = store.put(data);
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(request.error);
+                });
+            } catch (error) { console.error("Falha ao salvar no DB", error); }
         }
 
         async function getDataFromDB(storeName, key) {
-             const db = await openDB();
+             try {
+                 const db = await openDB();
                  return new Promise((resolve, reject) => {
                      const transaction = db.transaction([storeName], 'readonly');
                      const store = transaction.objectStore(storeName);
@@ -602,7 +656,8 @@
                      request.onsuccess = () => resolve(request.result);
                      request.onerror = () => reject(request.error);
                  });
-             }
+             } catch (error) { return null; }
+        }
         
         async function deleteDataFromDB(storeName, key) {
             const db = await openDB();
@@ -625,6 +680,21 @@
                 request.onerror = () => reject(request.error);
             });
         }
+
+        // --- LÓGICA DO MODAL DE RESGATE ---
+        document.getElementById('btnRescueReset').addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (confirm('Isso apagará todos os dados salvos para corrigir os problemas. Confirmar?')) {
+                localStorage.clear();
+                const req = indexedDB.deleteDatabase(DB_NAME);
+                req.onsuccess = () => { alert('Limpeza concluída. Recarregando...'); location.reload(); };
+                req.onerror = () => { alert('Erro ao limpar. Tente limpar os dados do navegador manualmente.'); };
+            }
+        });
+        document.getElementById('btnRescueCancel').addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.getElementById('updateRescueModal').style.display = 'none';
+        });
 
         async function updateSavedTrailsList() {
             const listEl = document.getElementById('savedTrailsList');
@@ -912,6 +982,9 @@
 
         const toggleAllMarkersVisibilityCheckbox = document.getElementById('toggleAllMarkersVisibility');
         const toggleAllLinesVisibilityCheckbox = document.getElementById('toggleAllLinesVisibility');
+
+        const ytLoader = document.getElementById('youtube-loader');
+        const ytPercent = document.getElementById('youtube-percentage');
 
         // LISTA DE ARQUIVOS
         const predefinedFiles = [
@@ -1370,15 +1443,51 @@
             toggleAllMarkersVisibilityCheckbox.checked = state.markersVisible;
             toggleAllLinesVisibilityCheckbox.checked = state.linesVisible;
 
-            // --- CARREGAR TUDO DO DB AO INICIAR ---
-            // (Comentado ou mantido, dependendo se o usuario quer que carregue tudo ou use a lógica espacial)
-            // Vou manter o padrão de carregar tudo, a menos que Spatial Querying seja ativado
+            // --- CARREGAR TUDO DO DB AO INICIAR COM TRATAMENTO DE ERRO ---
             (async () => {
-                const allFiles = await getDataFromDB(GEOJSON_STORE_NAME);
-                if (allFiles && allFiles.length > 0) {
-                    for (const entry of allFiles) {
-                        addDataToMap(entry.geojson, entry.name);
+                try {
+                    ytLoader.style.display = 'block';
+                    ytPercent.style.display = 'block';
+                    ytLoader.style.width = '0%';
+                    ytPercent.textContent = '0%';
+
+                    const allFiles = await getDataFromDB(GEOJSON_STORE_NAME);
+                    if (allFiles && allFiles.length > 0) {
+                        const total = allFiles.length;
+                        let index = 0;
+                        const BATCH_SIZE = 1;
+
+                        function loadNextBatch() {
+                            const end = Math.min(index + BATCH_SIZE, total);
+                            for (let i = index; i < end; i++) {
+                                const entry = allFiles[i];
+                                addDataToMap(entry.geojson, entry.name);
+                            }
+                            index = end;
+                            const progress = Math.round((index / total) * 100);
+                            ytLoader.style.width = progress + '%';
+                            ytPercent.textContent = progress + '%';
+
+                            if (index < total) {
+                                requestAnimationFrame(loadNextBatch);
+                            } else {
+                                setTimeout(() => {
+                                    ytLoader.style.display = 'none';
+                                    ytPercent.style.display = 'none';
+                                }, 500);
+                            }
+                        }
+                        loadNextBatch();
+                    } else {
+                        ytLoader.style.display = 'none';
+                        ytPercent.style.display = 'none';
                     }
+                } catch (err) {
+                    console.error("Erro crítico ao carregar dados iniciais:", err);
+                    ytLoader.style.display = 'none';
+                    ytPercent.style.display = 'none';
+                    // O erro de abertura do DB já é capturado no openDB, mas aqui pegamos corrupção de dados
+                    document.getElementById('updateRescueModal').style.display = 'flex';
                 }
             })();
 
