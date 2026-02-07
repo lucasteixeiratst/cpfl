@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-    <title>Visualizador de Mapas</title>
+    <title>Visualizador de Mapas v5.3</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; position: relative; }
@@ -437,13 +437,13 @@
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <label style="font-weight: bold; color: #4285F4;">Carga Dinâmica (Auto):</label>
                 <label class="switch">
-                    <input type="checkbox" id="chkAutoLoad">
+                    <input type="checkbox" id="chkAutoLoad" checked>
                     <span class="slider round"></span>
                 </label>
             </div>
             <div style="margin-top: 8px;">
-                <label>Manter arquivos próximos: <span id="valAutoLoadLimit">3</span></label>
-                <input type="range" id="rngAutoLoadLimit" min="1" max="10" value="3" step="1">
+                <label>Manter arquivos próximos: <span id="valAutoLoadLimit">4</span></label>
+                <input type="range" id="rngAutoLoadLimit" min="1" max="10" value="4" step="1">
                 <small style="color: #666; font-size: 10px; display: block; margin-top: 2px;">
                     Carrega os mais próximos e remove os distantes automaticamente ao mover o mapa.
                 </small>
@@ -547,8 +547,8 @@
     </footer>
     <script>
         const DB_NAME = 'KMZOfflineDB';
-        // ATUALIZAÇÃO: Versão alterada para 5
-        const DB_VERSION = 5; 
+        const DB_VERSION = 5;
+        const APP_VERSION = '5.3'; // VERSÃO DE CONTROLE DO CACHE
         const GEOJSON_STORE_NAME = 'geojson_files';
         const SPATIAL_INDEX_STORE_NAME = 'spatial_index';
         const TRAIL_STORE_NAME = 'user_trails'; 
@@ -559,6 +559,46 @@
         let currentTrailCoordinates = [];
         let trailWatchId = null;
         let lastTrailUpdateTime = 0;
+        
+        // --- OTIMIZAÇÃO: Trava para impedir cálculos concorrentes ---
+        let isProcessingBatch = false;
+
+        // --- PROTOCOLO DE LIMPEZA DE CACHE 5.3 ---
+        // Verifica se a versão salva é a 5.3. Se não for, apaga TUDO e recarrega.
+        (async function checkAppVersion() {
+            const savedVersion = localStorage.getItem('app_version');
+            if (savedVersion !== APP_VERSION) {
+                console.warn(`Nova versão detectada (${APP_VERSION}). Limpando cache antigo (${savedVersion})...`);
+                
+                // 1. Limpar LocalStorage
+                localStorage.clear();
+                localStorage.setItem('app_version', APP_VERSION);
+
+                // 2. Limpar Cache API (Service Workers)
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(cacheNames.map(name => caches.delete(name)));
+                }
+
+                // 3. Apagar IndexedDB
+                const req = indexedDB.deleteDatabase(DB_NAME);
+                req.onsuccess = () => {
+                    console.log("Banco de dados resetado com sucesso.");
+                    location.reload();
+                };
+                req.onerror = () => {
+                    console.error("Erro ao resetar banco.");
+                    location.reload();
+                };
+                req.onblocked = () => {
+                    console.warn("Reset bloqueado. Forçando recarregamento...");
+                    location.reload();
+                };
+                
+                // Interrompe execução do script enquanto limpa
+                throw new Error("Resetting application cache for version 5.3...");
+            }
+        })();
 
         const state = {
             isOfflineMode: false,
@@ -603,13 +643,11 @@
                 
                 request.onupgradeneeded = event => {
                     const db = event.target.result;
-                    // LÓGICA DE LIMPEZA NA ATUALIZAÇÃO:
-                    // Se a versão mudou, podemos limpar stores antigos para evitar conflitos de cache
+                    // LÓGICA DE LIMPEZA NA ATUALIZAÇÃO
                     if (event.oldVersion > 0 && event.oldVersion < 5) {
                         console.log("Atualizando DB para versão 5. Limpando dados antigos para compatibilidade.");
                         if (db.objectStoreNames.contains(GEOJSON_STORE_NAME)) db.deleteObjectStore(GEOJSON_STORE_NAME);
                         if (db.objectStoreNames.contains(SPATIAL_INDEX_STORE_NAME)) db.deleteObjectStore(SPATIAL_INDEX_STORE_NAME);
-                        // User trails geralmente queremos manter, então só recriamos se não existir
                     }
 
                     if (!db.objectStoreNames.contains(GEOJSON_STORE_NAME)) {
@@ -626,7 +664,6 @@
                 request.onsuccess = event => resolve(event.target.result);
                 request.onerror = event => {
                     console.error("Erro ao abrir DB:", event.target.error);
-                    // Aciona o Modal de Resgate se houver erro crítico
                     document.getElementById('updateRescueModal').style.display = 'flex';
                     reject(event.target.error);
                 };
@@ -1334,6 +1371,7 @@
             e.target.textContent = allSelected ? "Desmarcar Todos" : "Selecionar Todos";
         });
 
+        // --- LÓGICA ATUALIZADA (v5.3): BAIXAR SEM RENDERIZAR NO MAPA ---
         document.getElementById('btnLoadSelected').addEventListener('click', async (e) => {
             e.stopPropagation();
             const checkedBoxes = document.querySelectorAll('.file-list-integrated input[type="checkbox"]:checked');
@@ -1349,29 +1387,43 @@
             const total = checkedBoxes.length;
             const boxesArray = Array.from(checkedBoxes);
 
+            // Pausa a carga dinâmica enquanto baixa em massa para evitar conflito
+            isProcessingBatch = true; 
+
             for (const box of boxesArray) {
                 count++;
                 const fileName = box.value;
                 const file = predefinedFiles.find(f => f.name === fileName);
                 
                 if (file) {
-                    loadingText.textContent = `Carregando ${count}/${total}: ${file.name}`;
+                    loadingText.textContent = `Baixando p/ Cache ${count}/${total}: ${file.name}`;
                     loadingBar.style.width = `${(count / total) * 100}%`;
 
                     try {
-                        const { geojson } = await getGeoJSONFromFile(file); // Pipeline único
-                        addDataToMap(geojson, file.name);
+                        // getGeoJSONFromFile já salva no IndexDB.
+                        // NÃO chamamos addDataToMap aqui para não travar o mapa.
+                        await getGeoJSONFromFile(file); 
+                        
+                        // Atualizamos a interface para ficar verde (is-cached)
                         const li = box.closest('li');
                         if(li) li.classList.add('is-cached');
+                        
                     } catch (err) {
                         console.error(`Falha em ${file.name}`, err);
                     }
                 }
             }
             
+            // Libera a trava
+            isProcessingBatch = false;
+
             loadingMsg.style.display = 'none';
             kmzMenu.style.display = 'none';
-            alert("Concluído!");
+            
+            alert("Downloads concluídos! Os arquivos foram salvos no cache. O mapa carregará os 4 mais próximos automaticamente.");
+            
+            // Força uma verificação imediata para carregar os 4 arquivos próximos agora que temos dados
+            checkAndLoadNearestFiles();
         });
         
         updateMarkerGroupMenu();
@@ -1437,14 +1489,23 @@
                 }
             });
 
-            // MOVIDO PARA BAIXO PARA INCLUIR LOGICA ESPACIAL
-            // map.on('moveend', updateVisibleMarkers);
-
             toggleAllMarkersVisibilityCheckbox.checked = state.markersVisible;
             toggleAllLinesVisibilityCheckbox.checked = state.linesVisible;
 
-            // --- CARREGAR TUDO DO DB AO INICIAR COM TRATAMENTO DE ERRO ---
+            // --- INICIAR CARGA DINÂMICA SE ESTIVER MARCADO ---
+            if (chkAutoLoad.checked) {
+                setTimeout(() => {
+                    checkAndLoadNearestFiles();
+                }, 1000);
+            }
+
+            // --- SE AUTO-LOAD ESTIVER DESLIGADO, TENTA CARREGAR TUDO (LEGADO) ---
             (async () => {
+                if (chkAutoLoad.checked) {
+                    // Se dinâmico está ligado, não faz nada pesado no início.
+                    return; 
+                }
+
                 try {
                     ytLoader.style.display = 'block';
                     ytPercent.style.display = 'block';
@@ -1486,7 +1547,6 @@
                     console.error("Erro crítico ao carregar dados iniciais:", err);
                     ytLoader.style.display = 'none';
                     ytPercent.style.display = 'none';
-                    // O erro de abertura do DB já é capturado no openDB, mas aqui pegamos corrupção de dados
                     document.getElementById('updateRescueModal').style.display = 'flex';
                 }
             })();
@@ -1724,10 +1784,61 @@
             checkAndLoadNearestFiles();
         });
 
-        chkAutoLoad.addEventListener('change', (e) => {
+        // --- EVENTO MODIFICADO (v5.3): CARGA DINÂMICA vs CARGA TOTAL ---
+        chkAutoLoad.addEventListener('change', async (e) => {
             if(e.target.checked) {
-                alert("Modo Dinâmico Ativado: O mapa carregará/removerá cidades conforme você navega.");
+                // MODO ATIVADO: Limpa o excesso e foca nos próximos
+                alert("Modo Dinâmico Ativado: O sistema limpará arquivos distantes e carregará os próximos.");
                 checkAndLoadNearestFiles();
+            } else {
+                // MODO DESATIVADO: Carrega TUDO que está no cache
+                if(confirm("Desativar Carga Dinâmica?\n\nIsso irá carregar TODOS os arquivos que estão salvos no cache (verdes) para o mapa de uma vez.\n\nSe houver muitos arquivos, o mapa pode ficar lento.")) {
+                    
+                    const loadingMsg = document.getElementById('progressOverlay');
+                    const loadingText = document.getElementById('progressText');
+                    const loadingBar = document.getElementById('progressBar');
+                    
+                    loadingMsg.style.display = 'flex';
+                    loadingText.textContent = "Carregando todo o cache...";
+                    loadingBar.style.width = "100%";
+
+                    try {
+                        // 1. Busca tudo que está salvo no IndexedDB
+                        const allCachedFiles = await getDataFromDB(GEOJSON_STORE_NAME);
+                        
+                        if (allCachedFiles && allCachedFiles.length > 0) {
+                            // Pausa a lógica de renderização automática para não conflitar
+                            isProcessingBatch = true;
+
+                            let count = 0;
+                            const total = allCachedFiles.length;
+
+                            for (const fileData of allCachedFiles) {
+                                count++;
+                                loadingText.textContent = `Carregando ${count}/${total}: ${fileData.name}`;
+                                
+                                // addDataToMap(geojson, nome, false) -> O 'false' força a renderização visual
+                                addDataToMap(fileData.geojson, fileData.name, false);
+
+                                // Marca o checkbox na lista visualmente
+                                const checkbox = document.querySelector(`input[value="${fileData.name}"]`);
+                                if(checkbox) {
+                                    checkbox.checked = true;
+                                    checkbox.closest('li').classList.add('is-cached');
+                                }
+                            }
+                        }
+                    } catch (err) {
+                        console.error("Erro ao carregar tudo:", err);
+                        alert("Erro ao tentar carregar todos os arquivos.");
+                    } finally {
+                        isProcessingBatch = false;
+                        loadingMsg.style.display = 'none';
+                    }
+                } else {
+                    // Se o usuário cancelar no confirm, volta o botão para ligado
+                    e.target.checked = true;
+                }
             }
         });
         
@@ -1736,20 +1847,20 @@
             // 1. Atualização visual padrão
             updateVisibleMarkers();
 
-            // 2. Nova carga espacial
+            // 2. Nova carga espacial (SÓ SE O SWITCH ESTIVER LIGADO)
             if (chkAutoLoad.checked) {
                 if (spatialQueryDebounce) clearTimeout(spatialQueryDebounce);
                 spatialQueryDebounce = setTimeout(() => {
                     checkAndLoadNearestFiles();
-                }, 800); // 800ms de atraso
+                }, 800); 
             }
         });
 
-        // --- FUNÇÕES NOVAS DE SPATIAL QUERYING ---
+        // --- FUNÇÕES NOVAS DE SPATIAL QUERYING (MODO BATCH/SILENCIOSO E PARALELO) ---
         
-        function removeFileFromMap(fileName) {
+        function removeFileFromMap(fileName, skipRender = false) {
             const fileIndex = state.files.findIndex(f => f.name === fileName);
-            if (fileIndex === -1) return; // Arquivo não está carregado
+            if (fileIndex === -1) return; 
 
             const fileEntry = state.files[fileIndex];
 
@@ -1768,65 +1879,97 @@
             // 3. Remove do Estado
             state.files.splice(fileIndex, 1);
             
-            // 4. Remove da lista visual de "Arquivos Carregados"
+            // 4. Remove da lista visual 
             const loadedListItems = document.querySelectorAll('#loadedFilesList li');
             loadedListItems.forEach(li => {
                 if (li.textContent.includes(fileName)) li.remove();
             });
 
-            // 5. Atualiza o mapa visualmente
-            updateVisibleMarkers(); 
-            updateGroupMenu(); 
+            // 5. Atualiza o mapa visualmente SOMENTE se não estiver pulando
+            if (!skipRender) {
+                updateVisibleMarkers(); 
+                updateGroupMenu(); 
+            }
         }
 
         async function checkAndLoadNearestFiles() {
             const isAutoLoadActive = document.getElementById('chkAutoLoad').checked;
-            if (!isAutoLoadActive) return;
+            
+            // 1. SEGURANÇA: Se estiver desligado OU ocupado, não faz nada
+            if (!isAutoLoadActive || isProcessingBatch) return;
 
             const center = map.getCenter();
             const limit = parseInt(document.getElementById('rngAutoLoadLimit').value); 
             
-            const indexData = await getDataFromDB(SPATIAL_INDEX_STORE_NAME);
-            
-            if (!indexData || indexData.length === 0) return;
+            // ATIVA A TRAVA
+            isProcessingBatch = true;
 
-            const distances = indexData.map(item => {
-                const fileCenterLng = (item.bounds[0] + item.bounds[2]) / 2;
-                const fileCenterLat = (item.bounds[1] + item.bounds[3]) / 2;
-                const dist = Math.pow(center.lng - fileCenterLng, 2) + Math.pow(center.lat - fileCenterLat, 2);
-                return { name: item.name, dist: dist };
-            });
+            try {
+                const indexData = await getDataFromDB(SPATIAL_INDEX_STORE_NAME);
+                if (!indexData || indexData.length === 0) return;
 
-            distances.sort((a, b) => a.dist - b.dist);
+                const distances = indexData.map(item => {
+                    const fileCenterLng = (item.bounds[0] + item.bounds[2]) / 2;
+                    const fileCenterLat = (item.bounds[1] + item.bounds[3]) / 2;
+                    const dist = Math.pow(center.lng - fileCenterLng, 2) + Math.pow(center.lat - fileCenterLat, 2);
+                    return { name: item.name, dist: dist };
+                });
 
-            const filesToKeep = distances.slice(0, limit).map(d => d.name);
-            
-            // LOAD
-            for (const fileName of filesToKeep) {
-                const isLoaded = state.files.some(f => f.name === fileName);
+                distances.sort((a, b) => a.dist - b.dist);
+                const filesToKeep = distances.slice(0, limit).map(d => d.name);
                 
-                if (!isLoaded) {
-                    console.log(`Auto-carregando: ${fileName}`);
-                    const fileRef = predefinedFiles.find(f => f.name === fileName);
-                    if (fileRef) {
-                        try {
-                            const { geojson } = await getGeoJSONFromFile(fileRef);
-                            addDataToMap(geojson, fileName);
-                            
-                            const checkbox = document.querySelector(`input[value="${fileName}"]`);
-                            if(checkbox) checkbox.closest('li').classList.add('is-cached'); 
-                        } catch (e) { console.error(`Erro no auto-load de ${fileName}`, e); }
-                    }
-                }
-            }
+                let changesMade = false;
 
-            // UNLOAD
-            [...state.files].forEach(file => {
-                if (!filesToKeep.includes(file.name)) {
-                    console.log(`Auto-removendo: ${file.name}`);
-                    removeFileFromMap(file.name);
+                const loadTasks = filesToKeep.map(async (fileName) => {
+                    const isLoaded = state.files.some(f => f.name === fileName);
+                    if (!isLoaded) {
+                        const fileRef = predefinedFiles.find(f => f.name === fileName);
+                        if (fileRef) {
+                            try {
+                                console.log(`Iniciando carga: ${fileName}`);
+                                const { geojson } = await getGeoJSONFromFile(fileRef);
+                                addDataToMap(geojson, fileName, true); 
+                                
+                                const checkbox = document.querySelector(`input[value="${fileName}"]`);
+                                if(checkbox) checkbox.closest('li').classList.add('is-cached'); 
+                                return true;
+                            } catch (e) { 
+                                console.error(`Erro ao carregar ${fileName}`, e); 
+                                return false;
+                            }
+                        }
+                    }
+                    return false;
+                });
+
+                const results = await Promise.all(loadTasks);
+                if (results.some(r => r === true)) changesMade = true;
+
+                // --- REMOÇÃO ---
+                [...state.files].forEach(file => {
+                    if (!filesToKeep.includes(file.name)) {
+                        console.log(`Removendo: ${file.name}`);
+                        removeFileFromMap(file.name, true);
+                        changesMade = true;
+                    }
+                });
+
+                if (changesMade) {
+                    console.log("Finalizando lote: Atualizando mapa e menus.");
+                    updateGroupMenu();       
+                    updateVisibleMarkers(); 
+                    applyGroupFilter();      
+                    
+                    if (map.getLayer('user-trail-layer')) map.moveLayer('user-trail-layer');
+                    if (map.getLayer('dynamic-marker-circles')) map.moveLayer('dynamic-marker-circles');
+                    if (map.getLayer('dynamic-marker-labels')) map.moveLayer('dynamic-marker-labels');
                 }
-            });
+
+            } catch (error) {
+                console.error("Erro na carga dinâmica:", error);
+            } finally {
+                isProcessingBatch = false;
+            }
         }
 
         btnResetOfflineDB.addEventListener('click', (e) => {
@@ -1959,7 +2102,7 @@
             if(labelText) labelText.style.color = newColor;
         }
 
-        function addDataToMap(geojson, fileName) {
+        function addDataToMap(geojson, fileName, skipRender = false) {
             const sanitizedFileName = fileName.replace(/\s+/g, '_').replace(/[^\w\-]/g, '');
             const sourceId = `source-${sanitizedFileName}`;
             const lineLayerId = `lines-${sourceId}`;
@@ -2078,22 +2221,24 @@
                 }
             }
 
-            updateGroupMenu();
-            updateLoadedFilesList(fileName);
-            updateVisibleMarkers();
+            if (!skipRender) {
+                updateGroupMenu();
+                updateLoadedFilesList(fileName);
+                updateVisibleMarkers();
+                
+                state.files.forEach(file => {
+                    if (file.hasLines) {
+                        const lineId = `lines-${file.sourceId}`;
+                        if (map.getLayer(lineId)) map.moveLayer(lineId); 
+                    }
+                });
 
-            state.files.forEach(file => {
-                if (file.hasLines) {
-                    const lineId = `lines-${file.sourceId}`;
-                    if (map.getLayer(lineId)) map.moveLayer(lineId); 
-                }
-            });
-
-            if (map.getLayer('user-trail-layer')) map.moveLayer('user-trail-layer');
-            if (map.getLayer('dynamic-marker-circles')) map.moveLayer('dynamic-marker-circles');
-            if (map.getLayer('dynamic-marker-labels')) map.moveLayer('dynamic-marker-labels');
-            
-            applyGroupFilter(); 
+                if (map.getLayer('user-trail-layer')) map.moveLayer('user-trail-layer');
+                if (map.getLayer('dynamic-marker-circles')) map.moveLayer('dynamic-marker-circles');
+                if (map.getLayer('dynamic-marker-labels')) map.moveLayer('dynamic-marker-labels');
+                
+                applyGroupFilter(); 
+            }
         }
 
         function updateMarkerGroupMenu() {
@@ -2366,27 +2511,23 @@
                 if (!aExact && bExact) return 1;
 
                 // 2. MATCH DE "PALAVRA INTEIRA" / INÍCIO SEGUIDO DE NÃO-NÚMERO
-                // Ex: "771fu" (do 771-FU) vs "7710". 
-                // "771fu" -> próximo char é 'f' (ok). "7710" -> próximo char é '0' (não ok).
-                
                 const aStartsWith = nameA.startsWith(normalizedTerm);
                 const bStartsWith = nameB.startsWith(normalizedTerm);
 
                 const charAfterA = nameA.charAt(normalizedTerm.length);
                 const charAfterB = nameB.charAt(normalizedTerm.length);
 
-                // Verifica se é uma "fronteira" (fim da string ou caractere não numérico)
                 const aIsBoundary = aStartsWith && (charAfterA === '' || isNaN(parseInt(charAfterA)));
                 const bIsBoundary = bStartsWith && (charAfterB === '' || isNaN(parseInt(charAfterB)));
 
                 if (aIsBoundary && !bIsBoundary) return -1;
                 if (!aIsBoundary && bIsBoundary) return 1;
 
-                // 3. COMEÇA COM (Mas é continuação numérica, ex: 7710)
+                // 3. COMEÇA COM 
                 if (aStartsWith && !bStartsWith) return -1;
                 if (!aStartsWith && bStartsWith) return 1;
                 
-                // 4. ORDEM ALFABÉTICA (Desempate final)
+                // 4. ORDEM ALFABÉTICA
                 return nameA.localeCompare(nameB);
 
             }).slice(0, 15);
