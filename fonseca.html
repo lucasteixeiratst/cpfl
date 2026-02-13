@@ -2027,13 +2027,9 @@
             const center = map.getCenter();
             const limit = parseInt(document.getElementById('rngAutoLoadLimit').value); 
             
-            // OTIMIZAÇÃO Item 3: Histerese (Buffer)
-            // Mantemos na memória um pouco mais do que o limite para evitar que um arquivo
-            // seja descarregado só porque você moveu o mapa 1 metro para o lado.
             const UNLOAD_BUFFER = 2; 
             const unloadThreshold = limit + UNLOAD_BUFFER;
 
-            // ATIVA A TRAVA
             isProcessingBatch = true;
 
             try {
@@ -2041,13 +2037,26 @@
                 if (!indexData || indexData.length === 0) return;
 
                 const distances = indexData.map(item => {
-                    const fileCenterLng = (item.bounds[0] + item.bounds[2]) / 2;
-                    const fileCenterLat = (item.bounds[1] + item.bounds[3]) / 2;
-                    const dist = Math.pow(center.lng - fileCenterLng, 2) + Math.pow(center.lat - fileCenterLat, 2);
-                    return { name: item.name, dist: dist };
+                    // NOVA MATEMÁTICA: Calcula a distância para a BORDA da área (e não mais pro centro)
+                    const [minLng, minLat, maxLng, maxLat] = item.bounds;
+                    
+                    const dx = Math.max(minLng - center.lng, 0, center.lng - maxLng);
+                    const dy = Math.max(minLat - center.lat, 0, center.lat - maxLat);
+                    const distSq = dx * dx + dy * dy; // Distância 0 se a tela estiver dentro da área
+                    
+                    // Calculamos a área total do arquivo para usar como desempate
+                    const area = (maxLng - minLng) * (maxLat - minLat);
+
+                    return { name: item.name, dist: distSq, area: area };
                 });
 
-                distances.sort((a, b) => a.dist - b.dist);
+                // Ordena os arquivos para carregar:
+                // 1º - Mais próximos (ou distância 0 se estiver dentro)
+                // 2º - Em caso de empate, prioriza arquivos GIGANTES (assim o arquivo de capacitores nunca é esquecido)
+                distances.sort((a, b) => {
+                    if (a.dist === b.dist) return b.area - a.area; 
+                    return a.dist - b.dist;
+                });
                 
                 // Arquivos que DEVEM estar carregados (Top 'limit')
                 const filesToLoad = distances.slice(0, limit).map(d => d.name);
@@ -2083,10 +2092,9 @@
                 if (results.some(r => r === true)) changesMade = true;
 
                 // --- REMOÇÃO COM HISTERESE ---
-                // Só removemos se o arquivo NÃO estiver na lista estendida (filesToKeepInMemory)
                 [...state.files].forEach(file => {
                     if (!filesToKeepInMemory.includes(file.name)) {
-                        // Exceção: Não remover arquivos de Capacitor ou arquivos sem linhas (apenas pontos)
+                        // Exceção absoluta: Nunca remove arquivos que tem Capacitor ou que são puramente marcadores
                         if (file.name.toUpperCase().includes('CAPACITOR') || !file.hasLines) return;
 
                         console.log(`Removendo (fora do buffer): ${file.name}`);
