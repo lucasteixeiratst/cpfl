@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-    <title>Visualizador de Mapas v5.3</title>
+    <title>Visualizador de Mapas v5.3 </title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; position: relative; }
@@ -2553,13 +2553,55 @@
             if (!term) return alert('Digite um termo para buscar.');
             
             const normalizedTerm = normalizeText(term);
+            const results = [];
+            const seenIds = new Set();
             
-            // OTIMIZAÇÃO: Usa o .searchKey pré-calculado
-            const matches = allPointFeatures.filter(f => {
+            // 1. Busca nos arquivos JÁ CARREGADOS (Memória)
+            allPointFeatures.forEach(f => {
                 // Se a chave não existir (arquivos antigos em cache sem migração), calcula na hora
                 const key = f.properties.searchKey || normalizeText(f.properties.name || f.properties.Alimentador || '');
-                return key.includes(normalizedTerm);
-            }).sort((a, b) => {
+                if (key.includes(normalizedTerm)) {
+                    const id = f.id || (f.properties.name + (f.geometry.coordinates ? f.geometry.coordinates.join(',') : ''));
+                    if (!seenIds.has(id)) {
+                        seenIds.add(id);
+                        results.push(f);
+                    }
+                }
+            });
+
+            // 2. Busca em TODO O BANCO DE DADOS (Offline/Cache)
+            try {
+                const allFiles = await getDataFromDB(GEOJSON_STORE_NAME);
+                if (allFiles) {
+                    allFiles.forEach(fileData => {
+                        if (!fileData.geojson || !fileData.geojson.features) return;
+
+                        fileData.geojson.features.forEach(f => {
+                            if (f.properties) {
+                                const name = f.properties.name || '';
+                                const alimentador = f.properties.Alimentador || '';
+                                const text = normalizeText(name + ' ' + alimentador);
+                                
+                                if (text.includes(normalizedTerm)) {
+                                    if (f.geometry) {
+                                        const id = f.id || (name + (f.geometry.coordinates ? f.geometry.coordinates.toString() : ''));
+                                        
+                                        if (!seenIds.has(id)) {
+                                            seenIds.add(id);
+                                            f.properties.fileName = fileData.name;
+                                            results.push(f);
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    });
+                }
+            } catch (e) {
+                console.error("Erro na busca do DB:", e);
+            }
+            
+            const matches = results.sort((a, b) => {
                 const nameA = normalizeText(a.properties.name || a.properties.Alimentador || '');
                 const nameB = normalizeText(b.properties.name || b.properties.Alimentador || '');
                 
@@ -2605,8 +2647,21 @@
 
                 const btnVer = document.createElement('button');
                 btnVer.textContent = 'Ver';
-                btnVer.onclick = (e) => {
+                btnVer.onclick = async (e) => {
                     e.stopPropagation();
+                    
+                    // Carrega o arquivo se não estiver carregado
+                    if (fileName && !state.files.some(f => f.name === fileName)) {
+                         try {
+                             const cachedEntry = await getDataFromDB(GEOJSON_STORE_NAME, fileName);
+                             if (cachedEntry) {
+                                 addDataToMap(cachedEntry.geojson, fileName, false);
+                             }
+                         } catch(err) {
+                             console.error("Erro ao carregar arquivo para visualização", err);
+                         }
+                    }
+
                     const center = getFeatureCenter(result);
                     
                     if(center) { 
@@ -2625,27 +2680,29 @@
                             popupHTML = `<div><strong>${displayName}</strong><br><button id="popup-directions-btn-${featureId}" style="margin-top: 5px; padding: 3px 8px; font-size: 11px; cursor: pointer;">Obter Rota (Google Maps)</button></div>`;
                         }
 
-                        const popup = new maplibregl.Popup({ closeOnClick: true, offset: 15 })
-                            .setLngLat(coordinates)
-                            .setHTML(popupHTML)
-                            .addTo(map);
+                        setTimeout(() => {
+                            const popup = new maplibregl.Popup({ closeOnClick: true, offset: 15 })
+                                .setLngLat(coordinates)
+                                .setHTML(popupHTML)
+                                .addTo(map);
 
-                        const popupElement = popup.getElement();
+                            const popupElement = popup.getElement();
 
-                        if (state.isRoutePlanning) {
-                            const addRouteBtn = popupElement.querySelector(`#popup-add-route-btn-${featureId}`);
-                            if (addRouteBtn) {
-                                addRouteBtn.addEventListener('click', () => { addWaypointToRoute(result); popup.remove(); });
+                            if (state.isRoutePlanning) {
+                                const addRouteBtn = popupElement.querySelector(`#popup-add-route-btn-${featureId}`);
+                                if (addRouteBtn) {
+                                    addRouteBtn.addEventListener('click', () => { addWaypointToRoute(result); popup.remove(); });
+                                }
+                            } else {
+                                const directionsBtn = popupElement.querySelector(`#popup-directions-btn-${featureId}`);
+                                if (directionsBtn) {
+                                    directionsBtn.addEventListener('click', () => {
+                                        const url = `https://www.google.com/maps/dir/?api=1&destination=${coordinates[1]},${coordinates[0]}&travelmode=driving`;
+                                        window.open(url, '_blank');
+                                    });
+                                }
                             }
-                        } else {
-                            const directionsBtn = popupElement.querySelector(`#popup-directions-btn-${featureId}`);
-                            if (directionsBtn) {
-                                directionsBtn.addEventListener('click', () => {
-                                    const url = `https://www.google.com/maps/dir/?api=1&destination=${coordinates[1]},${coordinates[0]}&travelmode=driving`;
-                                    window.open(url, '_blank');
-                                });
-                            }
-                        }
+                        }, 100);
 
                     } else { 
                         alert('Localização inválida.'); 
