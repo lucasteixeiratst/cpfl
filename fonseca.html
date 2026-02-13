@@ -387,6 +387,9 @@
             <img src="ícones/upload.svg" alt="Upload">
             Abrir do Dispositivo...
         </div>
+        <div style="padding: 10px 15px 0 15px;">
+             <input type="text" id="kmzSearchInput" placeholder="Filtrar arquivos..." style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+        </div>
         <div class="kmz-controls">
             <button id="btnSelectAll">Selecionar Todos</button>
             <button id="btnLoadSelected">Baixar e Carregar</button>
@@ -1328,11 +1331,18 @@
             // 3. Ordenar alfabeticamente
             const sortedFiles = Array.from(allFilesMap.values()).sort((a, b) => a.name.localeCompare(b.name));
 
+            const searchInput = document.getElementById('kmzSearchInput');
+            const filterTerm = searchInput ? normalizeText(searchInput.value) : '';
+
             for (const file of sortedFiles) {
                 const li = document.createElement('li');
                 const isOffline = cachedSet.has(file.name);
                 
                 if (isOffline) li.classList.add('is-cached');
+
+                if (filterTerm && !normalizeText(file.name).includes(filterTerm)) {
+                    li.style.display = 'none';
+                }
 
                 // 1. Checkbox: Só gerencia Offline (não carrega no mapa)
                 const checkbox = document.createElement('input');
@@ -1403,6 +1413,19 @@
         }
         
         displayFileList();
+        
+        updateMenuVisibility();
+        
+        // --- FILTRO DE ARQUIVOS KMZ ---
+        document.getElementById('kmzSearchInput').addEventListener('input', function(e) {
+            const term = normalizeText(e.target.value);
+            const items = document.querySelectorAll('#kmzList li');
+            
+            items.forEach(item => {
+                const text = normalizeText(item.querySelector('.file-name').textContent);
+                item.style.display = text.includes(term) ? 'flex' : 'none';
+            });
+        });
         
         // --- LOGICA DOS BOTÕES DE SELEÇÃO EM MASSA ---
         
@@ -1791,6 +1814,19 @@
             });
         });
 
+        function updateMenuVisibility() {
+            const hasFiles = state.files.length > 0;
+            const buttonsToHide = [
+                'btnMarkerGroups', 'btnLineGroups', 'btnNames', 'btnTools', 
+                'btnTrailMenu', 'btnLocation', 'btnReset', 'btnLoadedFiles', 
+                'btnStyles', 'btnRoutePlanner'
+            ];
+            buttonsToHide.forEach(id => {
+                const btn = document.getElementById(id);
+                if (btn) btn.style.display = hasFiles ? 'flex' : 'none';
+            });
+        }
+
         function updateMapVisuals() {
             state.files.forEach(file => {
                 if (file.hasLines) {
@@ -1973,6 +2009,7 @@
             if (!skipRender) {
                 updateVisibleMarkers(); 
                 updateGroupMenu(); 
+                updateMenuVisibility();
             }
         }
 
@@ -2055,6 +2092,7 @@
                     updateGroupMenu();       
                     updateVisibleMarkers(); 
                     applyGroupFilter();      
+                    updateMenuVisibility();
                     
                     if (map.getLayer('user-trail-layer')) map.moveLayer('user-trail-layer');
                     if (map.getLayer('dynamic-marker-circles')) map.moveLayer('dynamic-marker-circles');
@@ -2339,6 +2377,7 @@
                 if (map.getLayer('dynamic-marker-labels')) map.moveLayer('dynamic-marker-labels');
                 
                 applyGroupFilter(); 
+                updateMenuVisibility();
             }
         }
 
