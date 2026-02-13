@@ -699,6 +699,19 @@
              } catch (error) { return null; }
         }
         
+        async function getKeysFromDB(storeName) {
+             try {
+                 const db = await openDB();
+                 return new Promise((resolve, reject) => {
+                     const transaction = db.transaction([storeName], 'readonly');
+                     const store = transaction.objectStore(storeName);
+                     const request = store.getAllKeys();
+                     request.onsuccess = () => resolve(request.result);
+                     request.onerror = () => reject(request.error);
+                 });
+             } catch (error) { return []; }
+        }
+        
         async function deleteDataFromDB(storeName, key) {
             const db = await openDB();
             return new Promise((resolve, reject) => {
@@ -1295,12 +1308,29 @@
             const listElement = document.getElementById('kmzList');
             listElement.innerHTML = ''; 
 
-            // Ordena alfabeticamente agora, já que não usamos mais "recentes"
-            const sortedFiles = predefinedFiles.sort((a, b) => a.name.localeCompare(b.name));
+            // 1. Obter arquivos do cache (Offline/Uploads manuais)
+            const cachedFileNames = await getKeysFromDB(GEOJSON_STORE_NAME) || [];
+            const cachedSet = new Set(cachedFileNames);
+
+            // 2. Combinar arquivos predefinidos com arquivos do cache
+            const allFilesMap = new Map();
+            
+            // Adiciona predefinidos
+            predefinedFiles.forEach(f => allFilesMap.set(f.name, { ...f }));
+            
+            // Adiciona arquivos extras que estão no cache (uploads manuais)
+            cachedFileNames.forEach(name => {
+                if (!allFilesMap.has(name)) {
+                    allFilesMap.set(name, { name: name, url: null });
+                }
+            });
+
+            // 3. Ordenar alfabeticamente
+            const sortedFiles = Array.from(allFilesMap.values()).sort((a, b) => a.name.localeCompare(b.name));
 
             for (const file of sortedFiles) {
                 const li = document.createElement('li');
-                const isOffline = await checkFileInDB(file.name);
+                const isOffline = cachedSet.has(file.name);
                 
                 if (isOffline) li.classList.add('is-cached');
 
@@ -1315,7 +1345,7 @@
                     e.stopPropagation(); 
                     
                     if (e.target.checked) {
-                        // Checkbox marcado
+                        // Checkbox marcado - Se for arquivo de rede, será baixado no "Baixar Selecionados" ou ao clicar no nome
                     } else {
                         // Se desmarcar algo que já está salvo (verde), confirma deleção
                         if(li.classList.contains('is-cached')) {
@@ -1323,6 +1353,11 @@
                                 await deleteDataFromDB(GEOJSON_STORE_NAME, file.name);
                                 await deleteDataFromDB(SPATIAL_INDEX_STORE_NAME, file.name);
                                 li.classList.remove('is-cached');
+                                
+                                // Se era um arquivo customizado (não predefinido), remove da lista visualmente
+                                if (!predefinedFiles.find(pf => pf.name === file.name)) {
+                                    li.remove();
+                                }
                             } else {
                                 e.target.checked = true; // Cancela
                             }
@@ -1402,7 +1437,8 @@
             for (const box of boxesArray) {
                 count++;
                 const fileName = box.value;
-                const file = predefinedFiles.find(f => f.name === fileName);
+                let file = predefinedFiles.find(f => f.name === fileName);
+                if (!file) file = { name: fileName, url: null };
                 
                 if (file) {
                     loadingText.textContent = `Baixando p/ Cache ${count}/${total}: ${file.name}`;
@@ -2102,6 +2138,7 @@
                     await saveDataToDB(GEOJSON_STORE_NAME, { name: file.name, geojson: data });
                     
                     addDataToMap(data, file.name);
+                    displayFileList(); // Atualiza a lista para mostrar o arquivo marcado
                 } catch (error) { alert('Erro ao processar arquivo.'); }
             };
             if (file.name.endsWith('.kmz')) reader.readAsArrayBuffer(file);
