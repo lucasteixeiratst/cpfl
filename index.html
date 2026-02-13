@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-    <title>Visualizador de Mapas v5.3 </title>
+    <title>Visualizador de Mapas v5.3</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; position: relative; }
@@ -546,7 +546,7 @@
         </div>
     </div>
     <footer>
-    Todos direitos reservados a Lucas Teixeira • Atualizado em 13/02/2026
+    Todos direitos reservados a Lucas Teixeira • Atualizado em 25/11/2025
     </footer>
     <script>
         const DB_NAME = 'KMZOfflineDB';
@@ -1217,8 +1217,11 @@
                 }
 
                 const visibleGroups = Object.keys(state.markerGroups).filter(g => state.markerGroups[g].visible);
+                
+                // --- NOVIDADE: VERIFICA SE O ARQUIVO ESTÁ "LIGADO" NO MENU ---
+                const activeFileNames = state.files.filter(f => f.visible !== false).map(f => f.name);
 
-                if (visibleGroups.length === 0) {
+                if (visibleGroups.length === 0 || activeFileNames.length === 0) {
                     dynamicMarkerSource.setData({ type: 'FeatureCollection', features: [] });
                     return;
                 }
@@ -1229,9 +1232,9 @@
 
                 const limit = parseInt(state.visualSettings.markerLimit);
                 
-                // Otimização Item 2: Uso de distSq (Euclidiana Quadrada) para evitar raiz quadrada no loop de sort
                 const sortedFeatures = allPointFeatures
-                    .filter(feature => visibleGroups.includes(feature.properties.group))
+                    // Filtra pela visibilidade do grupo E pela visibilidade do arquivo no menu
+                    .filter(feature => visibleGroups.includes(feature.properties.group) && activeFileNames.includes(feature.properties.fileName))
                     .map(feature => {
                         // Proteção contra geometria inválida
                         if (!feature.geometry || !Array.isArray(feature.geometry.coordinates) || feature.geometry.coordinates.length < 2) {
@@ -1778,7 +1781,7 @@
         document.getElementById('btnLocation').addEventListener('click', goToCurrentLocation);
         document.getElementById('btnLineGroups').addEventListener('click', (e) => {
             e.stopPropagation();
-            if (state.selectedGroups.size === 0) alert('Não há grupos de linhas para filtrar.');
+            if (state.selectedGroups.size === 0 && state.files.length === 0) alert('Não há grupos carregados para exibir.');
             else toggleVisibility(lineMenu);
         });
         btnLoadedFiles.addEventListener('click', (e) => { e.stopPropagation(); toggleVisibility(loadedFilesMenu); });
@@ -2024,13 +2027,9 @@
             const center = map.getCenter();
             const limit = parseInt(document.getElementById('rngAutoLoadLimit').value); 
             
-            // OTIMIZAÇÃO Item 3: Histerese (Buffer)
-            // Mantemos na memória um pouco mais do que o limite para evitar que um arquivo
-            // seja descarregado só porque você moveu o mapa 1 metro para o lado.
             const UNLOAD_BUFFER = 2; 
             const unloadThreshold = limit + UNLOAD_BUFFER;
 
-            // ATIVA A TRAVA
             isProcessingBatch = true;
 
             try {
@@ -2038,13 +2037,26 @@
                 if (!indexData || indexData.length === 0) return;
 
                 const distances = indexData.map(item => {
-                    const fileCenterLng = (item.bounds[0] + item.bounds[2]) / 2;
-                    const fileCenterLat = (item.bounds[1] + item.bounds[3]) / 2;
-                    const dist = Math.pow(center.lng - fileCenterLng, 2) + Math.pow(center.lat - fileCenterLat, 2);
-                    return { name: item.name, dist: dist };
+                    // NOVA MATEMÁTICA: Calcula a distância para a BORDA da área (e não mais pro centro)
+                    const [minLng, minLat, maxLng, maxLat] = item.bounds;
+                    
+                    const dx = Math.max(minLng - center.lng, 0, center.lng - maxLng);
+                    const dy = Math.max(minLat - center.lat, 0, center.lat - maxLat);
+                    const distSq = dx * dx + dy * dy; // Distância 0 se a tela estiver dentro da área
+                    
+                    // Calculamos a área total do arquivo para usar como desempate
+                    const area = (maxLng - minLng) * (maxLat - minLat);
+
+                    return { name: item.name, dist: distSq, area: area };
                 });
 
-                distances.sort((a, b) => a.dist - b.dist);
+                // Ordena os arquivos para carregar:
+                // 1º - Mais próximos (ou distância 0 se estiver dentro)
+                // 2º - Em caso de empate, prioriza arquivos GIGANTES (assim o arquivo de capacitores nunca é esquecido)
+                distances.sort((a, b) => {
+                    if (a.dist === b.dist) return b.area - a.area; 
+                    return a.dist - b.dist;
+                });
                 
                 // Arquivos que DEVEM estar carregados (Top 'limit')
                 const filesToLoad = distances.slice(0, limit).map(d => d.name);
@@ -2080,10 +2092,9 @@
                 if (results.some(r => r === true)) changesMade = true;
 
                 // --- REMOÇÃO COM HISTERESE ---
-                // Só removemos se o arquivo NÃO estiver na lista estendida (filesToKeepInMemory)
                 [...state.files].forEach(file => {
                     if (!filesToKeepInMemory.includes(file.name)) {
-                        // Exceção: Não remover arquivos de Capacitor ou arquivos sem linhas (apenas pontos)
+                        // Exceção absoluta: Nunca remove arquivos que tem Capacitor ou que são puramente marcadores
                         if (file.name.toUpperCase().includes('CAPACITOR') || !file.hasLines) return;
 
                         console.log(`Removendo (fora do buffer): ${file.name}`);
@@ -2330,7 +2341,8 @@
                 sourceId: sourceId,
                 hasLines: lineFeatures.features.length > 0,
                 groupingProperty: groupingProperty,
-                lineFeatures: lineFeatures
+                lineFeatures: lineFeatures,
+                visible: true // <- MARCAÇÃO DE VISIBILIDADE DO ARQUIVO ADICIONADA
             };
             state.files.push(newFileEntry);
 
@@ -2449,83 +2461,91 @@
         function updateGroupMenu() {
             lineGroupsList.innerHTML = '';
             state.files.forEach(file => {
-                if (file.hasLines && file.groupingProperty) {
-                    const selectedFileGroups = state.selectedGroups.get(file.sourceId) || new Set();
-                    
-                    const allFileGroups = new Set();
+                const selectedFileGroups = state.selectedGroups.get(file.sourceId) || new Set();
+                
+                const allFileGroups = new Set();
+                if (file.hasLines && file.groupingProperty && file.lineFeatures) {
                     file.lineFeatures.features.forEach(feature => {
                         if (feature.properties && feature.properties[file.groupingProperty]) {
                             allFileGroups.add(feature.properties[file.groupingProperty]);
                         }
                     });
-                    
-                    if (allFileGroups.size === 0) return;
+                }
+                
+                const sortedGroups = Array.from(allFileGroups).sort((a, b) => a.localeCompare(b));
 
-                    const sortedGroups = Array.from(allFileGroups).sort((a, b) => a.localeCompare(b));
-
-                    const fileHeader = document.createElement('li'); // Use li for better structure
-                    fileHeader.style.cssText = "background-color: #f0f0f0; padding: 5px; margin-top: 5px; font-weight: bold;";
-                    
-                    const fileLabel = document.createElement('label');
-                    fileLabel.style.display = 'flex';
-                    fileLabel.style.alignItems = 'center';
-                    fileLabel.style.width = '100%';
+                const fileHeader = document.createElement('li'); // Use li for better structure
+                fileHeader.style.cssText = "background-color: #f0f0f0; padding: 5px; margin-top: 5px; font-weight: bold;";
+                
+                const fileLabel = document.createElement('label');
+                fileLabel.style.display = 'flex';
+                fileLabel.style.alignItems = 'center';
+                fileLabel.style.width = '100%';
 
 
-                    const fileCheckbox = document.createElement('input');
-                    fileCheckbox.type = 'checkbox';
-                    
+                const fileCheckbox = document.createElement('input');
+                fileCheckbox.type = 'checkbox';
+                
+                if (sortedGroups.length > 0) {
                     const allVisible = sortedGroups.every(g => selectedFileGroups.has(g));
                     const someVisible = sortedGroups.some(g => selectedFileGroups.has(g));
-
                     fileCheckbox.checked = allVisible;
                     if (!allVisible && someVisible) {
                         fileCheckbox.indeterminate = true;
                     }
+                } else {
+                    // Para arquivos sem linhas, ele segue o estado global de visibilidade do arquivo
+                    fileCheckbox.checked = file.visible !== false;
+                }
 
-                    fileCheckbox.onchange = () => {
-                        const isChecked = fileCheckbox.checked;
-                        const currentGroups = state.selectedGroups.get(file.sourceId) || new Set();
-                        if (isChecked) {
-                            sortedGroups.forEach(g => currentGroups.add(g));
-                            menuState.collapsedFiles.delete(file.name); // Expand
-                        } else {
-                            sortedGroups.forEach(g => currentGroups.delete(g));
-                            menuState.collapsedFiles.add(file.name); // Collapse
-                        }
-                        state.selectedGroups.set(file.sourceId, currentGroups);
-                        applyGroupFilter();
-                        updateGroupMenu(); // Redraw
-                    };
-                    
-                    const fileNameSpan = document.createElement('span');
-                    fileNameSpan.textContent = `Arquivo: "${file.name}"`;
-                    fileNameSpan.style.cursor = 'pointer';
-                    fileNameSpan.style.flexGrow = '1';
-                    fileNameSpan.style.marginLeft = '5px';
-                    fileNameSpan.onclick = () => {
-                        if (menuState.collapsedFiles.has(file.name)) {
-                            menuState.collapsedFiles.delete(file.name);
-                        } else {
-                            menuState.collapsedFiles.add(file.name);
-                        }
-                        updateGroupMenu(); // Redraw to show/hide
-                    };
+                fileCheckbox.onchange = () => {
+                    const isChecked = fileCheckbox.checked;
+                    file.visible = isChecked; // SALVA A VISIBILIDADE GLOBAL DO ARQUIVO
 
-
-                    fileLabel.appendChild(fileCheckbox);
-                    fileLabel.appendChild(fileNameSpan);
-                    fileHeader.appendChild(fileLabel);
-                    lineGroupsList.appendChild(fileHeader);
-
-                    const groupUl = document.createElement('ul');
-                    groupUl.style.paddingLeft = '25px';
-
-                    // Hide/show based on collapsed state
-                    if (menuState.collapsedFiles.has(file.name)) {
-                        groupUl.style.display = 'none';
+                    const currentGroups = state.selectedGroups.get(file.sourceId) || new Set();
+                    if (isChecked) {
+                        sortedGroups.forEach(g => currentGroups.add(g));
+                        menuState.collapsedFiles.delete(file.name); // Expand
+                    } else {
+                        sortedGroups.forEach(g => currentGroups.delete(g));
+                        menuState.collapsedFiles.add(file.name); // Collapse
                     }
+                    state.selectedGroups.set(file.sourceId, currentGroups);
+                    
+                    applyGroupFilter();
+                    updateVisibleMarkers(); // ATUALIZA OS MARCADORES
+                    updateGroupMenu(); // Redraw
+                };
+                
+                const fileNameSpan = document.createElement('span');
+                fileNameSpan.textContent = `Arquivo: "${file.name}"`;
+                fileNameSpan.style.cursor = 'pointer';
+                fileNameSpan.style.flexGrow = '1';
+                fileNameSpan.style.marginLeft = '5px';
+                fileNameSpan.onclick = () => {
+                    if (menuState.collapsedFiles.has(file.name)) {
+                        menuState.collapsedFiles.delete(file.name);
+                    } else {
+                        menuState.collapsedFiles.add(file.name);
+                    }
+                    updateGroupMenu(); // Redraw to show/hide
+                };
 
+
+                fileLabel.appendChild(fileCheckbox);
+                fileLabel.appendChild(fileNameSpan);
+                fileHeader.appendChild(fileLabel);
+                lineGroupsList.appendChild(fileHeader);
+
+                const groupUl = document.createElement('ul');
+                groupUl.style.paddingLeft = '25px';
+
+                // Hide/show based on collapsed state
+                if (menuState.collapsedFiles.has(file.name)) {
+                    groupUl.style.display = 'none';
+                }
+
+                if (sortedGroups.length > 0) {
                     sortedGroups.forEach(grp => {
                         const li = document.createElement('li');
                         li.style.fontWeight = "normal"; // reset
@@ -2544,6 +2564,10 @@
                             } else {
                                 currentGroups.delete(grp);
                             }
+                            
+                            // Se ligamos algum grupo de linha, garante que o arquivo pai fique ativo para os marcadores não sumirem
+                            file.visible = true; 
+
                             applyGroupFilter();
                             updateGroupMenu(); // to update parent state
                         };
@@ -2569,8 +2593,18 @@
                         li.appendChild(lbl);
                         groupUl.appendChild(li);
                     });
-                    lineGroupsList.appendChild(groupUl);
+                } else {
+                    // ADICIONA O ITEM DE AVISO DE MARCADORES PARA ARQUIVOS SEM LINHAS
+                    const li = document.createElement('li');
+                    li.style.fontWeight = "normal";
+                    li.style.color = "#777";
+                    li.style.fontSize = "11px";
+                    li.style.fontStyle = "italic";
+                    li.textContent = "Apenas Marcadores (S/ Linhas)";
+                    groupUl.appendChild(li);
                 }
+                
+                lineGroupsList.appendChild(groupUl);
             });
         }
 
@@ -2597,11 +2631,14 @@
         function hideAllGroups() {
             state.selectedGroups.forEach((groups, sourceId) => state.selectedGroups.set(sourceId, new Set()));
             document.querySelectorAll('#lineGroupsList input[type=checkbox]').forEach(chk => chk.checked = false);
+            state.files.forEach(f => f.visible = false); // Oculta todos os marcadores também
             applyGroupFilter();
+            updateVisibleMarkers();
         }
 
         function showAllGroups() {
             state.files.forEach(file => {
+                file.visible = true; // Exibe todos os marcadores também
                 if (file.hasLines && file.groupingProperty) {
                     const allGroups = new Set();
                     if (file.lineFeatures && file.lineFeatures.features) {
@@ -2612,6 +2649,7 @@
             });
             document.querySelectorAll('#lineGroupsList input[type=checkbox]').forEach(chk => chk.checked = true);
             applyGroupFilter();
+            updateVisibleMarkers();
         }
 
         function toggleLines(visible) {
