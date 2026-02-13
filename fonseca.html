@@ -620,6 +620,9 @@
                 lineWidth: 4, markerSize: 6, textSize: 12, markerLimit: 500 
             }
         };
+        const menuState = {
+            collapsedFiles: new Set()
+        };
         
         function loadSavedMarkerColors() {
             const saved = localStorage.getItem('markerGroupColors');
@@ -2352,28 +2355,125 @@
             state.files.forEach(file => {
                 if (file.hasLines && file.groupingProperty) {
                     const selectedFileGroups = state.selectedGroups.get(file.sourceId) || new Set();
-                    const fileHeader = document.createElement('div');
-                    fileHeader.style.fontWeight = 'bold'; fileHeader.style.marginTop = '10px'; fileHeader.textContent = `Arquivo: "${file.name}"`;
-                    lineGroupsList.appendChild(fileHeader);
+                    
                     const allFileGroups = new Set();
-                    file.lineFeatures.features.forEach(feature => { if (feature.properties && feature.properties[file.groupingProperty]) allFileGroups.add(feature.properties[file.groupingProperty]); });
+                    file.lineFeatures.features.forEach(feature => {
+                        if (feature.properties && feature.properties[file.groupingProperty]) {
+                            allFileGroups.add(feature.properties[file.groupingProperty]);
+                        }
+                    });
+                    
+                    if (allFileGroups.size === 0) return;
+
                     const sortedGroups = Array.from(allFileGroups).sort((a, b) => a.localeCompare(b));
+
+                    const fileHeader = document.createElement('li'); // Use li for better structure
+                    fileHeader.style.cssText = "background-color: #f0f0f0; padding: 5px; margin-top: 5px; font-weight: bold;";
+                    
+                    const fileLabel = document.createElement('label');
+                    fileLabel.style.display = 'flex';
+                    fileLabel.style.alignItems = 'center';
+                    fileLabel.style.width = '100%';
+
+
+                    const fileCheckbox = document.createElement('input');
+                    fileCheckbox.type = 'checkbox';
+                    
+                    const allVisible = sortedGroups.every(g => selectedFileGroups.has(g));
+                    const someVisible = sortedGroups.some(g => selectedFileGroups.has(g));
+
+                    fileCheckbox.checked = allVisible;
+                    if (!allVisible && someVisible) {
+                        fileCheckbox.indeterminate = true;
+                    }
+
+                    fileCheckbox.onchange = () => {
+                        const isChecked = fileCheckbox.checked;
+                        const currentGroups = state.selectedGroups.get(file.sourceId) || new Set();
+                        if (isChecked) {
+                            sortedGroups.forEach(g => currentGroups.add(g));
+                            menuState.collapsedFiles.delete(file.name); // Expand
+                        } else {
+                            sortedGroups.forEach(g => currentGroups.delete(g));
+                            menuState.collapsedFiles.add(file.name); // Collapse
+                        }
+                        state.selectedGroups.set(file.sourceId, currentGroups);
+                        applyGroupFilter();
+                        updateGroupMenu(); // Redraw
+                    };
+                    
+                    const fileNameSpan = document.createElement('span');
+                    fileNameSpan.textContent = `Arquivo: "${file.name}"`;
+                    fileNameSpan.style.cursor = 'pointer';
+                    fileNameSpan.style.flexGrow = '1';
+                    fileNameSpan.style.marginLeft = '5px';
+                    fileNameSpan.onclick = () => {
+                        if (menuState.collapsedFiles.has(file.name)) {
+                            menuState.collapsedFiles.delete(file.name);
+                        } else {
+                            menuState.collapsedFiles.add(file.name);
+                        }
+                        updateGroupMenu(); // Redraw to show/hide
+                    };
+
+
+                    fileLabel.appendChild(fileCheckbox);
+                    fileLabel.appendChild(fileNameSpan);
+                    fileHeader.appendChild(fileLabel);
+                    lineGroupsList.appendChild(fileHeader);
+
+                    const groupUl = document.createElement('ul');
+                    groupUl.style.paddingLeft = '25px';
+
+                    // Hide/show based on collapsed state
+                    if (menuState.collapsedFiles.has(file.name)) {
+                        groupUl.style.display = 'none';
+                    }
+
                     sortedGroups.forEach(grp => {
                         const li = document.createElement('li');
+                        li.style.fontWeight = "normal"; // reset
                         const lbl = document.createElement('label');
                         lbl.style.display = 'flex'; lbl.style.alignItems = 'center';
                         const chk = document.createElement('input');
-                        chk.type = 'checkbox'; chk.value = grp; chk.checked = selectedFileGroups.has(grp);
+                        chk.type = 'checkbox';
+                        chk.value = grp;
+                        chk.checked = selectedFileGroups.has(grp);
                         const groupColor = groupColorMap.get(grp);
-                        if (groupColor) { lbl.style.color = groupColor; lbl.style.fontWeight = 'bold'; }
-                        chk.onchange = () => { const currentGroups = state.selectedGroups.get(file.sourceId); if (chk.checked) currentGroups.add(grp); else currentGroups.delete(grp); applyGroupFilter(); };
-                        lbl.appendChild(chk); lbl.appendChild(document.createTextNode(' ' + grp));
+                        
+                        chk.onchange = () => {
+                            const currentGroups = state.selectedGroups.get(file.sourceId);
+                            if (chk.checked) {
+                                currentGroups.add(grp);
+                            } else {
+                                currentGroups.delete(grp);
+                            }
+                            applyGroupFilter();
+                            updateGroupMenu(); // to update parent state
+                        };
+
+                        lbl.appendChild(chk);
+                        lbl.appendChild(document.createTextNode(' ' + grp));
+                        
                         const colorPicker = document.createElement('input');
-                        colorPicker.type = 'color'; colorPicker.value = groupColor || '#CCCCCC'; colorPicker.style.marginLeft = 'auto'; colorPicker.style.padding = '0'; colorPicker.style.border = 'none'; colorPicker.style.width = '30px'; colorPicker.style.height = '20px'; colorPicker.style.cursor = 'pointer';
-                        colorPicker.dataset.groupName = grp; colorPicker.dataset.sourceId = file.sourceId;
-                        colorPicker.onchange = handleColorChange; colorPicker.onclick = (e) => e.stopPropagation(); 
-                        lbl.appendChild(colorPicker); li.appendChild(lbl); lineGroupsList.appendChild(li);
+                        colorPicker.type = 'color';
+                        colorPicker.value = groupColor || '#CCCCCC';
+                        colorPicker.style.marginLeft = 'auto';
+                        colorPicker.style.padding = '0';
+                        colorPicker.style.border = 'none';
+                        colorPicker.style.width = '30px';
+                        colorPicker.style.height = '20px';
+                        colorPicker.style.cursor = 'pointer';
+                        colorPicker.dataset.groupName = grp;
+                        colorPicker.dataset.sourceId = file.sourceId;
+                        colorPicker.onchange = handleColorChange;
+                        colorPicker.onclick = (e) => e.stopPropagation();
+                        
+                        lbl.appendChild(colorPicker);
+                        li.appendChild(lbl);
+                        groupUl.appendChild(li);
                     });
+                    lineGroupsList.appendChild(groupUl);
                 }
             });
         }
