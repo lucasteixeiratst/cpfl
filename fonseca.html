@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-    <title>Visualizador de Mapas v5.3 </title>
+    <title>Visualizador de Mapas v5.3</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; position: relative; }
@@ -546,7 +546,7 @@
         </div>
     </div>
     <footer>
-    Todos direitos reservados a Lucas Teixeira • Atualizado em 13/02/2026
+    Todos direitos reservados a Lucas Teixeira • Atualizado em 25/11/2025
     </footer>
     <script>
         const DB_NAME = 'KMZOfflineDB';
@@ -1217,8 +1217,11 @@
                 }
 
                 const visibleGroups = Object.keys(state.markerGroups).filter(g => state.markerGroups[g].visible);
+                
+                // --- NOVIDADE: VERIFICA SE O ARQUIVO ESTÁ "LIGADO" NO MENU ---
+                const activeFileNames = state.files.filter(f => f.visible !== false).map(f => f.name);
 
-                if (visibleGroups.length === 0) {
+                if (visibleGroups.length === 0 || activeFileNames.length === 0) {
                     dynamicMarkerSource.setData({ type: 'FeatureCollection', features: [] });
                     return;
                 }
@@ -1229,9 +1232,9 @@
 
                 const limit = parseInt(state.visualSettings.markerLimit);
                 
-                // Otimização Item 2: Uso de distSq (Euclidiana Quadrada) para evitar raiz quadrada no loop de sort
                 const sortedFeatures = allPointFeatures
-                    .filter(feature => visibleGroups.includes(feature.properties.group))
+                    // Filtra pela visibilidade do grupo E pela visibilidade do arquivo no menu
+                    .filter(feature => visibleGroups.includes(feature.properties.group) && activeFileNames.includes(feature.properties.fileName))
                     .map(feature => {
                         // Proteção contra geometria inválida
                         if (!feature.geometry || !Array.isArray(feature.geometry.coordinates) || feature.geometry.coordinates.length < 2) {
@@ -1778,7 +1781,7 @@
         document.getElementById('btnLocation').addEventListener('click', goToCurrentLocation);
         document.getElementById('btnLineGroups').addEventListener('click', (e) => {
             e.stopPropagation();
-            if (state.selectedGroups.size === 0) alert('Não há grupos de linhas para filtrar.');
+            if (state.selectedGroups.size === 0 && state.files.length === 0) alert('Não há grupos carregados para exibir.');
             else toggleVisibility(lineMenu);
         });
         btnLoadedFiles.addEventListener('click', (e) => { e.stopPropagation(); toggleVisibility(loadedFilesMenu); });
@@ -2330,7 +2333,8 @@
                 sourceId: sourceId,
                 hasLines: lineFeatures.features.length > 0,
                 groupingProperty: groupingProperty,
-                lineFeatures: lineFeatures
+                lineFeatures: lineFeatures,
+                visible: true // <- MARCAÇÃO DE VISIBILIDADE DO ARQUIVO ADICIONADA
             };
             state.files.push(newFileEntry);
 
@@ -2449,83 +2453,91 @@
         function updateGroupMenu() {
             lineGroupsList.innerHTML = '';
             state.files.forEach(file => {
-                if (file.hasLines && file.groupingProperty) {
-                    const selectedFileGroups = state.selectedGroups.get(file.sourceId) || new Set();
-                    
-                    const allFileGroups = new Set();
+                const selectedFileGroups = state.selectedGroups.get(file.sourceId) || new Set();
+                
+                const allFileGroups = new Set();
+                if (file.hasLines && file.groupingProperty && file.lineFeatures) {
                     file.lineFeatures.features.forEach(feature => {
                         if (feature.properties && feature.properties[file.groupingProperty]) {
                             allFileGroups.add(feature.properties[file.groupingProperty]);
                         }
                     });
-                    
-                    if (allFileGroups.size === 0) return;
+                }
+                
+                const sortedGroups = Array.from(allFileGroups).sort((a, b) => a.localeCompare(b));
 
-                    const sortedGroups = Array.from(allFileGroups).sort((a, b) => a.localeCompare(b));
-
-                    const fileHeader = document.createElement('li'); // Use li for better structure
-                    fileHeader.style.cssText = "background-color: #f0f0f0; padding: 5px; margin-top: 5px; font-weight: bold;";
-                    
-                    const fileLabel = document.createElement('label');
-                    fileLabel.style.display = 'flex';
-                    fileLabel.style.alignItems = 'center';
-                    fileLabel.style.width = '100%';
+                const fileHeader = document.createElement('li'); // Use li for better structure
+                fileHeader.style.cssText = "background-color: #f0f0f0; padding: 5px; margin-top: 5px; font-weight: bold;";
+                
+                const fileLabel = document.createElement('label');
+                fileLabel.style.display = 'flex';
+                fileLabel.style.alignItems = 'center';
+                fileLabel.style.width = '100%';
 
 
-                    const fileCheckbox = document.createElement('input');
-                    fileCheckbox.type = 'checkbox';
-                    
+                const fileCheckbox = document.createElement('input');
+                fileCheckbox.type = 'checkbox';
+                
+                if (sortedGroups.length > 0) {
                     const allVisible = sortedGroups.every(g => selectedFileGroups.has(g));
                     const someVisible = sortedGroups.some(g => selectedFileGroups.has(g));
-
                     fileCheckbox.checked = allVisible;
                     if (!allVisible && someVisible) {
                         fileCheckbox.indeterminate = true;
                     }
+                } else {
+                    // Para arquivos sem linhas, ele segue o estado global de visibilidade do arquivo
+                    fileCheckbox.checked = file.visible !== false;
+                }
 
-                    fileCheckbox.onchange = () => {
-                        const isChecked = fileCheckbox.checked;
-                        const currentGroups = state.selectedGroups.get(file.sourceId) || new Set();
-                        if (isChecked) {
-                            sortedGroups.forEach(g => currentGroups.add(g));
-                            menuState.collapsedFiles.delete(file.name); // Expand
-                        } else {
-                            sortedGroups.forEach(g => currentGroups.delete(g));
-                            menuState.collapsedFiles.add(file.name); // Collapse
-                        }
-                        state.selectedGroups.set(file.sourceId, currentGroups);
-                        applyGroupFilter();
-                        updateGroupMenu(); // Redraw
-                    };
-                    
-                    const fileNameSpan = document.createElement('span');
-                    fileNameSpan.textContent = `Arquivo: "${file.name}"`;
-                    fileNameSpan.style.cursor = 'pointer';
-                    fileNameSpan.style.flexGrow = '1';
-                    fileNameSpan.style.marginLeft = '5px';
-                    fileNameSpan.onclick = () => {
-                        if (menuState.collapsedFiles.has(file.name)) {
-                            menuState.collapsedFiles.delete(file.name);
-                        } else {
-                            menuState.collapsedFiles.add(file.name);
-                        }
-                        updateGroupMenu(); // Redraw to show/hide
-                    };
+                fileCheckbox.onchange = () => {
+                    const isChecked = fileCheckbox.checked;
+                    file.visible = isChecked; // SALVA A VISIBILIDADE GLOBAL DO ARQUIVO
 
-
-                    fileLabel.appendChild(fileCheckbox);
-                    fileLabel.appendChild(fileNameSpan);
-                    fileHeader.appendChild(fileLabel);
-                    lineGroupsList.appendChild(fileHeader);
-
-                    const groupUl = document.createElement('ul');
-                    groupUl.style.paddingLeft = '25px';
-
-                    // Hide/show based on collapsed state
-                    if (menuState.collapsedFiles.has(file.name)) {
-                        groupUl.style.display = 'none';
+                    const currentGroups = state.selectedGroups.get(file.sourceId) || new Set();
+                    if (isChecked) {
+                        sortedGroups.forEach(g => currentGroups.add(g));
+                        menuState.collapsedFiles.delete(file.name); // Expand
+                    } else {
+                        sortedGroups.forEach(g => currentGroups.delete(g));
+                        menuState.collapsedFiles.add(file.name); // Collapse
                     }
+                    state.selectedGroups.set(file.sourceId, currentGroups);
+                    
+                    applyGroupFilter();
+                    updateVisibleMarkers(); // ATUALIZA OS MARCADORES
+                    updateGroupMenu(); // Redraw
+                };
+                
+                const fileNameSpan = document.createElement('span');
+                fileNameSpan.textContent = `Arquivo: "${file.name}"`;
+                fileNameSpan.style.cursor = 'pointer';
+                fileNameSpan.style.flexGrow = '1';
+                fileNameSpan.style.marginLeft = '5px';
+                fileNameSpan.onclick = () => {
+                    if (menuState.collapsedFiles.has(file.name)) {
+                        menuState.collapsedFiles.delete(file.name);
+                    } else {
+                        menuState.collapsedFiles.add(file.name);
+                    }
+                    updateGroupMenu(); // Redraw to show/hide
+                };
 
+
+                fileLabel.appendChild(fileCheckbox);
+                fileLabel.appendChild(fileNameSpan);
+                fileHeader.appendChild(fileLabel);
+                lineGroupsList.appendChild(fileHeader);
+
+                const groupUl = document.createElement('ul');
+                groupUl.style.paddingLeft = '25px';
+
+                // Hide/show based on collapsed state
+                if (menuState.collapsedFiles.has(file.name)) {
+                    groupUl.style.display = 'none';
+                }
+
+                if (sortedGroups.length > 0) {
                     sortedGroups.forEach(grp => {
                         const li = document.createElement('li');
                         li.style.fontWeight = "normal"; // reset
@@ -2544,6 +2556,10 @@
                             } else {
                                 currentGroups.delete(grp);
                             }
+                            
+                            // Se ligamos algum grupo de linha, garante que o arquivo pai fique ativo para os marcadores não sumirem
+                            file.visible = true; 
+
                             applyGroupFilter();
                             updateGroupMenu(); // to update parent state
                         };
@@ -2569,8 +2585,18 @@
                         li.appendChild(lbl);
                         groupUl.appendChild(li);
                     });
-                    lineGroupsList.appendChild(groupUl);
+                } else {
+                    // ADICIONA O ITEM DE AVISO DE MARCADORES PARA ARQUIVOS SEM LINHAS
+                    const li = document.createElement('li');
+                    li.style.fontWeight = "normal";
+                    li.style.color = "#777";
+                    li.style.fontSize = "11px";
+                    li.style.fontStyle = "italic";
+                    li.textContent = "Apenas Marcadores (S/ Linhas)";
+                    groupUl.appendChild(li);
                 }
+                
+                lineGroupsList.appendChild(groupUl);
             });
         }
 
@@ -2597,11 +2623,14 @@
         function hideAllGroups() {
             state.selectedGroups.forEach((groups, sourceId) => state.selectedGroups.set(sourceId, new Set()));
             document.querySelectorAll('#lineGroupsList input[type=checkbox]').forEach(chk => chk.checked = false);
+            state.files.forEach(f => f.visible = false); // Oculta todos os marcadores também
             applyGroupFilter();
+            updateVisibleMarkers();
         }
 
         function showAllGroups() {
             state.files.forEach(file => {
+                file.visible = true; // Exibe todos os marcadores também
                 if (file.hasLines && file.groupingProperty) {
                     const allGroups = new Set();
                     if (file.lineFeatures && file.lineFeatures.features) {
@@ -2612,6 +2641,7 @@
             });
             document.querySelectorAll('#lineGroupsList input[type=checkbox]').forEach(chk => chk.checked = true);
             applyGroupFilter();
+            updateVisibleMarkers();
         }
 
         function toggleLines(visible) {
