@@ -617,6 +617,7 @@
                 '-FA': { color: '#FFA500', visible: true },
                 '-RE': { color: '#008000', visible: true },
                 'TR': { color: '#0000FF', visible: true },  
+                'BC': { color: '#9C27B0', visible: true },
                 'default': { color: '#FF5722', visible: true }
             },
             visualSettings: {
@@ -880,7 +881,7 @@
             } else {
                 const startCoord = trail.coordinates[0];
                 const date = new Date(trail.id).toLocaleDateString('pt-BR');
-                const text = `*Rastro de Inspeção*\nNome: ${trail.name}\nData: ${date}\nInício: https://www.google.com/maps/dir/?api=1&destination=${startCoord[1]},${startCoord[0]}`;
+                const text = `*Rastro de Inspeção*\nNome: ${trail.name}\nData: ${date}\nInício: https://www.google.com/maps/dir/?api=1&destination=$${startCoord[1]},${startCoord[0]}`;
                 const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
                 window.open(url, '_blank');
                 alert("No computador, o WhatsApp Web não permite anexar arquivos automaticamente. O link com a localização inicial foi aberto.");
@@ -1154,6 +1155,7 @@
              { name: 'SERTAOZINHO.kmz', url: './SERTAOZINHO.kmz' },
              { name: 'SOCORRO.kmz', url: './SOCORRO.kmz' },
              { name: 'SUMARE.kmz', url: './SUMARE.kmz' },
+             { name: 'T-Posto_Capacitor.kmz', url: './T-Posto_Capacitor.kmz' },
              { name: 'TANABI.kmz', url: './TANABI.kmz' },
              { name: 'TAQUARITINGA.kmz', url: './TAQUARITINGA.kmz' },
              { name: 'UIRAPURU.kmz', url: './UIRAPURU.kmz' },
@@ -1653,7 +1655,7 @@
                         directionsBtn.addEventListener('click', () => {
                             const lat = coordinates[1];
                             const lng = coordinates[0];
-                            const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
+                            const url = `https://www.google.com/maps/dir/?api=1&destination=$${lat},${lng}&travelmode=driving`;
                             window.open(url, '_blank');
                         });
                     }
@@ -2081,6 +2083,9 @@
                 // Só removemos se o arquivo NÃO estiver na lista estendida (filesToKeepInMemory)
                 [...state.files].forEach(file => {
                     if (!filesToKeepInMemory.includes(file.name)) {
+                        // Exceção: Não remover arquivos de Capacitor ou arquivos sem linhas (apenas pontos)
+                        if (file.name.toUpperCase().includes('CAPACITOR') || !file.hasLines) return;
+
                         console.log(`Removendo (fora do buffer): ${file.name}`);
                         removeFileFromMap(file.name, true);
                         changesMade = true;
@@ -2163,6 +2168,7 @@
             }
         }
 
+        // --- CORREÇÃO: Função handleFile atualizada para salvar Spatial Index ---
         function handleFile(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -2172,12 +2178,24 @@
             reader.onload = async () => {
                 try {
                     const data = file.name.endsWith('.kmz') ? await parseKMZ(reader.result) : toGeoJSON.kml(new DOMParser().parseFromString(reader.result, 'text/xml'));
-                    // Salva no banco offline
+                    
+                    // 1. Salva o Arquivo no Banco
                     await saveDataToDB(GEOJSON_STORE_NAME, { name: file.name, geojson: data });
+
+                    // 2. CORREÇÃO: Calcula e Salva o Índice Espacial
+                    const bounds = calculateBounds(data);
+                    if (bounds) {
+                        await saveDataToDB(SPATIAL_INDEX_STORE_NAME, { name: file.name, bounds });
+                    }
                     
                     addDataToMap(data, file.name);
-                    displayFileList(); // Atualiza a lista para mostrar o arquivo marcado
-                } catch (error) { alert('Erro ao processar arquivo.'); }
+                    displayFileList(); 
+                    
+                    alert(`Arquivo "${file.name}" salvo e indexado com sucesso!`);
+                } catch (error) { 
+                    console.error(error);
+                    alert('Erro ao processar arquivo.'); 
+                }
             };
             if (file.name.endsWith('.kmz')) reader.readAsArrayBuffer(file);
             else reader.readAsText(file);
@@ -2271,7 +2289,8 @@
                         f.properties.searchKey = normalizeText(f.properties.name || f.properties.Alimentador || '');
 
                         let groupKey = 'default';
-                        if (name.endsWith('-FU')) groupKey = '-FU';
+                        if (fileName.toUpperCase().includes('CAPACITOR') || name.includes('BC')) groupKey = 'BC';
+                        else if (name.endsWith('-FU')) groupKey = '-FU';
                         else if (name.endsWith('-FA')) groupKey = '-FA';
                         else if (name.endsWith('-RE')) groupKey = '-RE';
                         else if (name.endsWith('KVA') || name.includes('TR')) groupKey = 'TR'; 
@@ -2874,7 +2893,7 @@
                                 const directionsBtn = popupElement.querySelector(`#popup-directions-btn-${featureId}`);
                                 if (directionsBtn) {
                                     directionsBtn.addEventListener('click', () => {
-                                        const url = `https://www.google.com/maps/dir/?api=1&destination=${coordinates[1]},${coordinates[0]}&travelmode=driving`;
+                                        const url = `https://www.google.com/maps/dir/?api=1&destination=$${coordinates[1]},${coordinates[0]}&travelmode=driving`;
                                         window.open(url, '_blank');
                                     });
                                 }
@@ -2893,7 +2912,7 @@
                     e.stopPropagation();
                     const center = getFeatureCenter(result);
                     if (center) {
-                        const url = `https://www.google.com/maps/dir/?api=1&destination=${center[1]},${center[0]}&travelmode=driving`;
+                        const url = `https://www.google.com/maps/dir/?api=1&destination=$${center[1]},${center[0]}&travelmode=driving`;
                         window.open(url, '_blank');
                     } else { alert('Coordenadas inválidas.'); }
                 };
@@ -3000,7 +3019,7 @@
         function generateGoogleMapsUrl() {
              if (routeWaypoints.length < 1) return alert("Adicione pontos.");
              const dest = routeWaypoints[routeWaypoints.length - 1];
-             let url = `https://www.google.com/maps/dir/?api=1&destination=${dest.coordinates[1]},${dest.coordinates[0]}&travelmode=driving`;
+             let url = `https://www.google.com/maps/dir/?api=1&destination=$${dest.coordinates[1]},${dest.coordinates[0]}&travelmode=driving`;
              if (routeWaypoints.length > 1) {
                  const wps = routeWaypoints.slice(0, -1).map(wp => `${wp.coordinates[1]},${wp.coordinates[0]}`).join('|');
                  url += `&waypoints=${wps}`;
