@@ -2294,6 +2294,7 @@
                       }, layerBelow); 
                       
                       map.on('click', lineLayerId, (e) => {
+                          if (state.isRoutePlanning) return;
                           e.originalEvent.stopPropagation(); 
                           const feature = e.features[0];
                           const name = feature.properties.Alimentador || feature.properties.name || 'Sem Nome';
@@ -2316,7 +2317,7 @@
                           new maplibregl.Popup().setLngLat(e.lngLat).setDOMContent(popupContainer).addTo(map);
                       });
 
-                      map.on('mouseenter', lineLayerId, () => map.getCanvas().style.cursor = 'pointer');
+                      map.on('mouseenter', lineLayerId, () => { if (!state.isRoutePlanning) map.getCanvas().style.cursor = 'pointer'; });
                       map.on('mouseleave', lineLayerId, () => { if (!state.isRoutePlanning) map.getCanvas().style.cursor = ''; });
                 }
             }
@@ -2859,6 +2860,25 @@
                 };
 
                 actionsDiv.appendChild(btnVer);
+                
+                if (state.isRoutePlanning) {
+                    const btnAddRoute = document.createElement('button');
+                    btnAddRoute.textContent = '+ Rota';
+                    btnAddRoute.style.backgroundColor = '#f7b731';
+                    btnAddRoute.style.color = '#333';
+                    btnAddRoute.onclick = (e) => {
+                        e.stopPropagation();
+                        let featureToAdd = result;
+                        if (result.geometry.type !== 'Point') {
+                            const center = getFeatureCenter(result);
+                            if (center) featureToAdd = { type: 'Feature', properties: result.properties, geometry: { type: 'Point', coordinates: center } };
+                        }
+                        addWaypointToRoute(featureToAdd);
+                        searchResults.style.display = 'none';
+                    };
+                    actionsDiv.appendChild(btnAddRoute);
+                }
+
                 actionsDiv.appendChild(btnRota);
                 li.appendChild(infoDiv);
                 li.appendChild(actionsDiv);
