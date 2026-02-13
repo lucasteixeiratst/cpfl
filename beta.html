@@ -192,16 +192,16 @@
         .btn-rescue-cancel { background-color: #eee; color: #333; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-size: 13px; }
 
         /* Route Panel */
-        .route-panel { position: absolute; top: 20px; right: 20px; background: #fff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); z-index: 2000; padding: 15px; width: 280px; max-height: 400px; display: none; flex-direction: column; }
-        .route-panel h3 { margin: 0 0 10px 0; font-size: 16px; text-align: center; }
-        .route-panel p { font-size: 12px; color: #555; margin: 0 0 10px 0; border-bottom: 1px solid #f0f0f0; padding-bottom: 10px; }
-        .route-panel ul { list-style: decimal; margin: 0 0 10px 20px; padding: 0; max-height: 200px; overflow-y: auto; font-size: 13px; flex-grow: 1; }
+        .route-panel { position: absolute; top: 20px; right: 20px; background: #fff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); z-index: 2000; padding: 10px; width: 250px; max-height: 350px; display: none; flex-direction: column; }
+        .route-panel h3 { margin: 0 0 5px 0; font-size: 14px; text-align: center; }
+        .route-panel p { font-size: 11px; color: #555; margin: 0 0 5px 0; border-bottom: 1px solid #f0f0f0; padding-bottom: 5px; }
+        .route-panel ul { list-style: decimal; margin: 0 0 5px 20px; padding: 0; max-height: 150px; overflow-y: auto; font-size: 12px; flex-grow: 1; }
         .route-panel li { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; }
         .route-panel li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 10px; }
         .route-panel li .remove-wp { background-color: #e74c3c; color: white; border: none; padding: 2px 5px; border-radius: 4px; cursor: pointer; font-size: 10px; font-weight: bold; margin-left: 10px; flex-shrink: 0; }
-        .route-panel-footer { margin-top: 10px; border-top: 1px solid #f0f0f0; padding-top: 10px; }
-        .route-panel-buttons { display: flex; justify-content: space-between; margin-top: 10px; }
-        .route-panel button { background-color: #ccc; color: #333; border: none; padding: 8px; border-radius: 5px; cursor: pointer; font-size: 13px; flex-basis: 48%; }
+        .route-panel-footer { margin-top: 5px; border-top: 1px solid #f0f0f0; padding-top: 5px; }
+        .route-panel-buttons { display: flex; justify-content: space-between; margin-top: 5px; }
+        .route-panel button { background-color: #ccc; color: #333; border: none; padding: 6px; border-radius: 5px; cursor: pointer; font-size: 12px; flex-basis: 48%; }
         .route-panel button#btnGenerateRoute { background-color: #4285F4; color: white; font-weight: bold; }
 
         /* Storage Menu */
@@ -387,6 +387,9 @@
             <img src="ícones/upload.svg" alt="Upload">
             Abrir do Dispositivo...
         </div>
+        <div style="padding: 10px 15px 0 15px;">
+             <input type="text" id="kmzSearchInput" placeholder="Filtrar arquivos..." style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+        </div>
         <div class="kmz-controls">
             <button id="btnSelectAll">Selecionar Todos</button>
             <button id="btnLoadSelected">Baixar e Carregar</button>
@@ -543,7 +546,7 @@
         </div>
     </div>
     <footer>
-    Todos direitos reservados a Lucas Teixeira • Atualizado em 25/11/2025
+    Todos direitos reservados a Lucas Teixeira • Atualizado em 13/02/2026
     </footer>
     <script>
         const DB_NAME = 'KMZOfflineDB';
@@ -614,11 +617,15 @@
                 '-FA': { color: '#FFA500', visible: true },
                 '-RE': { color: '#008000', visible: true },
                 'TR': { color: '#0000FF', visible: true },  
+                'BC': { color: '#9C27B0', visible: true },
                 'default': { color: '#FF5722', visible: true }
             },
             visualSettings: {
                 lineWidth: 4, markerSize: 6, textSize: 12, markerLimit: 500 
             }
+        };
+        const menuState = {
+            collapsedFiles: new Set()
         };
         
         function loadSavedMarkerColors() {
@@ -694,6 +701,19 @@
                      request.onerror = () => reject(request.error);
                  });
              } catch (error) { return null; }
+        }
+        
+        async function getKeysFromDB(storeName) {
+             try {
+                 const db = await openDB();
+                 return new Promise((resolve, reject) => {
+                     const transaction = db.transaction([storeName], 'readonly');
+                     const store = transaction.objectStore(storeName);
+                     const request = store.getAllKeys();
+                     request.onsuccess = () => resolve(request.result);
+                     request.onerror = () => reject(request.error);
+                 });
+             } catch (error) { return []; }
         }
         
         async function deleteDataFromDB(storeName, key) {
@@ -861,7 +881,7 @@
             } else {
                 const startCoord = trail.coordinates[0];
                 const date = new Date(trail.id).toLocaleDateString('pt-BR');
-                const text = `*Rastro de Inspeção*\nNome: ${trail.name}\nData: ${date}\nInício: https://www.google.com/maps/dir/?api=1&destination=${startCoord[1]},${startCoord[0]}`;
+                const text = `*Rastro de Inspeção*\nNome: ${trail.name}\nData: ${date}\nInício: https://www.google.com/maps/dir/?api=1&destination=$${startCoord[1]},${startCoord[0]}`;
                 const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
                 window.open(url, '_blank');
                 alert("No computador, o WhatsApp Web não permite anexar arquivos automaticamente. O link com a localização inicial foi aberto.");
@@ -1135,6 +1155,7 @@
              { name: 'SERTAOZINHO.kmz', url: './SERTAOZINHO.kmz' },
              { name: 'SOCORRO.kmz', url: './SOCORRO.kmz' },
              { name: 'SUMARE.kmz', url: './SUMARE.kmz' },
+             { name: 'T-Posto_Capacitor.kmz', url: './T-Posto_Capacitor.kmz' },
              { name: 'TANABI.kmz', url: './TANABI.kmz' },
              { name: 'TAQUARITINGA.kmz', url: './TAQUARITINGA.kmz' },
              { name: 'UIRAPURU.kmz', url: './UIRAPURU.kmz' },
@@ -1292,14 +1313,38 @@
             const listElement = document.getElementById('kmzList');
             listElement.innerHTML = ''; 
 
-            // Ordena alfabeticamente agora, já que não usamos mais "recentes"
-            const sortedFiles = predefinedFiles.sort((a, b) => a.name.localeCompare(b.name));
+            // 1. Obter arquivos do cache (Offline/Uploads manuais)
+            const cachedFileNames = await getKeysFromDB(GEOJSON_STORE_NAME) || [];
+            const cachedSet = new Set(cachedFileNames);
+
+            // 2. Combinar arquivos predefinidos com arquivos do cache
+            const allFilesMap = new Map();
+            
+            // Adiciona predefinidos
+            predefinedFiles.forEach(f => allFilesMap.set(f.name, { ...f }));
+            
+            // Adiciona arquivos extras que estão no cache (uploads manuais)
+            cachedFileNames.forEach(name => {
+                if (!allFilesMap.has(name)) {
+                    allFilesMap.set(name, { name: name, url: null });
+                }
+            });
+
+            // 3. Ordenar alfabeticamente
+            const sortedFiles = Array.from(allFilesMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+
+            const searchInput = document.getElementById('kmzSearchInput');
+            const filterTerm = searchInput ? normalizeText(searchInput.value) : '';
 
             for (const file of sortedFiles) {
                 const li = document.createElement('li');
-                const isOffline = await checkFileInDB(file.name);
+                const isOffline = cachedSet.has(file.name);
                 
                 if (isOffline) li.classList.add('is-cached');
+
+                if (filterTerm && !normalizeText(file.name).includes(filterTerm)) {
+                    li.style.display = 'none';
+                }
 
                 // 1. Checkbox: Só gerencia Offline (não carrega no mapa)
                 const checkbox = document.createElement('input');
@@ -1312,7 +1357,7 @@
                     e.stopPropagation(); 
                     
                     if (e.target.checked) {
-                        // Checkbox marcado
+                        // Checkbox marcado - Se for arquivo de rede, será baixado no "Baixar Selecionados" ou ao clicar no nome
                     } else {
                         // Se desmarcar algo que já está salvo (verde), confirma deleção
                         if(li.classList.contains('is-cached')) {
@@ -1320,6 +1365,11 @@
                                 await deleteDataFromDB(GEOJSON_STORE_NAME, file.name);
                                 await deleteDataFromDB(SPATIAL_INDEX_STORE_NAME, file.name);
                                 li.classList.remove('is-cached');
+                                
+                                // Se era um arquivo customizado (não predefinido), remove da lista visualmente
+                                if (!predefinedFiles.find(pf => pf.name === file.name)) {
+                                    li.remove();
+                                }
                             } else {
                                 e.target.checked = true; // Cancela
                             }
@@ -1366,6 +1416,19 @@
         
         displayFileList();
         
+        updateMenuVisibility();
+        
+        // --- FILTRO DE ARQUIVOS KMZ ---
+        document.getElementById('kmzSearchInput').addEventListener('input', function(e) {
+            const term = normalizeText(e.target.value);
+            const items = document.querySelectorAll('#kmzList li');
+            
+            items.forEach(item => {
+                const text = normalizeText(item.querySelector('.file-name').textContent);
+                item.style.display = text.includes(term) ? 'flex' : 'none';
+            });
+        });
+        
         // --- LOGICA DOS BOTÕES DE SELEÇÃO EM MASSA ---
         
         let allSelected = false;
@@ -1399,7 +1462,8 @@
             for (const box of boxesArray) {
                 count++;
                 const fileName = box.value;
-                const file = predefinedFiles.find(f => f.name === fileName);
+                let file = predefinedFiles.find(f => f.name === fileName);
+                if (!file) file = { name: fileName, url: null };
                 
                 if (file) {
                     loadingText.textContent = `Baixando p/ Cache ${count}/${total}: ${file.name}`;
@@ -1591,7 +1655,7 @@
                         directionsBtn.addEventListener('click', () => {
                             const lat = coordinates[1];
                             const lng = coordinates[0];
-                            const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
+                            const url = `https://www.google.com/maps/dir/?api=1&destination=$${lat},${lng}&travelmode=driving`;
                             window.open(url, '_blank');
                         });
                     }
@@ -1751,6 +1815,19 @@
                 }
             });
         });
+
+        function updateMenuVisibility() {
+            const hasFiles = state.files.length > 0;
+            const buttonsToHide = [
+                'btnMarkerGroups', 'btnLineGroups', 'btnNames', 'btnTools', 
+                'btnTrailMenu', 'btnLocation', 'btnReset', 'btnLoadedFiles', 
+                'btnStyles', 'btnRoutePlanner'
+            ];
+            buttonsToHide.forEach(id => {
+                const btn = document.getElementById(id);
+                if (btn) btn.style.display = hasFiles ? 'flex' : 'none';
+            });
+        }
 
         function updateMapVisuals() {
             state.files.forEach(file => {
@@ -1934,6 +2011,7 @@
             if (!skipRender) {
                 updateVisibleMarkers(); 
                 updateGroupMenu(); 
+                updateMenuVisibility();
             }
         }
 
@@ -2005,6 +2083,9 @@
                 // Só removemos se o arquivo NÃO estiver na lista estendida (filesToKeepInMemory)
                 [...state.files].forEach(file => {
                     if (!filesToKeepInMemory.includes(file.name)) {
+                        // Exceção: Não remover arquivos de Capacitor ou arquivos sem linhas (apenas pontos)
+                        if (file.name.toUpperCase().includes('CAPACITOR') || !file.hasLines) return;
+
                         console.log(`Removendo (fora do buffer): ${file.name}`);
                         removeFileFromMap(file.name, true);
                         changesMade = true;
@@ -2016,6 +2097,7 @@
                     updateGroupMenu();       
                     updateVisibleMarkers(); 
                     applyGroupFilter();      
+                    updateMenuVisibility();
                     
                     if (map.getLayer('user-trail-layer')) map.moveLayer('user-trail-layer');
                     if (map.getLayer('dynamic-marker-circles')) map.moveLayer('dynamic-marker-circles');
@@ -2086,6 +2168,7 @@
             }
         }
 
+        // --- CORREÇÃO: Função handleFile atualizada para salvar Spatial Index ---
         function handleFile(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -2095,11 +2178,24 @@
             reader.onload = async () => {
                 try {
                     const data = file.name.endsWith('.kmz') ? await parseKMZ(reader.result) : toGeoJSON.kml(new DOMParser().parseFromString(reader.result, 'text/xml'));
-                    // Salva no banco offline
+                    
+                    // 1. Salva o Arquivo no Banco
                     await saveDataToDB(GEOJSON_STORE_NAME, { name: file.name, geojson: data });
+
+                    // 2. CORREÇÃO: Calcula e Salva o Índice Espacial
+                    const bounds = calculateBounds(data);
+                    if (bounds) {
+                        await saveDataToDB(SPATIAL_INDEX_STORE_NAME, { name: file.name, bounds });
+                    }
                     
                     addDataToMap(data, file.name);
-                } catch (error) { alert('Erro ao processar arquivo.'); }
+                    displayFileList(); 
+                    
+                    alert(`Arquivo "${file.name}" salvo e indexado com sucesso!`);
+                } catch (error) { 
+                    console.error(error);
+                    alert('Erro ao processar arquivo.'); 
+                }
             };
             if (file.name.endsWith('.kmz')) reader.readAsArrayBuffer(file);
             else reader.readAsText(file);
@@ -2193,7 +2289,8 @@
                         f.properties.searchKey = normalizeText(f.properties.name || f.properties.Alimentador || '');
 
                         let groupKey = 'default';
-                        if (name.endsWith('-FU')) groupKey = '-FU';
+                        if (fileName.toUpperCase().includes('CAPACITOR') || name.includes('BC')) groupKey = 'BC';
+                        else if (name.endsWith('-FU')) groupKey = '-FU';
                         else if (name.endsWith('-FA')) groupKey = '-FA';
                         else if (name.endsWith('-RE')) groupKey = '-RE';
                         else if (name.endsWith('KVA') || name.includes('TR')) groupKey = 'TR'; 
@@ -2254,6 +2351,7 @@
                       }, layerBelow); 
                       
                       map.on('click', lineLayerId, (e) => {
+                          if (state.isRoutePlanning) return;
                           e.originalEvent.stopPropagation(); 
                           const feature = e.features[0];
                           const name = feature.properties.Alimentador || feature.properties.name || 'Sem Nome';
@@ -2276,7 +2374,7 @@
                           new maplibregl.Popup().setLngLat(e.lngLat).setDOMContent(popupContainer).addTo(map);
                       });
 
-                      map.on('mouseenter', lineLayerId, () => map.getCanvas().style.cursor = 'pointer');
+                      map.on('mouseenter', lineLayerId, () => { if (!state.isRoutePlanning) map.getCanvas().style.cursor = 'pointer'; });
                       map.on('mouseleave', lineLayerId, () => { if (!state.isRoutePlanning) map.getCanvas().style.cursor = ''; });
                 }
             }
@@ -2298,6 +2396,7 @@
                 if (map.getLayer('dynamic-marker-labels')) map.moveLayer('dynamic-marker-labels');
                 
                 applyGroupFilter(); 
+                updateMenuVisibility();
             }
         }
 
@@ -2352,28 +2451,125 @@
             state.files.forEach(file => {
                 if (file.hasLines && file.groupingProperty) {
                     const selectedFileGroups = state.selectedGroups.get(file.sourceId) || new Set();
-                    const fileHeader = document.createElement('div');
-                    fileHeader.style.fontWeight = 'bold'; fileHeader.style.marginTop = '10px'; fileHeader.textContent = `Arquivo: "${file.name}"`;
-                    lineGroupsList.appendChild(fileHeader);
+                    
                     const allFileGroups = new Set();
-                    file.lineFeatures.features.forEach(feature => { if (feature.properties && feature.properties[file.groupingProperty]) allFileGroups.add(feature.properties[file.groupingProperty]); });
+                    file.lineFeatures.features.forEach(feature => {
+                        if (feature.properties && feature.properties[file.groupingProperty]) {
+                            allFileGroups.add(feature.properties[file.groupingProperty]);
+                        }
+                    });
+                    
+                    if (allFileGroups.size === 0) return;
+
                     const sortedGroups = Array.from(allFileGroups).sort((a, b) => a.localeCompare(b));
+
+                    const fileHeader = document.createElement('li'); // Use li for better structure
+                    fileHeader.style.cssText = "background-color: #f0f0f0; padding: 5px; margin-top: 5px; font-weight: bold;";
+                    
+                    const fileLabel = document.createElement('label');
+                    fileLabel.style.display = 'flex';
+                    fileLabel.style.alignItems = 'center';
+                    fileLabel.style.width = '100%';
+
+
+                    const fileCheckbox = document.createElement('input');
+                    fileCheckbox.type = 'checkbox';
+                    
+                    const allVisible = sortedGroups.every(g => selectedFileGroups.has(g));
+                    const someVisible = sortedGroups.some(g => selectedFileGroups.has(g));
+
+                    fileCheckbox.checked = allVisible;
+                    if (!allVisible && someVisible) {
+                        fileCheckbox.indeterminate = true;
+                    }
+
+                    fileCheckbox.onchange = () => {
+                        const isChecked = fileCheckbox.checked;
+                        const currentGroups = state.selectedGroups.get(file.sourceId) || new Set();
+                        if (isChecked) {
+                            sortedGroups.forEach(g => currentGroups.add(g));
+                            menuState.collapsedFiles.delete(file.name); // Expand
+                        } else {
+                            sortedGroups.forEach(g => currentGroups.delete(g));
+                            menuState.collapsedFiles.add(file.name); // Collapse
+                        }
+                        state.selectedGroups.set(file.sourceId, currentGroups);
+                        applyGroupFilter();
+                        updateGroupMenu(); // Redraw
+                    };
+                    
+                    const fileNameSpan = document.createElement('span');
+                    fileNameSpan.textContent = `Arquivo: "${file.name}"`;
+                    fileNameSpan.style.cursor = 'pointer';
+                    fileNameSpan.style.flexGrow = '1';
+                    fileNameSpan.style.marginLeft = '5px';
+                    fileNameSpan.onclick = () => {
+                        if (menuState.collapsedFiles.has(file.name)) {
+                            menuState.collapsedFiles.delete(file.name);
+                        } else {
+                            menuState.collapsedFiles.add(file.name);
+                        }
+                        updateGroupMenu(); // Redraw to show/hide
+                    };
+
+
+                    fileLabel.appendChild(fileCheckbox);
+                    fileLabel.appendChild(fileNameSpan);
+                    fileHeader.appendChild(fileLabel);
+                    lineGroupsList.appendChild(fileHeader);
+
+                    const groupUl = document.createElement('ul');
+                    groupUl.style.paddingLeft = '25px';
+
+                    // Hide/show based on collapsed state
+                    if (menuState.collapsedFiles.has(file.name)) {
+                        groupUl.style.display = 'none';
+                    }
+
                     sortedGroups.forEach(grp => {
                         const li = document.createElement('li');
+                        li.style.fontWeight = "normal"; // reset
                         const lbl = document.createElement('label');
                         lbl.style.display = 'flex'; lbl.style.alignItems = 'center';
                         const chk = document.createElement('input');
-                        chk.type = 'checkbox'; chk.value = grp; chk.checked = selectedFileGroups.has(grp);
+                        chk.type = 'checkbox';
+                        chk.value = grp;
+                        chk.checked = selectedFileGroups.has(grp);
                         const groupColor = groupColorMap.get(grp);
-                        if (groupColor) { lbl.style.color = groupColor; lbl.style.fontWeight = 'bold'; }
-                        chk.onchange = () => { const currentGroups = state.selectedGroups.get(file.sourceId); if (chk.checked) currentGroups.add(grp); else currentGroups.delete(grp); applyGroupFilter(); };
-                        lbl.appendChild(chk); lbl.appendChild(document.createTextNode(' ' + grp));
+                        
+                        chk.onchange = () => {
+                            const currentGroups = state.selectedGroups.get(file.sourceId);
+                            if (chk.checked) {
+                                currentGroups.add(grp);
+                            } else {
+                                currentGroups.delete(grp);
+                            }
+                            applyGroupFilter();
+                            updateGroupMenu(); // to update parent state
+                        };
+
+                        lbl.appendChild(chk);
+                        lbl.appendChild(document.createTextNode(' ' + grp));
+                        
                         const colorPicker = document.createElement('input');
-                        colorPicker.type = 'color'; colorPicker.value = groupColor || '#CCCCCC'; colorPicker.style.marginLeft = 'auto'; colorPicker.style.padding = '0'; colorPicker.style.border = 'none'; colorPicker.style.width = '30px'; colorPicker.style.height = '20px'; colorPicker.style.cursor = 'pointer';
-                        colorPicker.dataset.groupName = grp; colorPicker.dataset.sourceId = file.sourceId;
-                        colorPicker.onchange = handleColorChange; colorPicker.onclick = (e) => e.stopPropagation(); 
-                        lbl.appendChild(colorPicker); li.appendChild(lbl); lineGroupsList.appendChild(li);
+                        colorPicker.type = 'color';
+                        colorPicker.value = groupColor || '#CCCCCC';
+                        colorPicker.style.marginLeft = 'auto';
+                        colorPicker.style.padding = '0';
+                        colorPicker.style.border = 'none';
+                        colorPicker.style.width = '30px';
+                        colorPicker.style.height = '20px';
+                        colorPicker.style.cursor = 'pointer';
+                        colorPicker.dataset.groupName = grp;
+                        colorPicker.dataset.sourceId = file.sourceId;
+                        colorPicker.onchange = handleColorChange;
+                        colorPicker.onclick = (e) => e.stopPropagation();
+                        
+                        lbl.appendChild(colorPicker);
+                        li.appendChild(lbl);
+                        groupUl.appendChild(li);
                     });
+                    lineGroupsList.appendChild(groupUl);
                 }
             });
         }
@@ -2697,7 +2893,7 @@
                                 const directionsBtn = popupElement.querySelector(`#popup-directions-btn-${featureId}`);
                                 if (directionsBtn) {
                                     directionsBtn.addEventListener('click', () => {
-                                        const url = `https://www.google.com/maps/dir/?api=1&destination=${coordinates[1]},${coordinates[0]}&travelmode=driving`;
+                                        const url = `https://www.google.com/maps/dir/?api=1&destination=$${coordinates[1]},${coordinates[0]}&travelmode=driving`;
                                         window.open(url, '_blank');
                                     });
                                 }
@@ -2716,12 +2912,31 @@
                     e.stopPropagation();
                     const center = getFeatureCenter(result);
                     if (center) {
-                        const url = `https://www.google.com/maps/dir/?api=1&destination=${center[1]},${center[0]}&travelmode=driving`;
+                        const url = `https://www.google.com/maps/dir/?api=1&destination=$${center[1]},${center[0]}&travelmode=driving`;
                         window.open(url, '_blank');
                     } else { alert('Coordenadas inválidas.'); }
                 };
 
                 actionsDiv.appendChild(btnVer);
+                
+                if (state.isRoutePlanning) {
+                    const btnAddRoute = document.createElement('button');
+                    btnAddRoute.textContent = '+ Rota';
+                    btnAddRoute.style.backgroundColor = '#f7b731';
+                    btnAddRoute.style.color = '#333';
+                    btnAddRoute.onclick = (e) => {
+                        e.stopPropagation();
+                        let featureToAdd = result;
+                        if (result.geometry.type !== 'Point') {
+                            const center = getFeatureCenter(result);
+                            if (center) featureToAdd = { type: 'Feature', properties: result.properties, geometry: { type: 'Point', coordinates: center } };
+                        }
+                        addWaypointToRoute(featureToAdd);
+                        searchResults.style.display = 'none';
+                    };
+                    actionsDiv.appendChild(btnAddRoute);
+                }
+
                 actionsDiv.appendChild(btnRota);
                 li.appendChild(infoDiv);
                 li.appendChild(actionsDiv);
@@ -2804,7 +3019,7 @@
         function generateGoogleMapsUrl() {
              if (routeWaypoints.length < 1) return alert("Adicione pontos.");
              const dest = routeWaypoints[routeWaypoints.length - 1];
-             let url = `https://www.google.com/maps/dir/?api=1&destination=${dest.coordinates[1]},${dest.coordinates[0]}&travelmode=driving`;
+             let url = `https://www.google.com/maps/dir/?api=1&destination=$${dest.coordinates[1]},${dest.coordinates[0]}&travelmode=driving`;
              if (routeWaypoints.length > 1) {
                  const wps = routeWaypoints.slice(0, -1).map(wp => `${wp.coordinates[1]},${wp.coordinates[0]}`).join('|');
                  url += `&waypoints=${wps}`;
