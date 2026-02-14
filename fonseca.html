@@ -2163,6 +2163,7 @@
             kmzMenu.style.display = 'none';
             const input = document.createElement('input');
             input.type = 'file';
+            input.multiple = true;
             input.accept = '.kml,.kmz';
             input.onchange = handleFile;
             input.value = ''; 
@@ -2181,35 +2182,45 @@
 
         // --- CORREÇÃO: Função handleFile atualizada para salvar Spatial Index ---
         function handleFile(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            if (typeof gtag === 'function') gtag('event', 'map_load', { 'file_name': file.name, 'load_source': 'device' });
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
 
-            const reader = new FileReader();
-            reader.onload = async () => {
-                try {
-                    const data = file.name.endsWith('.kmz') ? await parseKMZ(reader.result) : toGeoJSON.kml(new DOMParser().parseFromString(reader.result, 'text/xml'));
-                    
-                    // 1. Salva o Arquivo no Banco
-                    await saveDataToDB(GEOJSON_STORE_NAME, { name: file.name, geojson: data });
+            let processedCount = 0;
+            const totalFiles = files.length;
 
-                    // 2. CORREÇÃO: Calcula e Salva o Índice Espacial
-                    const bounds = calculateBounds(data);
-                    if (bounds) {
-                        await saveDataToDB(SPATIAL_INDEX_STORE_NAME, { name: file.name, bounds });
+            Array.from(files).forEach(file => {
+                if (typeof gtag === 'function') gtag('event', 'map_load', { 'file_name': file.name, 'load_source': 'device' });
+
+                const reader = new FileReader();
+                reader.onload = async () => {
+                    try {
+                        const data = file.name.endsWith('.kmz') ? await parseKMZ(reader.result) : toGeoJSON.kml(new DOMParser().parseFromString(reader.result, 'text/xml'));
+                        
+                        // 1. Salva o Arquivo no Banco
+                        await saveDataToDB(GEOJSON_STORE_NAME, { name: file.name, geojson: data });
+
+                        // 2. CORREÇÃO: Calcula e Salva o Índice Espacial
+                        const bounds = calculateBounds(data);
+                        if (bounds) {
+                            await saveDataToDB(SPATIAL_INDEX_STORE_NAME, { name: file.name, bounds });
+                        }
+                        
+                        addDataToMap(data, file.name);
+                        displayFileList(); 
+                        
+                        processedCount++;
+                        if (processedCount === totalFiles) {
+                            alert(`Processamento concluído: ${totalFiles} arquivo(s) carregado(s).`);
+                        }
+                    } catch (error) { 
+                        console.error(error);
+                        alert(`Erro ao processar arquivo: ${file.name}`); 
+                        processedCount++;
                     }
-                    
-                    addDataToMap(data, file.name);
-                    displayFileList(); 
-                    
-                    alert(`Arquivo "${file.name}" salvo e indexado com sucesso!`);
-                } catch (error) { 
-                    console.error(error);
-                    alert('Erro ao processar arquivo.'); 
-                }
-            };
-            if (file.name.endsWith('.kmz')) reader.readAsArrayBuffer(file);
-            else reader.readAsText(file);
+                };
+                if (file.name.endsWith('.kmz')) reader.readAsArrayBuffer(file);
+                else reader.readAsText(file);
+            });
         }
 
         async function parseKMZ(data) {
