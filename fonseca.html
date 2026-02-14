@@ -3066,10 +3066,28 @@
              cancelRoutePlanning();
         }
 
+        // Tooltip global para evitar problemas de sobreposição/corte na barra de rolagem
+        const globalTooltip = document.createElement('div');
+        globalTooltip.className = 'button-legend';
+        globalTooltip.style.position = 'fixed';
+        globalTooltip.style.zIndex = '10001';
+        document.body.appendChild(globalTooltip);
+
         const menuButtons = document.querySelectorAll('.menu button');
         menuButtons.forEach(button => {
-            button.addEventListener('mouseover', () => { const l = button.querySelector('.button-legend'); if (l) l.style.display = 'block'; });
-            button.addEventListener('mouseout', () => { const l = button.querySelector('.button-legend'); if (l) l.style.display = 'none'; });
+            button.addEventListener('mouseover', () => { 
+                const l = button.querySelector('.button-legend'); 
+                if (l) {
+                    const rect = button.getBoundingClientRect();
+                    globalTooltip.innerHTML = l.innerHTML;
+                    globalTooltip.style.display = 'block';
+                    globalTooltip.style.left = (rect.right + 10) + 'px';
+                    globalTooltip.style.top = (rect.top + rect.height / 2) + 'px';
+                }
+            });
+            button.addEventListener('mouseout', () => { 
+                globalTooltip.style.display = 'none'; 
+            });
         });
     </script>
 </body>
