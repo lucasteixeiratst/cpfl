@@ -1658,7 +1658,7 @@
                         directionsBtn.addEventListener('click', () => {
                             const lat = coordinates[1];
                             const lng = coordinates[0];
-                            const url = `https://www.google.com/maps/dir/?api=1&destination=$${lat},${lng}&travelmode=driving`;
+                            const url = `https://www.google.com/maps/dir/?api=1&destination=${coordinates[1]},${coordinates[0]}&travelmode=driving`;
                             window.open(url, '_blank');
                         });
                     }
@@ -2163,6 +2163,7 @@
             kmzMenu.style.display = 'none';
             const input = document.createElement('input');
             input.type = 'file';
+            input.multiple = true;
             input.accept = '.kml,.kmz';
             input.onchange = handleFile;
             input.value = ''; 
@@ -2181,35 +2182,45 @@
 
         // --- CORREÇÃO: Função handleFile atualizada para salvar Spatial Index ---
         function handleFile(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            if (typeof gtag === 'function') gtag('event', 'map_load', { 'file_name': file.name, 'load_source': 'device' });
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
 
-            const reader = new FileReader();
-            reader.onload = async () => {
-                try {
-                    const data = file.name.endsWith('.kmz') ? await parseKMZ(reader.result) : toGeoJSON.kml(new DOMParser().parseFromString(reader.result, 'text/xml'));
-                    
-                    // 1. Salva o Arquivo no Banco
-                    await saveDataToDB(GEOJSON_STORE_NAME, { name: file.name, geojson: data });
+            let processedCount = 0;
+            const totalFiles = files.length;
 
-                    // 2. CORREÇÃO: Calcula e Salva o Índice Espacial
-                    const bounds = calculateBounds(data);
-                    if (bounds) {
-                        await saveDataToDB(SPATIAL_INDEX_STORE_NAME, { name: file.name, bounds });
+            Array.from(files).forEach(file => {
+                if (typeof gtag === 'function') gtag('event', 'map_load', { 'file_name': file.name, 'load_source': 'device' });
+
+                const reader = new FileReader();
+                reader.onload = async () => {
+                    try {
+                        const data = file.name.endsWith('.kmz') ? await parseKMZ(reader.result) : toGeoJSON.kml(new DOMParser().parseFromString(reader.result, 'text/xml'));
+                        
+                        // 1. Salva o Arquivo no Banco
+                        await saveDataToDB(GEOJSON_STORE_NAME, { name: file.name, geojson: data });
+
+                        // 2. CORREÇÃO: Calcula e Salva o Índice Espacial
+                        const bounds = calculateBounds(data);
+                        if (bounds) {
+                            await saveDataToDB(SPATIAL_INDEX_STORE_NAME, { name: file.name, bounds });
+                        }
+                        
+                        addDataToMap(data, file.name);
+                        displayFileList(); 
+                        
+                        processedCount++;
+                        if (processedCount === totalFiles) {
+                            alert(`Processamento concluído: ${totalFiles} arquivo(s) carregado(s).`);
+                        }
+                    } catch (error) { 
+                        console.error(error);
+                        alert(`Erro ao processar arquivo: ${file.name}`); 
+                        processedCount++;
                     }
-                    
-                    addDataToMap(data, file.name);
-                    displayFileList(); 
-                    
-                    alert(`Arquivo "${file.name}" salvo e indexado com sucesso!`);
-                } catch (error) { 
-                    console.error(error);
-                    alert('Erro ao processar arquivo.'); 
-                }
-            };
-            if (file.name.endsWith('.kmz')) reader.readAsArrayBuffer(file);
-            else reader.readAsText(file);
+                };
+                if (file.name.endsWith('.kmz')) reader.readAsArrayBuffer(file);
+                else reader.readAsText(file);
+            });
         }
 
         async function parseKMZ(data) {
@@ -2950,7 +2961,7 @@
                     e.stopPropagation();
                     const center = getFeatureCenter(result);
                     if (center) {
-                        const url = `https://www.google.com/maps/dir/?api=1&destination=$${center[1]},${center[0]}&travelmode=driving`;
+                        const url = `https://www.google.com/maps/dir/?api=1&destination=${center[1]},${center[0]}&travelmode=driving`;
                         window.open(url, '_blank');
                     } else { alert('Coordenadas inválidas.'); }
                 };
@@ -3057,7 +3068,7 @@
         function generateGoogleMapsUrl() {
              if (routeWaypoints.length < 1) return alert("Adicione pontos.");
              const dest = routeWaypoints[routeWaypoints.length - 1];
-             let url = `https://www.google.com/maps/dir/?api=1&destination=$${dest.coordinates[1]},${dest.coordinates[0]}&travelmode=driving`;
+let url = `https://www.google.com/maps/dir/?api=1&destination=${dest.coordinates[1]},${dest.coordinates[0]}&travelmode=driving`;
              if (routeWaypoints.length > 1) {
                  const wps = routeWaypoints.slice(0, -1).map(wp => `${wp.coordinates[1]},${wp.coordinates[0]}`).join('|');
                  url += `&waypoints=${wps}`;
@@ -3066,10 +3077,28 @@
              cancelRoutePlanning();
         }
 
+        // Tooltip global para evitar problemas de sobreposição/corte na barra de rolagem
+        const globalTooltip = document.createElement('div');
+        globalTooltip.className = 'button-legend';
+        globalTooltip.style.position = 'fixed';
+        globalTooltip.style.zIndex = '10001';
+        document.body.appendChild(globalTooltip);
+
         const menuButtons = document.querySelectorAll('.menu button');
         menuButtons.forEach(button => {
-            button.addEventListener('mouseover', () => { const l = button.querySelector('.button-legend'); if (l) l.style.display = 'block'; });
-            button.addEventListener('mouseout', () => { const l = button.querySelector('.button-legend'); if (l) l.style.display = 'none'; });
+            button.addEventListener('mouseover', () => { 
+                const l = button.querySelector('.button-legend'); 
+                if (l) {
+                    const rect = button.getBoundingClientRect();
+                    globalTooltip.innerHTML = l.innerHTML;
+                    globalTooltip.style.display = 'block';
+                    globalTooltip.style.left = (rect.right + 10) + 'px';
+                    globalTooltip.style.top = (rect.top + rect.height / 2) + 'px';
+                }
+            });
+            button.addEventListener('mouseout', () => { 
+                globalTooltip.style.display = 'none'; 
+            });
         });
     </script>
 </body>
