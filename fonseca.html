@@ -1658,7 +1658,7 @@
                         directionsBtn.addEventListener('click', () => {
                             const lat = coordinates[1];
                             const lng = coordinates[0];
-                            const url = `https://www.google.com/maps/dir/?api=1&destination=$${lat},${lng}&travelmode=driving`;
+                            const url = `https://www.google.com/maps/dir/?api=1&destination=${coordinates[1]},${coordinates[0]}&travelmode=driving`;
                             window.open(url, '_blank');
                         });
                     }
@@ -2961,7 +2961,7 @@
                     e.stopPropagation();
                     const center = getFeatureCenter(result);
                     if (center) {
-                        const url = `https://www.google.com/maps/dir/?api=1&destination=$${center[1]},${center[0]}&travelmode=driving`;
+                        const url = `https://www.google.com/maps/dir/?api=1&destination=${center[1]},${center[0]}&travelmode=driving`;
                         window.open(url, '_blank');
                     } else { alert('Coordenadas inválidas.'); }
                 };
@@ -3068,7 +3068,7 @@
         function generateGoogleMapsUrl() {
              if (routeWaypoints.length < 1) return alert("Adicione pontos.");
              const dest = routeWaypoints[routeWaypoints.length - 1];
-             let url = `https://www.google.com/maps/dir/?api=1&destination=$${dest.coordinates[1]},${dest.coordinates[0]}&travelmode=driving`;
+let url = `https://www.google.com/maps/dir/?api=1&destination=${dest.coordinates[1]},${dest.coordinates[0]}&travelmode=driving`;
              if (routeWaypoints.length > 1) {
                  const wps = routeWaypoints.slice(0, -1).map(wp => `${wp.coordinates[1]},${wp.coordinates[0]}`).join('|');
                  url += `&waypoints=${wps}`;
