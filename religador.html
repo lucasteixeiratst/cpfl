@@ -3,9 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Simulador ADVC2 Schneider - Design Intacto</title>
+<title>Simulador ADVC2 Schneider - Totalmente Bloqueado</title>
 <style>
-    /* --- Variáveis de Cor (Sem lógica de escala no CSS) --- */
     :root { 
         --bg-membrane: #e6e8e3; 
         --bg-yellow-panel: #e2e8a1; 
@@ -17,32 +16,9 @@
         --led-on-green: #00e676; 
         --led-on-yellow: #f1c40f; 
     }
-
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Arial', sans-serif; user-select: none; }
-    
-    /* Body atua como um canvas de fundo */
-    body { 
-        background-color: #111418; 
-        display: flex; 
-        flex-direction: column; 
-        align-items: center; 
-        margin: 0;
-        padding-top: 20px;
-        overflow-x: hidden;
-    }
-
-    /* O App Container congela o tamanho em 1000px. O JS vai escalonar este bloco inteiro. */
-    #app-container {
-        width: 1000px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 20px;
-        transform-origin: top center; /* Escala a partir do topo pro centro */
-        will-change: transform;
-    }
-
-    /* --- Chassi com medidas fixas perfeitas --- */
+    body { background-color: #111418; display: flex; flex-direction: column; align-items: center; margin: 0; padding-top: 20px; overflow-x: hidden; }
+    #app-container { width: 1000px; display: flex; flex-direction: column; align-items: center; gap: 20px; transform-origin: top center; will-change: transform; }
     .chassis { display: flex; background-color: #aeb6bf; padding: 15px; border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.9); gap: 15px; width: 100%;}
     .physical-sidebar { width: 100px; display: flex; flex-direction: column; gap: 15px; padding-top: 150px; }
     .switch-panel { background: #1e272e; border-radius: 6px; padding: 8px; border: 2px solid #576574; }
@@ -52,67 +28,50 @@
     .switch::after { content: ''; position: absolute; top: 2px; left: 2px; right: 2px; height: 18px; background: #555; border-radius: 2px; }
     .port-switchgear { background: #0b3f24; border: 2px solid #111; border-radius: 6px; padding: 8px; height: 70px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; margin-top: 10px; }
     .port-pin { width: 6px; height: 6px; background: #f1c40f; border-radius: 50%; margin: auto; }
-    
-    /* --- MEMBRANA --- */
     .membrane { background-color: var(--bg-membrane); border-radius: 12px; border: 2px solid #bdc3c7; padding: 25px 35px; display: grid; grid-template-columns: 360px 460px; gap: 30px; position: relative; flex: 1;}
     .schneider-logo { position: absolute; top: 15px; right: 25px; color: #27ae60; font-weight: 900; font-size: 24px; font-style: italic; }
     .schneider-logo span { color: #2c3e50; font-weight: bold; font-style: normal; display: block; font-size: 11px; text-align: right; margin-top: -2px;}
-
     .led { width: 10px; height: 10px; border-radius: 50%; background-color: var(--led-off); box-shadow: inset 0 1px 3px rgba(0,0,0,0.5); border: 1px solid #777; flex-shrink: 0; transition: 0.1s;}
     .led.on-red { background-color: var(--led-on-red); box-shadow: 0 0 6px var(--led-on-red); border-color: #d50000; }
     .led.on-green { background-color: var(--led-on-green); box-shadow: 0 0 6px var(--led-on-green); border-color: #00c853; }
     .led.on-yellow { background-color: var(--led-on-yellow); box-shadow: 0 0 6px var(--led-on-yellow); border-color: #f39c12; }
-    
     .panel-yellow { background-color: var(--bg-yellow-panel); border: 3px solid var(--line-dark); border-radius: 10px; padding: 10px; }
-    
-    /* Coluna 1 */
     .col-left { display: flex; flex-direction: column; gap: 20px; padding-top: 45px; }
     .status-panel { border: 3px solid var(--line-dark); border-radius: 10px; padding: 15px 10px; position: relative; height: 195px;}
     .status-title { position: absolute; top: -10px; left: 15px; background: var(--bg-membrane); padding: 0 8px; font-weight: bold; color: var(--text-dark); font-size: 12px; }
     .status-cols { display: flex; justify-content: space-between; gap: 5px; margin-top: 5px; }
     .status-col { display: flex; flex-direction: column; gap: 8px; flex: 1; }
     .status-item { display: flex; align-items: center; gap: 6px; font-size: 9px; font-weight: bold; color: var(--text-dark); white-space: nowrap; }
-
     .left-bot-row { display: flex; justify-content: space-between; align-items: stretch; gap: 10px; }
     .op-block { display: flex; flex-direction: column; gap: 12px; width: 110px; }
     .btn-action { width: 100%; height: 50px; border-radius: 6px; border: 2px solid #333; font-size: 14px; font-weight: bold; color: white; cursor: pointer; box-shadow: 0 4px 0 rgba(0,0,0,0.2); }
     .btn-action:active { transform: translateY(4px); box-shadow: 0 0 0; }
     .desabilitado-row { display: flex; align-items: center; gap: 5px; font-size: 8px; font-weight: bold; color: var(--text-dark); margin-top: -8px; padding-left: 2px;}
-
     .dados-leds-block { display: flex; gap: 6px; width: 130px; padding: 8px; }
     .dados-col-left { display: flex; flex-direction: column; gap: 6px; flex: 1.2; }
     .btn-dados { background: var(--bg-yellow-panel); border: 2px solid var(--line-dark); border-radius: 4px; padding: 6px 2px; font-size: 7px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 0 var(--line-dark); color: var(--text-dark); }
     .btn-dados:active { transform: translateY(2px); box-shadow: 0 0 0; }
     .btn-dados-tall { flex: 0.8; font-size: 7px; line-height: 1.4; display: flex; align-items: center; justify-content: center;}
-
     .btn-lock { background: var(--bg-yellow-panel); border: 3px solid var(--line-dark); border-radius: 8px; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; box-shadow: 0 3px 0 var(--line-dark); margin-top: auto; margin-bottom: 3px; }
     .btn-lock:active { transform: translateY(3px); box-shadow: 0 0 0; }
     .btn-lock .led { position: absolute; top: 6px; right: 6px; }
-
-    /* Coluna 2 */
     .col-right { display: flex; flex-direction: column; gap: 25px; padding-top: 45px; }
     .right-top { display: flex; gap: 15px; align-items: flex-start; }
-    
     .lcd-display { background-color: #8bb38d; border: 4px solid var(--line-dark); border-radius: 5px; height: 95px; width: 170px; padding: 6px; font-family: 'Courier New', monospace; font-weight: bold; font-size: 11px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: inset 0 3px 10px rgba(0,0,0,0.6); line-height: 1.2; text-transform: uppercase; color: #111; transition: all 0.5s ease;}
     .lcd-display.sleeping { background-color: #4a5d4b; color: rgba(17,17,17,0.1); box-shadow: inset 0 3px 15px rgba(0,0,0,0.9); }
     .lcd-line { white-space: pre-wrap; word-wrap: break-word; }
-    
     .nav-panel { flex: 1; }
     .nav-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
     .nav-btn { background: var(--bg-yellow-panel); border: 2px solid var(--line-dark); border-radius: 6px; font-size: 8px; font-weight: bold; color: var(--text-dark); cursor: pointer; box-shadow: 0 2px 0 var(--line-dark); display: flex; align-items: center; justify-content: center; height: 35px; line-height: 1.1; touch-action: manipulation;}
     .nav-btn:active { transform: translateY(2px); box-shadow: 0 0 0; }
     .nav-arrow { font-size: 16px; }
-
     .right-bot { position: relative; border-top: 3px solid var(--line-dark); padding-top: 20px; }
     .fk-title { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: var(--bg-membrane); padding: 0 10px; font-weight: bold; font-size: 14px; letter-spacing: 1px; color: var(--text-dark); }
-    
     .fast-keys-grid { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(4, 40px); gap: 12px; }
     .fk-btn { background: #fff; border: 3px solid var(--color-olive); border-radius: 6px; display: flex; align-items: center; cursor: pointer; box-shadow: 0 2px 0 #99a31a; padding: 0; overflow: hidden; }
     .fk-btn:active { transform: translateY(2px); box-shadow: 0 0 0; }
     .fk-led-area { background: var(--color-olive); width: 22px; height: 100%; display: flex; align-items: center; justify-content: center; border-right: 2px solid #99a31a; flex-shrink: 0;}
     .fk-text { flex: 1; font-size: 9px; font-weight: bold; color: var(--text-dark); text-align: center; line-height: 1.1; padding: 0 2px;}
-
-    /* Mesa de Engenharia fixa */
     .test-desk { background-color: #2f3640; border: 2px solid #7f8c8d; border-radius: 10px; padding: 15px; width: 100%; box-shadow: 0 10px 20px rgba(0,0,0,0.8); z-index: 20; display: flex; flex-direction: column; gap: 10px;}
     .test-desk-title { color: #f1c40f; font-weight: bold; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #7f8c8d; padding-bottom: 5px;}
     .test-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
@@ -252,33 +211,21 @@
 </div>
 
 <script>
-    // --- LÓGICA DE ESCALA VETORIAL INTELIGENTE ---
     function ajustarEscala() {
         const container = document.getElementById('app-container');
         const larguraJanela = window.innerWidth;
-        const larguraOriginal = 1000; // Largura exata declarada no CSS
-        
-        // Queremos que ocupe 96% da tela no celular, criando uma margem leve e bonita
+        const larguraOriginal = 1000; 
         let escala = (larguraJanela * 0.96) / larguraOriginal;
-        
-        // Limita a escala máxima para não explodir na tela do PC
         if (escala > 1) escala = 1;
-        
-        // Aplica o redimensionamento mantendo a integridade do layout
         container.style.transform = `scale(${escala})`;
-        
-        // Correção crucial: O transform não ajusta o fluxo do DOM. 
-        // Aqui dizemos ao Body o tamanho real da imagem reduzida para evitar "scroll infinito".
         const alturaReal = container.getBoundingClientRect().height;
-        document.body.style.height = `${alturaReal + 40}px`; // +40px para a margem superior
+        document.body.style.height = `${alturaReal + 40}px`; 
     }
 
-    // Aciona na hora e sempre que virar o celular
     window.addEventListener('resize', ajustarEscala);
     window.addEventListener('load', ajustarEscala);
     setTimeout(ajustarEscala, 100);
 
-    // --- LÓGICA DO SIMULADOR ---
     const protectionSettings = {
         'A': { puFase: 400, puTerra: 50, tiros: 3, time: [2, 5, 10] }, 
         'B': { puFase: 200, puTerra: 20, tiros: 1, time: [3] },        
@@ -288,14 +235,15 @@
 
     const core = {
         breaker: 'CLOSED',
-        locked: false, mode: 'LOCAL', autoReclose: true, hotLine: false, earthProt: true, sefProt: false, workTag: false, grp: 'A', clp: false,
+        locked: true,     
+        mode: 'REMOTE',   
+        autoReclose: true, hotLine: false, earthProt: true, sefProt: false, workTag: false, grp: 'A', clp: false,
         m: { ia: 125, ib: 124, ic: 128, in: 2, va: 13.8, vb: 13.8, vc: 13.8, freq: 60.0, p: 2980, q: 450, s: 3013, pf: 0.98 }, 
         hw: { ac: true, bat: 13.6, wear: 15 },
         targets: { pha: false, phb: false, phc: false, earth: false, sef: false, overVolt: false, underFreq: false, extTrip: false, opTrip: false },
         faultOnLine: false, lastFault: null, eventLog: [],
         lcdTimer: null, view: 'HOME', menuPath: [], menuIndex: 0, rotationIndex: 0,
         shotCount: 0, recloseTimer: 0, isPickup: false,
-        
         isAwake: true, sleepTimeout: null 
     };
 
@@ -309,9 +257,9 @@
     }
 
     logEvent("SISTEMA INICIADO V2.4.1");
-    logEvent("DISJUNTOR FECHADO");
+    logEvent("PAINEL BLOQUEADO (INICIALIZACAO)");
+    logEvent("CONTROLE REMOTO (INICIALIZACAO)");
 
-    /* Sistema de Standby ajustado para 60 segundos (1 minuto) */
     function resetSleepTimer() {
         if (!core.isAwake) {
             core.isAwake = true;
@@ -319,7 +267,6 @@
             syncUI();
         }
         clearTimeout(core.sleepTimeout);
-        // Após 60.000 ms (1 minuto) sem interagir, apaga o backlight do LCD
         core.sleepTimeout = setTimeout(() => {
             core.isAwake = false;
             document.getElementById('lcd-screen').classList.add('sleeping');
@@ -412,7 +359,7 @@
 
     function btnNav(action) {
         resetSleepTimer(); 
-        if(core.locked) return showLCD(["ACESSO NEGADO", "", "PAINEL", "BLOQUEADO"], 1500);
+        if(core.locked) return showLCD(["ACESSO NEGADO", "","PAINEL BLOQUEADO", ""], 1500); 
         if(action === 'LOG') { core.view = 'VIEW_EVENTS'; return syncUI(); }
 
         if (action === 'MENU') {
@@ -487,7 +434,7 @@
 
     function cmdOperate(cmd) {
         resetSleepTimer();
-        if (core.locked) return showLCD(["COMANDO REJEITADO", "","PAINEL BLOQUEADO", ""], 2000);
+        if (core.locked) return showLCD(["ACESSO NEGADO", "","PAINEL BLOQUEADO", ""], 2000);
         if (core.mode === 'REMOTE' && cmd === 'CLOSE') return showLCD(["COMANDO REJEITADO", "","MODO REMOTO", ""], 2000);
 
         if (cmd === 'OPEN' && core.breaker !== 'OPEN' && core.breaker !== 'LOCKOUT') { 
@@ -519,7 +466,7 @@
 
     function cmdToggle(fn) {
         resetSleepTimer();
-        if (core.locked && fn !== 'lock') return showLCD(["ACESSO NEGADO", "","DESTRAVE O PAINEL", ""], 2000);
+        if (core.locked && fn !== 'lock') return showLCD(["ACESSO NEGADO", "","PAINEL BLOQUEADO", ""], 2000);
         if (core.mode === 'REMOTE' && fn !== 'local' && fn !== 'lock') return showLCD(["ACESSO NEGADO", "","MODO REMOTO", ""], 2000);
         switch(fn) {
             case 'lock': core.locked = !core.locked; logEvent(core.locked ? "PAINEL BLOQUEADO" : "PAINEL DESBLOQUEADO"); break;
@@ -539,13 +486,14 @@
 
     function cmdDataLeds() {
         resetSleepTimer();
+        if(core.locked) return showLCD(["ACESSO NEGADO", "","PAINEL BLOQUEADO", ""], 2000); 
         if (!core.lastFault) return showLCD(["DADOS DOS LEDS", "", "NENHUMA FALTA", "REGISTRADA"], 3000);
         showLCD(["-- DADOS DA FALTA --", `ALVO: ${core.lastFault.target}`, `MAGNITUDE: ${core.lastFault.amp} A`, `TEMPO: ${core.lastFault.time} ms`], 5000);
     }
 
     function cmdReset(){
         resetSleepTimer();
-        if(core.locked) return showLCD(["ACESSO NEGADO", "", "PAINEL", "BLOQUEADO"], 1500);
+        if(core.locked) return showLCD(["ACESSO NEGADO", "","PAINEL BLOQUEADO", ""], 1500);
         core.targets = {pha:false, phb:false, phc:false, earth:false, sef:false, overVolt:false, underFreq:false, extTrip:false, opTrip:false}; 
         if (core.breaker === 'LOCKOUT') { core.breaker = 'OPEN'; core.shotCount = 0; logEvent("RESET DE LOCKOUT"); }
         logEvent("RESET DE ALVOS (TARGETS)");
@@ -637,6 +585,7 @@
     }
     
     // Arranque
+    syncUI();
     resetSleepTimer();
 </script>
 </body>
