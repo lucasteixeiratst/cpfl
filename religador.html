@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Simulador ADVC2 Schneider - Design Intacto</title>
+<style>
+    /* --- Variáveis de Cor (Sem lógica de escala no CSS) --- */
+    :root { 
+        --bg-membrane: #e6e8e3; 
+        --bg-yellow-panel: #e2e8a1; 
+        --line-dark: #37474f; 
+        --color-olive: #b8c823; 
+        --text-dark: #2c3e50; 
+        --led-off: #839192; 
+        --led-on-red: #ff1744; 
+        --led-on-green: #00e676; 
+        --led-on-yellow: #f1c40f; 
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Arial', sans-serif; user-select: none; }
+    
+    /* Body atua como um canvas de fundo */
+    body { 
+        background-color: #111418; 
+        display: flex; 
+        flex-direction: column; 
+        align-items: center; 
+        margin: 0;
+        padding-top: 20px;
+        overflow-x: hidden;
+    }
+
+    /* O App Container congela o tamanho em 1000px. O JS vai escalonar este bloco inteiro. */
+    #app-container {
+        width: 1000px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+        transform-origin: top center; /* Escala a partir do topo pro centro */
+        will-change: transform;
+    }
+
+    /* --- Chassi com medidas fixas perfeitas --- */
+    .chassis { display: flex; background-color: #aeb6bf; padding: 15px; border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.9); gap: 15px; width: 100%;}
+    .physical-sidebar { width: 100px; display: flex; flex-direction: column; gap: 15px; padding-top: 150px; }
+    .switch-panel { background: #1e272e; border-radius: 6px; padding: 8px; border: 2px solid #576574; }
+    .switch-title { color: #2ecc71; font-size: 8px; font-weight: bold; text-align: center; margin-bottom: 4px; }
+    .switches { display: flex; justify-content: space-around; }
+    .switch { width: 25px; height: 40px; background: #111; border-radius: 3px; border: 2px solid #333; position: relative; }
+    .switch::after { content: ''; position: absolute; top: 2px; left: 2px; right: 2px; height: 18px; background: #555; border-radius: 2px; }
+    .port-switchgear { background: #0b3f24; border: 2px solid #111; border-radius: 6px; padding: 8px; height: 70px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; margin-top: 10px; }
+    .port-pin { width: 6px; height: 6px; background: #f1c40f; border-radius: 50%; margin: auto; }
+    
+    /* --- MEMBRANA --- */
+    .membrane { background-color: var(--bg-membrane); border-radius: 12px; border: 2px solid #bdc3c7; padding: 25px 35px; display: grid; grid-template-columns: 360px 460px; gap: 30px; position: relative; flex: 1;}
+    .schneider-logo { position: absolute; top: 15px; right: 25px; color: #27ae60; font-weight: 900; font-size: 24px; font-style: italic; }
+    .schneider-logo span { color: #2c3e50; font-weight: bold; font-style: normal; display: block; font-size: 11px; text-align: right; margin-top: -2px;}
+
+    .led { width: 10px; height: 10px; border-radius: 50%; background-color: var(--led-off); box-shadow: inset 0 1px 3px rgba(0,0,0,0.5); border: 1px solid #777; flex-shrink: 0; transition: 0.1s;}
+    .led.on-red { background-color: var(--led-on-red); box-shadow: 0 0 6px var(--led-on-red); border-color: #d50000; }
+    .led.on-green { background-color: var(--led-on-green); box-shadow: 0 0 6px var(--led-on-green); border-color: #00c853; }
+    .led.on-yellow { background-color: var(--led-on-yellow); box-shadow: 0 0 6px var(--led-on-yellow); border-color: #f39c12; }
+    
+    .panel-yellow { background-color: var(--bg-yellow-panel); border: 3px solid var(--line-dark); border-radius: 10px; padding: 10px; }
+    
+    /* Coluna 1 */
+    .col-left { display: flex; flex-direction: column; gap: 20px; padding-top: 45px; }
+    .status-panel { border: 3px solid var(--line-dark); border-radius: 10px; padding: 15px 10px; position: relative; height: 195px;}
+    .status-title { position: absolute; top: -10px; left: 15px; background: var(--bg-membrane); padding: 0 8px; font-weight: bold; color: var(--text-dark); font-size: 12px; }
+    .status-cols { display: flex; justify-content: space-between; gap: 5px; margin-top: 5px; }
+    .status-col { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+    .status-item { display: flex; align-items: center; gap: 6px; font-size: 9px; font-weight: bold; color: var(--text-dark); white-space: nowrap; }
+
+    .left-bot-row { display: flex; justify-content: space-between; align-items: stretch; gap: 10px; }
+    .op-block { display: flex; flex-direction: column; gap: 12px; width: 110px; }
+    .btn-action { width: 100%; height: 50px; border-radius: 6px; border: 2px solid #333; font-size: 14px; font-weight: bold; color: white; cursor: pointer; box-shadow: 0 4px 0 rgba(0,0,0,0.2); }
+    .btn-action:active { transform: translateY(4px); box-shadow: 0 0 0; }
+    .desabilitado-row { display: flex; align-items: center; gap: 5px; font-size: 8px; font-weight: bold; color: var(--text-dark); margin-top: -8px; padding-left: 2px;}
+
+    .dados-leds-block { display: flex; gap: 6px; width: 130px; padding: 8px; }
+    .dados-col-left { display: flex; flex-direction: column; gap: 6px; flex: 1.2; }
+    .btn-dados { background: var(--bg-yellow-panel); border: 2px solid var(--line-dark); border-radius: 4px; padding: 6px 2px; font-size: 7px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 0 var(--line-dark); color: var(--text-dark); }
+    .btn-dados:active { transform: translateY(2px); box-shadow: 0 0 0; }
+    .btn-dados-tall { flex: 0.8; font-size: 7px; line-height: 1.4; display: flex; align-items: center; justify-content: center;}
+
+    .btn-lock { background: var(--bg-yellow-panel); border: 3px solid var(--line-dark); border-radius: 8px; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; box-shadow: 0 3px 0 var(--line-dark); margin-top: auto; margin-bottom: 3px; }
+    .btn-lock:active { transform: translateY(3px); box-shadow: 0 0 0; }
+    .btn-lock .led { position: absolute; top: 6px; right: 6px; }
+
+    /* Coluna 2 */
+    .col-right { display: flex; flex-direction: column; gap: 25px; padding-top: 45px; }
+    .right-top { display: flex; gap: 15px; align-items: flex-start; }
+    
+    .lcd-display { background-color: #8bb38d; border: 4px solid var(--line-dark); border-radius: 5px; height: 95px; width: 170px; padding: 6px; font-family: 'Courier New', monospace; font-weight: bold; font-size: 11px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: inset 0 3px 10px rgba(0,0,0,0.6); line-height: 1.2; text-transform: uppercase; color: #111; transition: all 0.5s ease;}
+    .lcd-display.sleeping { background-color: #4a5d4b; color: rgba(17,17,17,0.1); box-shadow: inset 0 3px 15px rgba(0,0,0,0.9); }
+    .lcd-line { white-space: pre-wrap; word-wrap: break-word; }
+    
+    .nav-panel { flex: 1; }
+    .nav-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .nav-btn { background: var(--bg-yellow-panel); border: 2px solid var(--line-dark); border-radius: 6px; font-size: 8px; font-weight: bold; color: var(--text-dark); cursor: pointer; box-shadow: 0 2px 0 var(--line-dark); display: flex; align-items: center; justify-content: center; height: 35px; line-height: 1.1; touch-action: manipulation;}
+    .nav-btn:active { transform: translateY(2px); box-shadow: 0 0 0; }
+    .nav-arrow { font-size: 16px; }
+
+    .right-bot { position: relative; border-top: 3px solid var(--line-dark); padding-top: 20px; }
+    .fk-title { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: var(--bg-membrane); padding: 0 10px; font-weight: bold; font-size: 14px; letter-spacing: 1px; color: var(--text-dark); }
+    
+    .fast-keys-grid { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(4, 40px); gap: 12px; }
+    .fk-btn { background: #fff; border: 3px solid var(--color-olive); border-radius: 6px; display: flex; align-items: center; cursor: pointer; box-shadow: 0 2px 0 #99a31a; padding: 0; overflow: hidden; }
+    .fk-btn:active { transform: translateY(2px); box-shadow: 0 0 0; }
+    .fk-led-area { background: var(--color-olive); width: 22px; height: 100%; display: flex; align-items: center; justify-content: center; border-right: 2px solid #99a31a; flex-shrink: 0;}
+    .fk-text { flex: 1; font-size: 9px; font-weight: bold; color: var(--text-dark); text-align: center; line-height: 1.1; padding: 0 2px;}
+
+    /* Mesa de Engenharia fixa */
+    .test-desk { background-color: #2f3640; border: 2px solid #7f8c8d; border-radius: 10px; padding: 15px; width: 100%; box-shadow: 0 10px 20px rgba(0,0,0,0.8); z-index: 20; display: flex; flex-direction: column; gap: 10px;}
+    .test-desk-title { color: #f1c40f; font-weight: bold; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #7f8c8d; padding-bottom: 5px;}
+    .test-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .sim-select { grid-column: 1 / -1; padding: 8px; font-weight: bold; border-radius: 4px; border: 1px solid #1abc9c; background: #ecf0f1; margin-bottom: 5px;}
+    .btn-test { padding: 8px; font-size: 10px; font-weight: bold; cursor: pointer; border-radius: 4px; border: none; box-shadow: 0 3px 0 rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; transition: 0.1s; min-height: 40px;}
+    .btn-test:active { transform: translateY(3px); box-shadow: 0 0 0; }
+    .bt-red { background: #e74c3c; color: white; } .bt-blue { background: #3498db; color: white; } .bt-dark { background: #1e272e; color: white; border: 1px solid #7f8c8d; } .bt-grey { background: #95a5a6; color: #111; } .bt-green { background: #27ae60; color: white;}
+</style>
+</head>
+<body>
+
+<div id="app-container">
+    <div class="chassis">
+        <div class="physical-sidebar">
+            <div class="switch-panel"><div class="switch-title">CIRC. ABERTURA</div><div class="switches"><div class="switch"></div><div class="switch"></div></div></div>
+            <div class="switch-panel"><div class="switch-title" style="color:#e74c3c;">CIRC. FECHAMENTO</div><div class="switches"><div class="switch"></div><div class="switch"></div></div></div>
+            <div class="port-switchgear"><script>for(let i=0;i<18;i++) document.write('<div class="port-pin"></div>');</script><div class="port-label" style="font-size:5px; color:#fff; text-align:center; grid-column: span 6; margin-top:2px;">SWITCHGEAR</div></div>
+        </div>
+
+        <div class="membrane">
+            <div class="schneider-logo">Schneider <span>Electric</span></div>
+
+            <div class="col-left">
+                <div class="status-panel">
+                    <div class="status-title">LEDS DE STATUS</div>
+                    <div class="status-cols">
+                        <div class="status-col">
+                            <div class="status-item"><div class="led" id="s-bloqueio"></div> Bloqueio</div>
+                            <div class="status-item"><div class="led" id="s-pha"></div> Falta Fase A</div>
+                            <div class="status-item"><div class="led" id="s-phb"></div> Falta Fase B</div>
+                            <div class="status-item"><div class="led" id="s-phc"></div> Falta Fase C</div>
+                            <div class="status-item"><div class="led" id="s-earth"></div> Falta à Terra</div>
+                            <div class="status-item"><div class="led" id="s-sef"></div> Terra Sensível</div>
+                        </div>
+                        <div class="status-col">
+                            <div class="status-item"><div class="led" id="s-partida"></div> Partida</div>
+                            <div class="status-item"><div class="led" id="s-prot-mont"></div> Prot Montante</div>
+                            <div class="status-item"><div class="led" id="s-subfreq"></div> Sobre/Subfreq</div>
+                            <div class="status-item"><div class="led" id="s-subtensao"></div> Sobre/Subtens.</div>
+                            <div class="status-item"><div class="led" id="s-ext"></div> Abert Externa</div>
+                            <div class="status-item"><div class="led" id="s-operador"></div> Abert Operador</div>
+                        </div>
+                        <div class="status-col">
+                            <div class="status-item"><div class="led on-green" id="s-viva-a"></div> Fase A Viva</div>
+                            <div class="status-item"><div class="led on-green" id="s-viva-b"></div> Fase B Viva</div>
+                            <div class="status-item"><div class="led on-green" id="s-viva-c"></div> Fase C Viva</div>
+                            <div class="status-item"><div class="led on-green" id="s-carga-lig"></div> Carga LIG</div>
+                            <div class="status-item"><div class="led on-green" id="s-sys-ok"></div> Sistema OK</div>
+                            <div class="status-item"><div class="led on-green" id="s-ac"></div> Alimentação AC</div>
+                            <div class="status-item"><div class="led" id="s-bat"></div> Bateria</div>
+                            <div class="status-item"><div class="led" id="s-alarme"></div> Alarme</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="left-bot-row">
+                    <div class="panel-yellow op-block">
+                        <button class="btn-action" style="background:#27ae60;border-color:#1e8449;" onclick="cmdOperate('OPEN')">ABRIR</button>
+                        <div class="desabilitado-row"><div class="led" id="led-abrir-dis"></div> DESABILITADO</div>
+                        <button class="btn-action" style="background:#e74c3c;border-color:#c0392b;" onclick="cmdOperate('CLOSE')">FECHAR</button>
+                        <div class="desabilitado-row"><div class="led" id="led-fechar-dis"></div> DESABILITADO</div>
+                    </div>
+
+                    <div class="panel-yellow dados-leds-block">
+                        <div class="dados-col-left">
+                            <button class="btn-dados" onclick="cmdReset()">REINICIAR<br>LEDS</button>
+                            <button class="btn-dados" onclick="btnNav('LOG')">LOG DE<br>EVENTOS</button>
+                        </div>
+                        <button class="btn-dados btn-dados-tall" onclick="cmdDataLeds()">DADOS<br>DOS<br>LEDS</button>
+                    </div>
+
+                    <button class="btn-lock" onclick="cmdToggle('lock')"><span style="font-size: 24px;">🔓</span><div class="led" id="l-lock"></div></button>
+                </div>
+            </div>
+
+            <div class="col-right">
+                <div class="right-top">
+                    <div class="lcd-display" id="lcd-screen"></div>
+
+                    <div class="panel-yellow nav-panel">
+                        <div class="nav-grid">
+                            <button class="nav-btn" onclick="btnNav('MENU')">MENU</button>
+                            <button class="nav-btn nav-arrow" onclick="btnNav('UP')">⬆</button>
+                            <button class="nav-btn" onclick="btnNav('SELECT')">SELECIONAR</button>
+                            <button class="nav-btn" onclick="wakeUpPanel()">PAINEL<br>LIGADO</button>
+                            
+                            <button class="nav-btn nav-arrow" onclick="btnNav('LEFT')">⬅</button>
+                            <button class="nav-btn nav-arrow" onclick="btnNav('DOWN')">⬇</button>
+                            <button class="nav-btn nav-arrow" onclick="btnNav('RIGHT')">➡</button>
+                            
+                            <button class="nav-btn" 
+                                    onmousedown="cmdLampTest(true)" 
+                                    onmouseup="cmdLampTest(false)" 
+                                    onmouseleave="cmdLampTest(false)"
+                                    ontouchstart="cmdLampTest(true); event.preventDefault();" 
+                                    ontouchend="cmdLampTest(false); event.preventDefault();">TESTE<br>LEDS</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="right-bot">
+                    <div class="fk-title">TECLAS RÁPIDAS</div>
+                    <div class="fast-keys-grid">
+                        <button class="fk-btn" onclick="cmdToggle('hotline')"><div class="fk-led-area"><div class="led" id="l-hotline"></div></div><div class="fk-text">Bloqueio de<br>Carga Viva</div></button>
+                        <button class="fk-btn" onclick="cmdToggle('autorec')"><div class="fk-led-area"><div class="led on-green" id="l-autorec"></div></div><div class="fk-text">Relig./Secc<br>Auto</div></button>
+                        <button class="fk-btn" onclick="cmdToggle('remote')"><div class="fk-led-area"><div class="led" id="l-remote"></div></div><div class="fk-text">Controle<br>Remoto</div></button>
+                        <button class="fk-btn" onclick="cmdToggle('clp')"><div class="fk-led-area"><div class="led" id="l-clp"></div></div><div class="fk-text">Carga<br>Fria (CLP)</div></button>
+                        <button class="fk-btn" onclick="cmdToggle('earth')"><div class="fk-led-area"><div class="led on-green" id="l-earth"></div></div><div class="fk-text">Falta à<br>Terra</div></button>
+                        <button class="fk-btn" onclick="cmdToggle('local')"><div class="fk-led-area"><div class="led on-green" id="l-local"></div></div><div class="fk-text">Controle<br>Local</div></button>
+                        <button class="fk-btn"><div class="fk-led-area"><div class="led"></div></div><div class="fk-text">Teste de<br>Bateria</div></button>
+                        <button class="fk-btn" onclick="cmdToggle('sef')"><div class="fk-led-area"><div class="led" id="l-sef"></div></div><div class="fk-text">Terra<br>Sensível</div></button>
+                        <button class="fk-btn" onclick="cmdToggle('worktag')"><div class="fk-led-area"><div class="led" id="l-worktag"></div></div><div class="fk-text">Etiqueta de<br>Trabalho</div></button>
+                        <button class="fk-btn" onclick="cmdGrp('A')"><div class="fk-led-area"><div class="led on-green" id="l-grpA"></div></div><div class="fk-text">Grupo de<br>Proteção A</div></button>
+                        <button class="fk-btn" onclick="cmdGrp('B')"><div class="fk-led-area"><div class="led" id="l-grpB"></div></div><div class="fk-text">Grupo de<br>Proteção B</div></button>
+                        <button class="fk-btn" onclick="cmdGrp('C')"><div class="fk-led-area"><div class="led" id="l-grpC"></div></div><div class="fk-text">Grupo de<br>Proteção C</div></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-desk">
+        <div class="test-desk-title">Módulo de Injeção de Grandezas e Falhas (Simulador Físico)</div>
+        <div class="test-grid">
+            <select id="simType" class="sim-select">
+                <option value="TRANS_A">Falta Transitória Fase A (2500A)</option>
+                <option value="PERM_A">Falta Permanente Fase A (2500A)</option>
+                <option value="PERM_BC">Falta Permanente Bifásica B-C (4500A)</option>
+                <option value="SEF">Falta de Alta Impedância (SEF 8A)</option>
+            </select>
+            <button class="btn-test bt-red" onclick="simFault()">⚡ Injetar Corrente de Falta</button>
+            <button class="btn-test bt-dark" onclick="simAcLoss()">🔌 Falha de Rede AC</button>
+            <button class="btn-test bt-blue" onclick="simScadaTrip()">📡 Trip via SCADA</button>
+            <button class="btn-test bt-grey" onclick="simSOTF()">⚠️ Armar S.O.T.F.</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- LÓGICA DE ESCALA VETORIAL INTELIGENTE ---
+    function ajustarEscala() {
+        const container = document.getElementById('app-container');
+        const larguraJanela = window.innerWidth;
+        const larguraOriginal = 1000; // Largura exata declarada no CSS
+        
+        // Queremos que ocupe 96% da tela no celular, criando uma margem leve e bonita
+        let escala = (larguraJanela * 0.96) / larguraOriginal;
+        
+        // Limita a escala máxima para não explodir na tela do PC
+        if (escala > 1) escala = 1;
+        
+        // Aplica o redimensionamento mantendo a integridade do layout
+        container.style.transform = `scale(${escala})`;
+        
+        // Correção crucial: O transform não ajusta o fluxo do DOM. 
+        // Aqui dizemos ao Body o tamanho real da imagem reduzida para evitar "scroll infinito".
+        const alturaReal = container.getBoundingClientRect().height;
+        document.body.style.height = `${alturaReal + 40}px`; // +40px para a margem superior
+    }
+
+    // Aciona na hora e sempre que virar o celular
+    window.addEventListener('resize', ajustarEscala);
+    window.addEventListener('load', ajustarEscala);
+    setTimeout(ajustarEscala, 100);
+
+    // --- LÓGICA DO SIMULADOR ---
+    const protectionSettings = {
+        'A': { puFase: 400, puTerra: 50, tiros: 3, time: [2, 5, 10] }, 
+        'B': { puFase: 200, puTerra: 20, tiros: 1, time: [3] },        
+        'C': { puFase: 600, puTerra: 100, tiros: 0, time: [] },        
+        'D': { puFase: 400, puTerra: 50, tiros: 2, time: [5, 5] }
+    };
+
+    const core = {
+        breaker: 'CLOSED',
+        locked: false, mode: 'LOCAL', autoReclose: true, hotLine: false, earthProt: true, sefProt: false, workTag: false, grp: 'A', clp: false,
+        m: { ia: 125, ib: 124, ic: 128, in: 2, va: 13.8, vb: 13.8, vc: 13.8, freq: 60.0, p: 2980, q: 450, s: 3013, pf: 0.98 }, 
+        hw: { ac: true, bat: 13.6, wear: 15 },
+        targets: { pha: false, phb: false, phc: false, earth: false, sef: false, overVolt: false, underFreq: false, extTrip: false, opTrip: false },
+        faultOnLine: false, lastFault: null, eventLog: [],
+        lcdTimer: null, view: 'HOME', menuPath: [], menuIndex: 0, rotationIndex: 0,
+        shotCount: 0, recloseTimer: 0, isPickup: false,
+        
+        isAwake: true, sleepTimeout: null 
+    };
+
+    function getTimeStamp() {
+        let d = new Date(); return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}.${String(d.getMilliseconds()).padStart(3,'0')}`;
+    }
+    
+    function logEvent(msg) {
+        core.eventLog.push(`[${getTimeStamp()}] ${msg}`);
+        if(core.eventLog.length > 50) core.eventLog.shift(); 
+    }
+
+    logEvent("SISTEMA INICIADO V2.4.1");
+    logEvent("DISJUNTOR FECHADO");
+
+    /* Sistema de Standby ajustado para 60 segundos (1 minuto) */
+    function resetSleepTimer() {
+        if (!core.isAwake) {
+            core.isAwake = true;
+            document.getElementById('lcd-screen').classList.remove('sleeping');
+            syncUI();
+        }
+        clearTimeout(core.sleepTimeout);
+        // Após 60.000 ms (1 minuto) sem interagir, apaga o backlight do LCD
+        core.sleepTimeout = setTimeout(() => {
+            core.isAwake = false;
+            document.getElementById('lcd-screen').classList.add('sleeping');
+            syncUI();
+        }, 60000); 
+    }
+
+    function wakeUpPanel() {
+        resetSleepTimer();
+    }
+
+    setInterval(() => {
+        if(core.view === 'HOME' && !core.lcdTimer && core.breaker !== 'RECLOSING' && !core.isPickup && core.isAwake) {
+            core.rotationIndex = (core.rotationIndex + 1) % 3;
+            renderLCD();
+        }
+    }, 5000);
+
+    const menuTree = {
+        'ROOT': ['1. OPERACAO', '2. MEDICOES', '3. PROTECAO', '4. EVENTOS', '5. SISTEMA'],
+        '1. OPERACAO': ['>> DISJUNTOR', '>> MODO LOC/REM'],
+        '2. MEDICOES': [],
+        '3. PROTECAO': ['>> P.U. FASE', '>> TIROS 79'], 
+        '4. EVENTOS': [],
+        '5. SISTEMA': []
+    };
+
+    function showLCD(lines, duration = 0) {
+        if(!core.isAwake) return; 
+        document.getElementById('lcd-screen').innerHTML = lines.map(l => `<div class="lcd-line">${l}</div>`).join('');
+        if (duration > 0) {
+            clearTimeout(core.lcdTimer);
+            core.lcdTimer = setTimeout(() => { core.lcdTimer = null; renderLCD(); }, duration);
+        }
+    }
+
+    function renderLCD() {
+        if (core.lcdTimer || !core.isAwake) return; 
+
+        if (core.view === 'MENU') {
+            let currentFolder = core.menuPath.length === 0 ? 'ROOT' : core.menuPath[core.menuPath.length - 1];
+            let items = menuTree[currentFolder] || [];
+            let lines = [`-- ${currentFolder} --`];
+            
+            if (currentFolder === '3. PROTECAO') {
+                let set = protectionSettings[core.grp];
+                lines.push(`<span style="${core.menuIndex===0 ? 'background:#2c3e50;color:#a5d6a7;' : ''}">${core.menuIndex===0 ? '▶' : ' '}P.U. FASE: < ${set.puFase}A ></span>`);
+                lines.push(`<span style="${core.menuIndex===1 ? 'background:#2c3e50;color:#a5d6a7;' : ''}">${core.menuIndex===1 ? '▶' : ' '}TIROS 79 : < ${set.tiros} ></span>`);
+                lines.push(`(Edit: SETAS ESQ/DIR)`);
+            } else {
+                let start = Math.max(0, core.menuIndex - 2);
+                for(let i=0; i<3; i++) {
+                    let idx = start + i;
+                    if(idx < items.length) {
+                        let mark = (idx === core.menuIndex) ? "▶" : " ";
+                        let bg = (idx === core.menuIndex) ? "background:#2c3e50; color:#a5d6a7;" : "";
+                        lines.push(`<span style="${bg}">${mark} ${items[idx]}</span>`);
+                    }
+                }
+            }
+            return showLCD(lines);
+        }
+        
+        if (core.view === 'VIEW_MEASUREMENTS') return showLCD(["-- MEDICOES RMS --", `Ia:${core.m.ia}A Ib:${core.m.ib}A`, `Ic:${core.m.ic}A In:${core.m.in}A`, `V:${core.m.va.toFixed(1)}kV P:${core.m.p}kW`]);
+        if (core.view === 'VIEW_SYSTEM') return showLCD(["-- INFO HARDWARE --", `BATERIA: ${core.hw.bat.toFixed(1)}V`, `REDE AC: ${core.hw.ac ? 'NORMAL' : 'FALHA!'}`, `VIDA UTIL: ${100 - core.hw.wear}%`]);
+        if (core.view === 'VIEW_EVENTS') {
+            let ev = core.eventLog[core.eventLog.length - 1] || "VAZIO";
+            let ev2 = core.eventLog[core.eventLog.length - 2] || "";
+            return showLCD(["-- HISTORICO --", `> ${ev.substring(14)}`, `${ev2.substring(14)}`, "(SETA ESQ. p/ sair)"]);
+        }
+
+        let st = core.breaker === 'CLOSED' ? "FECHADO" : (core.breaker === 'RECLOSING' ? "RELIG.." : (core.breaker === 'LOCKOUT' ? "BLOQUEIO" : "ABERTO "));
+        let l1 = `${st}           ${core.mode === 'LOCAL' ? "LOC" : "REM"}`;
+        let l2 = `GRP:${core.grp} | 79:${core.autoReclose ? 'ON':'OFF'}`;
+        let l3 = "", l4 = "";
+
+        if (core.isPickup) { l2 = ">> PARTIDA ATIVA <<"; l3 = "CORRENTE > PICKUP"; l4 = "TEMPORIZANDO CURVA"; }
+        else if (core.breaker === 'RECLOSING') { l3 = `>> CICLO 79: T${core.shotCount} <<`; l4 = `TEMPO MORTO: ${core.recloseTimer}s`; }
+        else if (core.workTag) { l2 = ">> WORK TAG ATIVA <<"; l3 = `Ia:${core.m.ia}A Ib:${core.m.ib}A`; l4 = `Ic:${core.m.ic}A`; }
+        else if (core.faultOnLine && core.breaker !== 'CLOSED') { l3 = "! ALERTA S.O.T.F !"; l4 = "CURTO PRESENTE"; }
+        else if (core.targets.pha || core.targets.earth || core.targets.phb) { l3 = ">> ALVO MEMORIA <<"; l4 = "VER LEDS DE STATUS"; }
+        else {
+            if (core.rotationIndex === 0) { l3 = `Ia:${core.m.ia}A Ib:${core.m.ib}A`; l4 = `Ic:${core.m.ic}A In:${core.m.in}A`; }
+            else if (core.rotationIndex === 1) { l3 = `Va:${core.m.va.toFixed(1)}kV Vb:${core.m.vb.toFixed(1)}kV`; l4 = `Vc:${core.m.vc.toFixed(1)}kV f:${core.m.freq}Hz`; }
+            else { l3 = `P:${core.m.p}kW Q:${core.m.q}kVAr`; l4 = `S:${core.m.s}kVA FP:${core.m.pf}`; }
+        }
+        
+        showLCD([l1, l2, l3, l4]);
+    }
+
+    function btnNav(action) {
+        resetSleepTimer(); 
+        if(core.locked) return showLCD(["ACESSO NEGADO", "", "PAINEL", "BLOQUEADO"], 1500);
+        if(action === 'LOG') { core.view = 'VIEW_EVENTS'; return syncUI(); }
+
+        if (action === 'MENU') {
+            core.view = core.view === 'HOME' ? 'MENU' : 'HOME';
+            core.menuPath = ['ROOT']; core.menuIndex = 0;
+        }
+        else if (core.view === 'MENU') {
+            let currentMenu = core.menuPath[core.menuPath.length - 1];
+            let items = menuTree[currentMenu] || [];
+
+            if (action === 'DOWN' && core.menuIndex < items.length - 1) core.menuIndex++;
+            if (action === 'UP' && core.menuIndex > 0) core.menuIndex--;
+            
+            if (currentMenu === '3. PROTECAO') {
+                let set = protectionSettings[core.grp];
+                if (action === 'RIGHT') {
+                    if(core.menuIndex===0) { set.puFase += 10; logEvent(`SET P.U. FASE: ${set.puFase}A`); }
+                    if(core.menuIndex===1 && set.tiros < 4) { set.tiros++; logEvent(`SET TIROS 79: ${set.tiros}`); }
+                }
+                if (action === 'LEFT') {
+                    if(core.menuIndex===0 && set.puFase > 50) { set.puFase -= 10; logEvent(`SET P.U. FASE: ${set.puFase}A`); }
+                    if(core.menuIndex===1 && set.tiros > 0) { set.tiros--; logEvent(`SET TIROS 79: ${set.tiros}`); }
+                }
+            }
+            else if (action === 'SELECT' || action === 'RIGHT') {
+                let selected = items[core.menuIndex];
+                if(selected === '2. MEDICOES') core.view = 'VIEW_MEASUREMENTS';
+                else if(selected === '5. SISTEMA') core.view = 'VIEW_SYSTEM';
+                else if(selected === '4. EVENTOS') core.view = 'VIEW_EVENTS';
+                else if(menuTree[selected]) { core.menuPath.push(selected); core.menuIndex = 0; }
+            }
+            if (action === 'LEFT' && currentMenu !== '3. PROTECAO') {
+                if (core.menuPath.length > 1) { core.menuPath.pop(); core.menuIndex = 0; }
+                else { core.view = 'HOME'; }
+            }
+        }
+        else if (action === 'LEFT') { core.view = 'HOME'; }
+
+        syncUI();
+    }
+
+    function setLed(id, on, color='on-red') { const el = document.getElementById(id); if(el) el.className = on ? `led ${color}` : 'led'; }
+    
+    function syncUI() {
+        let batLow = core.hw.bat < 11.0;
+        let cannotOpen = core.breaker==='OPEN' || core.breaker==='LOCKOUT' || core.locked;
+        let cannotClose = core.breaker==='CLOSED' || core.locked || core.mode==='REMOTE' || core.workTag || core.hotLine || core.breaker==='RECLOSING' || batLow;
+        
+        setLed('led-abrir-dis', cannotOpen, 'on-red'); setLed('led-fechar-dis', cannotClose, 'on-red');
+        setLed('l-lock', core.locked, 'on-red'); setLed('l-hotline', core.hotLine, 'on-red'); setLed('l-clp', core.clp, 'on-yellow');
+        setLed('l-autorec', core.autoReclose, 'on-green'); setLed('l-local', core.mode==='LOCAL', 'on-green'); setLed('l-remote', core.mode==='REMOTE', 'on-green');
+        setLed('l-earth', core.earthProt, 'on-green'); setLed('l-sef', core.sefProt, 'on-green'); setLed('l-worktag', core.workTag, 'on-red');
+        setLed('l-grpA', core.grp==='A', 'on-green'); setLed('l-grpB', core.grp==='B', 'on-green'); setLed('l-grpC', core.grp==='C', 'on-green');
+        
+        setLed('s-pha', core.targets.pha); setLed('s-phb', core.targets.phb); setLed('s-phc', core.targets.phc); 
+        setLed('s-earth', core.targets.earth); setLed('s-sef', core.targets.sef);
+        
+        setLed('s-partida', core.isPickup, 'on-yellow');
+        setLed('s-operador', core.targets.opTrip); setLed('s-ext', core.targets.extTrip);
+        setLed('s-bloqueio', core.breaker==='LOCKOUT');
+        
+        setLed('s-carga-lig', core.breaker==='CLOSED', 'on-green');
+        setLed('s-viva-a', core.m.va > 5.0, 'on-green'); setLed('s-viva-b', core.m.vb > 5.0, 'on-green'); setLed('s-viva-c', core.m.vc > 5.0, 'on-green');
+        
+        setLed('s-sys-ok', true, 'on-green'); 
+        setLed('s-ac', core.hw.ac, 'on-green'); setLed('s-bat', !core.hw.ac, 'on-yellow');
+        setLed('s-alarme', batLow || core.hw.wear > 90, 'on-red');
+        
+        document.querySelector('.btn-lock span').innerText = core.locked ? '🔒' : '🔓';
+        renderLCD();
+    }
+
+    function cmdOperate(cmd) {
+        resetSleepTimer();
+        if (core.locked) return showLCD(["COMANDO REJEITADO", "","PAINEL BLOQUEADO", ""], 2000);
+        if (core.mode === 'REMOTE' && cmd === 'CLOSE') return showLCD(["COMANDO REJEITADO", "","MODO REMOTO", ""], 2000);
+
+        if (cmd === 'OPEN' && core.breaker !== 'OPEN' && core.breaker !== 'LOCKOUT') { 
+            core.breaker = 'OPEN'; core.targets.opTrip = true; core.shotCount = 0; 
+            core.m.ia=0; core.m.ib=0; core.m.ic=0; core.m.in=0; core.m.p=0; core.m.q=0; core.m.s=0;
+            logEvent("ABERTURA POR OPERADOR"); showLCD(["COMANDO ACEITO", "","ABERTURA EXECUTADA", ""], 2000);
+        }
+        else if (cmd === 'CLOSE' && core.breaker !== 'CLOSED') { 
+            if (core.workTag || core.hotLine) return showLCD(["FECHAMENTO BLOQUEADO", "","REGRA SEGURANCA", "ATIVA"], 3000);
+            if (core.hw.bat < 11.0) return showLCD(["FECHAMENTO BLOQUEADO", "","BATERIA CRITICA", "SEM ENERGIA"], 3000);
+            if (core.faultOnLine) {
+                core.breaker = 'LOCKOUT';
+                logEvent("SOTF: TRIP INSTANTANEO -> LOCKOUT");
+                return showLCD(["S.O.T.F. DETECTADO", "CURTO NA LINHA!", "DISJUNTOR BLOQUEADO", "(TRIP 0ms)"], 3000);
+            }
+
+            core.breaker = 'CLOSED'; core.targets.opTrip = false; core.shotCount = 0;
+            if (core.clp) {
+                core.m.ia=650; core.m.ib=650; core.m.ic=650; core.m.in=10; core.m.p=9000;
+                logEvent("FECHO (C.L.P. ATIVO)"); showLCD(["COMANDO ACEITO", "C.L.P. ATIVADO", "IGNORANDO INRUSH", "POR 2 SEG..."], 2000);
+                setTimeout(() => { if(core.breaker==='CLOSED'){ resetMeasurements(); syncUI(); } }, 2000);
+            } else {
+                resetMeasurements();
+                logEvent("FECHO MANUAL (LOCAL)"); showLCD(["COMANDO ACEITO", "","FECHAMENTO EXECUTADO", ""], 2000);
+            }
+        }
+        syncUI();
+    }
+
+    function cmdToggle(fn) {
+        resetSleepTimer();
+        if (core.locked && fn !== 'lock') return showLCD(["ACESSO NEGADO", "","DESTRAVE O PAINEL", ""], 2000);
+        if (core.mode === 'REMOTE' && fn !== 'local' && fn !== 'lock') return showLCD(["ACESSO NEGADO", "","MODO REMOTO", ""], 2000);
+        switch(fn) {
+            case 'lock': core.locked = !core.locked; logEvent(core.locked ? "PAINEL BLOQUEADO" : "PAINEL DESBLOQUEADO"); break;
+            case 'local': core.mode = 'LOCAL'; logEvent("MODO CONTROLE: LOCAL"); break;
+            case 'remote': core.mode = 'REMOTE'; logEvent("MODO CONTROLE: REMOTO"); break;
+            case 'autorec': if (core.workTag || core.hotLine) return showLCD(["OPERACAO INVALIDA", "IMPOSSIVEL ATIVAR", "COM TAG/VIVA"], 2500); core.autoReclose = !core.autoReclose; logEvent(`ANSI 79: ${core.autoReclose?'ON':'OFF'}`); break;
+            case 'earth': core.earthProt = !core.earthProt; logEvent(`PROT. TERRA: ${core.earthProt?'ON':'OFF'}`); break;
+            case 'sef': core.sefProt = !core.sefProt; logEvent(`SEF: ${core.sefProt?'ON':'OFF'}`); break;
+            case 'clp': core.clp = !core.clp; logEvent(`COLD LOAD: ${core.clp?'ON':'OFF'}`); break;
+            case 'hotline': core.hotLine = !core.hotLine; if (core.hotLine) { core.autoReclose = false; showLCD(["CARGA VIVA ATIVA!", "RELIGAMENTO OFF", "POR SEGURANCA", ""], 3000); logEvent("CARGA VIVA ATIVADA");} break;
+            case 'worktag': core.workTag = !core.workTag; if (core.workTag) { core.autoReclose = false; showLCD(["ETIQUETA TRABALHO", "ATIVA!", "FECHO BLOQUEADO", ""], 3000); logEvent("WORK TAG APLICADA");} break;
+        }
+        syncUI();
+    }
+    
+    function cmdGrp(g) { resetSleepTimer(); if(core.locked || core.mode === 'REMOTE') return cmdToggle('ignore'); core.grp = g; logEvent(`MUDANCA P/ GRUPO ${g}`); showLCD(["AJUSTE DE PROTECAO", "ALTERADO PARA:", `GRUPO ${g}`, ""], 1500); syncUI(); }
+
+    function cmdDataLeds() {
+        resetSleepTimer();
+        if (!core.lastFault) return showLCD(["DADOS DOS LEDS", "", "NENHUMA FALTA", "REGISTRADA"], 3000);
+        showLCD(["-- DADOS DA FALTA --", `ALVO: ${core.lastFault.target}`, `MAGNITUDE: ${core.lastFault.amp} A`, `TEMPO: ${core.lastFault.time} ms`], 5000);
+    }
+
+    function cmdReset(){
+        resetSleepTimer();
+        if(core.locked) return showLCD(["ACESSO NEGADO", "", "PAINEL", "BLOQUEADO"], 1500);
+        core.targets = {pha:false, phb:false, phc:false, earth:false, sef:false, overVolt:false, underFreq:false, extTrip:false, opTrip:false}; 
+        if (core.breaker === 'LOCKOUT') { core.breaker = 'OPEN'; core.shotCount = 0; logEvent("RESET DE LOCKOUT"); }
+        logEvent("RESET DE ALVOS (TARGETS)");
+        showLCD(["ALARMES E ALVOS", "REINICIADOS", "COM SUCESSO", ""], 1500); syncUI();
+    }
+
+    function simFault() {
+        if(core.breaker !== 'CLOSED') return showLCD(["ERRO SIMULADOR", "DISJUNTOR PRECISA", "ESTAR FECHADO", ""], 2000);
+        let type = document.getElementById('simType').value;
+        let set = protectionSettings[core.grp];
+        let faultAmp = (type.includes('SEF')) ? 8 : (type.includes('BC') ? 4500 : 2500);
+        if (faultAmp < set.puFase && !type.includes('SEF')) { return showLCD(["FALHA IGNORADA", "CORRENTE ABAIXO", `DO PICKUP (${set.puFase}A)`, ""], 3000); }
+        executeTripCycle(type, set);
+    }
+
+    function executeTripCycle(type, set) {
+        core.isPickup = true;
+        if(type.includes('A')) core.m.ia = 2500;
+        if(type.includes('BC')) { core.m.ib = 4500; core.m.ic = 4500; }
+        if(type === 'SEF') core.m.in = 8;
+        syncUI();
+
+        let tripTime = type === 'SEF' ? 1500 : 150; 
+
+        setTimeout(() => {
+            core.isPickup = false; core.breaker = 'OPEN'; core.hw.wear += 3;
+            core.m.ia=0; core.m.ib=0; core.m.ic=0; core.m.in=0; core.m.p=0; core.m.q=0; core.m.s=0;
+            
+            let targetStr = "";
+            if(type.includes('A')) { core.targets.pha = true; core.targets.earth = true; targetStr = "FASE A-TERRA"; }
+            if(type.includes('BC')) { core.targets.phb = true; core.targets.phc = true; targetStr = "FASE B-C"; }
+            if(type === 'SEF') { core.targets.sef = true; targetStr = "SEF"; }
+            
+            core.lastFault = {target: targetStr, amp: type==='SEF'?8:2500, time: tripTime};
+            core.shotCount++;
+            logEvent(`TRIP ${core.shotCount} PROT: ${targetStr}`);
+            
+            if (core.autoReclose && !core.workTag && !core.hotLine && core.shotCount <= set.tiros) {
+                core.breaker = 'RECLOSING';
+                let dtIdx = core.shotCount - 1;
+                core.recloseTimer = set.time[dtIdx] || 2; 
+                
+                let interval = setInterval(() => {
+                    core.recloseTimer--; syncUI();
+                    if (core.recloseTimer <= 0) {
+                        clearInterval(interval);
+                        if (core.breaker !== 'RECLOSING') return; 
+                        
+                        core.breaker = 'CLOSED';
+                        logEvent(`RELIGAMENTO EFETUADO (TIRO ${core.shotCount})`);
+                        
+                        if (type.includes('PERM')) {
+                            setTimeout(() => executeTripCycle(type, set), 300);
+                        } else {
+                            resetMeasurements();
+                            logEvent(`FALTA TRANSITORIA LIMPA. 79 RESET.`);
+                            setTimeout(() => { core.shotCount = 0; syncUI(); }, 2000);
+                        }
+                        syncUI();
+                    }
+                }, 1000);
+            } else {
+                core.breaker = 'LOCKOUT';
+                logEvent("BLOQUEIO DEFINITIVO (LOCKOUT 79)");
+            }
+            syncUI();
+        }, tripTime);
+    }
+
+    function resetMeasurements() { core.m = { ia: 125, ib: 124, ic: 128, in: 2, va: 13.8, vb: 13.8, vc: 13.8, freq: 60.0, p: 2980, q: 450, s: 3013, pf: 0.98 }; }
+    function simAcLoss() { core.hw.ac = !core.hw.ac; core.hw.bat = core.hw.ac ? 13.6 : 10.5; logEvent(core.hw.ac ? "REDE AC RESTAURADA" : "FALHA REDE AC"); syncUI(); }
+    function simScadaTrip() { if(core.breaker !== 'CLOSED') return; core.breaker = 'OPEN'; core.targets.extTrip = true; core.m.ia=0; core.m.ib=0; core.m.ic=0; core.m.p=0; logEvent("TRIP SCADA/REMOTO"); showLCD(["TRIP REMOTO", "RECEBIDO VIA", "PORTA COMUNICACAO", ""], 2000); syncUI(); }
+    function simSOTF() { core.faultOnLine = !core.faultOnLine; syncUI(); }
+    
+    function cmdLampTest(active){ 
+        resetSleepTimer();
+        document.querySelectorAll('.led').forEach(l=>{ 
+            if(active){ 
+                l.classList.add('on-red'); 
+                l.style.backgroundColor='#ff1744'; 
+                l.style.borderColor='#d50000'; 
+            } else { 
+                l.style.backgroundColor=''; 
+                l.style.borderColor=''; 
+                l.classList.remove('on-red'); 
+            } 
+        }); 
+        if(!active) syncUI(); 
+    }
+    
+    // Arranque
+    resetSleepTimer();
+</script>
+</body>
+</html>
