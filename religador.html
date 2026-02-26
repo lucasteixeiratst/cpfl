@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+l<!DOCTYPE html>
 <html lang="pt-PT">
 <head>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-G7MC2S78V6"></script>
@@ -40,10 +40,20 @@
     .membrane { background-color: var(--bg-membrane); border-radius: 12px; border: 2px solid #bdc3c7; padding: 25px 35px; display: grid; grid-template-columns: 360px 460px; gap: 30px; position: relative; flex: 1;}
     .schneider-logo { position: absolute; top: 15px; right: 25px; color: #27ae60; font-weight: 900; font-size: 24px; font-style: italic; }
     .schneider-logo span { color: #2c3e50; font-weight: bold; font-style: normal; display: block; font-size: 11px; text-align: right; margin-top: -2px;}
+    
     .led { width: 10px; height: 10px; border-radius: 50%; background-color: var(--led-off); box-shadow: inset 0 1px 3px rgba(0,0,0,0.5); border: 1px solid #777; flex-shrink: 0; transition: 0.1s;}
     .led.on-red { background-color: var(--led-on-red); box-shadow: 0 0 6px var(--led-on-red); border-color: #d50000; }
     .led.on-green { background-color: var(--led-on-green); box-shadow: 0 0 6px var(--led-on-green); border-color: #00c853; }
     .led.on-yellow { background-color: var(--led-on-yellow); box-shadow: 0 0 6px var(--led-on-yellow); border-color: #f39c12; }
+    
+    /* Animação para LED piscando (Linha Viva e Etiqueta) */
+    @keyframes piscarLed {
+        0% { opacity: 1; box-shadow: 0 0 6px var(--led-on-red); }
+        50% { opacity: 0.2; box-shadow: none; }
+        100% { opacity: 1; box-shadow: 0 0 6px var(--led-on-red); }
+    }
+    .led.piscando { animation: piscarLed 0.8s infinite; }
+
     .panel-yellow { background-color: var(--bg-yellow-panel); border: 3px solid var(--line-dark); border-radius: 10px; padding: 10px; }
     .col-left { display: flex; flex-direction: column; gap: 20px; padding-top: 45px; }
     .status-panel { border: 3px solid var(--line-dark); border-radius: 10px; padding: 15px 10px; position: relative; height: 195px;}
@@ -73,7 +83,10 @@
     .nav-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
     .nav-btn { background: var(--bg-yellow-panel); border: 2px solid var(--line-dark); border-radius: 6px; font-size: 8px; font-weight: bold; color: var(--text-dark); cursor: pointer; box-shadow: 0 2px 0 var(--line-dark); display: flex; align-items: center; justify-content: center; height: 35px; line-height: 1.1; touch-action: manipulation;}
     .nav-btn:active { transform: translateY(2px); box-shadow: 0 0 0; }
+    
+    /* Setas originais, de tamanho simétrico e igual para todos os botões */
     .nav-arrow { font-size: 16px; }
+
     .right-bot { position: relative; border-top: 3px solid var(--line-dark); padding-top: 20px; }
     .fk-title { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: var(--bg-membrane); padding: 0 10px; font-weight: bold; font-size: 14px; letter-spacing: 1px; color: var(--text-dark); }
     .fast-keys-grid { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(4, 40px); gap: 12px; }
@@ -163,13 +176,17 @@
                     <div class="panel-yellow nav-panel">
                         <div class="nav-grid">
                             <button class="nav-btn" onclick="btnNav('MENU')">MENU</button>
-                            <button class="nav-btn nav-arrow" onclick="btnNav('UP')">⬆</button>
+                            
+                            <button class="nav-btn nav-arrow" onclick="btnNav('UP')"><span style="display:inline-block;">⬆</span></button>
+                            
                             <button class="nav-btn" onclick="btnNav('SELECT')">SELECIONAR</button>
                             <button class="nav-btn" onclick="wakeUpPanel()">PAINEL<br>LIGADO</button>
                             
-                            <button class="nav-btn nav-arrow" onclick="btnNav('LEFT')">⬅</button>
-                            <button class="nav-btn nav-arrow" onclick="btnNav('DOWN')">⬇</button>
-                            <button class="nav-btn nav-arrow" onclick="btnNav('RIGHT')">➡</button>
+                            <button class="nav-btn nav-arrow" onclick="btnNav('LEFT')"><span style="display:inline-block; transform: rotate(-90deg);">⬆</span></button>
+                            
+                            <button class="nav-btn nav-arrow" onclick="btnNav('DOWN')"><span style="display:inline-block; transform: rotate(180deg);">⬆</span></button>
+                            
+                            <button class="nav-btn nav-arrow" onclick="btnNav('RIGHT')"><span style="display:inline-block; transform: rotate(90deg);">⬆</span></button>
                             
                             <button class="nav-btn" 
                                     onmousedown="cmdLampTest(true)" 
@@ -185,14 +202,17 @@
                     <div class="fk-title">TECLAS RÁPIDAS</div>
                     <div class="fast-keys-grid">
                         <button class="fk-btn" onclick="cmdToggle('hotline')"><div class="fk-led-area"><div class="led" id="l-hotline"></div></div><div class="fk-text">Bloqueio de<br>Carga Viva</div></button>
-                        <button class="fk-btn" onclick="cmdToggle('autorec')"><div class="fk-led-area"><div class="led on-green" id="l-autorec"></div></div><div class="fk-text">Relig./Secc<br>Auto</div></button>
+                        <button class="fk-btn" onclick="cmdToggle('autorec')"><div class="fk-led-area"><div class="led on-green" id="l-autorec"></div></div><div class="fk-text">Relig./Seccion<br>Auto</div></button>
                         <button class="fk-btn" onclick="cmdToggle('remote')"><div class="fk-led-area"><div class="led" id="l-remote"></div></div><div class="fk-text">Controle<br>Remoto</div></button>
-                        <button class="fk-btn" onclick="cmdToggle('clp')"><div class="fk-led-area"><div class="led" id="l-clp"></div></div><div class="fk-text">Carga<br>Fria (CLP)</div></button>
+                        
+                        <button class="fk-btn" onclick="cmdToggle('clp')"><div class="fk-led-area"><div class="led" id="l-clp"></div></div><div class="fk-text">Recomp.<br>Auto</div></button>
                         <button class="fk-btn" onclick="cmdToggle('earth')"><div class="fk-led-area"><div class="led on-green" id="l-earth"></div></div><div class="fk-text">Falta à<br>Terra</div></button>
                         <button class="fk-btn" onclick="cmdToggle('local')"><div class="fk-led-area"><div class="led on-green" id="l-local"></div></div><div class="fk-text">Controle<br>Local</div></button>
+                        
                         <button class="fk-btn"><div class="fk-led-area"><div class="led"></div></div><div class="fk-text">Teste de<br>Bateria</div></button>
                         <button class="fk-btn" onclick="cmdToggle('sef')"><div class="fk-led-area"><div class="led" id="l-sef"></div></div><div class="fk-text">Terra<br>Sensível</div></button>
-                        <button class="fk-btn" onclick="cmdToggle('worktag')"><div class="fk-led-area"><div class="led" id="l-worktag"></div></div><div class="fk-text">Etiqueta de<br>Trabalho</div></button>
+                        <button class="fk-btn" onclick="cmdToggle('worktag')"><div class="fk-led-area"><div class="led" id="l-worktag"></div></div><div class="fk-text">Etiqueta<br>de Trabalho</div></button>
+                        
                         <button class="fk-btn" onclick="cmdGrp('A')"><div class="fk-led-area"><div class="led on-green" id="l-grpA"></div></div><div class="fk-text">Grupo de<br>Proteção A</div></button>
                         <button class="fk-btn" onclick="cmdGrp('B')"><div class="fk-led-area"><div class="led" id="l-grpB"></div></div><div class="fk-text">Grupo de<br>Proteção B</div></button>
                         <button class="fk-btn" onclick="cmdGrp('C')"><div class="fk-led-area"><div class="led" id="l-grpC"></div></div><div class="fk-text">Grupo de<br>Proteção C</div></button>
@@ -253,8 +273,32 @@
         faultOnLine: false, lastFault: null, eventLog: [],
         lcdTimer: null, view: 'HOME', menuPath: [], menuIndex: 0, rotationIndex: 0,
         shotCount: 0, recloseTimer: 0, isPickup: false,
-        isAwake: true, sleepTimeout: null 
+        isAwake: true, sleepTimeout: null,
+        audioCtx: null, beepInterval: null 
     };
+
+    function playBeep() {
+        if (!core.audioCtx) {
+            core.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (core.audioCtx.state === 'suspended') {
+            core.audioCtx.resume();
+        }
+        const oscillator = core.audioCtx.createOscillator();
+        const gainNode = core.audioCtx.createGain();
+        
+        oscillator.type = 'sine'; 
+        oscillator.frequency.setValueAtTime(1000, core.audioCtx.currentTime); 
+        
+        gainNode.gain.setValueAtTime(0.05, core.audioCtx.currentTime); 
+        gainNode.gain.exponentialRampToValueAtTime(0.00001, core.audioCtx.currentTime + 0.2);
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(core.audioCtx.destination);
+        
+        oscillator.start();
+        oscillator.stop(core.audioCtx.currentTime + 0.2);
+    }
 
     function getTimeStamp() {
         let d = new Date(); return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}.${String(d.getMilliseconds()).padStart(3,'0')}`;
@@ -265,7 +309,7 @@
         if(core.eventLog.length > 50) core.eventLog.shift(); 
     }
 
-    logEvent("SISTEMA INICIADO V2.4.1");
+    logEvent("SISTEMA INICIADO V2.4.2");
     logEvent("PAINEL BLOQUEADO (INICIALIZACAO)");
     logEvent("CONTROLE REMOTO (INICIALIZACAO)");
 
@@ -410,7 +454,12 @@
         syncUI();
     }
 
-    function setLed(id, on, color='on-red') { const el = document.getElementById(id); if(el) el.className = on ? `led ${color}` : 'led'; }
+    function setLed(id, on, color='on-red', blink=false) { 
+        const el = document.getElementById(id); 
+        if(el) {
+            el.className = on ? `led ${color}` + (blink ? ' piscando' : '') : 'led';
+        }
+    }
     
     function syncUI() {
         let batLow = core.hw.bat < 11.0;
@@ -418,9 +467,14 @@
         let cannotClose = core.breaker==='CLOSED' || core.locked || core.mode==='REMOTE' || core.workTag || core.hotLine || core.breaker==='RECLOSING' || batLow;
         
         setLed('led-abrir-dis', cannotOpen, 'on-red'); setLed('led-fechar-dis', cannotClose, 'on-red');
-        setLed('l-lock', core.locked, 'on-red'); setLed('l-hotline', core.hotLine, 'on-red'); setLed('l-clp', core.clp, 'on-yellow');
+        setLed('l-lock', core.locked, 'on-red'); 
+        
+        setLed('l-hotline', core.hotLine, 'on-red', true); 
+        setLed('l-worktag', core.workTag, 'on-red', true);
+        
+        setLed('l-clp', core.clp, 'on-yellow');
         setLed('l-autorec', core.autoReclose, 'on-green'); setLed('l-local', core.mode==='LOCAL', 'on-green'); setLed('l-remote', core.mode==='REMOTE', 'on-green');
-        setLed('l-earth', core.earthProt, 'on-green'); setLed('l-sef', core.sefProt, 'on-green'); setLed('l-worktag', core.workTag, 'on-red');
+        setLed('l-earth', core.earthProt, 'on-green'); setLed('l-sef', core.sefProt, 'on-green');
         setLed('l-grpA', core.grp==='A', 'on-green'); setLed('l-grpB', core.grp==='B', 'on-green'); setLed('l-grpC', core.grp==='C', 'on-green');
         
         setLed('s-pha', core.targets.pha); setLed('s-phb', core.targets.phb); setLed('s-phc', core.targets.phc); 
@@ -438,11 +492,31 @@
         setLed('s-alarme', batLow || core.hw.wear > 90, 'on-red');
         
         document.querySelector('.btn-lock span').innerText = core.locked ? '🔒' : '🔓';
+        
+        if (core.hotLine) {
+            if (!core.beepInterval) {
+                playBeep(); 
+                core.beepInterval = setInterval(playBeep, 2000); 
+            }
+        } else {
+            if (core.beepInterval) {
+                clearInterval(core.beepInterval);
+                core.beepInterval = null;
+            }
+        }
+
         renderLCD();
     }
 
     function cmdOperate(cmd) {
         resetSleepTimer();
+        
+        gtag('event', 'operacao_disjuntor', {
+            'comando_enviado': cmd,
+            'status_bloqueio': core.locked ? 'bloqueado' : 'desbloqueado',
+            'modo_operacao': core.mode
+        });
+
         if (core.locked) return showLCD(["ACESSO NEGADO", "","PAINEL BLOQUEADO", ""], 2000);
         if (core.mode === 'REMOTE' && cmd === 'CLOSE') return showLCD(["COMANDO REJEITADO", "","MODO REMOTO", ""], 2000);
 
@@ -450,10 +524,13 @@
             core.breaker = 'OPEN'; core.targets.opTrip = true; core.shotCount = 0; 
             core.m.ia=0; core.m.ib=0; core.m.ic=0; core.m.in=0; core.m.p=0; core.m.q=0; core.m.s=0;
             logEvent("ABERTURA POR OPERADOR"); showLCD(["COMANDO ACEITO", "","ABERTURA EXECUTADA", ""], 2000);
+            gtag('event', 'disjuntor_aberto_sucesso');
         }
         else if (cmd === 'CLOSE' && core.breaker !== 'CLOSED') { 
             if (core.workTag || core.hotLine) return showLCD(["FECHAMENTO BLOQUEADO", "","REGRA SEGURANCA", "ATIVA"], 3000);
             if (core.hw.bat < 11.0) return showLCD(["FECHAMENTO BLOQUEADO", "","BATERIA CRITICA", "SEM ENERGIA"], 3000);
+            if (core.autoReclose) return showLCD(["FECHO BLOQUEADO", "","DESLIGUE O 79", "(RELIG. AUTO)"], 3000);
+
             if (core.faultOnLine) {
                 core.breaker = 'LOCKOUT';
                 logEvent("SOTF: TRIP INSTANTANEO -> LOCKOUT");
@@ -469,12 +546,19 @@
                 resetMeasurements();
                 logEvent("FECHO MANUAL (LOCAL)"); showLCD(["COMANDO ACEITO", "","FECHAMENTO EXECUTADO", ""], 2000);
             }
+            gtag('event', 'disjuntor_fechado_sucesso', { 'clp_ativo': core.clp });
         }
         syncUI();
     }
 
     function cmdToggle(fn) {
         resetSleepTimer();
+        
+        gtag('event', 'tecla_rapida_clicada', {
+            'funcao': fn,
+            'status_bloqueio': core.locked ? 'bloqueado' : 'desbloqueado'
+        });
+
         if (core.locked && fn !== 'lock') return showLCD(["ACESSO NEGADO", "","PAINEL BLOQUEADO", ""], 2000);
         if (core.mode === 'REMOTE' && fn !== 'local' && fn !== 'lock') return showLCD(["ACESSO NEGADO", "","MODO REMOTO", ""], 2000);
         switch(fn) {
@@ -485,7 +569,14 @@
             case 'earth': core.earthProt = !core.earthProt; logEvent(`PROT. TERRA: ${core.earthProt?'ON':'OFF'}`); break;
             case 'sef': core.sefProt = !core.sefProt; logEvent(`SEF: ${core.sefProt?'ON':'OFF'}`); break;
             case 'clp': core.clp = !core.clp; logEvent(`COLD LOAD: ${core.clp?'ON':'OFF'}`); break;
-            case 'hotline': core.hotLine = !core.hotLine; if (core.hotLine) { core.autoReclose = false; showLCD(["CARGA VIVA ATIVA!", "RELIGAMENTO OFF", "POR SEGURANCA", ""], 3000); logEvent("CARGA VIVA ATIVADA");} break;
+            case 'hotline': 
+                core.hotLine = !core.hotLine; 
+                if (core.hotLine) { 
+                    core.autoReclose = false; 
+                    showLCD(["CARGA VIVA ATIVA!", "RELIGAMENTO OFF", "POR SEGURANCA", ""], 3000); 
+                    logEvent("CARGA VIVA ATIVADA");
+                } 
+                break;
             case 'worktag': core.workTag = !core.workTag; if (core.workTag) { core.autoReclose = false; showLCD(["ETIQUETA TRABALHO", "ATIVA!", "FECHO BLOQUEADO", ""], 3000); logEvent("WORK TAG APLICADA");} break;
         }
         syncUI();
@@ -510,8 +601,10 @@
     }
 
     function simFault() {
-        if(core.breaker !== 'CLOSED') return showLCD(["ERRO SIMULADOR", "DISJUNTOR PRECISA", "ESTAR FECHADO", ""], 2000);
         let type = document.getElementById('simType').value;
+        gtag('event', 'injecao_falha', { 'tipo_falha': type, 'disjuntor_fechado': core.breaker === 'CLOSED' });
+
+        if(core.breaker !== 'CLOSED') return showLCD(["ERRO SIMULADOR", "DISJUNTOR PRECISA", "ESTAR FECHADO", ""], 2000);
         let set = protectionSettings[core.grp];
         let faultAmp = (type.includes('SEF')) ? 8 : (type.includes('BC') ? 4500 : 2500);
         if (faultAmp < set.puFase && !type.includes('SEF')) { return showLCD(["FALHA IGNORADA", "CORRENTE ABAIXO", `DO PICKUP (${set.puFase}A)`, ""], 3000); }
@@ -573,9 +666,30 @@
     }
 
     function resetMeasurements() { core.m = { ia: 125, ib: 124, ic: 128, in: 2, va: 13.8, vb: 13.8, vc: 13.8, freq: 60.0, p: 2980, q: 450, s: 3013, pf: 0.98 }; }
-    function simAcLoss() { core.hw.ac = !core.hw.ac; core.hw.bat = core.hw.ac ? 13.6 : 10.5; logEvent(core.hw.ac ? "REDE AC RESTAURADA" : "FALHA REDE AC"); syncUI(); }
-    function simScadaTrip() { if(core.breaker !== 'CLOSED') return; core.breaker = 'OPEN'; core.targets.extTrip = true; core.m.ia=0; core.m.ib=0; core.m.ic=0; core.m.p=0; logEvent("TRIP SCADA/REMOTO"); showLCD(["TRIP REMOTO", "RECEBIDO VIA", "PORTA COMUNICACAO", ""], 2000); syncUI(); }
-    function simSOTF() { core.faultOnLine = !core.faultOnLine; syncUI(); }
+    
+    function simAcLoss() { 
+        core.hw.ac = !core.hw.ac; 
+        core.hw.bat = core.hw.ac ? 13.6 : 10.5; 
+        logEvent(core.hw.ac ? "REDE AC RESTAURADA" : "FALHA REDE AC"); 
+        gtag('event', 'simulacao_rede_ac', { 'status_ac': core.hw.ac ? 'restaurada' : 'perdida' });
+        syncUI(); 
+    }
+
+    function simScadaTrip() { 
+        if(core.breaker !== 'CLOSED') return; 
+        core.breaker = 'OPEN'; 
+        core.targets.extTrip = true; 
+        core.m.ia=0; core.m.ib=0; core.m.ic=0; core.m.p=0; 
+        logEvent("TRIP SCADA/REMOTO"); showLCD(["TRIP REMOTO", "RECEBIDO VIA", "PORTA COMUNICACAO", ""], 2000); 
+        gtag('event', 'simulacao_trip_scada');
+        syncUI(); 
+    }
+
+    function simSOTF() { 
+        core.faultOnLine = !core.faultOnLine; 
+        gtag('event', 'simulacao_sotf', { 'status_sotf': core.faultOnLine ? 'armado' : 'desarmado' });
+        syncUI(); 
+    }
     
     function cmdLampTest(active){ 
         resetSleepTimer();
