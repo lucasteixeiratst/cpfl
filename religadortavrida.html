@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador Tavrida Electric - RC5 (Com Analytics)</title>
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-G7MC2S78V6"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-G7MC2S78V6');
+    </script>
+
+    <style>
+        * { box-sizing: border-box; user-select: none; font-family: Arial, Helvetica, sans-serif; }
+
+        :root {
+            --bg-top: #cfd4d8;      
+            --bg-bot: #0d5939;      
+            --btn-silver: linear-gradient(135deg, #f0f2f5, #aeb5bb);
+            --btn-red: linear-gradient(135deg, #e03a3a, #b01818);
+            --btn-green: linear-gradient(135deg, #3bb55c, #1a6b31);
+            --border-dark: #222;
+            --text-dark: #111;
+            --text-light: #fff;
+            --led-off: #474f4b;
+            --led-green-on: #3fe061;
+            --led-orange-on: #e68a19;
+            --led-red-on: #ff3333;
+            --lcd-bg: #ccd7df;
+            --btn-size: 38px;
+            --dist-bordas: 48px; 
+        }
+
+        body {
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            min-height: 100vh; background-color: #1e272e; margin: 0; padding: 20px; gap: 20px;
+        }
+
+        /* --- O Painel --- */
+        .panel {
+            width: 560px; max-width: 100%; height: 730px;
+            background: linear-gradient(to bottom, var(--bg-top) 0%, var(--bg-top) 140px, var(--bg-bot) 140px, var(--bg-bot) 100%);
+            border-radius: 12px; border: 1px solid #777;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.8), inset 0 2px 4px rgba(255,255,255,0.7);
+            position: relative; display: flex; flex-direction: column; overflow: hidden; 
+        }
+        .panel::before {
+            content: ''; position: absolute; top: 130px; left: 0; width: 100%; height: 25px;
+            background: repeating-linear-gradient(to bottom, transparent, transparent 2px, rgba(13, 89, 57, 0.4) 2px, rgba(13, 89, 57, 0.4) 4px); z-index: 1;
+        }
+
+        /* --- Topo --- */
+        .top-bar {
+            display: grid; grid-template-columns: repeat(5, 1fr); align-items: end; justify-items: center;
+            padding: 20px 20px 25px 20px; position: relative; z-index: 2;
+        }
+        .top-item { display: flex; flex-direction: column; align-items: center; }
+        .lbl-dark { font-size: 8px; font-weight: bold; color: var(--text-dark); margin-bottom: 6px; white-space: nowrap; text-align: center; }
+
+        /* --- TELA LCD --- */
+        .lcd {
+            margin: 0 35px; height: 78px; background: var(--lcd-bg);
+            border: 2px solid #555; border-radius: 3px;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.3), 0 1px 0 rgba(255,255,255,0.2);
+            position: relative; z-index: 2; display: flex; flex-direction: column; justify-content: center;
+            padding: 4px 10px; font-family: 'Courier New', Courier, monospace; font-size: 13.5px; font-weight: bold; color: #111;
+            transition: all 0.3s; line-height: 1.25;
+        }
+        .lcd.dark-mode { background: #1c2826; color: #3fe061; box-shadow: inset 0 2px 10px rgba(0,0,0,0.8); }
+        .lcd div { white-space: pre; overflow: hidden; height: 16px; }
+
+        /* --- Grade Inferior --- */
+        .grid-inferior {
+            display: grid; grid-template-columns: var(--btn-size) 1fr var(--btn-size); grid-template-rows: repeat(6, auto);
+            row-gap: 32px; padding: 0 var(--dist-bordas); margin-top: 30px; flex-grow: 1; position: relative; z-index: 2;
+        }
+        .cell { position: relative; display: flex; justify-content: center; align-items: center; width: var(--btn-size); height: var(--btn-size); }
+
+        /* --- Botões --- */
+        .btn-circle {
+            width: var(--btn-size); height: var(--btn-size); border-radius: 50%;
+            background: var(--btn-silver); border: 1px solid var(--border-dark);
+            box-shadow: 0 4px 5px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.8);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            color: var(--text-dark); font-size: 7px; font-weight: bold; 
+            text-align: center; line-height: 1.2; cursor: pointer; z-index: 5; transition: 0.05s; padding: 2px; 
+        }
+        .btn-circle * { pointer-events: none; } 
+        .btn-circle:active { box-shadow: 0 1px 2px rgba(0,0,0,0.6); transform: translateY(2px); }
+        .bg-red { background: var(--btn-red); color: white; border: 1px solid #4a0505; font-size: 14px; }
+        .bg-green { background: var(--btn-green); color: white; border: 1px solid #063814; font-size: 14px; }
+
+        /* --- LEDs --- */
+        .led-pair { display: flex; align-items: flex-end; gap: 12px; margin-bottom: 5px; }
+        .led-col { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .led { width: 7px; height: 7px; border-radius: 50%; background: var(--led-off); border: 1px solid #111; box-shadow: inset 0 1px 3px rgba(0,0,0,0.7); }
+        .led.on-g { background: var(--led-green-on); box-shadow: 0 0 4px var(--led-green-on); }
+        .led.on-o { background: var(--led-orange-on); box-shadow: 0 0 4px var(--led-orange-on); }
+        .led.on-r { background: var(--led-red-on); box-shadow: 0 0 4px var(--led-red-on); }
+
+        /* --- Textos Absolutos --- */
+        .lbl-abs-top { position: absolute; bottom: 100%; margin-bottom: 8px; font-size: 9px; font-weight: bold; color: var(--text-light); white-space: nowrap; text-align: center; left: 50%; transform: translateX(-50%); }
+        .lbl-abs-right { position: absolute; left: 100%; margin-left: 15px; font-size: 9px; font-weight: bold; color: var(--text-light); white-space: nowrap; }
+        .lbl-abs-left { position: absolute; right: 100%; margin-right: 15px; font-size: 9px; font-weight: bold; color: var(--text-light); white-space: pre-wrap; text-align: right; }
+        .leds-abs-top { position: absolute; bottom: 100%; margin-bottom: 6px; display: flex; gap: 16px; justify-content: center; width: 80px; left: 50%; transform: translateX(-50%); }
+        .led-lbl-light { font-size: 7.5px; color: var(--text-light); font-weight: bold; }
+
+        /* --- D-PAD --- */
+        .dpad-container { grid-column: 2; grid-row: 1 / span 2; display: flex; justify-content: center; align-items: center; }
+        .modern-dpad { display: grid; grid-template-columns: 28px 28px 28px; grid-template-rows: 28px 28px 28px; gap: 6px; padding: 12px; background: rgba(0, 0, 0, 0.15); border-radius: 50%; box-shadow: inset 0 4px 8px rgba(0,0,0,0.4); justify-items: center; align-items: center; }
+        .mod-btn { width: 100%; height: 100%; border-radius: 50%; background: var(--btn-silver); border: 1px solid #777; box-shadow: 0 3px 5px rgba(0,0,0,0.4); display: flex; justify-content: center; align-items: center; color: #111; font-size: 10px; font-weight: bold; cursor: pointer; transition: 0.1s; }
+        .mod-btn * { pointer-events: none; }
+        .mod-btn:active { transform: scale(0.92) translateY(1px); }
+        .mod-up { grid-column: 2; grid-row: 1; } .mod-left { grid-column: 1; grid-row: 2; } .mod-right { grid-column: 3; grid-row: 2; } .mod-down { grid-column: 2; grid-row: 3; }
+        .mod-center-dot { grid-column: 2; grid-row: 2; width: 10px; height: 10px; background: radial-gradient(circle, #555, #222); border-radius: 50%; }
+
+        .usb { width: 32px; height: 42px; background: #ddd; border-radius: 3px; border: 2px solid #888; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 5px; }
+        .usb-hole { width: 16px; height: 10px; background: #000; border-radius: 1px; }
+        
+        .logo-box { grid-column: 2; grid-row: 6; display: flex; flex-direction: column; justify-content: center; align-items: center; padding-top: 15px; }
+        .logo-main { display: flex; align-items: center; gap: 6px; color: #fff; font-size: 14px; font-weight: bold; }
+        .logo-icon { width: 22px; height: 22px; border: 1.5px solid #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 8px; }
+        .logo-credit { color: rgba(255, 255, 255, 0.6); font-size: 9px; margin-top: 6px; }
+
+        /* --- MESA DE TESTES --- */
+        .test-desk { background-color: #2f3640; border: 2px solid #7f8c8d; border-radius: 10px; padding: 15px; width: 560px; max-width: 100%; box-shadow: 0 10px 20px rgba(0,0,0,0.8); display: flex; flex-direction: column; gap: 10px; }
+        .test-desk-title { color: #f1c40f; font-weight: bold; font-size: 12px; border-bottom: 1px solid #7f8c8d; padding-bottom: 5px; }
+        .test-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+        .sim-select { grid-column: 1 / -1; padding: 8px; font-weight: bold; border-radius: 4px; background: #ecf0f1; }
+        .btn-test { padding: 10px; font-size: 11px; font-weight: bold; cursor: pointer; border-radius: 4px; border: none; color: white; box-shadow: 0 3px 0 rgba(0,0,0,0.5); }
+        .btn-test:active { transform: translateY(3px); box-shadow: 0 0 0; }
+        .bt-red { background: #e74c3c; } .bt-blue { background: #3498db; } .bt-grey { background: #7f8c8d; grid-column: 1 / -1; }
+
+        @media (max-width: 600px) {
+            body { padding: 0; background: #111; gap: 0;}
+            .panel, .test-desk { border-radius: 0; border: none; }
+            :root { --dist-bordas: 23px; }
+            .top-bar { padding: 20px 2px 25px 2px; }
+            .lcd { margin: 0 10px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="panel">
+    <div class="top-bar">
+        <div class="top-item"><div class="led-pair"><div class="led-col"><span class="lbl-dark">Falha</span><div class="led" id="l-falha"></div></div><div class="led-col"><span class="lbl-dark">Atenção</span><div class="led" id="l-atencao"></div></div></div><div class="btn-circle" onclick="App.navToLog('Malf')"><span>MALF</span><span>LOG</span></div></div>
+        <div class="top-item"><div class="led-pair"><div class="led-col"><span class="lbl-dark">Bloqueado</span><div class="led" id="l-bloq"></div></div><div class="led-col"><span class="lbl-dark">Prot.<br>Ativa</span><div class="led" id="l-prot-ativa"></div></div></div><div class="btn-circle" onclick="App.navToLog('Event')"><span>EVENT</span><span>LOG</span></div></div>
+        <div class="top-item"><div class="led-pair"><div class="led-col"><span class="lbl-dark">Local</span><div class="led" id="l-local"></div></div><div class="led-col"><span class="lbl-dark">Remoto</span><div class="led" id="l-remoto"></div></div></div><div class="btn-circle" onclick="App.toggleMode()"><span>MODE</span></div></div>
+        <div class="top-item"><span class="lbl-dark">Fechado</span><div class="led" id="l-fechado" style="margin-bottom:6px;"></div><div class="btn-circle bg-red" onclick="App.cmdOperate('CLOSE')"><span>I</span></div></div>
+        <div class="top-item"><span class="lbl-dark">Aberto</span><div class="led" id="l-aberto" style="margin-bottom:6px;"></div><div class="btn-circle bg-green" onclick="App.cmdOperate('OPEN')"><span>O</span></div></div>
+    </div>
+
+    <div class="lcd" id="lcd-screen">
+        <div id="l1"></div>
+        <div id="l2"></div>
+        <div id="l3"></div>
+        <div id="l4"></div>
+    </div>
+
+    <div class="grid-inferior">
+        <div class="cell" style="grid-column:1; grid-row:1;"><div class="lbl-abs-top">Pressione para<br>Testar</div><div class="btn-circle" id="btn-test-leds"><span>ON</span><span>OFF</span></div></div>
+        
+        <div class="dpad-container">
+            <div class="modern-dpad">
+                <div class="mod-btn mod-up" onclick="App.navKey('UP')">▲</div>
+                <div class="mod-btn mod-left" onclick="App.navKey('LEFT')">◀</div>
+                <div class="mod-center-dot"></div>
+                <div class="mod-btn mod-right" onclick="App.navKey('RIGHT')">▶</div>
+                <div class="mod-btn mod-down" onclick="App.navKey('DOWN')">▼</div>
+            </div>
+        </div>
+
+        <div class="cell" style="grid-column:3; grid-row:1;"><div class="btn-circle" onclick="App.navKey('ESC')"><span>ESC</span></div></div>
+
+        <div class="cell" style="grid-column:1; grid-row:2;"><div class="lbl-abs-top">Ajuste de<br>Brilho</div><div class="btn-circle" style="font-size:16px;" onclick="document.getElementById('lcd-screen').classList.toggle('dark-mode'); gtag('event', 'ajuste_brilho_tavrida');"><span>◐</span></div></div>
+        <div class="cell" style="grid-column:3; grid-row:2;"><div class="btn-circle" onclick="App.navKey('ENTER')"><span>ENTER</span></div></div>
+
+        <div class="cell" style="grid-column:1; grid-row:3;"><div class="leds-abs-top"><div class="led-col"><span class="led-lbl-light">Ligado</span><div class="led" id="l-prot-on"></div></div><div class="led-col"><span class="led-lbl-light">Desligado</span><div class="led" id="l-prot-off"></div></div></div><div class="btn-circle" onclick="App.cmdToggle('prot', 'Protecao')"><span>PROT</span></div><div class="lbl-abs-right">Proteção</div></div>
+        <div class="cell" style="grid-column:3; grid-row:3;"><div class="leds-abs-top"><div class="led-col"><span class="led-lbl-light">Ligado</span><div class="led" id="l-ar-on"></div></div><div class="led-col"><span class="led-lbl-light">Desligado</span><div class="led" id="l-ar-off"></div></div></div><div class="btn-circle" onclick="App.cmdToggle('ar', 'Religamento')"><span>AR</span></div><div class="lbl-abs-left">Religamento</div></div>
+
+        <div class="cell" style="grid-column:1; grid-row:4;"><div class="leds-abs-top"><div class="led-col"><span class="led-lbl-light">Ligado</span><div class="led" id="l-ef-on"></div></div><div class="led-col"><span class="led-lbl-light">Desligado</span><div class="led" id="l-ef-off"></div></div></div><div class="btn-circle" onclick="App.cmdToggle('ef', 'Falta Terra')"><span>EF</span></div><div class="lbl-abs-right">Falta á terra</div></div>
+        <div class="cell" style="grid-column:3; grid-row:4;"><div class="leds-abs-top"><div class="led-col"><span class="led-lbl-light">Ligado</span><div class="led" id="l-hl-on"></div></div><div class="led-col"><span class="led-lbl-light">Desligado</span><div class="led" id="l-hl-off"></div></div></div><div class="btn-circle" onclick="App.cmdHL()"><span>HL</span></div><div class="lbl-abs-left">Linha Viva</div></div>
+
+        <div class="cell" style="grid-column:1; grid-row:5;"><div class="leds-abs-top"><div class="led-col"><span class="led-lbl-light">Ligado</span><div class="led" id="l-sef-on"></div></div><div class="led-col"><span class="led-lbl-light">Desligado</span><div class="led" id="l-sef-off"></div></div></div><div class="btn-circle" onclick="App.cmdToggle('sef', 'Falta Sensivel')"><span>SEF</span></div><div class="lbl-abs-right">Falta sensível<br>á terra</div></div>
+        <div class="cell" style="grid-column:3; grid-row:5;"><div class="leds-abs-top"><div class="led-col"><span class="led-lbl-light">Ligado</span><div class="led" id="l-abr-on"></div></div><div class="led-col"><span class="led-lbl-light">Desligado</span><div class="led" id="l-abr-off"></div></div></div><div class="btn-circle" onclick="App.cmdToggle('abr', 'Retroalimentacao')"><span>ABR</span></div><div class="lbl-abs-left">Retroalimentação<br>Automática</div></div>
+
+        <div class="cell" style="grid-column:1; grid-row:6; align-items:flex-end;"><div class="lbl-abs-top" style="bottom:42px;">USB</div><div class="usb"><div class="usb-hole"></div></div></div>
+        <div class="logo-box"><div class="logo-main"><div class="logo-icon">TEL</div> TAVRIDA ELECTRIC</div><div class="logo-credit">Simulador Produzido por Lucas Teixeira</div></div>
+        <div class="cell" style="grid-column:3; grid-row:6;"><div class="leds-abs-top" style="gap:5px; margin-bottom:2px;"><div class="led-col"><span class="led-lbl-light">1</span><div class="led" id="l-g1"></div></div><div class="led-col"><span class="led-lbl-light">2</span><div class="led" id="l-g2"></div></div><div class="led-col"><span class="led-lbl-light">3</span><div class="led" id="l-g3"></div></div><div class="led-col"><span class="led-lbl-light">4</span><div class="led" id="l-g4"></div></div></div><div class="btn-circle" onclick="App.cmdGrp()"><span>GRP</span></div><div class="lbl-abs-left">Ativo</div></div>
+    </div>
+</div>
+
+<div class="test-desk">
+    <div class="test-desk-title">Módulo de Injeção de Falhas (SCADA / Físico)</div>
+    <select id="simType" class="sim-select">
+        <option value="TRANS_A">Falta Transitória Fase A (1200A)</option>
+        <option value="PERM_A">Falta Permanente Fase A (1200A)</option>
+        <option value="EARTH">Falta à Terra (450A)</option>
+    </select>
+    <div class="test-grid">
+        <button class="btn-test bt-red" onclick="App.injetaFalha()">⚡ Injetar Curto</button>
+        <button class="btn-test bt-blue" onclick="App.tripScada()">📡 Trip SCADA</button>
+        <button class="btn-test bt-grey" onclick="App.limparAlvos()">🔄 Resetar Alvos do Painel</button>
+    </div>
+</div>
+
+<script>
+    /**
+     * MÁQUINA DE ESTADOS TAVRIDA RC5 & GESTOR DO LCD (Com Analytics Integrado)
+     */
+    const App = {
+        state: {
+            mode: 'REMOTE', breaker: 'OPEN',
+            m: { ia: 0, ib: 0, ic: 0, in: 0, v: 0 },
+            prot: { prot: true, ar: true, ef: true, sef: true, abr: false, hl: 0, grp: 1 },
+            alarm: { malf: false, warn: false, lockout: false },
+            eventLog: ["Sistema Iniciado", "Controle Remoto"],
+            testLeds: false, arCount: 0, arTimer: 0, blinkToggle: false,
+            settings: { tiros: 3, deadTimes: [2, 5, 10] }
+        },
+        
+        lcd: {
+            view: 'IDLE', path: ['ROOT'], cursor: 0, offset: 0,
+            msg: { l1:'', l2:'', l3:'', l4:'', timer: null },
+            screenId: '',
+            tree: {
+                'ROOT': ['Medicoes', 'Ajustes', 'Registros', 'Sistema'],
+                'Medicoes': ['Correntes', 'Tensoes', 'Potencia/FP'],
+                'Ajustes': ['Mudar Grupo', 'Tiros Religador (79)'],
+                'Registros': ['Ultimo Evento', 'Estatistica Faltas'],
+                'Sistema': ['Nivel Bateria', 'Versao Firmware']
+            }
+        },
+
+        init() {
+            const btnTest = document.getElementById('btn-test-leds');
+            btnTest.addEventListener('pointerdown', () => this.toggleTest(true));
+            window.addEventListener('pointerup', () => this.toggleTest(false));
+            window.addEventListener('pointercancel', () => this.toggleTest(false));
+            
+            setInterval(() => { this.state.blinkToggle = !this.state.blinkToggle; if (this.state.prot.hl === 1 || this.state.prot.hl === 3) this.syncUI(); }, 500);
+            setTimeout(() => { this.state.m = {ia:145, ib:142, ic:148, in:2, v:13.8}; this.state.breaker = 'CLOSED'; this.syncUI(); }, 1000);
+        },
+
+        renderLCD() {
+            const prt = (a,b,c,d) => {
+                document.getElementById('l1').textContent = a||""; document.getElementById('l2').textContent = b||"";
+                document.getElementById('l3').textContent = c||""; document.getElementById('l4').textContent = d||"";
+            };
+
+            if (this.state.testLeds) return prt(">> TESTE LCD <<", "###############", "###############", "###############");
+            if (this.lcd.view === 'TEMP_MSG') return prt(this.lcd.msg.l1, this.lcd.msg.l2, this.lcd.msg.l3, this.lcd.msg.l4);
+
+            if (this.lcd.view === 'IDLE') {
+                if (this.state.breaker === 'RECLOSING') return prt("RELIGAMENTO...", "", ` Tiro ${this.state.arCount} de ${this.state.settings.tiros}`, ` Tempo Morto: ${this.state.arTimer}s`);
+                if (this.state.breaker === 'LOCKOUT') return prt("! BLOQUEIO 79 !", "Abertura por Protecao", "Falta Permanente", "Verifique a Linha");
+                if (this.state.prot.hl === 2) return prt("! LINHA VIVA !", "Religamento Bloqueado", `[${this.state.mode}]`, "");
+                
+                let v = this.state.breaker === 'CLOSED' ? "13.8" : "0.0";
+                return prt(
+                    ">> TAVRIDA RC5 <<",
+                    ` Ia: ${String(this.state.m.ia).padStart(3,' ')}A  V: ${v}kV`,
+                    ` GRP: ${this.state.prot.grp}    79: ${this.state.prot.ar?'ON':'OFF'}`,
+                    ` CTL: ${this.state.mode}`
+                );
+            }
+
+            if (this.lcd.view === 'MENU') {
+                let folder = this.lcd.path[this.lcd.path.length - 1];
+                let items = this.lcd.tree[folder];
+                let l1 = folder === 'ROOT' ? "-- MENU PRINCIPAL --" : `-- ${folder} --`;
+                
+                if (this.lcd.cursor < this.lcd.offset) this.lcd.offset = this.lcd.cursor;
+                if (this.lcd.cursor >= this.lcd.offset + 3) this.lcd.offset = this.lcd.cursor - 2;
+                
+                let lines = [l1];
+                for(let i=0; i<3; i++) {
+                    let idx = this.lcd.offset + i;
+                    if(idx < items.length) lines.push((idx === this.lcd.cursor ? "> " : "  ") + items[idx]);
+                    else lines.push("");
+                }
+                return prt(lines[0], lines[1], lines[2], lines[3]);
+            }
+
+            if (this.lcd.view === 'SCREEN') {
+                let v = this.state.breaker === 'CLOSED' ? 13.8 : 0;
+                switch(this.lcd.screenId) {
+                    case 'Correntes': return prt("- Correntes (A) -", ` Ia: ${String(this.state.m.ia).padStart(4,' ')}   Ib: ${String(this.state.m.ib).padStart(4,' ')}`, ` Ic: ${String(this.state.m.ic).padStart(4,' ')}   In: ${String(this.state.m.in).padStart(4,' ')}`, "(ESC p/ voltar)");
+                    case 'Tensoes': return prt("- Tensoes (kV) -", ` Va: ${v}   Vb: ${v}`, ` Vc: ${v}`, "(ESC p/ voltar)");
+                    case 'Potencia/FP': return prt("- Potencia -", ` P: ${this.state.breaker==='CLOSED'?3500:0} kW`, " Q: 450 kVAr", " FP: 0.98 Ind");
+                    case 'Mudar Grupo': return prt("- Grupo de Prot. -", ` Atual: Grupo ${this.state.prot.grp}`, " Use botao GRP no", " painel p/ mudar.");
+                    case 'Tiros Religador (79)': return prt("- Ajuste AR (79) -", ` Max Tiros: ${this.state.settings.tiros}`, " Tempos: 2s, 5s", "");
+                    case 'Ultimo Evento': return prt("- Historico -", "> " + this.state.eventLog[this.state.eventLog.length-1].substring(0, 18), "> " + (this.state.eventLog[this.state.eventLog.length-2]||"").substring(0, 18), "");
+                    case 'Estatistica Faltas': return prt("- Contadores -", ` Trips Totais: ${this.state.arCount}`, ` Lockouts: ${this.state.alarm.lockout?1:0}`, "");
+                    case 'Nivel Bateria': return prt("- Alimentacao -", " Tensao: 13.6 VDC", " Carregador: AC ON", " Vida Util: 95%");
+                    case 'Versao Firmware': return prt("- Dispositivo -", " TAVRIDA TEL RC5", " FW: v2.1.4_CPFL", "");
+                    default: return prt("Erro", "Tela nao", "programada", "");
+                }
+            }
+        },
+
+        navKey(key) {
+            gtag('event', 'navegacao_lcd_tavrida', { 'tecla': key });
+            if (key === 'ENTER' && this.state.mode === 'LOCAL') {
+                if (this.state.prot.hl === 1) { this.state.prot.hl = 2; this.showTempMsg("! ALERTA MAXIMO !", "Linha Viva (HL)", "ATIVADA", ""); gtag('event', 'linha_viva_tavrida', { 'acao': 'ativada' }); return this.syncUI(); }
+                if (this.state.prot.hl === 3) { this.state.prot.hl = 0; this.showTempMsg("LINHA VIVA", "Bloqueio", "DESATIVADO", ""); gtag('event', 'linha_viva_tavrida', { 'acao': 'desativada' }); return this.syncUI(); }
+            }
+
+            if (this.lcd.view === 'IDLE' && key === 'ENTER') {
+                this.lcd.view = 'MENU'; this.lcd.path = ['ROOT']; this.lcd.cursor = 0; this.lcd.offset = 0;
+            } 
+            else if (this.lcd.view === 'MENU') {
+                let folder = this.lcd.path[this.lcd.path.length - 1];
+                let items = this.lcd.tree[folder];
+
+                if (key === 'DOWN' && this.lcd.cursor < items.length - 1) this.lcd.cursor++;
+                if (key === 'UP' && this.lcd.cursor > 0) this.lcd.cursor--;
+                if (key === 'RIGHT' || key === 'ENTER') {
+                    let selected = items[this.lcd.cursor];
+                    if (this.lcd.tree[selected]) {
+                        this.lcd.path.push(selected); this.lcd.cursor = 0; this.lcd.offset = 0; 
+                    } else {
+                        this.lcd.view = 'SCREEN'; this.lcd.screenId = selected; 
+                        gtag('event', 'visualizou_tela_lcd_tavrida', { 'tela': selected });
+                    }
+                }
+                if (key === 'LEFT' || key === 'ESC') {
+                    if (this.lcd.path.length > 1) { this.lcd.path.pop(); this.lcd.cursor = 0; this.lcd.offset = 0; }
+                    else { this.lcd.view = 'IDLE'; }
+                }
+            }
+            else if (this.lcd.view === 'SCREEN' && (key === 'LEFT' || key === 'ESC')) {
+                this.lcd.view = 'MENU';
+            }
+            else if (this.lcd.view !== 'IDLE' && key === 'ESC') {
+                this.lcd.view = 'IDLE';
+            }
+            this.syncUI();
+        },
+
+        syncUI() {
+            if (this.state.testLeds) return; 
+            const setL = (id, cond, color) => { const el = document.getElementById(id); if(el) el.className = cond ? `led on-${color}` : 'led'; };
+            setL('l-falha', this.state.alarm.malf, 'r'); setL('l-atencao', this.state.alarm.warn, 'o'); setL('l-bloq', this.state.breaker === 'LOCKOUT' || this.state.alarm.lockout, 'r');
+            setL('l-prot-ativa', this.state.prot.prot, 'g'); setL('l-local', this.state.mode === 'LOCAL', 'o'); setL('l-remoto', this.state.mode === 'REMOTE', 'g');
+            setL('l-fechado', this.state.breaker === 'CLOSED', 'r'); setL('l-aberto', this.state.breaker !== 'CLOSED', 'g');
+            const tg = (id, val) => { setL(`l-${id}-on`, val, 'g'); setL(`l-${id}-off`, !val, 'o'); };
+            tg('prot', this.state.prot.prot); tg('ar', this.state.prot.ar); tg('ef', this.state.prot.ef); tg('sef', this.state.prot.sef); tg('abr', this.state.prot.abr);
+            for(let i=1; i<=4; i++) setL(`l-g${i}`, this.state.prot.grp === i, 'o');
+
+            if (this.state.prot.hl === 1) { setL('l-hl-on', this.state.blinkToggle, 'g'); setL('l-hl-off', false, 'o'); }
+            else if (this.state.prot.hl === 3) { setL('l-hl-on', false, 'g'); setL('l-hl-off', this.state.blinkToggle, 'o'); }
+            else { tg('hl', this.state.prot.hl === 2); }
+            this.renderLCD();
+        },
+
+        showTempMsg(l1, l2, l3, l4, time = 3000) {
+            this.lcd.view = 'TEMP_MSG'; this.lcd.msg = { l1, l2, l3, l4 }; this.syncUI();
+            clearTimeout(this.lcd.timer);
+            this.lcd.timer = setTimeout(() => { this.lcd.view = 'IDLE'; this.syncUI(); }, time);
+        },
+
+        checkLocal() {
+            if (this.state.mode === 'REMOTE') { this.showTempMsg("! BLOQUEADO !", "Operacao Negada", "Painel em REMOTO", ""); return false; }
+            return true;
+        },
+
+        toggleMode() { 
+            this.state.mode = this.state.mode === 'LOCAL' ? 'REMOTE' : 'LOCAL'; 
+            this.showTempMsg("Controle", "", this.state.mode === 'LOCAL' ? " LOCAL Ativo" : " REMOTO Ativo", "", 2000); 
+            gtag('event', 'mudanca_modo_tavrida', { 'modo': this.state.mode });
+            this.syncUI(); 
+        },
+
+        cmdToggle(varName, logName) { 
+            if (!this.checkLocal()) return; 
+            this.state.prot[varName] = !this.state.prot[varName]; 
+            this.showTempMsg("Configuracao", "", "Status Alterado", ""); 
+            gtag('event', 'botao_protecao_tavrida', { 'funcao': logName, 'status': this.state.prot[varName] ? 'ON' : 'OFF' });
+            this.syncUI(); 
+        },
+
+        cmdHL() { 
+            if (!this.checkLocal()) return; 
+            if (this.state.prot.hl === 0) { this.state.prot.hl = 1; this.showTempMsg("MODO LINHA VIVA", "", "Aperte ENTER", "para ATIVAR!"); } 
+            else if (this.state.prot.hl === 2) { this.state.prot.hl = 3; this.showTempMsg("MODO LINHA VIVA", "", "Aperte ENTER", "para DESATIVAR!"); } 
+            else { this.state.prot.hl = this.state.prot.hl === 1 ? 0 : 2; this.showTempMsg("Acao HL", "Cancelada", "", ""); } 
+            this.syncUI(); 
+        },
+
+        cmdGrp() { 
+            if (!this.checkLocal()) return; 
+            this.state.prot.grp = this.state.prot.grp >= 4 ? 1 : this.state.prot.grp + 1; 
+            this.showTempMsg("Ajuste", "", ` Grupo ${this.state.prot.grp} ativo`, ""); 
+            gtag('event', 'mudanca_grupo_tavrida', { 'novo_grupo': this.state.prot.grp });
+            this.syncUI(); 
+        },
+
+        navToLog(type) { 
+            this.lcd.view = 'SCREEN'; 
+            this.lcd.screenId = type === 'Malf' ? 'Versao Firmware' : 'Ultimo Evento'; 
+            gtag('event', 'botao_log_tavrida', { 'tipo_log': type });
+            this.syncUI(); 
+        },
+
+        toggleTest(on) { 
+            this.state.testLeds = on; 
+            document.querySelectorAll('.led').forEach(l => l.className = on ? 'led on-g' : 'led'); 
+            if(on) gtag('event', 'teste_leds_tavrida');
+            this.syncUI(); 
+        },
+
+        cmdOperate(op) {
+            if (!this.checkLocal()) return;
+            if (op === 'OPEN' && this.state.breaker !== 'OPEN') {
+                this.state.breaker = 'OPEN'; this.state.arCount = 0; this.state.alarm.lockout = false; this.state.m = {ia:0, ib:0, ic:0, in:0};
+                this.state.eventLog.push("Abertura Manual"); this.showTempMsg(">> OPERACAO <<", "", "Disjuntor ABERTO", "");
+                gtag('event', 'operacao_disjuntor_tavrida', { 'acao': 'ABRIR' });
+            } else if (op === 'CLOSE' && this.state.breaker !== 'CLOSED') {
+                if (this.state.prot.ar) { this.showTempMsg("! SEGURANCA !", "Desligue o Relig.", "(AR) antes de", "fechar manual!"); return; }
+                this.state.breaker = 'CLOSED'; this.state.arCount = 0; this.state.alarm.lockout = false; this.state.m = {ia:145, ib:142, ic:148, in:2, v:13.8};
+                this.state.eventLog.push("Fechamento Manual"); this.showTempMsg(">> OPERACAO <<", "", "Disjuntor FECHADO", "Reative o AR (79)");
+                gtag('event', 'operacao_disjuntor_tavrida', { 'acao': 'FECHAR' });
+            }
+            this.syncUI();
+        },
+
+        // --- INJEÇÃO DE FALTAS FÍSICAS ---
+        tripScada() {
+            if (this.state.breaker !== 'CLOSED') return;
+            this.state.breaker = 'OPEN'; this.state.m = {ia:0, ib:0, ic:0, in:0}; this.state.arCount = 0;
+            this.state.eventLog.push("Trip SCADA/Remoto"); this.showTempMsg("COMANDO SCADA", "", "Trip Remoto", "Executado"); 
+            gtag('event', 'simulacao_trip_scada_tavrida');
+            this.syncUI();
+        },
+        limparAlvos() { 
+            this.state.alarm.lockout = false; this.state.alarm.warn = false; 
+            if(this.state.breaker === 'LOCKOUT') this.state.breaker = 'OPEN'; 
+            this.showTempMsg("RESET ALVOS", "", "Memoria limpa", ""); 
+            gtag('event', 'reset_alvos_tavrida');
+            this.syncUI(); 
+        },
+        injetaFalha() {
+            if (this.state.breaker !== 'CLOSED') return alert("O disjuntor precisa estar fechado para injetar um curto!");
+            let type = document.getElementById('simType').value; let amp = type.includes('EARTH') ? 450 : 1200;
+            this.state.m.ia = amp; this.showTempMsg("!! ALARME DE FALTA !!", ` Corrente: ${amp}A`, " Temporizando...", "", 1000); 
+            gtag('event', 'injecao_falha_tavrida', { 'tipo_falha': type });
+            this.syncUI();
+            setTimeout(() => this.executeTrip(type), 800);
+        },
+        executeTrip(type) {
+            this.state.breaker = 'OPEN'; this.state.m = {ia:0, ib:0, ic:0, in:0}; this.state.arCount++;
+            this.state.eventLog.push(`Trip Protecao Fase A`);
+
+            if (this.state.prot.hl === 2) { this.state.breaker = 'LOCKOUT'; this.state.alarm.lockout = true; this.state.eventLog.push("Lockout Linha Viva"); return this.syncUI(); }
+            if (this.state.prot.ar && this.state.arCount <= this.state.settings.tiros) {
+                this.state.breaker = 'RECLOSING'; this.state.arTimer = this.state.settings.deadTimes[this.state.arCount - 1];
+                this.lcd.view = 'IDLE'; // Mostra a tela de tempo morto
+                
+                let itv = setInterval(() => {
+                    this.state.arTimer--; this.syncUI();
+                    if (this.state.arTimer <= 0) {
+                        clearInterval(itv); if (this.state.breaker !== 'RECLOSING') return; 
+                        this.state.breaker = 'CLOSED'; this.state.m = {ia:145, ib:142, ic:148, in:2}; this.state.eventLog.push(`Fecho Relig. Auto`); this.syncUI();
+                        if (type.includes('PERM')) setTimeout(() => this.executeTrip(type), 500); else setTimeout(() => { this.state.arCount = 0; }, 5000);
+                    }
+                }, 1000);
+            } else { this.state.breaker = 'LOCKOUT'; this.state.alarm.lockout = true; this.state.eventLog.push("Lockout Fim de Ciclo"); }
+            this.syncUI();
+        }
+    };
+
+    window.onload = () => App.init();
+</script>
+</body>
+</html>
