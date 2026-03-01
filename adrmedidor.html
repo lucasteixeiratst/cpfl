@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=800">
+<title>Simulador Inteligente ADR M2000</title>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+    body, html {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #d1d8e0;
+        font-family: Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        min-width: 800px; 
+    }
+
+    .device-body {
+        background: linear-gradient(180deg, #d8dcdb 0%, #b8bcc2 100%);
+        width: 750px;
+        height: 280px;
+        border-radius: 12px;
+        box-shadow: 
+            15px 15px 30px rgba(0,0,0,0.3),
+            inset -3px -3px 8px rgba(0,0,0,0.2),
+            inset 3px 3px 8px rgba(255,255,255,0.8);
+        border-left: 15px solid #2f353a;
+        border-right: 15px solid #2f353a;
+        position: relative;
+    }
+
+    .top-banner {
+        background-color: #3e4448;
+        width: 100%;
+        height: 90px;
+        position: absolute;
+        top: 25px;
+        display: flex;
+        align-items: center;
+        padding-left: 30px;
+        box-sizing: border-box;
+    }
+
+    .logo-area {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .montrel-text {
+        color: #fff;
+        font-size: 24px;
+        font-weight: 900;
+        letter-spacing: 1px;
+        line-height: 0.9;
+    }
+
+    .tecnologia-text {
+        color: #a0a5a8;
+        font-size: 10px;
+        letter-spacing: 2px;
+    }
+
+    .logo-circle {
+        width: 40px;
+        height: 40px;
+        border: 2px solid #e54b3c;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+    }
+
+    .logo-circle::after {
+        content: "M";
+        color: #e54b3c;
+        font-size: 24px;
+        font-weight: bold;
+    }
+
+    .lcd-bezel {
+        background-color: #1a1c1d;
+        border-radius: 20px;
+        padding: 8px 15px;
+        position: absolute;
+        left: 350px;
+        box-shadow: inset 2px 2px 5px rgba(0,0,0,0.8);
+    }
+
+    .lcd-screen {
+        background-color: #8cc63f;
+        width: 180px;
+        height: 45px;
+        border-radius: 3px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        box-shadow: inset 0px 0px 10px rgba(0,0,0,0.2);
+    }
+
+    .lcd-text {
+        font-family: 'Share Tech Mono', monospace;
+        font-size: 16px;
+        color: #111;
+        margin: 0;
+        line-height: 1.1;
+        letter-spacing: 1px;
+        text-shadow: 1px 1px 0px rgba(140, 198, 63, 0.4);
+        white-space: pre; 
+    }
+
+    .model-name {
+        position: absolute;
+        bottom: 30px;
+        left: 40px;
+        font-size: 38px;
+        font-weight: bold;
+        letter-spacing: -1px;
+    }
+    .model-adr { color: #5a6065; }
+    .model-m2000 { color: #e54b3c; }
+
+    /* Área centralizada exata para os botões: 
+       Começa em 320px, 3 botões de 45px + 2 gaps de 30px = 195px.
+       O centro geométrico disso é exatamente 417.5px. */
+    .button-group {
+        position: absolute;
+        bottom: 25px;
+        left: 320px;
+        display: flex;
+        align-items: center;
+        gap: 30px;
+        z-index: 10;
+    }
+
+    .btn {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        border: 2px solid #111;
+        cursor: pointer;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 20px;
+        font-weight: bold;
+        color: #111;
+        box-shadow: 0 4px 0px #222, inset 1px 1px 5px rgba(255,255,255,0.4);
+        transition: transform 0.1s, box-shadow 0.1s;
+        outline: none;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent; 
+    }
+
+    .btn:active {
+        transform: translateY(4px);
+        box-shadow: 0 0px 0px #222, inset 2px 2px 5px rgba(0,0,0,0.6);
+    }
+
+    .btn-yellow { background-color: #ffd02b; }
+    .btn-red { background-color: #e54b3c; color: #111; font-size: 24px;}
+
+    .panel-graphics {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        pointer-events: none;
+    }
+    .label-text { font-size: 10px; font-weight: bold; color: #2f353a; }
+
+    .terminals-area {
+        position: absolute; right: 20px; top: 35px; width: 120px; height: 100%;
+    }
+    .terminal-label { font-size: 10px; font-weight: bold; color: #2f353a; text-align: right; margin-right: 35px; }
+    .terminal-sub { font-size: 8px; color: #5a6065; text-align: right; margin-right: 35px; margin-top: 2px; }
+    .born {
+        width: 24px; height: 24px; border-radius: 50%; border: 2px solid #2f353a; position: absolute; right: 0; box-shadow: inset 2px 2px 5px rgba(0,0,0,0.6);
+    }
+    .born-red { background: radial-gradient(circle, #222 30%, #e54b3c 35%, #e54b3c 60%, #555 100%); top: 15px; }
+    .born-black-small { width: 14px; height: 14px; background: radial-gradient(circle, #111 40%, #555 100%); top: 75px; right: 5px; }
+    .born-black { background: radial-gradient(circle, #222 30%, #5a6065 35%, #5a6065 60%, #222 100%); top: 120px; }
+</style>
+</head>
+<body>
+
+<div class="device-body" id="simDevice">
+    
+    <svg class="panel-graphics" xmlns="http://www.w3.org/2000/svg">
+        <g transform="translate(30, 150) scale(0.3)">
+            <path d="M50 5 L95 90 L5 90 Z" fill="#ffd02b" stroke="#111" stroke-width="5"/>
+            <path d="M50 25 L40 55 L55 55 L45 80 L60 50 L45 50 Z" fill="#111"/>
+        </g>
+        
+        <text x="417.5" y="198" class="label-text" text-anchor="middle">CONFIRMA</text>
+        <text x="417.5" y="272" class="label-text" text-anchor="middle">SELECIONA</text>
+        
+        <polygon points="342.5,255 339.5,260 345.5,260" fill="#2f353a"/>
+        <polyline points="342.5,260 342.5,269 380,269" fill="none" stroke="#2f353a" stroke-width="1.5"/>
+        
+        <polygon points="492.5,255 489.5,260 495.5,260" fill="#2f353a"/>
+        <polyline points="492.5,260 492.5,269 455,269" fill="none" stroke="#2f353a" stroke-width="1.5"/>
+        
+        <g transform="translate(640, 130) scale(0.3)">
+            <path d="M50 5 L95 90 L5 90 Z" fill="#ffd02b" stroke="#111" stroke-width="5"/>
+            <path d="M50 25 L40 55 L55 55 L45 80 L60 50 L45 50 Z" fill="#111"/>
+        </g>
+        <polyline points="655,145 655,65 690,65" fill="none" stroke="#2f353a" stroke-width="1.5"/>
+        <polyline points="655,160 655,170 690,170" fill="none" stroke="#2f353a" stroke-width="1.5"/>
+        <text x="700" y="120" class="label-text" style="font-size: 9px;" text-anchor="end">AUX</text>
+    </svg>
+
+    <div class="top-banner">
+        <div class="logo-area">
+            <div>
+                <div class="montrel-text">MONTREL</div>
+                <div class="tecnologia-text">TECNOLOGIA</div>
+            </div>
+            <div class="logo-circle"></div>
+        </div>
+        
+        <div class="lcd-bezel">
+            <div class="lcd-screen" id="displayScreen">
+                <p class="lcd-text" id="line1">-MONTREL-</p>
+                <p class="lcd-text" id="line2">ADR-M2000 V4.0</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="model-name"><span class="model-adr">ADR</span> <span class="model-m2000">M2000</span></div>
+
+    <div class="button-group">
+        <button class="btn btn-yellow" onclick="navegarMenu(-1)">↓</button>
+        <button class="btn btn-red" onclick="selecionar()">↲</button>
+        <button class="btn btn-yellow" onclick="navegarMenu(1)">↑</button>
+    </div>
+
+    <div class="terminals-area">
+        <div class="terminal-label">ALIMENTAÇÃO</div>
+        <div class="terminal-sub">100 a 280V~<br>CAT IV 600V</div>
+        <div class="born born-red"></div>
+        <div class="born born-black-small"></div>
+        <div class="born born-black"></div>
+    </div>
+
+</div>
+
+<script>
+    // --- VARIÁVEIS DA MÁQUINA DE ESTADOS ---
+    let systemState = "BOOT"; 
+    
+    // Lista Dinâmica de KD com TODOS os valores enviados por você (em ordem crescente)
+    let kdsDisponiveis = [
+        0.2, 0.3, 0.4, 0.5, 0.625, 0.9, 1.0, 1.2, 1.25, 
+        1.8, 2.0, 2.4, 3.6, 5.0, 5.4, 7.2, 10.8, 14.4, 21.6
+    ];
+    let indexKdAtual = 12; // Inicia pré-selecionado no 3.600
+    let novoKdValue = 1.0; 
+    
+    // Parâmetros Físicos do Teste (Carga Real Montrel 127V)
+    const TENSAO_TESTE = 127; 
+    const POTENCIA_REAL_W = 293.2; 
+    
+    let voltasParaTeste = 5; 
+    let tempoEstimadoSegundos = 0;
+    
+    // Cronômetro do Teste
+    let startTimeMs = 0;
+    let tempoDecorridoS = 0;
+    let ultimoErroCalculado = null; 
+    let activeInterval = null; 
+
+    // Menu Principal
+    const menuItems = ["TESTE MANUAL", "VOLTIMETRO", "ULT. TESTE"];
+    let menuIndex = 0;
+    
+    const line1 = document.getElementById("line1");
+    const line2 = document.getElementById("line2");
+
+    function formata16(texto) {
+        return texto.padEnd(16, " ").substring(0, 16);
+    }
+
+    function formatarTempo(segundosTotal) {
+        let m = Math.floor(segundosTotal / 60);
+        let s = Math.floor(segundosTotal % 60);
+        return m.toString().padStart(2, '0') + "m " + s.toString().padStart(2, '0') + "s";
+    }
+
+    // --- ATUALIZAÇÃO VISUAL DA TELA LCD ---
+    function renderDisplay() {
+        switch(systemState) {
+            case "MENU":
+                line1.innerText = formata16("MENU PRINCIPAL");
+                line2.innerText = formata16("> " + menuItems[menuIndex]);
+                break;
+                
+            case "TEST_SELECT_KD":
+                line1.innerText = formata16("SELECIONE O KD:");
+                if (indexKdAtual < kdsDisponiveis.length) {
+                    line2.innerText = formata16("> " + kdsDisponiveis[indexKdAtual].toFixed(3));
+                } else {
+                    line2.innerText = formata16("> + ADD NOVO KD");
+                }
+                break;
+                
+            case "TEST_ADD_KD":
+                line1.innerText = formata16("DIGITE NOVO KD:");
+                line2.innerText = formata16("> " + novoKdValue.toFixed(3));
+                break;
+                
+            case "TEST_VOLTAS":
+                line1.innerText = formata16("QTD DE VOLTAS:");
+                line2.innerText = formata16("> " + voltasParaTeste + " voltas");
+                break;
+
+            case "TEST_PREVIEW":
+                line1.innerText = formata16("TEMPO ESTIMADO:");
+                line2.innerText = formata16(formatarTempo(tempoEstimadoSegundos) + " (OK->)");
+                break;
+
+            case "TEST_READY":
+                line1.innerText = formata16("PRONTO! APERTE");
+                line2.innerText = formata16("OK PARA INICIAR");
+                break;
+                
+            case "TEST_RUNNING":
+                line1.innerText = formata16("TESTE EM ANDAM.");
+                line2.innerText = formata16("Tempo: " + formatarTempo(tempoDecorridoS));
+                break;
+                
+            case "TEST_RESULT":
+            case "ULT_TEST":
+                line1.innerText = formata16(systemState === "ULT_TEST" ? "ULTIMO TESTE:" : "FIM DE TESTE!");
+                if (ultimoErroCalculado === null) {
+                    line2.innerText = formata16("Nenhum registro.");
+                } else {
+                    let sinal = ultimoErroCalculado >= 0 ? "+" : "";
+                    let textoErro = Math.abs(ultimoErroCalculado) > 99.99 ? "FORA DE FAIXA" : sinal + ultimoErroCalculado.toFixed(2) + "%";
+                    line2.innerText = formata16("ERRO: " + textoErro);
+                }
+                break;
+        }
+    }
+
+    // --- BOTÕES DE NAVEGAÇÃO (SETAS) ---
+    function navegarMenu(direcao) {
+        if (systemState === "BOOT") { systemState = "MENU"; renderDisplay(); return; }
+
+        switch(systemState) {
+            case "MENU":
+                menuIndex += direcao;
+                if (menuIndex < 0) menuIndex = menuItems.length - 1;
+                if (menuIndex >= menuItems.length) menuIndex = 0;
+                break;
+                
+            case "TEST_SELECT_KD":
+                indexKdAtual += direcao;
+                if (indexKdAtual < 0) indexKdAtual = kdsDisponiveis.length; 
+                if (indexKdAtual > kdsDisponiveis.length) indexKdAtual = 0;
+                break;
+                
+            case "TEST_ADD_KD":
+                novoKdValue += (direcao * 0.1); 
+                if (novoKdValue < 0.1) novoKdValue = 0.1; 
+                novoKdValue = Math.round(novoKdValue * 10) / 10;
+                break;
+                
+            case "TEST_VOLTAS":
+                voltasParaTeste += direcao;
+                if (voltasParaTeste < 1) voltasParaTeste = 1;
+                if (voltasParaTeste > 50) voltasParaTeste = 50; 
+                break;
+                
+            case "VOLTMETER":
+            case "TEST_PREVIEW":
+            case "TEST_READY":
+            case "TEST_RESULT":
+            case "ULT_TEST":
+                pararProcessos();
+                systemState = "MENU";
+                break;
+                
+            case "TEST_RUNNING":
+                break;
+        }
+        renderDisplay();
+    }
+
+    // --- BOTÃO CONFIRMAR (ENTER) ---
+    function selecionar() {
+        if (systemState === "BOOT") { systemState = "MENU"; renderDisplay(); return; }
+
+        switch(systemState) {
+            case "MENU":
+                let opcao = menuItems[menuIndex];
+                if (opcao === "VOLTIMETRO") iniciarVoltimetro();
+                else if (opcao === "TESTE MANUAL") systemState = "TEST_SELECT_KD"; 
+                else if (opcao === "ULT. TESTE") systemState = "ULT_TEST";
+                break;
+                
+            case "TEST_SELECT_KD":
+                if (indexKdAtual === kdsDisponiveis.length) {
+                    novoKdValue = 1.0; 
+                    systemState = "TEST_ADD_KD";
+                } else {
+                    systemState = "TEST_VOLTAS";
+                }
+                break;
+                
+            case "TEST_ADD_KD":
+                kdsDisponiveis.push(novoKdValue);
+                indexKdAtual = kdsDisponiveis.length - 1; 
+                systemState = "TEST_VOLTAS";
+                break;
+                
+            case "TEST_VOLTAS":
+                let energiaEsperadaWh = voltasParaTeste * kdsDisponiveis[indexKdAtual];
+                tempoEstimadoSegundos = (energiaEsperadaWh * 3600) / POTENCIA_REAL_W;
+                systemState = "TEST_PREVIEW";
+                break;
+
+            case "TEST_PREVIEW":
+                systemState = "TEST_READY";
+                break;
+
+            case "TEST_READY":
+                startTimeMs = Date.now();
+                systemState = "TEST_RUNNING";
+                
+                activeInterval = setInterval(() => {
+                    tempoDecorridoS = (Date.now() - startTimeMs) / 1000;
+                    renderDisplay();
+                }, 500);
+                break;
+
+            case "TEST_RUNNING":
+                clearInterval(activeInterval);
+                let tempoRealExatoSegundos = (Date.now() - startTimeMs) / 1000;
+                
+                let E_medido = voltasParaTeste * kdsDisponiveis[indexKdAtual]; 
+                let E_real = (POTENCIA_REAL_W * tempoRealExatoSegundos) / 3600; 
+                
+                ultimoErroCalculado = ((E_medido / E_real) - 1) * 100;
+                systemState = "TEST_RESULT";
+                break;
+                
+            case "VOLTMETER":
+            case "TEST_RESULT":
+            case "ULT_TEST":
+                pararProcessos();
+                systemState = "MENU";
+                break;
+        }
+        renderDisplay();
+    }
+
+    function pararProcessos() {
+        if (activeInterval) {
+            clearInterval(activeInterval);
+            activeInterval = null;
+        }
+    }
+
+    function iniciarVoltimetro() {
+        systemState = "VOLTMETER";
+        line1.innerText = formata16("VOLTS    FREQ.");
+        activeInterval = setInterval(() => {
+            let tensao = (TENSAO_TESTE + (Math.random() * 2 - 1)).toFixed(1);
+            let freq = (60 + (Math.random() * 0.04 - 0.02)).toFixed(2);
+            line2.innerText = formata16(tensao.padStart(5, ' ') + "V   " + freq.padStart(5, ' ') + "Hz");
+        }, 600);
+    }
+
+    window.onload = () => {
+        line1.innerText = formata16("-MONTREL-");
+        line2.innerText = formata16("ADR-M2000 V4.0");
+    };
+</script>
+</body>
+</html>
