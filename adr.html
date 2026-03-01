@@ -4,6 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=800">
 <title>Simulador Inteligente ADR M2000</title>
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-G7MC2S78V6"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-G7MC2S78V6');
+</script>
+
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
 
@@ -128,9 +138,6 @@
     .model-adr { color: #5a6065; }
     .model-m2000 { color: #e54b3c; }
 
-    /* Área centralizada exata para os botões: 
-       Começa em 320px, 3 botões de 45px + 2 gaps de 30px = 195px.
-       O centro geométrico disso é exatamente 417.5px. */
     .button-group {
         position: absolute;
         bottom: 25px;
@@ -256,7 +263,7 @@
     // --- VARIÁVEIS DA MÁQUINA DE ESTADOS ---
     let systemState = "BOOT"; 
     
-    // Lista Dinâmica de KD com TODOS os valores enviados por você (em ordem crescente)
+    // Lista Dinâmica de KD 
     let kdsDisponiveis = [
         0.2, 0.3, 0.4, 0.5, 0.625, 0.9, 1.0, 1.2, 1.25, 
         1.8, 2.0, 2.4, 3.6, 5.0, 5.4, 7.2, 10.8, 14.4, 21.6
@@ -277,8 +284,8 @@
     let ultimoErroCalculado = null; 
     let activeInterval = null; 
 
-    // Menu Principal
-    const menuItems = ["TESTE MANUAL", "VOLTIMETRO", "ULT. TESTE"];
+    // Menu Principal Modificado
+    const menuItems = ["TESTE", "VOLTIMETRO", "ULT. TESTE"];
     let menuIndex = 0;
     
     const line1 = document.getElementById("line1");
@@ -341,9 +348,11 @@
                 line1.innerText = formata16(systemState === "ULT_TEST" ? "ULTIMO TESTE:" : "FIM DE TESTE!");
                 if (ultimoErroCalculado === null) {
                     line2.innerText = formata16("Nenhum registro.");
+                } else if (!isFinite(ultimoErroCalculado)) {
+                    line2.innerText = formata16("ERRO: TEMPO CURTO");
                 } else {
-                    let sinal = ultimoErroCalculado >= 0 ? "+" : "";
-                    let textoErro = Math.abs(ultimoErroCalculado) > 99.99 ? "FORA DE FAIXA" : sinal + ultimoErroCalculado.toFixed(2) + "%";
+                    let sinal = ultimoErroCalculado > 0 ? "+" : "";
+                    let textoErro = sinal + ultimoErroCalculado.toFixed(2) + "%";
                     line2.innerText = formata16("ERRO: " + textoErro);
                 }
                 break;
@@ -402,7 +411,7 @@
             case "MENU":
                 let opcao = menuItems[menuIndex];
                 if (opcao === "VOLTIMETRO") iniciarVoltimetro();
-                else if (opcao === "TESTE MANUAL") systemState = "TEST_SELECT_KD"; 
+                else if (opcao === "TESTE") systemState = "TEST_SELECT_KD"; 
                 else if (opcao === "ULT. TESTE") systemState = "ULT_TEST";
                 break;
                 
