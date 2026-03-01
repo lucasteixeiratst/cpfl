@@ -4,6 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=850">
 <title>Simulador ADR M2000 com medidor</title>
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-G7MC2S78V6"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-G7MC2S78V6');
+</script>
+
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap'); 
@@ -358,7 +368,7 @@
     let activeInterval = null; 
     let ledPulseInterval = null;
 
-    const menuItems = ["TESTE MANUAL", "VOLTIMETRO", "ULT. TESTE"];
+    const menuItems = ["TESTE", "VOLTIMETRO", "ULT. TESTE"];
     let menuIndex = 0;
     
     const line1 = document.getElementById("line1");
@@ -414,9 +424,13 @@
                 line1.innerText = formata16(systemState === "ULT_TEST" ? "ULTIMO TESTE:" : "FIM DE TESTE!");
                 if (ultimoErroCalculado === null) {
                     line2.innerText = formata16("Nenhum registro.");
+                } else if (!isFinite(ultimoErroCalculado)) {
+                    // Proteção caso o usuário dê um duplo clique instantâneo (tempo = 0)
+                    line2.innerText = formata16("ERRO: TEMPO CURTO");
                 } else {
-                    let sinal = ultimoErroCalculado >= 0 ? "+" : "";
-                    let textoErro = Math.abs(ultimoErroCalculado) > 99.99 ? "FORA DE FAIXA" : sinal + ultimoErroCalculado.toFixed(2) + "%";
+                    let sinal = ultimoErroCalculado > 0 ? "+" : "";
+                    // Removido o limite de 99.99% para sempre exibir o valor em %
+                    let textoErro = sinal + ultimoErroCalculado.toFixed(2) + "%";
                     line2.innerText = formata16("ERRO: " + textoErro);
                 }
                 break;
@@ -468,7 +482,7 @@
             case "MENU":
                 let opcao = menuItems[menuIndex];
                 if (opcao === "VOLTIMETRO") iniciarVoltimetro();
-                else if (opcao === "TESTE MANUAL") systemState = "TEST_SELECT_KD"; 
+                else if (opcao === "TESTE") systemState = "TEST_SELECT_KD"; 
                 else if (opcao === "ULT. TESTE") systemState = "ULT_TEST";
                 break;
                 
