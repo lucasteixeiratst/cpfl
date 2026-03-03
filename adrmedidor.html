@@ -3,14 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=850">
-<title>Simulador ADR M2000 com medidor</title>
+<title>Simulador ADR M2000 - Multi Medidores & Painel de Config.</title>
 
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-G7MC2S78V6"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-
   gtag('config', 'G-G7MC2S78V6');
 </script>
 
@@ -35,183 +34,223 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        padding: 40px 0;
+        padding: 60px 0 40px 0;
         position: relative;
         min-width: 800px;
     }
 
     /* =========================================
-       DESIGN DO MEDIDOR NANSEN LUMEN 3 MD
+       PAINEL DE CONTROLE (TOPO)
        ========================================= */
-    .meter-body {
-        width: 320px;
-        height: 440px;
-        background: #e6e9ed;
-        border-radius: 12px 12px 4px 4px;
-        box-shadow: 
-            0 15px 25px rgba(0,0,0,0.3), 
-            inset 0 2px 10px #fff,
-            inset 0 -5px 15px rgba(0,0,0,0.1);
-        border: 2px solid #b0b5bc;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 15px;
-        box-sizing: border-box;
-        position: relative;
-        z-index: 2;
-        margin-bottom: 70px; 
-    }
-
-    .meter-glass {
-        width: 100%;
-        height: 330px;
-        background: #f8fcfb;
+    .toggle-panel {
+        position: absolute;
+        top: 15px;
+        background: #2b3036;
+        padding: 10px 20px;
         border-radius: 8px;
-        border: 1px solid #d1d6db;
-        box-shadow: inset 0 0 20px rgba(0,0,0,0.05), 0 5px 10px rgba(0,0,0,0.05);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        z-index: 100;
+        color: white;
+        font-weight: bold;
+        font-size: 14px;
+        border: 2px solid #111;
+    }
+    .toggle-btn {
+        background: #3498db;
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        font-size: 14px;
+        transition: background 0.2s, transform 0.1s;
+        box-shadow: 0 3px 0 #2980b9;
+    }
+    .toggle-btn:active { transform: translateY(3px); box-shadow: 0 0 0 #2980b9; }
+    .toggle-btn.electro-mode { background: #e67e22; box-shadow: 0 3px 0 #d35400; }
+
+    .panel-divider {
+        width: 2px;
+        height: 20px;
+        background-color: #555;
+        border-radius: 2px;
+    }
+
+    .kd-toggle-btn {
+        background: #27ae60;
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        font-size: 14px;
+        transition: background 0.2s, transform 0.1s;
+        box-shadow: 0 3px 0 #1e8449;
+    }
+    .kd-toggle-btn:active { transform: translateY(3px); box-shadow: 0 0 0 #1e8449; }
+    .kd-toggle-btn:hover { background: #2ecc71; }
+
+    /* =========================================
+       GAVETA LATERAL DE CONFIGURAÇÃO
+       ========================================= */
+    .side-panel {
+        position: fixed;
+        right: -300px; 
+        top: 0;
+        width: 280px;
+        height: 100%;
+        background: #1e2227;
+        color: #fff;
+        box-shadow: -5px 0 15px rgba(0,0,0,0.5);
+        transition: right 0.3s ease;
+        z-index: 1000;
         display: flex;
         flex-direction: column;
-        align-items: center;
-        padding: 15px;
-        box-sizing: border-box;
-        position: relative;
     }
-
-    .nansen-logo {
-        color: #1f4e79;
-        font-size: 24px;
-        font-weight: bold;
-        letter-spacing: -1px;
-        align-self: flex-start;
-        margin-bottom: 10px;
-    }
-
-    .meter-lcd-bezel {
-        background-color: #2b3036;
-        padding: 5px;
-        border-radius: 4px;
-        width: 90%;
-        margin-bottom: 15px;
-    }
-    .meter-lcd-screen {
-        background-color: #b5c4ad;
-        height: 40px;
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-        padding: 0 10px;
-        box-shadow: inset 2px 2px 5px rgba(0,0,0,0.3);
-    }
-    .meter-lcd-text {
-        font-family: 'Orbitron', sans-serif;
-        font-size: 26px;
-        color: #111;
-        letter-spacing: 2px;
-    }
-
-    .meter-specs {
-        text-align: center;
-        font-size: 10px;
-        color: #333;
-        line-height: 1.4;
-        width: 100%;
-        border-bottom: 1px solid #ccc;
-        padding-bottom: 10px;
-        margin-bottom: 10px;
-    }
-    .meter-model {
-        font-size: 14px;
-        font-weight: bold;
-        color: #111;
-        margin-bottom: 3px;
-    }
-
-    /* LEDs Indicadores */
-    .meter-indicators {
+    .side-panel.open { right: 0; }
+    
+    .panel-header {
         display: flex;
         justify-content: space-between;
-        width: 90%;
         align-items: center;
-        margin-top: 5px;
+        padding: 15px;
+        background: #111;
+        border-bottom: 2px solid #333;
     }
-    .pulse-info {
-        font-size: 11px;
+    .panel-header h3 { margin: 0; font-size: 16px; }
+    .close-btn { background: #e54b3c; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; font-weight: bold; }
+    .close-btn:hover { background: #c0392b; }
+
+    .panel-content { padding: 15px; overflow-y: auto; }
+    .panel-content p { font-size: 12px; color: #aaa; margin-top: 0; margin-bottom: 10px; }
+    
+    .kd-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+    }
+    .kd-btn {
+        background: #2b3036;
+        color: #fff;
+        border: 1px solid #444;
+        padding: 8px 0;
+        border-radius: 4px;
+        cursor: pointer;
+        font-family: 'Share Tech Mono', monospace;
+        font-size: 14px;
+        transition: 0.2s;
+    }
+    .kd-btn:hover { background: #3a4149; }
+    .kd-btn.active {
+        background: #8cc63f;
+        color: #111;
         font-weight: bold;
-        color: #222;
-        text-align: right;
-    }
-    .led-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 5px;
-    }
-    .led-bulb {
-        width: 14px;
-        height: 14px;
-        border-radius: 50%;
-        background-color: #550000; 
-        border: 2px solid #333;
-        box-shadow: inset -2px -2px 4px rgba(0,0,0,0.5);
-        transition: background-color 0.02s, box-shadow 0.02s;
-    }
-    /* Classe ativada no JS quando o medidor "pisca" */
-    .led-flash {
-        background-color: #ff3333;
-        box-shadow: 0 0 18px #ff3333, inset -1px -1px 3px rgba(0,0,0,0.2);
-    }
-    .led-label {
-        font-size: 8px;
-        font-weight: bold;
+        border-color: #5b8723;
+        box-shadow: 0 0 10px rgba(140, 198, 63, 0.4);
     }
 
-    .meter-terminals-block {
-        width: 100%;
-        height: 60px;
-        background-color: #2b3036;
-        margin-top: auto;
-        border-radius: 4px;
+    /* Input Dinâmico de Corrente */
+    .current-input-container {
         display: flex;
-        justify-content: space-around;
         align-items: center;
-        padding: 0 20px;
-        box-sizing: border-box;
+        gap: 10px;
+        background: #2b3036;
+        padding: 10px;
+        border-radius: 6px;
+        border: 1px solid #444;
     }
-    .terminal-screw {
-        width: 16px;
-        height: 16px;
-        background: radial-gradient(circle, #ddd 30%, #777 90%);
-        border-radius: 50%;
-        position: relative;
+    .current-input {
+        background: #1a1c1d;
+        color: #fff;
+        border: 1px solid #555;
+        padding: 8px 10px;
+        border-radius: 4px;
+        font-family: 'Share Tech Mono', monospace;
+        font-size: 18px;
+        width: 100px;
+        outline: none;
+        transition: border-color 0.2s, box-shadow 0.2s;
     }
-    .terminal-screw::after {
-        content: "";
-        position: absolute;
-        top: 7px;
-        left: 2px;
-        width: 12px;
-        height: 2px;
-        background-color: #333;
+    .current-input:focus {
+        border-color: #8cc63f;
+        box-shadow: 0 0 8px rgba(140, 198, 63, 0.5);
     }
+    .current-label {
+        font-weight: bold;
+        font-size: 14px;
+        color: #ccc;
+    }
+
+    /* =========================================
+       CLASSES GENÉRICAS DE VISUALIZAÇÃO
+       ========================================= */
+    .meter-view { display: flex; flex-direction: column; align-items: center; position: relative; width: 100%; }
+    .hidden { display: none !important; }
+
+    /* =========================================
+       DESIGN DO MEDIDOR DIGITAL (LUMEN 3 MD)
+       ========================================= */
+    .meter-body-digital { width: 320px; height: 440px; background: #e6e9ed; border-radius: 12px 12px 4px 4px; box-shadow: 0 15px 25px rgba(0,0,0,0.3), inset 0 2px 10px #fff, inset 0 -5px 15px rgba(0,0,0,0.1); border: 2px solid #b0b5bc; display: flex; flex-direction: column; align-items: center; padding: 15px; box-sizing: border-box; position: relative; z-index: 2; margin-bottom: 70px; }
+    .meter-glass-digital { width: 100%; height: 330px; background: #f8fcfb; border-radius: 8px; border: 1px solid #d1d6db; box-shadow: inset 0 0 20px rgba(0,0,0,0.05), 0 5px 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; padding: 15px; box-sizing: border-box; position: relative; }
+    .nansen-logo-digital { color: #1f4e79; font-size: 24px; font-weight: bold; letter-spacing: -1px; align-self: flex-start; margin-bottom: 10px; }
+    .meter-lcd-bezel { background-color: #2b3036; padding: 5px; border-radius: 4px; width: 90%; margin-bottom: 15px; }
+    .meter-lcd-screen { background-color: #b5c4ad; height: 40px; display: flex; justify-content: flex-end; align-items: center; padding: 0 10px; box-shadow: inset 2px 2px 5px rgba(0,0,0,0.3); }
+    .meter-lcd-text { font-family: 'Orbitron', sans-serif; font-size: 26px; color: #111; letter-spacing: 2px; }
+    .meter-specs-digital { text-align: center; font-size: 10px; color: #333; line-height: 1.4; width: 100%; border-bottom: 1px solid #ccc; padding-bottom: 10px; margin-bottom: 10px; }
+    .meter-model-digital { font-size: 14px; font-weight: bold; color: #111; margin-bottom: 3px; }
+    .meter-indicators { display: flex; justify-content: space-between; width: 90%; align-items: center; margin-top: 5px; }
+    .pulse-info { font-size: 11px; font-weight: bold; color: #222; text-align: right; }
+    .led-container { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+    .led-bulb { width: 14px; height: 14px; border-radius: 50%; background-color: #550000; border: 2px solid #333; box-shadow: inset -2px -2px 4px rgba(0,0,0,0.5); transition: background-color 0.02s, box-shadow 0.02s; }
+    .led-flash { background-color: #ff3333; box-shadow: 0 0 18px #ff3333, inset -1px -1px 3px rgba(0,0,0,0.2); }
+    .led-label { font-size: 8px; font-weight: bold; }
+    .terminals-block-digital { width: 100%; height: 60px; background-color: #2b3036; margin-top: auto; border-radius: 4px; display: flex; justify-content: space-around; align-items: center; padding: 0 20px; box-sizing: border-box; }
+    .terminal-port { display: flex; flex-direction: column; align-items: center; }
+    .terminal-screw-digital { width: 16px; height: 16px; background: radial-gradient(circle, #ddd 30%, #777 90%); border-radius: 50%; position: relative; }
+    .terminal-screw-digital::after { content: ""; position: absolute; top: 7px; left: 2px; width: 12px; height: 2px; background-color: #333; }
+
+    /* =========================================
+       DESIGN DO MEDIDOR ELETROMECÂNICO (M1A-T)
+       ========================================= */
+    .meter-wrapper-electro { display: flex; flex-direction: column; align-items: center; position: relative; z-index: 2; margin-bottom: 70px; }
+    .m1at-glass-dome { width: 330px; height: 330px; background: #111; border-radius: 50%; box-shadow: 0 15px 25px rgba(0,0,0,0.5), inset 0 0 20px rgba(255,255,255,0.4), inset 0 -5px 15px rgba(0,0,0,0.8); border: 4px solid #222; display: flex; justify-content: center; align-items: center; position: relative; z-index: 2; }
+    .m1at-glass-dome::after { content: ''; position: absolute; top: 2%; left: 2%; width: 96%; height: 96%; border-radius: 50%; background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 60%); pointer-events: none; z-index: 10; }
+    .m1at-faceplate { width: 300px; height: 300px; background: linear-gradient(135deg, #e6e6e6 0%, #ffffff 40%, #cccccc 100%); border-radius: 50%; display: flex; flex-direction: column; align-items: center; padding: 25px 15px; box-sizing: border-box; position: relative; color: #111; box-shadow: inset 0 0 10px rgba(0,0,0,0.2); }
+    .face-header { display: flex; justify-content: space-between; align-items: center; width: 85%; margin-bottom: 15px; font-family: Arial, sans-serif; }
+    .black-box-text { background-color: #111; color: #fff; padding: 2px 6px; font-size: 13px; font-weight: bold; letter-spacing: 0.5px; }
+    .nansen-logo-electro { font-size: 24px; font-weight: 900; font-style: italic; letter-spacing: -1px; border-top: 2px solid #111; padding-top: 2px; margin: 0 10px; }
+    .mechanical-dials { display: flex; background: #111; padding: 4px; border: 2px solid #444; margin-bottom: 5px; box-shadow: inset 0 2px 5px rgba(0,0,0,0.8); position: relative; }
+    .mechanical-dials::after { content: ','; position: absolute; right: 28px; bottom: 2px; color: white; font-size: 20px; font-weight: bold; }
+    .dial { background: #111; color: #fff; font-family: 'Share Tech Mono', monospace; font-size: 26px; width: 24px; height: 36px; display: flex; justify-content: center; align-items: center; border: 1px solid #333; margin: 0 1px; box-shadow: inset 0 8px 6px -6px rgba(0,0,0,0.8), inset 0 -8px 6px -6px rgba(0,0,0,0.8); }
+    .dial-white { background: #fff; color: #111; border-color: #ccc; box-shadow: inset 0 8px 6px -6px rgba(0,0,0,0.3), inset 0 -8px 6px -6px rgba(0,0,0,0.3); }
+    .kwh-label { font-size: 16px; font-weight: 900; letter-spacing: 1px; margin-bottom: 2px; }
+    .arrow-container { width: 100px; height: 10px; position: relative; margin-bottom: 10px; }
+    .disc-window { width: 140px; height: 24px; background: #0a0a0a; border-radius: 12px; position: relative; overflow: hidden; perspective: 300px; display: flex; justify-content: center; align-items: center; margin-bottom: 10px; border: 1px solid #555; box-shadow: inset 0 8px 10px rgba(0,0,0,0.9), inset 0 -2px 5px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.3); }
+    .rotating-disc { width: 160px; height: 160px; background: conic-gradient(from 0deg, #777 0%, #e6e6e6 20%, #777 40%, #444 50%, #777 60%, #e6e6e6 80%, #777 100%); border-radius: 50%; position: absolute; transform: rotateX(82deg); transform-style: preserve-3d; box-shadow: 0 0 2px rgba(0,0,0,0.5), inset 0 0 4px rgba(0,0,0,0.5); }
+    .rotating-disc::before { content: ''; position: absolute; top: 0; left: 50%; margin-left: -8px; width: 16px; height: 40px; background: #080808; border-radius: 2px; box-shadow: 0 0 2px rgba(0,0,0,0.8); }
+    @keyframes spinDisc { 0% { transform: rotateX(82deg) rotateZ(0deg); } 100% { transform: rotateX(82deg) rotateZ(-360deg); } }
+    .specs-text { text-align: center; font-size: 10px; font-family: Arial, sans-serif; font-weight: bold; line-height: 1.4; width: 90%; margin-bottom: 10px; }
+    .specs-highlight { background-color: #111; color: #fff; padding: 1px 4px; display: inline-block; margin: 1px; }
+    .bottom-text { font-size: 9px; font-weight: bold; position: absolute; bottom: 25px; letter-spacing: 0.5px; }
+    .faceplate-diagram { position: absolute; right: 15px; top: 140px; width: 50px; height: 50px; background: #111; border-radius: 2px; }
+    .terminals-block-electro { width: 180px; height: 60px; background-color: #2a2a2a; border: 2px solid #111; border-top: none; border-radius: 0 0 8px 8px; margin-top: -10px; box-shadow: inset 0 0 10px rgba(0,0,0,0.8), 0 10px 15px rgba(0,0,0,0.4); position: relative; z-index: 1; display: flex; justify-content: space-around; align-items: center; padding: 10px 15px 5px 15px; }
+    .terminal-screw-electro { width: 16px; height: 16px; background: radial-gradient(circle, #fcd975 30%, #b38808 90%); border-radius: 50%; position: relative; border: 1px solid #6e5405; box-shadow: inset 0 0 4px rgba(0,0,0,0.6); z-index: 3; }
+    .terminal-screw-electro::after { content: ""; position: absolute; top: 7px; left: 2px; width: 12px; height: 2px; background-color: #222; }
 
     /* =========================================
        CABOS DE CONEXÃO
        ========================================= */
-    .wiring-layer {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none;
-        z-index: 1;
-    }
+    .wiring-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
     .wire-red { fill: none; stroke: #d93829; stroke-width: 6; stroke-linecap: round; filter: drop-shadow(3px 3px 3px rgba(0,0,0,0.3)); }
     .wire-black { fill: none; stroke: #222; stroke-width: 6; stroke-linecap: round; filter: drop-shadow(3px 3px 3px rgba(0,0,0,0.3)); }
 
     /* =========================================
-       DESIGN DO ADR M2000 
+       DESIGN DO ADR M2000
        ========================================= */
     .device-body { background: linear-gradient(180deg, #d8dcdb 0%, #b8bcc2 100%); width: 750px; height: 280px; border-radius: 12px; box-shadow: 15px 15px 30px rgba(0,0,0,0.3), inset -3px -3px 8px rgba(0,0,0,0.2), inset 3px 3px 8px rgba(255,255,255,0.8); border-left: 15px solid #2f353a; border-right: 15px solid #2f353a; position: relative; z-index: 2; }
     .top-banner { background-color: #3e4448; width: 100%; height: 90px; position: absolute; top: 25px; display: flex; align-items: center; padding-left: 30px; box-sizing: border-box; }
@@ -244,48 +283,137 @@
 </head>
 <body>
 
-<div class="lab-container">
+<div class="toggle-panel">
+    <span>TIPO DE MEDIDOR:</span>
+    <button class="toggle-btn" id="btnToggleMeter" onclick="toggleMeterType()">DIGITAL</button>
+    <div class="panel-divider"></div>
+    <button class="kd-toggle-btn" onclick="toggleConfigPanel()">⚙️ CONFIG.</button>
+</div>
 
-    <div class="meter-body">
-        <div class="meter-glass">
-            <div class="nansen-logo">nansen</div>
-            <div class="meter-lcd-bezel">
-                <div class="meter-lcd-screen">
-                    <div class="meter-lcd-text">00142</div>
-                </div>
+<div class="side-panel" id="configPanel">
+    <div class="panel-header">
+        <h3>⚙️ Configurações</h3>
+        <button class="close-btn" onclick="toggleConfigPanel()">X</button>
+    </div>
+    <div class="panel-content">
+        <p>Selecione a constante (KD/Kh) do medidor físico:</p>
+        <div class="kd-grid" id="kdGrid">
             </div>
-            <div class="meter-specs">
-                <div class="meter-model">LUMEN 3 MD</div>
-                MEDIDOR MONOFÁSICO ELETRÔNICO<br>
-                120,240V 15(100)A 60Hz 2Fios 1EL 1Fase<br>
-                Classe B
-            </div>
-            <div class="meter-indicators">
-                <div class="led-container">
-                    <div class="led-bulb" id="meterPulseLed"></div>
-                    <span class="led-label">REVERSO</span>
-                </div>
-                <div class="pulse-info">
-                    Kh 0,625 Wh/Pulso
-                </div>
-                <div class="led-container">
-                    <div class="led-bulb" id="activePulseLed"></div>
-                    <span class="led-label">PULSO</span>
-                </div>
-            </div>
-        </div>
-        <div class="meter-terminals-block">
-            <div class="terminal-screw"></div>
-            <div class="terminal-screw"></div>
-            <div class="terminal-screw"></div>
-            <div class="terminal-screw"></div>
+
+        <hr style="border: 0; height: 1px; background-color: #333; margin: 20px 0;">
+
+        <p>Ajuste a Corrente de Teste (A) do equipamento:</p>
+        <div class="current-input-container">
+            <input type="number" id="currentInput" class="current-input" min="0.1" max="100" step="0.1" value="2.31" oninput="atualizarCorrenteInput()">
+            <span class="current-label">Amperes</span>
         </div>
     </div>
+</div>
 
-    <svg class="wiring-layer" xmlns="http://www.w3.org/2000/svg">
-        <path class="wire-red" d="M 360 440 C 360 500, 680 480, 742 560" />
-        <path class="wire-black" d="M 440 440 C 440 550, 680 550, 742 665" />
-    </svg>
+
+<div class="lab-container">
+
+    <div id="viewDigital" class="meter-view">
+        <div class="meter-body-digital">
+            <div class="meter-glass-digital">
+                <div class="nansen-logo-digital">nansen</div>
+                <div class="meter-lcd-bezel">
+                    <div class="meter-lcd-screen">
+                        <div class="meter-lcd-text">00142</div>
+                    </div>
+                </div>
+                <div class="meter-specs-digital">
+                    <div class="meter-model-digital">LUMEN 3 MD</div>
+                    MEDIDOR MONOFÁSICO ELETRÔNICO<br>
+                    120,240V 15(100)A 60Hz 2Fios 1EL 1Fase<br>
+                    Classe B
+                </div>
+                <div class="meter-indicators">
+                    <div class="led-container">
+                        <div class="led-bulb"></div>
+                        <span class="led-label">REVERSO</span>
+                    </div>
+                    <div class="pulse-info" id="digitalKdText">
+                        Kh 0,625 Wh/Pulso
+                    </div>
+                    <div class="led-container">
+                        <div class="led-bulb" id="activePulseLed"></div>
+                        <span class="led-label">PULSO</span>
+                    </div>
+                </div>
+            </div>
+            <div class="terminals-block-digital">
+                <div class="terminal-port"> <div class="terminal-screw-digital"></div> <div class="port-label">1</div> </div>
+                <div class="terminal-port"> <div class="terminal-screw-digital"></div> <div class="port-label">2</div> </div>
+                <div class="terminal-port"> <div class="terminal-screw-digital"></div> <div class="port-label">3</div> </div>
+                <div class="terminal-port"> <div class="terminal-screw-digital"></div> <div class="port-label">4</div> </div>
+            </div>
+        </div>
+        
+        <svg class="wiring-layer" xmlns="http://www.w3.org/2000/svg">
+            <path class="wire-red" d="M 425 460 C 425 540, 680 520, 742 580" />
+            <path class="wire-black" d="M 495 460 C 495 600, 680 620, 742 685" />
+        </svg>
+    </div>
+
+    <div id="viewElectro" class="meter-view hidden">
+        <div class="meter-wrapper-electro">
+            <div class="m1at-glass-dome">
+                <div class="m1at-faceplate">
+                    <div class="face-header">
+                        <div class="black-box-text">MOD. M1AT-A</div>
+                        <div class="nansen-logo-electro">nansen</div>
+                        <div class="black-box-text">Rr 55 5/9</div>
+                    </div>
+                    <div class="mechanical-dials">
+                        <div class="dial">1</div>
+                        <div class="dial">2</div>
+                        <div class="dial">0</div>
+                        <div class="dial">0</div>
+                        <div class="dial dial-white">1</div>
+                    </div>
+                    <div class="kwh-label">kWh</div>
+                    <svg class="arrow-container" viewBox="0 0 100 10">
+                        <polygon points="10,5 0,0 0,10" fill="#111" />
+                        <line x1="10" y1="5" x2="90" y2="5" stroke="#111" stroke-width="2" />
+                        <polygon points="90,5 100,0 100,10" fill="#111" />
+                        <polygon points="50,10 45,5 55,5" fill="#111" />
+                    </svg>
+                    <div class="disc-window">
+                        <div class="rotating-disc" id="meterDisc"></div>
+                    </div>
+                    <div class="specs-text">
+                        Ap. Mod. INMETRO N° <span class="specs-highlight">002/1999</span><br>
+                        <span class="specs-highlight">120 V</span> <span class="specs-highlight">15 A</span> Imax <span class="specs-highlight">100 A</span> <span class="specs-highlight">2 Fios</span> <span class="specs-highlight">60 Hz</span><br>
+                        1EL 1Fase Kd <span class="specs-highlight" id="electroKdText">1,8</span> Wh/rev Classe2 <span class="specs-highlight">2007</span>
+                    </div>
+                    <div class="bottom-text">INDÚSTRIA BRASILEIRA</div>
+                    <svg class="faceplate-diagram" viewBox="0 0 50 50">
+                        <g font-size="6" font-family="Arial" fill="#fff" text-anchor="middle">
+                            <text x="25" y="10">LINHA CARGA</text>
+                            <rect x="5" y="15" width="8" height="12" fill="none" stroke="#fff" stroke-width="1"/> <text x="9" y="24">1</text>
+                            <rect x="15" y="15" width="8" height="12" fill="none" stroke="#fff" stroke-width="1"/> <text x="19" y="24">2</text>
+                            <rect x="25" y="15" width="8" height="12" fill="none" stroke="#fff" stroke-width="1"/> <text x="29" y="24">3</text>
+                            <rect x="35" y="15" width="8" height="12" fill="none" stroke="#fff" stroke-width="1"/> <text x="39" y="24">4</text>
+                            <path d="M9,15 L9,10 L39,10 L39,15" fill="none" stroke="#fff" stroke-width="1"/>
+                            <circle cx="24" cy="10" r="2" fill="#fff"/>
+                        </g>
+                    </svg>
+                </div>
+            </div>
+            <div class="terminals-block-electro">
+                <div class="terminal-port"> <div class="terminal-screw-electro"></div> <div class="port-label">1</div> </div>
+                <div class="terminal-port"> <div class="terminal-screw-electro"></div> <div class="port-label">2</div> </div>
+                <div class="terminal-port"> <div class="terminal-screw-electro"></div> <div class="port-label">3</div> </div>
+                <div class="terminal-port"> <div class="terminal-screw-electro"></div> <div class="port-label">4</div> </div>
+            </div>
+        </div>
+        
+        <svg class="wiring-layer" xmlns="http://www.w3.org/2000/svg">
+            <path class="wire-red" d="M 425 435 C 425 500, 680 520, 742 580" />
+            <path class="wire-black" d="M 470 435 C 470 570, 680 620, 742 685" />
+        </svg>
+    </div>
 
     <div class="device-body" id="simDevice">
         <svg class="panel-graphics" xmlns="http://www.w3.org/2000/svg">
@@ -343,38 +471,138 @@
 </div>
 
 <script>
+    // ESTADOS GLOBAIS DO SISTEMA
     let systemState = "BOOT"; 
+    let isDigitalMode = true;
     
-    // Lista de KD's - O Nansen na tela é 0.625
+    // =====================================
+    // FÍSICA DO LABORATÓRIO (Tensão, Corrente, Potência e KD)
+    // =====================================
+    const TENSAO_TESTE = 127; 
+    let meterRealKd = 0.625; // Começa no digital
+    
+    // Corrente base de simulação (padrão de ~2.31A para bater com os antigos 293.2W)
+    let correnteAtual = 2.31; 
+    let POTENCIA_REAL_W = TENSAO_TESTE * correnteAtual; 
+    
     let kdsDisponiveis = [
         0.2, 0.3, 0.4, 0.5, 0.625, 0.9, 1.0, 1.2, 1.25, 
         1.8, 2.0, 2.4, 3.6, 5.0, 5.4, 7.2, 10.8, 14.4, 21.6
     ];
-    let indexKdAtual = 4; // Já começa facilitando no 0.625 
+    
+    let indexKdAtual = 4; // Começa apontando para o 0.625 no display do ADR
     let novoKdValue = 1.0; 
-    
-    // FÍSICA DO LABORATÓRIO (Carga ADR = 293.2W e KD Medidor = 0.625)
-    const TENSAO_TESTE = 127; 
-    const POTENCIA_REAL_W = 293.2; 
-    const METER_REAL_KD = 0.625; 
-    
-    let voltasParaTeste = 2; // Padrão recomendado para iniciar
+    let voltasParaTeste = 2; 
     let tempoEstimadoSegundos = 0;
     
-    // Cronômetro Manual
     let startTimeMs = 0;
     let tempoDecorridoS = 0;
     let ultimoErroCalculado = null; 
+    
     let activeInterval = null; 
     let ledPulseInterval = null;
-
-    const menuItems = ["TESTE", "VOLTIMETRO", "ULT. TESTE"];
-    let menuIndex = 0;
     
+    // Elementos da DOM
     const line1 = document.getElementById("line1");
     const line2 = document.getElementById("line2");
     const activePulseLed = document.getElementById("activePulseLed");
+    const discElement = document.getElementById("meterDisc");
+    const viewDigital = document.getElementById("viewDigital");
+    const viewElectro = document.getElementById("viewElectro");
+    const btnToggle = document.getElementById("btnToggleMeter");
+    const configPanel = document.getElementById("configPanel");
+    const kdGrid = document.getElementById("kdGrid");
 
+    const menuItems = ["TESTE", "VOLTIMETRO", "ULT. TESTE"];
+    let menuIndex = 0;
+
+    // --- PAINEL LATERAL ---
+    function toggleConfigPanel() {
+        configPanel.classList.toggle("open");
+    }
+
+    // Renderiza Botões de KD
+    function renderKdButtons() {
+        kdGrid.innerHTML = "";
+        kdsDisponiveis.forEach(kd => {
+            let btn = document.createElement("button");
+            btn.className = "kd-btn" + (kd === meterRealKd ? " active" : "");
+            btn.innerText = kd.toString().replace('.', ',');
+            btn.onclick = () => setMeterKd(kd);
+            kdGrid.appendChild(btn);
+        });
+    }
+
+    function setMeterKd(novoKd) {
+        meterRealKd = novoKd;
+        let kdFormatado = novoKd.toString().replace('.', ',');
+        
+        document.getElementById("digitalKdText").innerText = `Kh ${kdFormatado} Wh/Pulso`;
+        document.getElementById("electroKdText").innerText = kdFormatado;
+        
+        renderKdButtons();
+        
+        if (systemState === "TEST_READY" || systemState === "TEST_RUNNING") {
+            pararCargaMedidor();
+            iniciarCargaMedidor();
+        }
+    }
+
+    // --- FUNÇÃO DO INPUT DINÂMICO DE CORRENTE ---
+    function atualizarCorrenteInput() {
+        let val = parseFloat(document.getElementById("currentInput").value);
+        if (!isNaN(val) && val > 0) {
+            setCurrent(val);
+        }
+    }
+
+    function setCurrent(novaCorrente) {
+        correnteAtual = novaCorrente;
+        // RECALCULA A POTÊNCIA FISICA DINAMICAMENTE
+        POTENCIA_REAL_W = TENSAO_TESTE * correnteAtual;
+        
+        // Se estiver na tela de calcular estimativa, atualiza o visor na hora
+        if (systemState === "TEST_PREVIEW" || systemState === "TEST_READY") {
+            let energiaEsperadaWh = voltasParaTeste * kdsDisponiveis[indexKdAtual];
+            tempoEstimadoSegundos = (energiaEsperadaWh * 3600) / POTENCIA_REAL_W;
+            if (systemState === "TEST_PREVIEW") renderDisplay();
+        }
+        
+        // Se mudou a corrente no meio do teste, ajusta a velocidade do disco/pisca na hora!
+        if (systemState === "TEST_READY" || systemState === "TEST_RUNNING") {
+            pararCargaMedidor();
+            iniciarCargaMedidor();
+        }
+    }
+
+    // --- FUNÇÃO DE ALTERNÂNCIA DE MEDIDOR ---
+    function toggleMeterType() {
+        if (systemState !== "MENU" && systemState !== "BOOT") {
+            pararProcessos();
+            systemState = "MENU";
+            renderDisplay();
+        }
+
+        isDigitalMode = !isDigitalMode;
+
+        if (isDigitalMode) {
+            viewDigital.classList.remove("hidden");
+            viewElectro.classList.add("hidden");
+            btnToggle.innerText = "DIGITAL";
+            btnToggle.classList.remove("electro-mode");
+            indexKdAtual = 4; // Foca ADR no 0.625
+            setMeterKd(0.625);
+        } else {
+            viewElectro.classList.remove("hidden");
+            viewDigital.classList.add("hidden");
+            btnToggle.innerText = "ELETROMECÂNICO";
+            btnToggle.classList.add("electro-mode");
+            indexKdAtual = 9; // Foca ADR no 1.8
+            setMeterKd(1.8);
+        }
+    }
+
+    // Funções Utilitárias do LCD
     function formata16(texto) {
         return texto.padEnd(16, " ").substring(0, 16);
     }
@@ -425,11 +653,9 @@
                 if (ultimoErroCalculado === null) {
                     line2.innerText = formata16("Nenhum registro.");
                 } else if (!isFinite(ultimoErroCalculado)) {
-                    // Proteção caso o usuário dê um duplo clique instantâneo (tempo = 0)
                     line2.innerText = formata16("ERRO: TEMPO CURTO");
                 } else {
                     let sinal = ultimoErroCalculado > 0 ? "+" : "";
-                    // Removido o limite de 99.99% para sempre exibir o valor em %
                     let textoErro = sinal + ultimoErroCalculado.toFixed(2) + "%";
                     line2.innerText = formata16("ERRO: " + textoErro);
                 }
@@ -502,7 +728,6 @@
                 break;
                 
             case "TEST_VOLTAS":
-                // ADR calcula estimativa com base no KD que VOCÊ selecionou no menu
                 let energiaEsperadaWh = voltasParaTeste * kdsDisponiveis[indexKdAtual];
                 tempoEstimadoSegundos = (energiaEsperadaWh * 3600) / POTENCIA_REAL_W;
                 
@@ -511,16 +736,13 @@
 
             case "TEST_PREVIEW":
                 systemState = "TEST_READY";
-                // LIGA A CARGA! O Medidor físico em cima começa a "encher o balde" de energia e vai piscar
                 iniciarCargaMedidor(); 
                 break;
 
             case "TEST_READY":
-                // INÍCIO DO TESTE: O usuário tentou sincronizar o "Enter" com a luz vermelha do medidor
                 startTimeMs = Date.now();
                 systemState = "TEST_RUNNING";
                 
-                // Relógio em tempo real rolando no LCD
                 activeInterval = setInterval(() => {
                     tempoDecorridoS = (Date.now() - startTimeMs) / 1000;
                     renderDisplay();
@@ -528,18 +750,13 @@
                 break;
 
             case "TEST_RUNNING":
-                // FIM DO TESTE: O usuário bateu o "Enter" na contagem final das voltas
                 clearInterval(activeInterval);
                 pararCargaMedidor();
                 
                 let tempoRealExatoSegundos = (Date.now() - startTimeMs) / 1000;
-                
-                // O ADR acha que consumiu isso (Baseado no tempo exato x Potência Interna 293.2W):
                 let E_real = (POTENCIA_REAL_W * tempoRealExatoSegundos) / 3600; 
-                // A energia "oficial" das voltas que você inseriu na configuração:
                 let E_medido = voltasParaTeste * kdsDisponiveis[indexKdAtual]; 
                 
-                // O Desvio: Medido vs Real injetado
                 ultimoErroCalculado = ((E_medido / E_real) - 1) * 100;
                 
                 systemState = "TEST_RESULT";
@@ -555,17 +772,17 @@
         renderDisplay();
     }
 
-    // --- LÓGICA DO LED DO MEDIDOR NANSEN ---
+    // --- LÓGICA DE FÍSICA PARA AMBOS OS MEDIDORES ---
     function iniciarCargaMedidor() {
-        if (ledPulseInterval) return; // Já está rodando
-        
-        // Tempo que o disco/sensor leva pra integrar 1 pulso de acordo com a carga real
-        // Frequência de pisca (em ms) = (KD * 3600 * 1000) / Potencia (W)
-        let tempoPulsoMs = (METER_REAL_KD * 3600 * 1000) / POTENCIA_REAL_W; 
-        
-        // Em um medidor, o LED só pisca DEPOIS de preencher a cota do KD.
-        // O técnico olha pra tela "PRONTO!" e espera o primeiro piscar para bater o botão!
-        ledPulseInterval = setInterval(piscarLed, tempoPulsoMs);
+        if (isDigitalMode) {
+            if (ledPulseInterval) return; 
+            let tempoPulsoMs = (meterRealKd * 3600 * 1000) / POTENCIA_REAL_W; 
+            ledPulseInterval = setInterval(piscarLed, tempoPulsoMs);
+        } else {
+            let tempoVoltaS = (meterRealKd * 3600) / POTENCIA_REAL_W; 
+            discElement.style.animation = `spinDisc ${tempoVoltaS}s linear infinite`;
+            discElement.style.animationPlayState = 'running';
+        }
     }
 
     function pararCargaMedidor() {
@@ -574,13 +791,11 @@
             ledPulseInterval = null;
         }
         activePulseLed.classList.remove('led-flash');
+        discElement.style.animationPlayState = 'paused';
     }
 
     function piscarLed() {
-        // Acende o LED vermelho bem forte
         activePulseLed.classList.add('led-flash');
-        
-        // Apaga rápido (150ms) igual ao fotossensor real
         setTimeout(() => {
             activePulseLed.classList.remove('led-flash');
         }, 250);
@@ -605,6 +820,9 @@
     window.onload = () => {
         line1.innerText = formata16("-MONTREL-");
         line2.innerText = formata16("ADR-M2000 V4.0");
+        
+        // Inicia preenchendo o painel com os botões
+        renderKdButtons();
     };
 </script>
 </body>
