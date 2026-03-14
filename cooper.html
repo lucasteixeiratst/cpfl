@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Simulador Religador Cooper Form 6 - Modos de Manutenção</title>
+<style>
+    :root { 
+        --panel-dark: #1e2124; 
+        --panel-light: #d8dbdd; 
+        --text-light: #ffffff; 
+        --text-dark: #2f3640;
+        --btn-blue: #0066cc; 
+        --btn-purple: #9b59b6;
+        --btn-green-hex: #16a085;
+        --led-off: #444;
+        --led-red: #ff3333;
+        --led-green: #33cc33;
+        --led-yellow: #f1c40f;
+    }
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif; user-select: none; }
+    
+    body { 
+        background-color: #111418; 
+        display: flex; 
+        flex-direction: column; 
+        align-items: center; 
+        padding-top: 20px; 
+        overflow-x: hidden; 
+        margin: 0; 
+    }
+    
+    #app-container { 
+        width: 1060px; 
+        display: flex; 
+        flex-direction: column; 
+        align-items: center; 
+        gap: 20px; 
+        transform-origin: top center; 
+        will-change: transform; 
+    }
+    
+    .chassis { width: 100%; border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.9); overflow: hidden; border: 4px solid #111; }
+    
+    .top-panel { background-color: var(--panel-dark); padding: 30px; border-bottom: 2px solid #111; position: relative;}
+    .screw { width: 10px; height: 10px; background: radial-gradient(circle, #ccc, #777); border-radius: 50%; position: absolute; box-shadow: inset 0 1px 3px rgba(0,0,0,0.8); border: 1px solid #333;}
+    .tl { top: 15px; left: 15px; } .tr { top: 15px; right: 15px; } .bl { bottom: 15px; left: 15px; } .br { bottom: 15px; right: 15px; }
+
+    .led-matrix { 
+        display: grid; 
+        grid-template-columns: repeat(5, 1fr); 
+        gap: 20px; 
+        border: 1px solid #444; 
+        padding: 25px; 
+        margin-bottom: 35px; 
+        border-radius: 6px; 
+        background: #1a1c1e; 
+        box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+    }
+    
+    .led-col { display: flex; flex-direction: column; gap: 8px; }
+    .led-item { display: flex; align-items: center; gap: 12px; min-height: 40px; }
+    
+    .led-box { width: 28px; height: 12px; background-color: var(--led-off); border: 1px solid #111; box-shadow: inset 0 1px 2px rgba(0,0,0,0.8); border-radius: 2px; flex-shrink: 0; transition: background-color 0.2s;}
+    .led-box.on-red { background-color: var(--led-red); box-shadow: 0 0 8px var(--led-red); }
+    .led-box.on-green { background-color: var(--led-green); box-shadow: 0 0 8px var(--led-green); }
+    .led-box.on-yellow { background-color: var(--led-yellow); box-shadow: 0 0 8px var(--led-yellow); }
+    
+    .led-label { font-size: 14px; color: var(--text-light); font-weight: bold; line-height: 1.2; letter-spacing: 0.5px; text-transform: uppercase; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+
+    .middle-ui { display: flex; justify-content: space-between; align-items: flex-start; gap: 30px; }
+    .hex-col { display: flex; flex-direction: column; gap: 18px; width: 180px; padding-top: 30px;}
+    
+    .hex-btn { background-color: var(--btn-blue); color: white; width: 100%; height: 65px; border: none; font-size: 17px; font-weight: bold; cursor: pointer; clip-path: polygon(25px 0%, calc(100% - 25px) 0%, 100% 50%, calc(100% - 25px) 100%, 25px 100%, 0% 50%); display: flex; align-items: center; justify-content: center; text-align: center; line-height: 1.15; transition: background-color 0.1s; text-shadow: 0px 1px 3px rgba(0,0,0,0.9); letter-spacing: 0.5px;}
+    .hex-btn:active { background-color: #2980b9; }
+    .hex-purple { background-color: var(--btn-purple); } .hex-purple:active { background-color: #8e44ad; }
+    .hex-green { background-color: var(--btn-green-hex); font-size: 32px; } .hex-green:active { background-color: #27ae60; }
+
+    .center-area { flex: 1; display: flex; flex-direction: column; align-items: center; position: relative;}
+    
+    .blue-frame { background-color: var(--btn-blue); border: 4px solid var(--btn-blue); border-radius: 4px; padding: 25px 20px; display: flex; flex-direction: column; align-items: center; width: 480px; box-shadow: 0 5px 15px rgba(0,0,0,0.4); transition: filter 0.5s;}
+    
+    .lcd-screen { 
+        background-color: #b0c4b1; 
+        border: 4px solid #111; 
+        width: 390px; 
+        height: 120px; 
+        border-radius: 4px; 
+        box-shadow: inset 0 4px 10px rgba(0,0,0,0.6); 
+        padding: 10px 12px; 
+        font-family: 'Consolas', 'Menlo', 'Courier New', monospace; 
+        font-size: 17.5px; 
+        font-weight: bold; 
+        color: #111; 
+        display: flex; 
+        flex-direction: column; 
+        justify-content: space-between; 
+        margin-bottom: 8px; 
+        overflow: hidden; 
+        line-height: 1.35;
+        letter-spacing: 0.5px;
+        transition: background-color 0.5s, color 0.5s;
+    }
+
+    .lcd-screen.sleep {
+        background-color: #2b302c; color: #2b302c; box-shadow: inset 0 2px 5px rgba(0,0,0,0.8); text-shadow: none;
+    }
+    .lcd-screen.sleep .lcd-content, .lcd-screen.sleep .lcd-labels { opacity: 0.15; }
+
+    .lcd-content { flex: 1; white-space: pre-wrap; transition: opacity 0.5s; }
+    .lcd-labels { display: flex; width: 100%; border-top: 1px solid #777; padding-top: 2px; transition: opacity 0.5s; }
+    .lcd-label-box { flex: 1; text-align: center; font-size: 15px; color: inherit; }
+
+    .f-keys { display: flex; justify-content: space-between; width: 390px; gap: 8px; margin-bottom: 30px;}
+    .f-key { flex: 1; background: #222; border: 2px solid #111; color: white; height: 30px; font-size: 13px; font-weight: bold; cursor: pointer; border-radius: 3px; letter-spacing: 1px;}
+    .f-key:active { background: #000; border-color: #777; }
+
+    .nav-cluster { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 0 10px;}
+    
+    .d-pad { position: relative; width: 200px; height: 150px; }
+    .dir-btn { position: absolute; background: #222; border: 2px solid #555; color: white; width: 64px; height: 64px; font-size: 26px; cursor: pointer; display: flex; align-items: center; justify-content: center; clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);}
+    .dir-btn:active { background: #000; border-color: #777; }
+    .d-up { top: 0; left: calc(50% - 32px); } .d-down { bottom: 0; left: calc(50% - 32px); } .d-left { top: calc(50% - 32px); left: 0; } .d-right { top: calc(50% - 32px); right: 0; }
+    
+    .side-nav-col { display: flex; flex-direction: column; gap: 18px; width: 90px;}
+
+    .bottom-panel { background-color: var(--panel-light); padding: 30px; position: relative;}
+    .logo-text { font-size: 13px; font-weight: bold; color: #222; margin-bottom: 25px;}
+    .bottom-layout { display: flex; justify-content: space-between; align-items: flex-start; }
+
+    .heavy-ops-wrapper { display: flex; flex-direction: column; align-items: center; gap: 20px;}
+    .heavy-ops { display: flex; gap: 35px; align-items: flex-start; }
+    .big-btn-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: space-between; height: 135px; }
+    .big-btn-label { font-size: 18px; font-weight: 900; color: #222; letter-spacing: 1px;}
+    .big-btn-sub { font-size: 11px; font-weight: bold; color: #222; margin-top: 5px;}
+    
+    .big-btn { width: 85px; height: 85px; border-radius: 10px; border: 4px solid #111; cursor: pointer; box-shadow: 0 8px 0 #111, inset 0 4px 5px rgba(255,255,255,0.3); position: relative; transition: transform 0.1s, box-shadow 0.1s;}
+    .big-btn:active { transform: translateY(8px); box-shadow: 0 0 0 #111, inset 0 4px 5px rgba(255,255,255,0.3); }
+    .btn-abrir { background-color: #2ecc71; } .btn-fechar { background-color: #e74c3c; }
+
+    .creator-signature { font-size: 12px; font-weight: bold; color: #555; letter-spacing: 0.5px; font-style: italic; opacity: 0.8;}
+
+    .center-switches { display: flex; align-items: flex-start; gap: 40px; padding-top: 10px;}
+    .toggle-group { display: flex; flex-direction: column; align-items: center; font-size: 11px; font-weight: bold; gap: 5px;}
+    .toggle-switch { width: 14px; height: 35px; background: #bdc3c7; border: 2px solid #7f8c8d; border-radius: 6px; position: relative; cursor: pointer;}
+    .toggle-knob { width: 16px; height: 16px; background: #f1f2f6; border: 1px solid #555; border-radius: 50%; position: absolute; left: -3px; transition: 0.2s;}
+    .toggle-switch.on .toggle-knob { top: -2px; } .toggle-switch.off .toggle-knob { bottom: -2px; }
+    
+    .hlt-group { display: flex; gap: 30px; align-items: flex-start;}
+    .hlt-item { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; font-weight: bold; text-align: center; color: #222;}
+    
+    /* Configuração do pino mecânico preto */
+    .knob-black { width: 35px; height: 35px; background: #111; border-radius: 50%; border: 3px solid #333; box-shadow: 0 4px 5px rgba(0,0,0,0.5); cursor: pointer; transition: all 0.2s;}
+    .knob-black:active { transform: scale(0.95); }
+    .knob-black.pulled { transform: scale(1.15) translateY(-2px); box-shadow: 0 10px 15px rgba(0,0,0,0.6), inset 0 -2px 5px rgba(255,255,255,0.2); border-bottom: 4px solid #c0392b; }
+    
+    .hlt-led { width: 16px; height: 16px; border-radius: 50%; background: var(--led-off); border: 2px solid #222; box-shadow: inset 0 2px 4px rgba(0,0,0,0.8); transition: background-color 0.2s; margin-top: 2px;}
+    .hlt-led.active { background: var(--led-red); box-shadow: 0 0 8px var(--led-red), inset 0 1px 2px rgba(255,255,255,0.4); }
+
+    .membrane-grid { display: grid; grid-template-columns: repeat(3, 135px); gap: 15px;}
+    .mem-btn { background: #353b48; border: 2px solid #111; border-radius: 6px; height: 60px; display: flex; align-items: center; justify-content: center; position: relative; cursor: pointer; box-shadow: 0 3px 0 #111;}
+    .mem-btn:active { transform: translateY(3px); box-shadow: 0 0 0; }
+    .mem-text { color: white; font-size: 13px; font-weight: bold; text-align: center; line-height: 1.2; pointer-events: none; letter-spacing: 0.3px; padding: 0 5px;}
+    .mem-led { position: absolute; top: 6px; left: 6px; width: 6px; height: 6px; border-radius: 50%; background: var(--led-off); box-shadow: inset 0 1px 2px rgba(0,0,0,0.8);}
+    .mem-led.on-red { background: var(--led-red); box-shadow: 0 0 5px var(--led-red); }
+
+    .test-desk { background-color: #2f3640; border: 2px solid #7f8c8d; border-radius: 10px; padding: 15px; width: 100%; box-shadow: 0 10px 20px rgba(0,0,0,0.8); display: flex; flex-direction: column; gap: 10px; margin-top: 10px;}
+    .test-desk-title { color: #f1c40f; font-weight: bold; font-size: 14px; border-bottom: 1px solid #7f8c8d; padding-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;}
+    .lab-panel { display: flex; gap: 15px; align-items: stretch; margin-top:5px; }
+    .lab-col { flex: 1; background: #1a1c1e; padding: 10px; border-radius: 6px; display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: #ecf0f1; border: 1px solid #444;}
+    .lab-col b { color: #3498db; margin-bottom: 2px; border-bottom: 1px solid #333; padding-bottom: 4px; font-size: 14px;}
+    .lab-col label { display: flex; justify-content: space-between; align-items: center; font-weight: bold;}
+    .sim-select { padding: 6px; font-size: 13px; font-weight: bold; border-radius: 4px; background: #2f3640; color: white; border: 1px solid #7f8c8d;}
+    input[type=range] { width: 100%; cursor: pointer; accent-color: #e74c3c; }
+    input[type=checkbox] { transform: scale(1.2); accent-color: #2ecc71; cursor: pointer;}
+    .btn-test { padding: 8px; font-size: 12px; font-weight: bold; cursor: pointer; border-radius: 4px; border: none; box-shadow: 0 3px 0 rgba(0,0,0,0.5); color: white; flex:1; letter-spacing: 0.5px;}
+    .btn-test:active { transform: translateY(3px); box-shadow: 0 0 0; }
+</style>
+</head>
+<body>
+
+<div id="app-container">
+    <div class="chassis">
+        <div class="top-panel">
+            <div class="screw tl"></div><div class="screw tr"></div>
+            
+            <div class="led-matrix" id="led-matrix">
+                <div class="led-col">
+                    <div class="led-item"><div class="led-box" id="led-form6-on"></div><div class="led-label">FORM 6 ON</div></div>
+                    <div class="led-item"><div class="led-box" id="led-alimentacao"></div><div class="led-label">ALIMENTAÇÃO</div></div>
+                    <div class="led-item"><div class="led-box" id="led-bloqueio"></div><div class="led-label">RELIGADOR BLOQ.</div></div>
+                    <div class="led-item"><div class="led-box" id="led-aberto"></div><div class="led-label">RELIGADOR ABERTO</div></div>
+                    <div class="led-item"><div class="led-box" id="led-fechado"></div><div class="led-label">RELIGADOR FECHADO</div></div>
+                </div>
+                <div class="led-col">
+                    <div class="led-item"><div class="led-box" id="led-trip-a"></div><div class="led-label">ABERT. FASE A</div></div>
+                    <div class="led-item"><div class="led-box" id="led-trip-b"></div><div class="led-label">ABERT. FASE B</div></div>
+                    <div class="led-item"><div class="led-box" id="led-trip-c"></div><div class="led-label">ABERT. FASE C</div></div>
+                    <div class="led-item"><div class="led-box" id="led-trip-gnd"></div><div class="led-label">ABERT. TERRA</div></div>
+                    <div class="led-item"><div class="led-box" id="led-trip-sef"></div><div class="led-label">ABERT. SEF</div></div>
+                </div>
+                <div class="led-col">
+                    <div class="led-item"><div class="led-box" id="led-alarme"></div><div class="led-label">ALARME</div></div>
+                    <div class="led-item"><div class="led-box" id="led-pickup"></div><div class="led-label">CORRENTE ACIMA<br>DISP. MIN</div></div>
+                    <div class="led-item"><div class="led-box"></div><div class="led-label">INDICADOR 1</div></div>
+                    <div class="led-item"><div class="led-box"></div><div class="led-label">INDICADOR 2</div></div>
+                    <div class="led-item"><div class="led-box"></div><div class="led-label">INDICADOR 3</div></div>
+                </div>
+                <div class="led-col">
+                    <div class="led-item"><div class="led-box" id="led-va"></div><div class="led-label">TENSÃO FASE A</div></div>
+                    <div class="led-item"><div class="led-box" id="led-vb"></div><div class="led-label">TENSÃO FASE B</div></div>
+                    <div class="led-item"><div class="led-box" id="led-vc"></div><div class="led-label">TENSÃO FASE C</div></div>
+                    <div class="led-item"><div class="led-box" id="led-trip-freq"></div><div class="led-label">ABERT. POR FREQ.</div></div>
+                    <div class="led-item"><div class="led-box" id="led-trip-volt"></div><div class="led-label">ABERT. POR<br>TENSÃO</div></div>
+                </div>
+                <div class="led-col">
+                    <div class="led-item"><div class="led-box"></div><div class="led-label">INDICADOR 4</div></div>
+                    <div class="led-item"><div class="led-box"></div><div class="led-label">INDICADOR 5</div></div>
+                    <div class="led-item"><div class="led-box"></div><div class="led-label">INDICADOR 6</div></div>
+                    <div class="led-item"><div class="led-box"></div><div class="led-label">INDICADOR 7</div></div>
+                    <div class="led-item"><div class="led-box"></div><div class="led-label">INDICADOR 8</div></div>
+                </div>
+            </div>
+
+            <div class="middle-ui">
+                <div class="hex-col">
+                    <button class="hex-btn" onclick="navLCD('METERING_MENU')">MEDIÇÃO</button>
+                    <button class="hex-btn" onclick="cmdResetTargets()">REARME<br>SINALIZ.</button>
+                    <button class="hex-btn" onclick="navLCD('EVENTS')">EVENTOS</button>
+                    <button class="hex-btn" onmousedown="cmdLampTest(true)" onmouseup="cmdLampTest(false)" onmouseleave="cmdLampTest(false)">TESTE DE<br>LÂMPADAS</button>
+                </div>
+
+                <div class="center-area">
+                    <div class="blue-frame">
+                        <div class="lcd-screen" id="lcd"></div>
+                        <div class="f-keys">
+                            <button class="f-key" onclick="pressFKey(1)">F1</button>
+                            <button class="f-key" onclick="pressFKey(2)">F2</button>
+                            <button class="f-key" onclick="pressFKey(3)">F3</button>
+                            <button class="f-key" onclick="pressFKey(4)">F4</button>
+                        </div>
+                        
+                        <div class="nav-cluster">
+                            <div class="side-nav-col">
+                                <button class="hex-btn hex-purple" onclick="navLCD('MENU')">MENU</button>
+                                <button class="hex-btn hex-purple" onclick="navLCD('ENTER')">ENTER</button>
+                            </div>
+                            <div class="d-pad">
+                                <div class="dir-btn d-up" onclick="navLCD('UP')">▲</div>
+                                <div class="dir-btn d-left" onclick="navLCD('LEFT')">◀</div>
+                                <div class="dir-btn d-right" onclick="navLCD('RIGHT')">▶</div>
+                                <div class="dir-btn d-down" onclick="navLCD('DOWN')">▼</div>
+                            </div>
+                            <div class="side-nav-col">
+                                <button class="hex-btn hex-green" onclick="navLCD('PLUS')">+</button>
+                                <button class="hex-btn hex-green" onclick="navLCD('MINUS')">-</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hex-col">
+                    <button class="hex-btn" onclick="navLCD('SETTINGS_ENTRY')">AJUSTES</button>
+                    <button class="hex-btn" onclick="navLCD('COUNTERS')">CONTADOR<br>OPER.</button>
+                    <button class="hex-btn" onclick="navLCD('ALARMS')">ALARMES</button>
+                    <button class="hex-btn" onclick="cmdChange()">MODIFICAR</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="bottom-panel">
+            <div class="screw bl"></div><div class="screw br"></div>
+            <div class="logo-text"><span style="color: #c0392b;">COOPER</span> Power Systems &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>KYLE® Form 6</b></div>
+            
+            <div class="bottom-layout">
+                <div class="heavy-ops-wrapper">
+                    <div class="heavy-ops">
+                        <div class="big-btn-wrapper">
+                            <div class="big-btn-label">ABRIR</div>
+                            <button class="big-btn btn-abrir" onclick="cmdTrip()"></button>
+                            <div class="big-btn-sub">(BLOQUEAR)</div>
+                        </div>
+                        <div class="big-btn-wrapper">
+                            <div class="big-btn-label">FECHAR</div>
+                            <button class="big-btn btn-fechar" onclick="cmdClose()"></button>
+                            <div class="big-btn-sub" style="opacity: 0;">(PLACEHOLDER)</div>
+                        </div>
+                    </div>
+                    <div class="creator-signature">Produzido por Lucas Teixeira.</div>
+                </div>
+
+                <div class="center-switches">
+                    <div class="hlt-group">
+                        <div class="hlt-item">DESABILITA<br>CIRCUITO FECH.
+                            <div class="knob-black" id="knob-close-circuit" onclick="toggleCloseCircuit()"></div>
+                        </div>
+                        
+                        <div class="hlt-item">
+                            <span style="margin-bottom: 2px;">HOT LINE TAG</span>
+                            <div class="toggle-group" style="gap: 4px;">
+                                <span style="font-size: 10px;">LIGAR</span>
+                                <div class="toggle-switch off" id="sw-hlt" onclick="cmdHotLineTag()"><div class="toggle-knob"></div></div>
+                                <span style="font-size: 10px;">DESLIGAR</span>
+                            </div>
+                            <div class="hlt-led" id="led-hlt"></div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="membrane-grid">
+                    <div class="mem-btn" onclick="toggleGndBlock()"><div class="mem-led" id="lm-gndblk"></div><span class="mem-text">DISP. DE TERRA<br>BLOQUEADO</span></div>
+                    <div class="mem-btn" onclick="toggleNonReclose()"><div class="mem-led" id="lm-nonrec"></div><span class="mem-text">RELIGAMENTO<br>BLOQUEADO</span></div>
+                    <div class="mem-btn" onclick="toggleSupervisory()"><div class="mem-led" id="lm-supblk"></div><span class="mem-text">SUPERVISÃO<br>DESABILITADA</span></div>
+                    
+                    <div class="mem-btn" onclick="setGrp('NORMAL')"><div class="mem-led on-red" id="lm-grp0"></div><span class="mem-text" style="color:#2ecc71;">PERFIL<br>NORMAL</span></div>
+                    <div class="mem-btn" onclick="setGrp(1)"><div class="mem-led" id="lm-grp1"></div><span class="mem-text">GRUPO<br>ALTERN. 1</span></div>
+                    <div class="mem-btn" onclick="setGrp(2)"><div class="mem-led" id="lm-grp2"></div><span class="mem-text">GRUPO<br>ALTERN. 2</span></div>
+                    
+                    <div class="mem-btn" onclick="toggleFastTrips()"><div class="mem-led" id="lm-opt1"></div><span class="mem-text">BLOQ. CURVA<br>RÁPIDA</span></div>
+                    <div class="mem-btn" onclick="toggleSGF()"><div class="mem-led" id="lm-sgf"></div><span class="mem-text">S.G.F.<br>BLOQUEADO</span></div>
+                    <div class="mem-btn" onclick="toggleCLPBlock()"><div class="mem-led" id="lm-opt3"></div><span class="mem-text">BLOQUEIO<br>C.L.P.</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-desk">
+        <div class="test-desk-title">Mala de Testes Secundária & Comandos SCADA</div>
+        <div class="lab-panel">
+            <div class="lab-col">
+                <b>⚡ INJEÇÃO DE FALTA</b>
+                <select id="simType" class="sim-select">
+                    <option value="A">Falta Fase A (Fase-Terra)</option>
+                    <option value="BC">Curto Bifásico B-C</option>
+                    <option value="GND">Falta à Terra (GND)</option>
+                    <option value="SEF">Falta Sensível (SEF)</option>
+                </select>
+                <label>Magnitude: <span id="magVal" style="color:#e74c3c;">1500</span> A</label>
+                <input type="range" id="simMag" min="50" max="5000" step="50" value="1500" oninput="document.getElementById('magVal').innerText=this.value">
+                <div style="display:flex; gap:5px; margin-top:5px;">
+                    <button class="btn-test" style="background:#e74c3c;" onclick="injectFault(true)">Permanente</button>
+                    <button class="btn-test" style="background:#e67e22;" onclick="injectFault(false)">Transitória</button>
+                </div>
+            </div>
+            
+            <div class="lab-col">
+                <b>🔌 REDE ELÉTRICA</b>
+                <label>Tensão: <span id="voltVal" style="color:#3498db;">13.8</span> kV</label>
+                <input type="range" id="simVolt" min="0" max="15" step="0.1" value="13.8" oninput="changeGrid()">
+                <label>Frequência: <span id="freqVal" style="color:#3498db;">60.0</span> Hz</label>
+                <input type="range" id="simFreq" min="55" max="65" step="0.1" value="60.0" oninput="changeGrid()">
+            </div>
+
+            <div class="lab-col">
+                <b>🔋 HARDWARE & SCADA</b>
+                <label style="justify-content: flex-start; gap: 10px;"><input type="checkbox" id="hwAC" checked onchange="changeHW()"> Tensão CA (220V)</label>
+                <label style="justify-content: flex-start; gap: 10px;"><input type="checkbox" id="hwBat" checked onchange="changeHW()"> Bateria Conectada</label>
+                <button class="btn-test" style="background:#34495e; margin-top:5px; font-size: 11px;" onclick="simScadaClose()">📡 Fechar SCADA</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function ajustarEscala() {
+        const container = document.getElementById('app-container');
+        const larguraJanela = window.innerWidth;
+        const larguraOriginal = 1060; 
+        let escala = (larguraJanela * 0.96) / larguraOriginal;
+        if (escala > 1.2) escala = 1.2;
+        container.style.transform = `scale(${escala})`;
+        const alturaReal = container.getBoundingClientRect().height;
+        document.body.style.height = `${alturaReal + 60}px`; 
+    }
+
+    window.addEventListener('resize', ajustarEscala);
+    
+    window.addEventListener('load', () => {
+        ajustarEscala();
+        state.power = true; 
+        iniciarBoot();
+    });
+
+    const settings = {
+        'NORMAL': { pu: 400, gndPu: 50, fastTrips: 2, delayTrips: 2, recInt: [2, 5, 15], tcc1: 101, tcc2: 117, gndTcc1: 101, gndTcc2: 117, resetTime: 30, clpMult: 2.0, clpTime: 10 },
+        1: { pu: 200, gndPu: 20, fastTrips: 2, delayTrips: 2, recInt: [2, 5, 15], tcc1: 101, tcc2: 117, gndTcc1: 101, gndTcc2: 117, resetTime: 30, clpMult: 2.0, clpTime: 10 },
+        2: { pu: 600, gndPu: 100, fastTrips: 1, delayTrips: 3, recInt: [3, 10, 30], tcc1: 104, tcc2: 133, gndTcc1: 104, gndTcc2: 133, resetTime: 45, clpMult: 3.0, clpTime: 15 },
+        3: { pu: 800, gndPu: 200, fastTrips: 0, delayTrips: 4, recInt: [5, 15, 45], tcc1: 135, tcc2: 135, gndTcc1: 135, gndTcc2: 135, resetTime: 60, clpMult: 4.0, clpTime: 20 }
+    };
+
+    const state = {
+        power: false,
+        breaker: 'CLOSED', 
+        mode: 'REMOTE',    
+        nonReclosing: false,
+        gndBlocked: false,
+        sgfBlocked: false,
+        hotLineTag: false,
+        closeCircuitDisabled: false, // Novo estado para o pino preto
+        activeGroup: 'NORMAL',
+        
+        hw: { ac: true, bat: true },
+        grid: { volt: 13.8, freq: 60.0 },
+        
+        sleepMode: false,
+        sleepTimer: null,
+        clpActive: false,
+        clpTimer: null,
+        fastTripsDisabled: false,
+        clpBlocked: false,
+        
+        selfClear: false,
+        outputBlock: false,
+        
+        shots: 0,
+        maxShots: 4,
+        recloseTimer: 0,
+        
+        changeActive: false,
+        changeTimer: null,
+        settingsModified: false,
+        editTarget: '', 
+        
+        targets: { pha: false, phb: false, phc: false, gnd: false, sef: false, volt: false, freq: false, pickup: false },
+        m: { ia: 120, ib: 118, ic: 122, ig: 0, va: 13.8, vb: 13.8, vc: 13.8, kwh: 15432.5 },
+        demand: { ia: 120, ib: 118, ic: 122, ig: 0 },
+        
+        faultLocator: { active: false, type: 'None', dist: 0.0, imp: 0.0 },
+        
+        lcdView: 'BOOT', 
+        isBooting: true, 
+        tempMsg: "",
+        
+        mainMenuIndex: 0,
+        meteringMenuIndex: 0,
+        alarmsMenuIndex: 0,
+        countersMenuIndex: 0,
+        settingsMenuIndex: 0,
+        overcurrentMenuIndex: 0,
+        phaseMenuIndex: 0,
+        gndMenuIndex: 0,
+        clpMenuIndex: 0,
+        recIntMenuIndex: 0,
+        eventsIndex: 0,
+        
+        alarmsActive: false,
+        counters: { trip: 0, aPh: 0, bPh: 0, cPh: 0, gnd: 0, sef: 0 },
+        events: []
+    };
+
+    const mainMenus = [
+        'SETTINGS', 'METERING', 'SEQUENCE OF EVENTS', 'ALARM LOG & STATUS', 
+        'COUNTERS', 'BATTERY', 'DNP PROTOCOL', 'WORKBENCH', 'CLOCK', 
+        'FAULT LOCATOR', 'DIAGNOSTICS', 'I/O CONTROL', 'I/O STATUS', 
+        'SELF-CLEAR FAULT: N', 'TEST MODES', 'NAMEPLATE DATA'
+    ];
+    
+    const meteringMenus = ['Inst. Metering', 'Demand Metering', 'Power Metering', 'Energy Metering', 'Vsec. Metering', 'Isec. Metering', 'Power Factor', 'freq 60.000 Hz'];
+    const curvesList = [101, 104, 117, 119, 133, 135, 138, 140];
+
+    setInterval(() => {
+        if (state.power && state.breaker === 'CLOSED') { state.m.kwh += 0.15; }
+        if (state.power && !state.isBooting && !state.sleepMode && ['CLOCK', 'ENERGY_METERING'].includes(state.lcdView)) { updateUI(); }
+    }, 1000);
+
+    function logEvent(msg) {
+        let d = new Date();
+        let dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        let timeStr = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}.${Math.floor(d.getMilliseconds()/100)}`;
+        
+        state.events.unshift({
+            text: msg, date: dateStr, time: timeStr,
+            ia: state.m.ia.toFixed(0), ib: state.m.ib.toFixed(0), ic: state.m.ic.toFixed(0), ig: state.m.ig.toFixed(0),
+            va: (state.m.va*1000).toFixed(0), vb: (state.m.vb*1000).toFixed(0), vc: (state.m.vc*1000).toFixed(0)
+        });
+        if(state.events.length > 25) state.events.pop();
+    }
+
+    function updateDemand(ia, ib, ic, ig) {
+        if(ia > state.demand.ia) state.demand.ia = ia;
+        if(ib > state.demand.ib) state.demand.ib = ib;
+        if(ic > state.demand.ic) state.demand.ic = ic;
+        if(ig > state.demand.ig) state.demand.ig = ig;
+    }
+
+    function setLedBox(id, cond, color) { let el = document.getElementById(id); if(el) el.className = cond ? `led-box ${color}` : 'led-box'; }
+    function setMemLed(id, cond) { let el = document.getElementById(id); if(el) el.className = cond ? 'mem-led on-red' : 'mem-led'; }
+
+    function changeHW() {
+        let ac = document.getElementById('hwAC').checked;
+        let bat = document.getElementById('hwBat').checked;
+        
+        if(state.hw.ac && !ac) logEvent("AC Power Lost");
+        if(!state.hw.ac && ac) logEvent("AC Power Restored");
+        if(state.hw.bat && !bat) { logEvent("Battery Disconnected"); state.alarmsActive = true; }
+        if(!state.hw.bat && bat) { logEvent("Battery Connected"); state.alarmsActive = false; }
+        
+        state.hw.ac = ac; state.hw.bat = bat;
+        
+        if(!ac && !bat) { 
+            state.power = false; 
+        } else if (!state.power) {
+            state.power = true;
+            iniciarBoot();
+        }
+        
+        updateUI();
+    }
+
+    function changeGrid() {
+        let v = parseFloat(document.getElementById('simVolt').value);
+        let f = parseFloat(document.getElementById('simFreq').value);
+        document.getElementById('voltVal').innerText = v.toFixed(1);
+        document.getElementById('freqVal').innerText = f.toFixed(1);
+        
+        state.grid.volt = v; state.grid.freq = f;
+        state.m.va = v; state.m.vb = v; state.m.vc = v;
+        
+        if (!state.power || state.isBooting || state.breaker !== 'CLOSED') { updateUI(); return; }
+
+        if (v < 10.0) { state.breaker = 'LOCKOUT'; state.targets.volt = true; logEvent("Trip: Subtensão (ANSI 27)"); }
+        if (f < 58.0) { state.breaker = 'LOCKOUT'; state.targets.freq = true; logEvent("Trip: Subfrequência (ANSI 81)"); }
+        updateUI();
+    }
+
+    function wakeUpPanel() {
+        clearTimeout(state.sleepTimer);
+        state.sleepTimer = setTimeout(() => { if (state.power && !state.isBooting && state.lcdView !== 'BOOT') { state.sleepMode = true; updateUI(); } }, 30000); 
+        if (state.sleepMode) { state.sleepMode = false; updateUI(); return true; } return false;
+    }
+
+    function updateUI() {
+        if (!state.power) {
+            document.querySelectorAll('.led-box, .mem-led').forEach(el => el.className = el.className.replace(/on-red|on-green|on-yellow/g, ''));
+            document.getElementById('lcd').innerHTML = "";
+            document.getElementById('lcd').className = "lcd-screen";
+            
+            let swHlt = document.getElementById('sw-hlt');
+            let ledHlt = document.getElementById('led-hlt');
+            if(swHlt) swHlt.className = "toggle-switch off";
+            if(ledHlt) ledHlt.className = "hlt-led";
+            return; 
+        }
+
+        if (state.isBooting) {
+            document.querySelectorAll('.led-box, .mem-led').forEach(el => el.className = el.className.replace(/on-red|on-green|on-yellow/g, ''));
+            setLedBox('led-form6-on', true, 'on-yellow'); 
+            renderLCD();
+            return;
+        }
+
+        if (state.sleepMode) document.getElementById('lcd').classList.add('sleep');
+        else document.getElementById('lcd').classList.remove('sleep');
+
+        setLedBox('led-form6-on', true, 'on-green');
+        
+        setLedBox('led-alimentacao', state.hw.ac, 'on-green'); 
+        setLedBox('led-alarme', state.alarmsActive, 'on-red');
+        
+        let isPhysicallyOpen = state.breaker === 'OPEN' || state.breaker === 'LOCKOUT' || state.breaker === 'RECLOSING';
+        setLedBox('led-aberto', isPhysicallyOpen, 'on-green');
+        setLedBox('led-fechado', state.breaker === 'CLOSED', 'on-red');
+        setLedBox('led-bloqueio', state.breaker === 'LOCKOUT', 'on-green'); 
+        
+        let vLive = state.m.va > 0;
+        setLedBox('led-va', vLive, 'on-red'); setLedBox('led-vb', vLive, 'on-red'); setLedBox('led-vc', vLive, 'on-red');
+
+        setLedBox('led-trip-a', state.targets.pha, 'on-red');
+        setLedBox('led-trip-b', state.targets.phb, 'on-red');
+        setLedBox('led-trip-c', state.targets.phc, 'on-red');
+        setLedBox('led-trip-gnd', state.targets.gnd, 'on-red');
+        setLedBox('led-trip-sef', state.targets.sef, 'on-red'); 
+        setLedBox('led-trip-freq', state.targets.freq, 'on-red'); 
+        setLedBox('led-trip-volt', state.targets.volt, 'on-red'); 
+        setLedBox('led-pickup', state.targets.pickup, 'on-red');
+
+        setMemLed('lm-gndblk', state.gndBlocked);
+        setMemLed('lm-nonrec', state.nonReclosing);
+        setMemLed('lm-supblk', state.mode === 'LOCAL');
+        setMemLed('lm-sgf', state.sgfBlocked);
+        
+        setMemLed('lm-grp0', state.activeGroup === 'NORMAL');
+        setMemLed('lm-grp1', state.activeGroup === 1);
+        setMemLed('lm-grp2', state.activeGroup === 2);
+        setMemLed('lm-grp3', state.activeGroup === 3);
+
+        setMemLed('lm-opt1', state.fastTripsDisabled);
+        setMemLed('lm-opt3', state.clpBlocked);
+
+        let swHlt = document.getElementById('sw-hlt');
+        let ledHlt = document.getElementById('led-hlt');
+        if (swHlt && ledHlt) {
+            swHlt.className = state.hotLineTag ? "toggle-switch on" : "toggle-switch off";
+            ledHlt.className = state.hotLineTag ? "hlt-led active" : "hlt-led";
+        }
+
+        renderLCD();
+    }
+
+    function renderList(menuArray, currentIndex, maxVisible) {
+        let html = "";
+        let startIndex = Math.max(0, currentIndex - 1);
+        if (startIndex > menuArray.length - maxVisible) startIndex = Math.max(0, menuArray.length - maxVisible);
+        for(let i = startIndex; i < startIndex + maxVisible; i++) {
+            if (menuArray[i] !== undefined) { html += (i === currentIndex ? `>${menuArray[i]}\n` : ` ${menuArray[i]}\n`); }
+        }
+        return html;
+    }
+
+    function renderLCD() {
+        let display = document.getElementById('lcd');
+        let contentHtml = "";
+        let f1Label = "", f2Label = "", f3Label = "", f4Label = "";
+        let s = settings[state.activeGroup];
+
+        if (state.lcdView === 'BOOT') { 
+            contentHtml += `\n\n   Produzido por\n   Lucas Teixeira\n`; 
+        }
+        else if (state.changeActive) { contentHtml += `--- MODIFY MODE ---\n\n PRESS FUNCTION KEY\n WITHIN 10 SECS \n`; }
+        else if (state.lcdView === 'HOME') {
+            let fastT = state.fastTripsDisabled ? 0 : s.fastTrips; 
+            state.maxShots = fastT + s.delayTrips; 
+            
+            if (state.hotLineTag) { 
+                contentHtml += `STATUS : ${state.breaker === 'CLOSED' ? 'CLOSED' : (state.breaker === 'OPEN' ? 'OPEN' : state.breaker)}\n`;
+                contentHtml += `\n!!! HOT LINE TAG !!!\n CLOSING BLOCKED`; 
+            } else if (state.breaker === 'RECLOSING') { 
+                contentHtml += `STATUS : ${state.breaker === 'CLOSED' ? 'CLOSED' : (state.breaker === 'OPEN' ? 'OPEN' : state.breaker)}\nMODE   : ${state.mode}\n`;
+                contentHtml += `>> 79 CYCLE ACTIVE <<\nRECLOSING IN: ${state.recloseTimer}s`; 
+            } else {
+                contentHtml += `>There Are No\n Active\n User\n Messages`;
+            }
+        } 
+        else if (state.lcdView === 'MAIN_MENU') { contentHtml += `--- MAIN MENU ---\n`; contentHtml += renderList(mainMenus, state.mainMenuIndex, 3); }
+        else if (state.lcdView === 'TEST_MODES') {
+            contentHtml += `--- TEST MODES ---\n\n`;
+            contentHtml += `>Output Block: ${state.outputBlock ? 'ON ' : 'OFF'}\n`;
+            contentHtml += ` (+/- TO MODIFY)\n`;
+            f1Label = "BACK";
+        }
+        else if (state.lcdView === 'FAULT_LOCATOR') {
+            contentHtml += `--- FAULT LOCATOR ---\n`;
+            if (state.faultLocator.active) { contentHtml += `Event : Fault ${state.faultLocator.type}\nDist  : ${state.faultLocator.dist} km\nImped : ${state.faultLocator.imp} Ohms`; } 
+            else { contentHtml += `\n   NO FAULT DATA\n   AVAILABLE`; }
+        }
+        else if (state.lcdView === 'CLOCK') {
+            let now = new Date();
+            let dStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+            let tStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+            contentHtml += `--- SYSTEM CLOCK ---\n\n DATE: ${dStr}\n TIME: ${tStr}`;
+        }
+        else if (state.lcdView === 'NAMEPLATE') { contentHtml += `--- NAMEPLATE DATA ---\nCtrl S/N: CP827461\nMech S/N: ME109283\nFW Ver: ProView 5.0`; }
+        else if (state.lcdView === 'DIAGNOSTICS') { contentHtml += `--- DIAGNOSTICS ---\n\nRAM: PASS   ROM: PASS\nA/D: PASS   EEP: PASS`; }
+        else if (state.lcdView === 'BATTERY_INFO') {
+            contentHtml += `--- BATTERY STATUS ---\n`;
+            if (state.hw.bat) {
+                if (state.hw.ac) {
+                    contentHtml += `Voltage : 27.4 V\nCurrent : +0.04 A\nStatus  : Charging`;
+                } else {
+                    contentHtml += `Voltage : 24.1 V\nCurrent : -0.45 A\nStatus  : Discharging`;
+                }
+            } else {
+                contentHtml += `Voltage :  0.0 V\nCurrent :  0.00 A\nStatus  : Failed`;
+            }
+        }
+        else if (state.lcdView === 'METERING_MENU') { contentHtml += renderList(meteringMenus, state.meteringMenuIndex, 4); }
+        else if (state.lcdView === 'INST_METERING') { contentHtml += `IA: ${state.m.ia.toFixed(0)}.  VA: ${(state.m.va*1000).toFixed(0)}.\nIB: ${state.m.ib.toFixed(0)}.  VB: ${(state.m.vb*1000).toFixed(0)}.\nIC: ${state.m.ic.toFixed(0)}.  VC: ${(state.m.vc*1000).toFixed(0)}.\nIG: ${state.m.ig.toFixed(1)}`; }
+        else if (state.lcdView === 'DEMAND_METERING') { contentHtml += `--- DEMAND METERING ---\nMax IA: ${state.demand.ia.toFixed(0)} A\nMax IB: ${state.demand.ib.toFixed(0)} A\nMax IC: ${state.demand.ic.toFixed(0)} A`; }
+        else if (state.lcdView === 'POWER_METERING') {
+            let kwA = (state.m.ia * state.m.va).toFixed(1); let kwB = (state.m.ib * state.m.vb).toFixed(1); let kwC = (state.m.ic * state.m.vc).toFixed(1); let kwT = (parseFloat(kwA) + parseFloat(kwB) + parseFloat(kwC)).toFixed(1);
+            contentHtml += `kWA = ${kwA}  kWB = ${kwB}\nkWC = ${kwC}  kWT = ${kwT}\nkvarA= 0.0  kvarB= 0.0\nkvarC= 0.0  kvarT= 0.0`;
+        }
+        else if (state.lcdView === 'ENERGY_METERING') { contentHtml += `--- ENERGY METERING ---\n\n Real: ${state.m.kwh.toFixed(1)} kWh\n React: ${(state.m.kwh * 0.3).toFixed(1)} kvarh`; }
+        else if (state.lcdView === 'PF_METERING') { contentHtml += `--- POWER FACTOR ---\n\n Phase A: 0.95 Lag\n Phase B: 0.96 Lag\n Phase C: 0.94 Lag`; }
+        else if (state.lcdView === 'FREQ_METERING') { contentHtml += `--- SYSTEM FREQ ---\n\n Freq: ${state.grid.freq.toFixed(2)} Hz\n`; }
+        else if (state.lcdView === 'EVENTS') {
+            contentHtml += `--- EVENT LOG ---\n`;
+            if (state.events.length === 0) { contentHtml += `Empty\n`; } 
+            else {
+                let ev = state.events[state.eventsIndex];
+                contentHtml += `${state.eventsIndex + 1} ${ev.text}\n${ev.date.substring(5).replace('-','/')} ${ev.time}\nA ${String(ev.ia).padStart(4,' ')} G ${String(ev.ig).padStart(4,' ')}\nVA ${String(ev.va).padStart(5,' ')} VB ${String(ev.vb).padStart(5,' ')}`;
+            }
+        }
+        else if (state.lcdView === 'ALARMS_MENU') {
+            let sMenu = ['Reset Alarms', 'Trip Malfunction..0', 'Close Malfunction.0', 'Interrupter Malf..0', `Battery Alarm.....${state.alarmsActive ? '1' : '0'}`, `No AC Present.....${state.hw.ac ? '0' : '1'}`];
+            contentHtml += renderList(sMenu, state.alarmsMenuIndex, 4);
+        }
+        else if (state.lcdView === 'ALARMS_RESET_CONFIRM') { contentHtml += `>Push RESET to reset\n all alarms.\n Push MENU to abort.\n`; f4Label = "RESET"; }
+        else if (state.lcdView === 'COUNTERS_MENU') {
+            let sMenu = ['Reset Target Cntrs', `Trip Counter       ${state.counters.trip}`, `A Ph Targ Cntr     ${state.counters.aPh}`, `B Ph Targ Cntr     ${state.counters.bPh}`, `C Ph Targ Cntr     ${state.counters.cPh}`, `Gnd Targ Cntr      ${state.counters.gnd}`, `SEF Targ Cntr      ${state.counters.sef}`, `Reset Trip Counter`];
+            contentHtml += renderList(sMenu, state.countersMenuIndex, 4);
+        }
+        else if (state.lcdView === 'COUNTERS_RESET_TARGETS_CONFIRM') { contentHtml += `>Push RESET to reset\n Target counters.\n Push MENU to abort.\n`; f4Label = "RESET"; }
+        else if (state.lcdView === 'COUNTERS_RESET_TRIPS_CONFIRM') { contentHtml += `>Push RESET to reset\n Trip counter.\n Push MENU to abort.\n`; f4Label = "RESET"; }
+        else if (state.lcdView === 'SETTINGS_ENTRY') { contentHtml += `\nMod/View Settings\n>\n`; }
+        else if (state.lcdView === 'PASSWORD') { contentHtml += `ENTER PASSWORD\n\nVALUE:\n         0`; f1Label = "VIEW ONLY"; f4Label = "CANCEL"; }
+        else if (state.lcdView === 'SETTINGS_MENU') {
+            let sMenu = [`Actv Profi      ${state.activeGroup === 'NORMAL' ? 'Norm' : 'Alt'+state.activeGroup}`, `Edit Profi      Norm`, `Overcurrent Setting`, `Oper Sequence`, `Reclose Intervals`, `ResetTime      ${s.resetTime}.00`, `Cold Load Pickup`];
+            contentHtml += renderList(sMenu, state.settingsMenuIndex, 4);
+        }
+        else if (state.lcdView === 'SETTINGS_OVERCURRENT') { let sMenu = ['Phase', 'Ground', 'Negative Sequence']; contentHtml += renderList(sMenu, state.overcurrentMenuIndex, 4); }
+        else if (state.lcdView === 'SETTINGS_PHASE') { let sMenu = [ `TCCPMinTrip    ${s.pu.toFixed(1)}`, `TCC1           ${s.tcc1}`, `TCC2           ${s.tcc2}` ]; contentHtml += renderList(sMenu, state.phaseMenuIndex, 4); }
+        else if (state.lcdView === 'SETTINGS_GROUND') { let sMenu = [ `TCCGMinTrip    ${s.gndPu.toFixed(1)}`, `TCC1           ${s.gndTcc1}`, `TCC2           ${s.gndTcc2}` ]; contentHtml += renderList(sMenu, state.gndMenuIndex, 4); }
+        else if (state.lcdView === 'SETTINGS_GENERIC_EDIT') {
+            let title = "", val = "";
+            if(state.editTarget === 'phasePu') { title = "TCCPMinTrip"; val = s.pu.toFixed(3); }
+            if(state.editTarget === 'phaseTcc1') { title = "Phase TCC1"; val = s.tcc1; }
+            if(state.editTarget === 'phaseTcc2') { title = "Phase TCC2"; val = s.tcc2; }
+            if(state.editTarget === 'gndPu') { title = "TCCGMinTrip"; val = s.gndPu.toFixed(3); }
+            if(state.editTarget === 'gndTcc1') { title = "Ground TCC1"; val = s.gndTcc1; }
+            if(state.editTarget === 'gndTcc2') { title = "Ground TCC2"; val = s.gndTcc2; }
+            if(state.editTarget === 'resetTime') { title = "ResetTime"; val = s.resetTime + ".00 s"; }
+            if(state.editTarget === 'clpMult') { title = "CLP Multiplier"; val = s.clpMult.toFixed(1) + " x"; }
+            if(state.editTarget === 'clpTime') { title = "CLP Time"; val = s.clpTime + " s"; }
+            contentHtml += `${title}\n\nVALUE:\n         ${val}`; f1Label = "CANCEL";
+        }
+        else if (state.lcdView === 'SETTINGS_OPER_SEQ') { contentHtml += `Phase FastTrips: ${s.fastTrips}\nPhase Del Trips: ${s.delayTrips}\n(+/- TO MODIFY)\n`; f1Label = "CANCEL"; }
+        else if (state.lcdView === 'SETTINGS_REC_INT') {
+            let menuArr = [`Open Intvl 1:  ${s.recInt[0]}s`, `Open Intvl 2:  ${s.recInt[1]}s`, `Open Intvl 3:  ${s.recInt[2]}s`];
+            contentHtml += renderList(menuArr, state.recIntMenuIndex, 4);
+        }
+        else if (state.lcdView === 'SETTINGS_REC_INT_EDIT') { contentHtml += `Open Intvl ${state.recIntMenuIndex + 1}\n\nVALUE:\n         ${s.recInt[state.recIntMenuIndex]}.00 s`; f1Label = "CANCEL"; }
+        else if (state.lcdView === 'SETTINGS_CLP_MENU') { let menuArr = [`CLP Multiplier  ${s.clpMult}x`, `CLP Time        ${s.clpTime}s`]; contentHtml += renderList(menuArr, state.clpMenuIndex, 4); }
+        else if (state.lcdView === 'SETTINGS_CONFIRM') { contentHtml += `SELECT AN OPTION FOR\nTHE ALTERED SETTINGS:\n\n`; f1Label = "USE"; f2Label = "REVERT"; f4Label = "BACK"; }
+        else if (state.lcdView === 'TEMP_MSG') { contentHtml += state.tempMsg; }
+
+        let finalHtml = `<div class="lcd-content">${contentHtml}</div>`;
+        finalHtml += `<div class="lcd-labels"><div class="lcd-label-box">${f1Label}</div><div class="lcd-label-box">${f2Label}</div><div class="lcd-label-box">${f3Label}</div><div class="lcd-label-box">${f4Label}</div></div>`;
+        display.innerHTML = finalHtml;
+    }
+
+    function showTempMsg(msg, nextScreen) { state.tempMsg = `\n ${msg}\n`; state.lcdView = 'TEMP_MSG'; updateUI(); setTimeout(() => { state.lcdView = nextScreen; updateUI(); }, 2000); }
+
+    function pressFKey(keyNumber) {
+        if(wakeUpPanel()) return; if(!state.power || state.isBooting) return;
+        
+        if (state.lcdView === 'PASSWORD') { if (keyNumber === 1) { state.lcdView = 'SETTINGS_MENU'; state.settingsMenuIndex = 0; updateUI(); } if (keyNumber === 4) { state.lcdView = 'MAIN_MENU'; updateUI(); } }
+        else if (state.lcdView === 'ALARMS_RESET_CONFIRM' && keyNumber === 4) { state.alarmsActive = false; logEvent("Alarms Reset"); showTempMsg("--ALARMS ARE RESET--", 'ALARMS_MENU'); }
+        else if (state.lcdView === 'COUNTERS_RESET_TARGETS_CONFIRM' && keyNumber === 4) { state.counters.aPh = 0; state.counters.bPh = 0; state.counters.cPh = 0; state.counters.gnd = 0; state.counters.sef = 0; logEvent("Target Cntrs Reset"); showTempMsg("COUNTERS ARE RESET", 'COUNTERS_MENU'); }
+        else if (state.lcdView === 'COUNTERS_RESET_TRIPS_CONFIRM' && keyNumber === 4) { state.counters.trip = 0; logEvent("Trip Cntr Reset"); showTempMsg("COUNTERS ARE RESET", 'COUNTERS_MENU'); }
+        else if (state.lcdView === 'TEST_MODES' && keyNumber === 1) { state.lcdView = 'MAIN_MENU'; updateUI(); }
+        else if (state.lcdView === 'SETTINGS_GENERIC_EDIT' && keyNumber === 1) {
+            if(state.editTarget.includes('phase')) state.lcdView = 'SETTINGS_PHASE'; else if(state.editTarget.includes('gnd')) state.lcdView = 'SETTINGS_GROUND'; else if(state.editTarget.includes('clp')) state.lcdView = 'SETTINGS_CLP_MENU'; else state.lcdView = 'SETTINGS_MENU'; updateUI();
+        }
+        else if (state.lcdView === 'SETTINGS_OPER_SEQ' && keyNumber === 1) { state.lcdView = 'SETTINGS_MENU'; updateUI(); }
+        else if (state.lcdView === 'SETTINGS_REC_INT_EDIT' && keyNumber === 1) { state.lcdView = 'SETTINGS_REC_INT'; updateUI(); }
+        else if (state.lcdView === 'SETTINGS_CONFIRM') {
+            if (keyNumber === 1) { state.settingsModified = false; logEvent("Settings Saved"); state.lcdView = 'HOME'; updateUI(); }
+            if (keyNumber === 2) { settings[state.activeGroup].pu = 400; state.settingsModified = false; state.lcdView = 'HOME'; updateUI(); }
+            if (keyNumber === 4) { state.lcdView = 'HOME'; updateUI(); }
+        }
+    }
+
+    function cmdChange() {
+        if(wakeUpPanel()) return; if(!state.power || state.isBooting) return;
+        state.changeActive = true; clearTimeout(state.changeTimer); logEvent("Change Mode Active"); updateUI(); 
+        state.changeTimer = setTimeout(() => { state.changeActive = false; updateUI(); }, 10000);
+    }
+    function checkChange() { if (!state.changeActive) { showTempMsg("!!! ACCESS DENIED !!!\n PRESS 'CHANGE' KEY\n PRIOR TO FUNCTION", state.lcdView); return false; } return true; }
+    function consumeChange() { state.changeActive = false; clearTimeout(state.changeTimer); updateUI(); }
+
+    function navLCD(cmd) {
+        if(wakeUpPanel()) return; if(!state.power || state.isBooting || state.changeActive) return; 
+        
+        if(cmd === 'MENU') { 
+            if(state.lcdView === 'HOME') { state.lcdView = 'MAIN_MENU'; state.mainMenuIndex = 0; }
+            else if (['MAIN_MENU'].includes(state.lcdView)) { state.lcdView = 'HOME'; }
+            else if (['METERING_MENU', 'EVENTS', 'ALARMS_MENU', 'COUNTERS_MENU', 'SETTINGS_ENTRY', 'TEST_MODES', 'FAULT_LOCATOR', 'CLOCK', 'NAMEPLATE', 'DIAGNOSTICS', 'BATTERY_INFO'].includes(state.lcdView)) { state.lcdView = 'MAIN_MENU'; }
+            else if (['INST_METERING', 'DEMAND_METERING', 'POWER_METERING', 'ENERGY_METERING', 'PF_METERING', 'FREQ_METERING'].includes(state.lcdView)) { state.lcdView = 'METERING_MENU'; }
+            else if (['ALARMS_RESET_CONFIRM'].includes(state.lcdView)) { state.lcdView = 'ALARMS_MENU'; }
+            else if (['COUNTERS_RESET_TARGETS_CONFIRM', 'COUNTERS_RESET_TRIPS_CONFIRM'].includes(state.lcdView)) { state.lcdView = 'COUNTERS_MENU'; }
+            else if (['PASSWORD'].includes(state.lcdView)) { state.lcdView = 'SETTINGS_ENTRY'; }
+            else if (['SETTINGS_MENU'].includes(state.lcdView)) { if(state.settingsModified) state.lcdView = 'SETTINGS_CONFIRM'; else state.lcdView = 'MAIN_MENU'; }
+            else if (['SETTINGS_OVERCURRENT'].includes(state.lcdView)) { if(state.settingsModified) state.lcdView = 'SETTINGS_CONFIRM'; else state.lcdView = 'SETTINGS_MENU'; }
+            else if (['SETTINGS_PHASE', 'SETTINGS_GROUND'].includes(state.lcdView)) { if(state.settingsModified) state.lcdView = 'SETTINGS_CONFIRM'; else state.lcdView = 'SETTINGS_OVERCURRENT'; }
+            else if (['SETTINGS_GENERIC_EDIT'].includes(state.lcdView)) { 
+                if(state.editTarget.includes('phase')) state.lcdView = 'SETTINGS_PHASE'; else if(state.editTarget.includes('gnd')) state.lcdView = 'SETTINGS_GROUND'; else if(state.editTarget.includes('clp')) state.lcdView = 'SETTINGS_CLP_MENU'; else state.lcdView = 'SETTINGS_MENU';
+            }
+            else if (['SETTINGS_OPER_SEQ', 'SETTINGS_REC_INT', 'SETTINGS_CLP_MENU'].includes(state.lcdView)) { if(state.settingsModified) state.lcdView = 'SETTINGS_CONFIRM'; else state.lcdView = 'SETTINGS_MENU'; }
+            else if (['SETTINGS_REC_INT_EDIT'].includes(state.lcdView)) { state.lcdView = 'SETTINGS_REC_INT'; }
+        }
+        
+        if(cmd === 'METERING_MENU') { state.lcdView = 'METERING_MENU'; state.meteringMenuIndex = 0; }
+        if(cmd === 'EVENTS') { state.lcdView = 'EVENTS'; state.eventsIndex = 0; }
+        if(cmd === 'ALARMS') { state.lcdView = 'ALARMS_MENU'; state.alarmsMenuIndex = 0; }
+        if(cmd === 'COUNTERS') { state.lcdView = 'COUNTERS_MENU'; state.countersMenuIndex = 0; }
+        if(cmd === 'SETTINGS_ENTRY') { state.lcdView = 'SETTINGS_ENTRY'; }
+        if(cmd === 'LEFT') { navLCD('MENU'); } 
+        
+        if(state.lcdView === 'MAIN_MENU' && mainMenus[state.mainMenuIndex].startsWith('SELF-CLEAR FAULT')) {
+            if(cmd === 'PLUS') { state.selfClear = true; mainMenus[state.mainMenuIndex] = 'SELF-CLEAR FAULT: Y'; }
+            if(cmd === 'MINUS') { state.selfClear = false; mainMenus[state.mainMenuIndex] = 'SELF-CLEAR FAULT: N'; }
+        }
+        
+        if(cmd === 'ENTER') {
+            if(state.lcdView === 'MAIN_MENU') {
+                let s = mainMenus[state.mainMenuIndex];
+                if(s === 'SETTINGS') state.lcdView = 'SETTINGS_ENTRY';
+                if(s === 'METERING') { state.lcdView = 'METERING_MENU'; state.meteringMenuIndex = 0; }
+                if(s === 'SEQUENCE OF EVENTS') { state.lcdView = 'EVENTS'; state.eventsIndex = 0; }
+                if(s === 'ALARM LOG & STATUS') { state.lcdView = 'ALARMS_MENU'; state.alarmsMenuIndex = 0; }
+                if(s === 'COUNTERS') { state.lcdView = 'COUNTERS_MENU'; state.countersMenuIndex = 0; }
+                if(s === 'BATTERY') { state.lcdView = 'BATTERY_INFO'; }
+                if(s === 'TEST MODES') { state.lcdView = 'TEST_MODES'; }
+                if(s === 'FAULT LOCATOR') state.lcdView = 'FAULT_LOCATOR';
+                if(s === 'CLOCK') state.lcdView = 'CLOCK';
+                if(s === 'NAMEPLATE DATA') state.lcdView = 'NAMEPLATE';
+                if(s === 'DIAGNOSTICS') state.lcdView = 'DIAGNOSTICS';
+            }
+            else if(state.lcdView === 'METERING_MENU') {
+                let s = meteringMenus[state.meteringMenuIndex];
+                if(s === 'Inst. Metering') state.lcdView = 'INST_METERING'; if(s === 'Demand Metering') state.lcdView = 'DEMAND_METERING'; if(s === 'Power Metering') state.lcdView = 'POWER_METERING'; if(s === 'Energy Metering') state.lcdView = 'ENERGY_METERING'; if(s === 'Power Factor') state.lcdView = 'PF_METERING'; if(s === 'freq 60.000 Hz') state.lcdView = 'FREQ_METERING';
+            }
+            else if(state.lcdView === 'ALARMS_MENU' && state.alarmsMenuIndex === 0) state.lcdView = 'ALARMS_RESET_CONFIRM';
+            else if(state.lcdView === 'COUNTERS_MENU' && state.countersMenuIndex === 0) state.lcdView = 'COUNTERS_RESET_TARGETS_CONFIRM';
+            else if(state.lcdView === 'COUNTERS_MENU' && state.countersMenuIndex === 7) state.lcdView = 'COUNTERS_RESET_TRIPS_CONFIRM';
+            else if(state.lcdView === 'SETTINGS_ENTRY') state.lcdView = 'PASSWORD'; 
+            else if(state.lcdView === 'PASSWORD') { state.lcdView = 'SETTINGS_MENU'; state.settingsMenuIndex = 0; }
+            else if(state.lcdView === 'SETTINGS_MENU') {
+                if(state.settingsMenuIndex === 2) { state.lcdView = 'SETTINGS_OVERCURRENT'; state.overcurrentMenuIndex = 0; }
+                if(state.settingsMenuIndex === 3) { state.lcdView = 'SETTINGS_OPER_SEQ'; }
+                if(state.settingsMenuIndex === 4) { state.lcdView = 'SETTINGS_REC_INT'; state.recIntMenuIndex = 0; }
+                if(state.settingsMenuIndex === 5) { state.editTarget = 'resetTime'; state.lcdView = 'SETTINGS_GENERIC_EDIT'; }
+                if(state.settingsMenuIndex === 6) { state.lcdView = 'SETTINGS_CLP_MENU'; state.clpMenuIndex = 0; }
+            }
+            else if(state.lcdView === 'SETTINGS_OVERCURRENT') {
+                if(state.overcurrentMenuIndex === 0) { state.lcdView = 'SETTINGS_PHASE'; state.phaseMenuIndex = 0; }
+                if(state.overcurrentMenuIndex === 1) { state.lcdView = 'SETTINGS_GROUND'; state.gndMenuIndex = 0; }
+            }
+            else if(state.lcdView === 'SETTINGS_PHASE') {
+                if(state.phaseMenuIndex === 0) { state.editTarget = 'phasePu'; state.lcdView = 'SETTINGS_GENERIC_EDIT'; }
+                if(state.phaseMenuIndex === 1) { state.editTarget = 'phaseTcc1'; state.lcdView = 'SETTINGS_GENERIC_EDIT'; }
+                if(state.phaseMenuIndex === 2) { state.editTarget = 'phaseTcc2'; state.lcdView = 'SETTINGS_GENERIC_EDIT'; }
+            }
+            else if(state.lcdView === 'SETTINGS_GROUND') {
+                if(state.gndMenuIndex === 0) { state.editTarget = 'gndPu'; state.lcdView = 'SETTINGS_GENERIC_EDIT'; }
+                if(state.gndMenuIndex === 1) { state.editTarget = 'gndTcc1'; state.lcdView = 'SETTINGS_GENERIC_EDIT'; }
+                if(state.gndMenuIndex === 2) { state.editTarget = 'gndTcc2'; state.lcdView = 'SETTINGS_GENERIC_EDIT'; }
+            }
+            else if(state.lcdView === 'SETTINGS_CLP_MENU') {
+                if(state.clpMenuIndex === 0) { state.editTarget = 'clpMult'; state.lcdView = 'SETTINGS_GENERIC_EDIT'; }
+                if(state.clpMenuIndex === 1) { state.editTarget = 'clpTime'; state.lcdView = 'SETTINGS_GENERIC_EDIT'; }
+            }
+            else if(state.lcdView === 'SETTINGS_REC_INT') { state.lcdView = 'SETTINGS_REC_INT_EDIT'; }
+        }
+        
+        if(['MAIN_MENU', 'METERING_MENU', 'ALARMS_MENU', 'COUNTERS_MENU', 'SETTINGS_MENU', 'SETTINGS_OVERCURRENT', 'SETTINGS_PHASE', 'SETTINGS_GROUND', 'SETTINGS_REC_INT', 'SETTINGS_CLP_MENU'].includes(state.lcdView)) {
+            let limit = 0; let idxName = '';
+            if(state.lcdView === 'MAIN_MENU') { limit = mainMenus.length - 1; idxName = 'mainMenuIndex'; }
+            if(state.lcdView === 'METERING_MENU') { limit = meteringMenus.length - 1; idxName = 'meteringMenuIndex'; }
+            if(state.lcdView === 'ALARMS_MENU') { limit = 5; idxName = 'alarmsMenuIndex'; }
+            if(state.lcdView === 'COUNTERS_MENU') { limit = 7; idxName = 'countersMenuIndex'; }
+            if(state.lcdView === 'SETTINGS_MENU') { limit = 6; idxName = 'settingsMenuIndex'; }
+            if(state.lcdView === 'SETTINGS_OVERCURRENT') { limit = 2; idxName = 'overcurrentMenuIndex'; }
+            if(state.lcdView === 'SETTINGS_PHASE') { limit = 2; idxName = 'phaseMenuIndex'; }
+            if(state.lcdView === 'SETTINGS_GROUND') { limit = 2; idxName = 'gndMenuIndex'; }
+            if(state.lcdView === 'SETTINGS_REC_INT') { limit = 2; idxName = 'recIntMenuIndex'; }
+            if(state.lcdView === 'SETTINGS_CLP_MENU') { limit = 1; idxName = 'clpMenuIndex'; }
+            if(cmd === 'DOWN' && state[idxName] < limit) state[idxName]++; if(cmd === 'UP' && state[idxName] > 0) state[idxName]--;
+        }
+        
+        if(state.lcdView === 'EVENTS') {
+            if(cmd === 'DOWN' && state.eventsIndex < state.events.length - 1) state.eventsIndex++;
+            if(cmd === 'UP' && state.eventsIndex > 0) state.eventsIndex--;
+        }
+        
+        if(state.lcdView === 'TEST_MODES') {
+            if(cmd === 'PLUS') { state.outputBlock = true; }
+            if(cmd === 'MINUS') { state.outputBlock = false; }
+        }
+        if(state.lcdView === 'SETTINGS_GENERIC_EDIT') {
+            let s = settings[state.activeGroup]; let cIdx;
+            if(cmd === 'PLUS') { 
+                state.settingsModified = true;
+                if(state.editTarget === 'phasePu') s.pu += 10;
+                if(state.editTarget === 'gndPu') s.gndPu += 5;
+                if(state.editTarget === 'resetTime') s.resetTime += 5;
+                if(state.editTarget === 'clpMult') s.clpMult += 0.5;
+                if(state.editTarget === 'clpTime') s.clpTime += 5;
+                if(state.editTarget === 'phaseTcc1') { cIdx = curvesList.indexOf(s.tcc1); if(cIdx < curvesList.length-1) s.tcc1 = curvesList[cIdx+1]; }
+                if(state.editTarget === 'phaseTcc2') { cIdx = curvesList.indexOf(s.tcc2); if(cIdx < curvesList.length-1) s.tcc2 = curvesList[cIdx+1]; }
+                if(state.editTarget === 'gndTcc1') { cIdx = curvesList.indexOf(s.gndTcc1); if(cIdx < curvesList.length-1) s.gndTcc1 = curvesList[cIdx+1]; }
+                if(state.editTarget === 'gndTcc2') { cIdx = curvesList.indexOf(s.gndTcc2); if(cIdx < curvesList.length-1) s.gndTcc2 = curvesList[cIdx+1]; }
+            }
+            if(cmd === 'MINUS') { 
+                state.settingsModified = true;
+                if(state.editTarget === 'phasePu' && s.pu > 50) s.pu -= 10;
+                if(state.editTarget === 'gndPu' && s.gndPu > 10) s.gndPu -= 5;
+                if(state.editTarget === 'resetTime' && s.resetTime > 5) s.resetTime -= 5;
+                if(state.editTarget === 'clpMult' && s.clpMult > 1) s.clpMult -= 0.5;
+                if(state.editTarget === 'clpTime' && s.clpTime > 5) s.clpTime -= 5;
+                if(state.editTarget === 'phaseTcc1') { cIdx = curvesList.indexOf(s.tcc1); if(cIdx > 0) s.tcc1 = curvesList[cIdx-1]; }
+                if(state.editTarget === 'phaseTcc2') { cIdx = curvesList.indexOf(s.tcc2); if(cIdx > 0) s.tcc2 = curvesList[cIdx-1]; }
+                if(state.editTarget === 'gndTcc1') { cIdx = curvesList.indexOf(s.gndTcc1); if(cIdx > 0) s.gndTcc1 = curvesList[cIdx-1]; }
+                if(state.editTarget === 'gndTcc2') { cIdx = curvesList.indexOf(s.gndTcc2); if(cIdx > 0) s.gndTcc2 = curvesList[cIdx-1]; }
+            }
+        }
+        if(state.lcdView === 'SETTINGS_OPER_SEQ') {
+            if(cmd === 'PLUS' && settings[state.activeGroup].fastTrips < 4) { settings[state.activeGroup].fastTrips++; settings[state.activeGroup].delayTrips = 4 - settings[state.activeGroup].fastTrips; state.settingsModified = true; }
+            if(cmd === 'MINUS' && settings[state.activeGroup].fastTrips > 0) { settings[state.activeGroup].fastTrips--; settings[state.activeGroup].delayTrips = 4 - settings[state.activeGroup].fastTrips; state.settingsModified = true; }
+        }
+        if(state.lcdView === 'SETTINGS_REC_INT_EDIT') {
+            if(cmd === 'PLUS') { settings[state.activeGroup].recInt[state.recIntMenuIndex]++; state.settingsModified = true; }
+            if(cmd === 'MINUS' && settings[state.activeGroup].recInt[state.recIntMenuIndex] > 1) { settings[state.activeGroup].recInt[state.recIntMenuIndex]--; state.settingsModified = true; }
+        }
+
+        updateUI();
+    }
+
+    function iniciarBoot() {
+        state.lcdView = 'BOOT'; state.isBooting = true; updateUI(); 
+        setTimeout(() => { state.isBooting = false; state.lcdView = 'HOME'; logEvent("Control Powered Up"); wakeUpPanel(); updateUI(); }, 6000); 
+    }
+
+    // NOVA FUNÇÃO: Ativa/Desativa o Pino Preto Mecânico
+    function toggleCloseCircuit() {
+        wakeUpPanel();
+        state.closeCircuitDisabled = !state.closeCircuitDisabled;
+        
+        let knob = document.getElementById('knob-close-circuit');
+        if(knob) {
+            knob.className = state.closeCircuitDisabled ? "knob-black pulled" : "knob-black";
+        }
+        
+        if(state.power && !state.isBooting) {
+            if(state.closeCircuitDisabled) {
+                logEvent("Close Circuit Disabled");
+                showTempMsg("CLOSE CIRCUIT\nDISABLED", state.lcdView);
+            } else {
+                logEvent("Close Circuit Enabled");
+                showTempMsg("CLOSE CIRCUIT\nENABLED", state.lcdView);
+            }
+        }
+    }
+
+    function cmdHotLineTag() {
+        wakeUpPanel();
+        state.hotLineTag = !state.hotLineTag;
+        let swHlt = document.getElementById('sw-hlt');
+        if(swHlt) swHlt.className = state.hotLineTag ? "toggle-switch on" : "toggle-switch off";
+
+        if(!state.power || state.isBooting) return; 
+
+        if(state.hotLineTag) { 
+            state.nonReclosing = true; 
+            logEvent("HLT ACTIVATED - CLOSE BLOCKED"); 
+            showTempMsg("!!! WARNING !!!\nHOT LINE TAG ACTIVE\nCLOSING BLOCKED", 'HOME');
+        } else { 
+            logEvent("HLT REMOVED"); 
+            showTempMsg("HOT LINE TAG\nREMOVED", 'HOME');
+        } 
+        
+        updateUI();
+    }
+
+    function cmdTrip() {
+        if(wakeUpPanel()) return; if(!state.power || state.isBooting) return;
+        
+        if(state.outputBlock) { showTempMsg("OUTPUTS BLOCKED\nIN TEST MODE", state.lcdView); return; }
+        
+        if(state.breaker !== 'OPEN' && state.breaker !== 'LOCKOUT') {
+            state.breaker = 'LOCKOUT'; state.shots = 0; state.m.ia = 0; state.m.ib = 0; state.m.ic = 0;
+            
+            clearTimeout(state.clpTimer); state.clpActive = false;
+            
+            state.counters.trip++; logEvent("Manual Trip (Lockout)"); updateUI();
+        }
+    }
+
+    function cmdClose() {
+        if(wakeUpPanel()) return; if(!state.power || state.isBooting) return;
+        if(state.outputBlock) { showTempMsg("OUTPUTS BLOCKED\nIN TEST MODE", state.lcdView); return; }
+        
+        // Bloqueio do HLT
+        if(state.hotLineTag) { 
+            showTempMsg(" CLOSE REJECTED \n HOT LINE TAG \n IS ACTIVE", state.lcdView);
+            logEvent("Close Rej: HLT Active");
+            return; 
+        }
+
+        // Bloqueio do Pino Mecânico
+        if(state.closeCircuitDisabled) {
+            showTempMsg(" CLOSE REJECTED \n CLOSE CIRCUIT \n IS DISABLED", state.lcdView);
+            logEvent("Close Rej: Circuit Disabled");
+            return;
+        }
+        
+        if(state.breaker !== 'CLOSED') {
+            state.breaker = 'CLOSED'; state.shots = 0; state.m.ia = 120; state.m.ib = 118; state.m.ic = 122; updateDemand(120, 118, 122, 0);
+            let s = settings[state.activeGroup];
+            if(!state.clpBlocked) { state.clpActive = true; logEvent("CLP Active (Inrush)"); clearTimeout(state.clpTimer); state.clpTimer = setTimeout(() => { state.clpActive = false; logEvent("CLP Deactivated"); }, s.clpTime * 1000); }
+            logEvent("Manual Close"); updateUI();
+        }
+    }
+
+    function simScadaClose() {
+        if(wakeUpPanel()) return; if(!state.power || state.isBooting) return;
+        if(state.outputBlock) { showTempMsg("OUTPUTS BLOCKED\nIN TEST MODE", state.lcdView); return; }
+        if(state.mode === 'LOCAL') { showTempMsg("CMD REJECTED\nLOCAL MODE ACTIVE", state.lcdView); return; }
+        
+        if(state.hotLineTag) {
+            logEvent("SCADA Close Rej: HLT");
+            return;
+        }
+
+        if(state.closeCircuitDisabled) {
+            logEvent("SCADA Close Rej: Circuit Disabled");
+            return;
+        }
+        
+        if(state.breaker !== 'CLOSED') {
+            state.breaker = 'CLOSED'; state.shots = 0; state.m.ia = 120; state.m.ib = 118; state.m.ic = 122; updateDemand(120, 118, 122, 0);
+            let s = settings[state.activeGroup];
+            if(!state.clpBlocked) { state.clpActive = true; logEvent("CLP Active (Inrush)"); clearTimeout(state.clpTimer); state.clpTimer = setTimeout(() => { state.clpActive = false; logEvent("CLP Deactivated"); }, s.clpTime * 1000); }
+            logEvent("SCADA Remote Close"); updateUI();
+        }
+    }
+
+    function toggleGndBlock() { if(wakeUpPanel()) return; if(state.power && !state.isBooting && checkChange()) { state.gndBlocked = !state.gndBlocked; logEvent(`Gnd Block: ${state.gndBlocked?'ON':'OFF'}`); consumeChange(); } }
+    function toggleNonReclose() { if(wakeUpPanel()) return; if(!state.power || state.isBooting) return; if (state.hotLineTag) { showTempMsg(" INTERLOCK \n BLOCKED BY \n HOT LINE TAG", state.lcdView); return; } if(checkChange()) { state.nonReclosing = !state.nonReclosing; logEvent(`Non-Reclosing: ${state.nonReclosing?'ON':'OFF'}`); consumeChange(); } }
+    function toggleSupervisory() { if(wakeUpPanel()) return; if(state.power && !state.isBooting && checkChange()) { state.mode = state.mode === 'REMOTE' ? 'LOCAL' : 'REMOTE'; logEvent(`Mode: ${state.mode}`); consumeChange(); } }
+    function setGrp(g) { if(wakeUpPanel()) return; if(state.power && !state.isBooting && checkChange()) { state.activeGroup = g; logEvent(`Profile Changed to ${g}`); consumeChange(); } }
+    function toggleFastTrips() { if(wakeUpPanel()) return; if(state.power && !state.isBooting && checkChange()) { state.fastTripsDisabled = !state.fastTripsDisabled; logEvent(`FastTrips Block: ${state.fastTripsDisabled?'ON':'OFF'}`); consumeChange(); } }
+    function toggleSGF() { if(wakeUpPanel()) return; if(state.power && !state.isBooting && checkChange()) { state.sgfBlocked = !state.sgfBlocked; logEvent(`SGF Block: ${state.sgfBlocked?'ON':'OFF'}`); consumeChange(); } }
+    function toggleCLPBlock() { if(wakeUpPanel()) return; if(state.power && !state.isBooting && checkChange()) { state.clpBlocked = !state.clpBlocked; logEvent(`CLP Block: ${state.clpBlocked?'ON':'OFF'}`); consumeChange(); } }
+    
+    function cmdResetTargets() {
+        if(wakeUpPanel()) return; if(!state.power || state.isBooting) return; 
+        state.targets = { pha: false, phb: false, phc: false, gnd: false, sef: false, volt: false, freq: false, pickup: false };
+        if(state.breaker === 'LOCKOUT') state.breaker = 'OPEN'; logEvent("Targets Reset"); updateUI();
+    }
+
+    function injectFault(isPermanent) {
+        if (!state.power || state.isBooting || state.breaker !== 'CLOSED') return;
+        
+        let type = document.getElementById('simType').value;
+        let s = settings[state.activeGroup];
+        let mag = parseInt(document.getElementById('simMag').value);
+        
+        if(type === 'GND' && state.gndBlocked) { logEvent("GND Fault Ignored (Blocked)"); return; }
+        if(type === 'SEF' && state.sgfBlocked) { logEvent("SEF Fault Ignored (Blocked)"); return; }
+        
+        let isHCL = (mag >= 4000); 
+        
+        let phaseThreshold = state.clpActive ? s.pu * s.clpMult : s.pu; 
+        let gndThreshold = state.clpActive ? s.gndPu * s.clpMult : s.gndPu;
+        let sefThreshold = state.clpActive ? 10 * s.clpMult : 10; 
+        
+        let injAmps = mag; 
+        if (type === 'SEF') injAmps = 15; 
+        
+        if ((type === 'A' || type === 'BC') && injAmps < phaseThreshold) { logEvent("Inrush Ignored (CLP Active)"); return; } 
+        else if (type === 'GND' && injAmps < gndThreshold) { logEvent("GND Inrush Ignored (CLP)"); return; }
+        else if (type === 'SEF' && injAmps < sefThreshold) { logEvent("SEF Inrush Ignored"); return; }
+
+        state.targets.pickup = true;
+        if(type === 'A') { state.m.ia = injAmps; updateDemand(injAmps, 118, 122, 0); }
+        if(type === 'BC') { state.m.ib = injAmps; state.m.ic = injAmps; updateDemand(120, injAmps, injAmps, 0); }
+        if(type === 'GND') { updateDemand(120, 118, 122, injAmps); }
+        if(type === 'SEF') { updateDemand(120, 118, 122, injAmps); }
+        
+        state.faultLocator.active = true; state.faultLocator.type = type; state.faultLocator.dist = (Math.random() * 5 + 2).toFixed(1); state.faultLocator.imp = (state.faultLocator.dist * 0.45).toFixed(2); 
+        wakeUpPanel(); updateUI();
+
+        setTimeout(() => {
+            if(!state.outputBlock) {
+                state.breaker = 'OPEN'; state.m.ia = 0; state.m.ib = 0; state.m.ic = 0; 
+                clearTimeout(state.clpTimer); state.clpActive = false;
+            }
+            state.shots++; state.counters.trip++;
+            
+            if(type === 'A') { state.targets.pha = true; state.counters.aPh++; }
+            if(type === 'BC') { state.targets.phb = true; state.targets.phc = true; state.counters.bPh++; state.counters.cPh++; }
+            if(type === 'GND') { state.targets.gnd = true; state.counters.gnd++; }
+            if(type === 'SEF') { state.targets.sef = true; state.counters.sef++; } 
+            
+            if(isHCL) logEvent(`High Current Lockout (HCL)`);
+            else logEvent(`Fault Trip ${type} - Shot ${state.shots}`);
+            
+            let fastT = state.fastTripsDisabled ? 0 : s.fastTrips; state.maxShots = fastT + s.delayTrips; updateUI();
+
+            if(isHCL || state.nonReclosing || state.hotLineTag || state.shots >= state.maxShots) {
+                setTimeout(() => { 
+                    if(!state.outputBlock) state.breaker = 'LOCKOUT'; 
+                    state.targets.pickup = false; logEvent("Lockout Reached"); 
+                    
+                    if (state.selfClear) {
+                        setTimeout(() => {
+                            state.targets = { pha: false, phb: false, phc: false, gnd: false, sef: false, volt: false, freq: false, pickup: false };
+                            updateUI();
+                        }, 5000); 
+                    }
+                    updateUI(); 
+                }, 500);
+            } else {
+                state.breaker = 'RECLOSING'; state.recloseTimer = s.recInt[Math.min(state.shots - 1, 2)]; 
+                
+                let interval = setInterval(() => {
+                    state.recloseTimer--; updateUI();
+                    if(state.recloseTimer <= 0) {
+                        clearInterval(interval);
+                        if(state.breaker !== 'RECLOSING') return;
+                        
+                        // Falha ao religar automaticamente caso o pino esteja puxado
+                        if(state.closeCircuitDisabled) {
+                            state.breaker = 'LOCKOUT';
+                            state.targets.pickup = false;
+                            logEvent("79 Reclose Failed: Circ Disabled");
+                            updateUI();
+                            return;
+                        }
+
+                        if(!state.outputBlock) state.breaker = 'CLOSED'; 
+                        state.targets.pickup = false; logEvent("79 Auto-Reclose"); updateUI();
+                        
+                        if(isPermanent) { setTimeout(() => injectFault(true), 600); } 
+                        else { 
+                            setTimeout(() => { 
+                                state.shots = 0; 
+                                if(!state.outputBlock) { state.m.ia = 120; state.m.ib = 118; state.m.ic = 122; }
+                                logEvent("79 Cycle Reset (Fault Cleared)"); 
+                                
+                                if (state.selfClear) {
+                                    setTimeout(() => {
+                                        state.targets = { pha: false, phb: false, phc: false, gnd: false, sef: false, volt: false, freq: false, pickup: false };
+                                        updateUI();
+                                    }, 3000); 
+                                }
+                                updateUI(); 
+                            }, s.resetTime * 1000); 
+                        }
+                    }
+                }, 1000);
+            }
+        }, 500);
+    }
+
+    function cmdLampTest(isOn) {
+        if (!state.power || state.isBooting) return;
+        
+        const ledBoxes = document.querySelectorAll('.led-box');
+        const memLeds = document.querySelectorAll('.mem-led');
+        
+        if (isOn) {
+            ledBoxes.forEach(el => el.className = 'led-box on-red');
+            memLeds.forEach(el => el.className = 'mem-led on-red');
+        } else {
+            updateUI(); 
+        }
+    }
+</script>
+</body>
+</html>
