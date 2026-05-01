@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <title>Visualizador de Rede 2026</title>
+    <style>
+        /* --- ESTILOS GERAIS --- */
+        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; position: relative; }
+        #map { height: 100%; width: 100%; }
+        
+        /* MENUS E INTERFACE */
+        .menu { position: absolute; top: 50%; left: 20px; transform: translateY(-50%); background-color: white; border-radius: 8px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2); z-index: 1000; display: flex; flex-direction: column; align-items: center; padding: 10px 0; max-height: 70vh; overflow-y: auto; scrollbar-width: none; transition: transform 0.3s ease, opacity 0.3s ease; }
+        .menu button { position: relative; background-color: #ffffff; border: none; padding: 10px; margin: 5px 0; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); cursor: pointer; transition: all 0.2s; }
+        .menu button img { width: 22px; height: 22px; }
+        .button-legend { position: absolute; top: 50%; left: 50px; transform: translateY(-50%); background: rgba(255,255,255,0.9); border-radius: 4px; padding: 5px; font-size: 12px; white-space: nowrap; z-index: 2000; display: none; }
+        
+        /* BARRA DE BUSCA */
+        .search-bar { position: absolute; top: 20px; left: 20px; width: 300px; background-color: white; border-radius: 8px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2); z-index: 1000; display: flex; padding: 10px; gap: 10px; }
+        .search-bar input { flex: 1; border: none; outline: none; padding: 10px; font-size: 14px; border-radius: 8px; background-color: #f9f9f9; }
+        .search-bar button { background-color: #4285F4; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; }
+
+        /* MENUS FLUTUANTES */
+        .kmz-menu, .line-menu, .loaded-files-menu, .tools-menu, .marker-group-menu {
+            position: absolute; top: 80px; left: 70px; background: #fff; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 2000; padding: 15px; display: none; max-height: 500px; overflow-y: auto; width: 300px;
+        }
+
+        .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #4285F4; }
+        input:checked + .slider:before { transform: translateX(26px); }
+
+        footer { position: absolute; bottom: 5px; width: 100%; text-align: center; font-size: 10px; color: #555; pointer-events: none; }
+    </style>
+    <link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet" />
+    <script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
+    <script src="https://unpkg.com/@tmcw/togeojson"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.6.0/jszip.min.js"></script>
+</head>
+<body>
+    <div id="map"></div>
+    <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="Buscar operativo/placa..." />
+        <button id="btnSearch">Buscar</button>
+    </div>
+    <div class="menu" id="mainMenu">
+        <button id="btnKMZ"><img src="ícones/upload.svg"><div class="button-legend">Arquivos</div></button>
+        <button id="btnMarkerGroups"><img src="ícones/utility-pole.svg"><div class="button-legend">Grupos de Postos</div></button>
+        <button id="btnLineGroups"><img src="ícones/waypoints.svg"><div class="button-legend">Alimentadores</div></button>
+        <button id="btnTools"><img src="ícones/settings.svg"><div class="button-legend">Ferramentas</div></button>
+        <button id="btnReset"><img src="ícones/rotate-cw.svg"><div class="button-legend">Resetar Visão</div></button>
+    </div>
+
+    <div class="marker-group-menu" id="markerGroupMenu">
+        <h3>Grupos de Postos</h3>
+        <ul id="markerGroupsList" style="list-style:none; padding:0;"></ul>
+    </div>
+
+    <div class="kmz-menu" id="kmzMenu">
+        <h3>Arquivos Disponíveis (2025)</h3>
+        <input type="text" id="kmzSearchInput" placeholder="Filtrar cidade..." style="width:100%; padding:5px; margin-bottom:10px;">
+        <ul id="kmzList" style="list-style:none; padding:0; cursor:pointer;"></ul>
+    </div>
+
+    <div class="line-menu" id="lineMenu">
+        <h3>Grupos de Linhas (Alimentadores)</h3>
+        <ul id="lineGroupsList" style="list-style:none; padding:0;"></ul>
+    </div>
+
+    <div class="tools-menu" id="toolsMenu">
+        <h3>Configurações de Visão</h3>
+        <label>Tamanho Marcador: <input type="range" id="rngMarkerSize" min="2" max="20" value="6"></label><br>
+        <label>Qtd. Marcadores: <input type="range" id="rngMarkerLimit" min="50" max="5000" value="500" step="50"></label>
+    </div>
+
+    <footer>Visualizador de Rede v2026 • Base de Dados CPFL 2024/2025</footer>
+
+    <script>
+        const state = {
+            markersVisible: true,
+            files: [],
+            markerGroups: {
+                '-FU': { color: '#FF0000', visible: true },
+                '-FA': { color: '#FFA500', visible: true },
+                '-RE': { color: '#008000', visible: true },
+                '-BC': { color: '#9C27B0', visible: true },
+                '-RT': { color: '#000000', visible: true }, // REGULADOR EM PRETO
+                'KVA': { color: '#0000FF', visible: true },
+                'default': { color: '#FF5722', visible: true }
+            },
+            visualSettings: { markerSize: 6, markerLimit: 500 }
+        };
+
+        const map = new maplibregl.Map({
+            container: 'map',
+            style: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
+            center: [-47.06, -22.93],
+            zoom: 10
+        });
+
+        // Interface Toggle
+        const buttons = {
+            'btnKMZ': 'kmzMenu',
+            'btnMarkerGroups': 'markerGroupMenu',
+            'btnLineGroups': 'lineMenu',
+            'btnTools': 'toolsMenu'
+        };
+        Object.keys(buttons).forEach(btnId => {
+            document.getElementById(btnId).onclick = (e) => {
+                e.stopPropagation();
+                const menuId = buttons[btnId];
+                const menu = document.getElementById(menuId);
+                const isVisible = menu.style.display === 'block';
+                document.querySelectorAll('.kmz-menu, .line-menu, .tools-menu, .marker-group-menu').forEach(m => m.style.display='none');
+                menu.style.display = isVisible ? 'none' : 'block';
+            };
+        });
+
+        map.on('load', () => {
+            map.addSource('dynamic-markers', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+            map.addLayer({
+                id: 'marker-circles', type: 'circle', source: 'dynamic-markers',
+                paint: { 'circle-radius': ['get', 'size'], 'circle-color': ['get', 'color'], 'circle-stroke-width': 1, 'circle-stroke-color': '#fff' }
+            });
+            updateMarkerGroupUI();
+        });
+
+        // Lógica de carregar KMZ
+        async function loadKMZ(fileName) {
+            const response = await fetch('./CPFL_PAULISTA_2025/' + fileName);
+            const data = await response.arrayBuffer();
+            const zip = await JSZip.loadAsync(data);
+            const kmlText = await zip.file('doc.kml').async('string');
+            const geojson = toGeoJSON.kml(new DOMParser().parseFromString(kmlText, 'text/xml'));
+            
+            processGeoJSON(geojson, fileName);
+        }
+
+        function processGeoJSON(geojson, fileName) {
+            geojson.features.forEach(f => {
+                if (f.geometry.type === 'Point') {
+                    const name = (f.properties.name || '').toUpperCase();
+                    let group = 'default';
+                    if (name.endsWith('KVA')) group = 'KVA';
+                    else if (name.endsWith('-FA')) group = '-FA';
+                    else if (name.endsWith('-FU')) group = '-FU';
+                    else if (name.endsWith('-RE')) group = '-RE';
+                    else if (name.endsWith('-BC')) group = '-BC';
+                    else if (name.endsWith('-RT')) group = '-RT';
+
+                    f.properties.group = group;
+                    f.properties.color = state.markerGroups[group].color;
+                    f.properties.size = state.visualSettings.markerSize;
+                }
+            });
+            state.files.push({ name: fileName, data: geojson });
+            updateMap();
+            updateLineGroupsUI();
+        }
+
+        function updateMap() {
+            const allPoints = [];
+            state.files.forEach(file => {
+                file.data.features.forEach(f => {
+                    if (f.geometry.type === 'Point' && state.markerGroups[f.properties.group].visible) {
+                        allPoints.push(f);
+                    }
+                });
+            });
+            map.getSource('dynamic-markers').setData({ type: 'FeatureCollection', features: allPoints.slice(0, state.visualSettings.markerLimit) });
+        }
+
+        function updateMarkerGroupUI() {
+            const list = document.getElementById('markerGroupsList');
+            list.innerHTML = '';
+            Object.keys(state.markerGroups).forEach(g => {
+                const li = document.createElement('li');
+                li.innerHTML = `<label><input type="checkbox" ${state.markerGroups[g].visible?'checked':''} onchange="state.markerGroups['${g}'].visible=this.checked; updateMap()"> <span style="color:${state.markerGroups[g].color}">■</span> ${g}</label>`;
+                list.appendChild(li);
+            });
+        }
+
+        function updateLineGroupsUI() {
+            const list = document.getElementById('lineGroupsList');
+            list.innerHTML = '';
+            const alims = new Set();
+            state.files.forEach(f => {
+                f.data.features.forEach(feat => {
+                    if (feat.properties.Alimentador) alims.add(feat.properties.Alimentador);
+                });
+            });
+            alims.forEach(a => {
+                const li = document.createElement('li');
+                li.textContent = a;
+                list.appendChild(li);
+            });
+        }
+
+        document.getElementById('btnReset').onclick = () => map.flyTo({ center: [-47.06, -22.93], zoom: 10 });
+    </script>
+</body>
+</html>
