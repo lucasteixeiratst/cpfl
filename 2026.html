@@ -33,7 +33,7 @@
         .toggle-menu-btn img { width: 20px; height: 20px; }
 
         /* RESULTADOS DA BUSCA */
-        .search-results { position: absolute; top: 70px; left: 20px; width: 320px; max-height: 250px; overflow-y: auto; background-color: white; border-radius: 8px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2); z-index: 1000; display: none; }
+        .search-results { position: absolute; top: 70px; left: 20px; width: 320px; max-height: 450px; overflow-y: auto; background-color: white; border-radius: 8px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2); z-index: 1000; display: none; }
         .search-results ul { list-style: none; margin: 0; padding: 0; }
         .search-results li { padding: 10px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
         .search-results li:hover { background-color: #f0f0f0; }
@@ -2820,10 +2820,17 @@
                 if (aStartsWith && !bStartsWith) return -1;
                 if (!aStartsWith && bStartsWith) return 1;
                 
-                // 3. ORDEM ALFABÉTICA
+                // 3. TAMANHO DA STRING (Mais curtos primeiro)
+                if (aStartsWith && bStartsWith) {
+                    if (nameA.length !== nameB.length) {
+                        return nameA.length - nameB.length;
+                    }
+                }
+                
+                // 4. ORDEM ALFABÉTICA
                 return nameA.localeCompare(nameB);
 
-            }).slice(0, 15);
+            }).slice(0, 100);
             
             displaySearchResults(matches);
         }
