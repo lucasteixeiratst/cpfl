@@ -267,12 +267,13 @@
             position: fixed; top: 10px; right: 10px; color: #ff0000; font-weight: bold; font-size: 14px; z-index: 99999; display: none; text-shadow: 1px 1px 0 #fff;
         }
     </style>
-    <link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet" />
-    
-    <script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
-    <script src="https://unpkg.com/@tmcw/togeojson"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.6.0/jszip.min.js"></script>
-    
+    <!-- Bibliotecas locais: não dependem de unpkg ou cdnjs. -->
+    <link href="./libs/maplibre-gl.css" rel="stylesheet" />
+
+    <script src="./libs/maplibre-gl.js"></script>
+    <script src="./libs/togeojson.umd.js"></script>
+    <script src="./libs/jszip.min.js"></script>
+
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-G7MC2S78V6"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
