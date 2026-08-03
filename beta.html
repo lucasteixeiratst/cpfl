@@ -9,7 +9,7 @@
         body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; position: relative; }
         #map { height: 100%; width: 100%; }
         
-        /* MENUS E INTERFACE - DESKTOP PADRÃO */
+        /* MENUS E INTERFACE - DESKTOP PADRÃƒO */
         .menu { position: absolute; top: 50%; left: 20px; transform: translateY(-50%); background-color: white; border-radius: 8px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2); z-index: 1000; display: flex; flex-direction: column; align-items: center; padding: 10px 0; max-height: 70vh; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none; transition: transform 0.3s ease, opacity 0.3s ease; }
         .menu::-webkit-scrollbar { display: none; }
         .menu.hidden { transform: translate(-200%, -50%); opacity: 0; pointer-events: none; }
@@ -30,7 +30,7 @@
         .search-bar #btnAddressSearch:hover { background-color: #0d6549; }
         .search-bar #btnAddressSearch:disabled { opacity: 0.65; cursor: wait; }
         
-        /* BOTÃO TOGGLE UI */
+        /* BOTÃƒO TOGGLE UI */
         .toggle-menu-btn { position: absolute; top: 20px; left: 420px; width: 40px; height: 40px; background-color: white; border-radius: 8px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2); z-index: 1000; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; transition: background-color 0.3s; }
         .toggle-menu-btn:hover { background-color: #f0f0f0; }
         .toggle-menu-btn img { width: 20px; height: 20px; }
@@ -69,7 +69,7 @@
         .device-upload-btn:hover { background-color: #e8f0fe; }
         .device-upload-btn img { width: 20px; height: 20px; }
 
-        /* Controles de Seleção em Massa */
+        /* Controles de SeleÃ§Ã£o em Massa */
         .kmz-controls {
             padding: 10px;
             display: flex;
@@ -342,7 +342,7 @@
     <div id="progressOverlay" class="progress-overlay" style="display: none;">
         <div class="progress-content">
             <h3>Processando...</h3>
-            <p>Por favor, não feche a aba.</p>
+            <p>Por favor, nÃ£o feche a aba.</p>
             <div class="progress-bar-container">
                 <div id="progressBar" class="progress-bar"></div>
             </div>
@@ -352,9 +352,9 @@
 
     <div id="updateRescueModal" class="rescue-modal">
         <div class="rescue-content">
-            <h2>Atualização Detectada!</h2>
+            <h2>AtualizaÃ§Ã£o Detectada!</h2>
             <p>A estrutura do banco de dados mudou (v5) e pode haver conflito com dados antigos.</p>
-            <p>Se você notar erros ou o mapa não carregar, clique no botão abaixo para limpar tudo e começar do zero.</p>
+            <p>Se vocÃª notar erros ou o mapa nÃ£o carregar, clique no botÃ£o abaixo para limpar tudo e comeÃ§ar do zero.</p>
             <div class="rescue-actions">
                 <button id="btnRescueReset" class="btn-rescue-reset">Limpar Dados e Reiniciar</button>
                 <button id="btnRescueCancel" class="btn-rescue-cancel">Tentar Continuar Assim</button>
@@ -365,65 +365,65 @@
     <div class="search-bar">
         <input type="text" id="searchInput" placeholder="Buscar no mapa..." />
         <button id="btnSearch">Buscar</button>
-        <button id="btnAddressSearch" title="Buscar rua ou endereço no Mapbox">Rua</button>
+        <button id="btnAddressSearch" title="Buscar rua ou endereÃ§o no Mapbox">Rua</button>
     </div>
 
     <button id="btnToggleUI" class="toggle-menu-btn" title="Ocultar/Exibir Menu">
-        <img src="ícones/eye.svg" alt="Ver/Ocultar">
+        <img src="Ã­cones/eye.svg" alt="Ver/Ocultar">
     </button>
 
     <div class="menu" id="mainMenu">
         <button id="btnKMZ" aria-label="Arquivos de Rede">
-            <img src="ícones/upload.svg" alt="Arquivos">
+            <img src="Ã­cones/upload.svg" alt="Arquivos">
             <div class="button-legend">Arquivos de Rede</div>
         </button>
 
         <button id="btnMarkerGroups" aria-label="Filtrar por grupos de postos">
-            <img src="ícones/utility-pole.svg" alt="Grupos de Postos">
+            <img src="Ã­cones/utility-pole.svg" alt="Grupos de Postos">
             <div class="button-legend">Grupos de Postos</div>
         </button>
         <button id="btnLineGroups" aria-label="Filtrar por grupos de linhas">
-            <img src="ícones/waypoints.svg" alt="Grupos de Linhas">
+            <img src="Ã­cones/waypoints.svg" alt="Grupos de Linhas">
             <div class="button-legend">Grupos de Linhas</div>
         </button>
         <button id="btnNames" aria-label="Exibir ou ocultar os nomes dos marcadores">
-            <img src="ícones/text-align-start.svg" alt="Exibir/Ocultar Nomes">
+            <img src="Ã­cones/text-align-start.svg" alt="Exibir/Ocultar Nomes">
             <div class="button-legend">Exibir/Ocultar Nomes</div>
         </button>
 
-        <button id="btnTools" aria-label="Ferramentas de Visualização">
-            <img src="ícones/settings.svg" alt="Ferramentas"> <div class="button-legend">Ferramentas</div>
+        <button id="btnTools" aria-label="Ferramentas de VisualizaÃ§Ã£o">
+            <img src="Ã­cones/settings.svg" alt="Ferramentas"> <div class="button-legend">Ferramentas</div>
         </button>
 
-        <button id="btnLocation" aria-label="Ir para minha localização atual">
-            <img src="ícones/navigation.svg" alt="Minha Localização">
-            <div class="button-legend">Minha Localização</div>
+        <button id="btnLocation" aria-label="Ir para minha localizaÃ§Ã£o atual">
+            <img src="Ã­cones/navigation.svg" alt="Minha LocalizaÃ§Ã£o">
+            <div class="button-legend">Minha LocalizaÃ§Ã£o</div>
         </button>
-        <button id="btnReset" aria-label="Resetar a visualização do mapa">
-            <img src="ícones/rotate-cw.svg" alt="Resetar Visão">
-            <div class="button-legend">Resetar Visão</div>
+        <button id="btnReset" aria-label="Resetar a visualizaÃ§Ã£o do mapa">
+            <img src="Ã­cones/rotate-cw.svg" alt="Resetar VisÃ£o">
+            <div class="button-legend">Resetar VisÃ£o</div>
         </button>
         <button id="btnLoadedFiles" aria-label="Ver arquivos carregados atualmente">
-            <img src="ícones/folder-open.svg" alt="Arquivos Carregados">
+            <img src="Ã­cones/folder-open.svg" alt="Arquivos Carregados">
             <div class="button-legend">Arquivos Carregados</div>
         </button>
         <button id="btnStyles" aria-label="Mudar o estilo do mapa">
-            <img src="ícones/palette.svg" alt="Estilos do Mapa">
+            <img src="Ã­cones/palette.svg" alt="Estilos do Mapa">
             <div class="button-legend">Estilos do Mapa</div>
         </button>
         
         <button id="btnRoutePlanner" aria-label="Planejar Rota">
-            <img src="ícones/route.svg" alt="Planejar Rota"> 
+            <img src="Ã­cones/route.svg" alt="Planejar Rota"> 
             <div class="button-legend">Planejar Rota</div>
         </button>
         
         <button id="btnStorageMenu" aria-label="Gerenciar Armazenamento">
-            <img src="ícones/database-zap.svg" alt="Limpar Dados"> 
+            <img src="Ã­cones/database-zap.svg" alt="Limpar Dados"> 
             <div class="button-legend">Limpar Dados</div>
         </button>
 
         <button id="btnSupport" aria-label="Grupo de Suporte">
-            <img src="ícones/handshake.svg" alt="Suporte">
+            <img src="Ã­cones/handshake.svg" alt="Suporte">
             <div class="button-legend">Suporte WhatsApp</div>
         </button>
     </div>
@@ -432,7 +432,7 @@
 
     <div class="kmz-menu" id="kmzMenu">
         <div class="device-upload-btn" id="btnDeviceUpload">
-            <img src="ícones/upload.svg" alt="Upload">
+            <img src="Ã­cones/upload.svg" alt="Upload">
             Abrir do Dispositivo...
         </div>
         <div style="padding: 10px 15px 0 15px;">
@@ -446,21 +446,21 @@
     </div>
 
     <div class="tools-menu" id="toolsMenu">
-        <h3>Ferramentas de Visualização</h3>
+        <h3>Ferramentas de VisualizaÃ§Ã£o</h3>
 
         <div class="tool-item" style="border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-                <label style="font-weight: bold; color: #4285F4;">Carga Dinâmica (Auto):</label>
+                <label style="font-weight: bold; color: #4285F4;">Carga DinÃ¢mica (Auto):</label>
                 <label class="switch">
                     <input type="checkbox" id="chkAutoLoad" checked>
                     <span class="slider round"></span>
                 </label>
             </div>
             <div style="margin-top: 8px;">
-                <label>Manter arquivos próximos: <span id="valAutoLoadLimit">4</span></label>
+                <label>Manter arquivos prÃ³ximos: <span id="valAutoLoadLimit">4</span></label>
                 <input type="range" id="rngAutoLoadLimit" min="1" max="10" value="4" step="1">
                 <small style="color: #666; font-size: 10px; display: block; margin-top: 2px;">
-                    Carrega os mais próximos e remove os distantes automaticamente ao mover o mapa.
+                    Carrega os mais prÃ³ximos e remove os distantes automaticamente ao mover o mapa.
                 </small>
             </div>
         </div>
@@ -525,34 +525,34 @@
                 <h3>Planejador inteligente</h3>
                 <div class="route-compact-summary" id="routeCompactSummary">Toque para abrir o planejamento</div>
             </div>
-            <button class="route-collapse-button" id="btnCollapseRoute" type="button" title="Minimizar planejador" aria-label="Minimizar planejador">⌃</button>
+            <button class="route-collapse-button" id="btnCollapseRoute" type="button" title="Minimizar planejador" aria-label="Minimizar planejador">âŒƒ</button>
         </div>
         <div class="route-panel-content">
-            <p>Adicione até 10 pontos pelos marcadores ou pela busca. Com “Otimizar ordem” marcado, a rota também será reorganizada automaticamente antes de abrir no Google Maps.</p>
+            <p>Adicione atÃ© 10 pontos pelos marcadores ou pela busca. Com â€œOtimizar ordemâ€ marcado, a rota tambÃ©m serÃ¡ reorganizada automaticamente antes de abrir no Google Maps.</p>
             <div class="route-options">
                 <label class="route-field">Deslocamento
                     <select id="routeProfile">
-                        <option value="mapbox/driving-traffic">Carro com trânsito</option>
+                        <option value="mapbox/driving-traffic">Carro com trÃ¢nsito</option>
                         <option value="mapbox/driving">Carro</option>
                         <option value="mapbox/cycling">Bicicleta</option>
-                        <option value="mapbox/walking">A pé</option>
+                        <option value="mapbox/walking">A pÃ©</option>
                     </select>
                 </label>
                 <label class="route-field">Origem
                     <select id="routeOrigin">
-                        <option value="gps">Minha localização</option>
+                        <option value="gps">Minha localizaÃ§Ã£o</option>
                         <option value="first">Primeiro ponto</option>
                     </select>
                 </label>
             </div>
             <div class="route-checks">
                 <label><input id="routeOptimize" type="checkbox" checked> Otimizar ordem</label>
-                <label><input id="routeRoundTrip" type="checkbox"> Retornar à origem</label>
+                <label><input id="routeRoundTrip" type="checkbox"> Retornar Ã  origem</label>
             </div>
             <ul id="routeList"></ul>
             <div class="route-summary" id="routeSummary">
-                <div><strong id="routeDistance">—</strong><small>Distância</small></div>
-                <div><strong id="routeDuration">—</strong><small>Tempo estimado</small></div>
+                <div><strong id="routeDistance">â€”</strong><small>DistÃ¢ncia</small></div>
+                <div><strong id="routeDuration">â€”</strong><small>Tempo estimado</small></div>
             </div>
             <div class="route-status" id="routeStatus">Selecione os pontos da rota.</div>
             <div class="route-panel-footer">
@@ -568,7 +568,7 @@
 
     <div class="storage-menu" id="storageMenu">
         <h3>Gerenciar Armazenamento</h3>
-        <p>Use com cuidado. Isso removerá dados salvos no seu navegador.</p>
+        <p>Use com cuidado. Isso removerÃ¡ dados salvos no seu navegador.</p>
         <div class="storage-buttons">
             <button id="btnResetOfflineDB" class="btn-danger">
                 Limpar Cache de Mapas (Offline)
@@ -576,23 +576,23 @@
             </button>
             
             <button id="btnResetLocalStorage" class="btn-warning">
-                Limpar Configurações
-                <small>Reseta cores e preferências.</small>
+                Limpar ConfiguraÃ§Ãµes
+                <small>Reseta cores e preferÃªncias.</small>
             </button>
             
             <button id="btnResetAllStorage" class="btn-danger-full">
                 Resetar Tudo
-                <small>Limpa tudo e recarrega a página.</small>
+                <small>Limpa tudo e recarrega a pÃ¡gina.</small>
             </button>
         </div>
     </div>
     <footer>
-    Todos direitos reservados a Lucas Teixeira • Atualizado em 25/11/2025
+    Todos direitos reservados a Lucas Teixeira â€¢ Atualizado em 25/11/2025
     </footer>
     <script>
         const DB_NAME = 'KMZOfflineDB';
         const DB_VERSION = 5;
-        const APP_VERSION = '5.7'; // VERSÃO DE CONTROLE DO CACHE
+        const APP_VERSION = '5.7'; // VERSÃƒO DE CONTROLE DO CACHE
         const MAP_PARSER_VERSION = 2;
         const GEOJSON_STORE_NAME = 'geojson_files';
         const SPATIAL_INDEX_STORE_NAME = 'spatial_index';
@@ -604,14 +604,14 @@
         let lastRouteCalculation = null;
         let routeAbortController = null;
         
-        // --- OTIMIZAÇÃO: Trava para impedir cálculos concorrentes ---
+        // --- OTIMIZAÃ‡ÃƒO: Trava para impedir cÃ¡lculos concorrentes ---
         let isProcessingBatch = false;
 
-        // Mantém o banco original e atualiza somente os arquivos temporários do navegador.
+        // MantÃ©m o banco original e atualiza somente os arquivos temporÃ¡rios do navegador.
         (async function checkAppVersion() {
             const savedVersion = localStorage.getItem('app_version');
             if (savedVersion !== APP_VERSION) {
-                console.warn(`Nova versão detectada (${APP_VERSION}). Atualizando arquivos temporários...`);
+                console.warn(`Nova versÃ£o detectada (${APP_VERSION}). Atualizando arquivos temporÃ¡rios...`);
                 localStorage.setItem('app_version', APP_VERSION);
 
                 if ('caches' in window) {
@@ -662,16 +662,16 @@
         }
         loadSavedMarkerColors();
 
-        // --- LÓGICA DE ABERTURA DO BANCO ATUALIZADA ---
+        // --- LÃ“GICA DE ABERTURA DO BANCO ATUALIZADA ---
         function openDB() {
             return new Promise((resolve, reject) => {
                 const request = indexedDB.open(DB_NAME, DB_VERSION);
                 
                 request.onupgradeneeded = event => {
                     const db = event.target.result;
-                    // LÓGICA DE LIMPEZA NA ATUALIZAÇÃO
+                    // LÃ“GICA DE LIMPEZA NA ATUALIZAÃ‡ÃƒO
                     if (event.oldVersion > 0 && event.oldVersion < 5) {
-                        console.log("Atualizando DB para versão 5. Limpando dados antigos para compatibilidade.");
+                        console.log("Atualizando DB para versÃ£o 5. Limpando dados antigos para compatibilidade.");
                         if (db.objectStoreNames.contains(GEOJSON_STORE_NAME)) db.deleteObjectStore(GEOJSON_STORE_NAME);
                         if (db.objectStoreNames.contains(SPATIAL_INDEX_STORE_NAME)) db.deleteObjectStore(SPATIAL_INDEX_STORE_NAME);
                     }
@@ -743,13 +743,13 @@
             });
         }
         
-        // --- LÓGICA DO MODAL DE RESGATE ---
+        // --- LÃ“GICA DO MODAL DE RESGATE ---
         document.getElementById('btnRescueReset').addEventListener('click', (e) => {
             e.stopPropagation();
-            if (confirm('Isso apagará todos os dados salvos para corrigir os problemas. Confirmar?')) {
+            if (confirm('Isso apagarÃ¡ todos os dados salvos para corrigir os problemas. Confirmar?')) {
                 localStorage.clear();
                 const req = indexedDB.deleteDatabase(DB_NAME);
-                req.onsuccess = () => { alert('Limpeza concluída. Recarregando...'); location.reload(); };
+                req.onsuccess = () => { alert('Limpeza concluÃ­da. Recarregando...'); location.reload(); };
                 req.onerror = () => { alert('Erro ao limpar. Tente limpar os dados do navegador manualmente.'); };
             }
         });
@@ -770,7 +770,7 @@
                     'type': 'raster',
                     'tiles': ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
                     'tileSize': 256,
-                    'attribution': '© Esri, Maxar, Earthstar Geographics',
+                    'attribution': 'Â© Esri, Maxar, Earthstar Geographics',
                     'maxzoom': 19
                 }
             },
@@ -787,7 +787,7 @@
                     'type': 'raster',
                     'tiles': ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
                     'tileSize': 256,
-                    'attribution': '© Esri, Maxar, Earthstar Geographics',
+                    'attribution': 'Â© Esri, Maxar, Earthstar Geographics',
                     'maxzoom': 19
                 },
                 'esri-transportation': {
@@ -849,7 +849,7 @@
 
         async function fetchMapboxResource(url, options = {}) {
             if (isMapboxCoolingDown()) {
-                throw new MapboxServiceError('Mapbox temporariamente indisponível. Tente novamente mais tarde.', 429);
+                throw new MapboxServiceError('Mapbox temporariamente indisponÃ­vel. Tente novamente mais tarde.', 429);
             }
 
             let response;
@@ -858,24 +858,24 @@
             } catch (error) {
                 if (error.name === 'AbortError') throw error;
                 startMapboxCooldown(0);
-                throw new MapboxServiceError('Mapbox temporariamente indisponível. Tente novamente mais tarde.');
+                throw new MapboxServiceError('Mapbox temporariamente indisponÃ­vel. Tente novamente mais tarde.');
             }
 
             if ([401, 403, 429].includes(response.status) || response.status >= 500) {
                 startMapboxCooldown(response.status);
-                throw new MapboxServiceError('Mapbox temporariamente indisponível. Tente novamente mais tarde.', response.status);
+                throw new MapboxServiceError('Mapbox temporariamente indisponÃ­vel. Tente novamente mais tarde.', response.status);
             }
             return response;
         }
 
         const mapStyles = [
-            { name: 'Mapbox Streets', mapboxStyleId: 'streets-v12', attribution: '© Mapbox © OpenStreetMap' },
-            { name: 'Mapbox Satélite', mapboxStyleId: 'satellite-streets-v12', attribution: '© Mapbox © OpenStreetMap © Maxar' },
+            { name: 'Mapbox Streets', mapboxStyleId: 'streets-v12', attribution: 'Â© Mapbox Â© OpenStreetMap' },
+            { name: 'Mapbox SatÃ©lite', mapboxStyleId: 'satellite-streets-v12', attribution: 'Â© Mapbox Â© OpenStreetMap Â© Maxar' },
             { name: 'Positron', url: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json' },
             { name: 'Dark Matter', url: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json' },
             { name: 'Voyager', url: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json' },
-            { name: 'Esri Satélite (Limpo)', style: esriSatelliteCleanStyle },
-            { name: 'Esri Satélite (Com Nomes)', style: esriSatelliteHybridStyle }
+            { name: 'Esri SatÃ©lite (Limpo)', style: esriSatelliteCleanStyle },
+            { name: 'Esri SatÃ©lite (Com Nomes)', style: esriSatelliteHybridStyle }
         ];
 
         const colorPalette = ['#FF6347', '#4682B4', '#B0E0E6', '#FFD700', '#5F9EA0', '#F0E68C', '#F08080', '#20B2AA', '#ADD8E6', '#FFA07A', '#87CEEB', '#E6E6FA', '#FF7F50', '#6A5ACD', '#FFFACD', '#E55300', '#483D8B', '#DDA0DD', '#D4A29C', '#008080', '#87CEFA', '#C46210', '#53736F', '#98FB98', '#F4A460', '#3B83BD', '#FFB6C1', '#FF4500', '#33A1C9', '#F5DEB3'];
@@ -1085,20 +1085,20 @@
              { name: 'PRESIDENTE ALVES.kmz', url: './PRESIDENTE ALVES.kmz' },
              { name: 'PROMISSAO.kmz', url: './PROMISSAO.kmz' },
              { name: 'RESTINGA.kmz', url: './RESTINGA.kmz' },
-             { name: 'RIBEIRAO PRETO NORTE.kmz', url: './RIBEIRAO PRETO NORTE.kmz', folder: 'RIBEIRÃO PRETO' },
-             { name: 'RIBEIRAO PRETO SUL.kmz', url: './RIBEIRAO PRETO SUL.kmz', folder: 'RIBEIRÃO PRETO' },
-             { name: 'se-BPA (1).kml', url: './se-BPA (1).kml', folder: 'RIBEIRÃO PRETO' },
-             { name: 'se-IPA (1).kml', url: './se-IPA (1).kml', folder: 'RIBEIRÃO PRETO' },
-             { name: 'se-IPI.kml', url: './se-IPI.kml', folder: 'RIBEIRÃO PRETO' },
-             { name: 'se-LEO (1).kml', url: './se-LEO (1).kml', folder: 'RIBEIRÃO PRETO' },
-             { name: 'se-MDC (1).kml', url: './se-MDC (1).kml', folder: 'RIBEIRÃO PRETO' },
-             { name: 'se-MTN (2).kml', url: './se-MTN (2).kml', folder: 'RIBEIRÃO PRETO' },
-             { name: 'se-PCA (1).kml', url: './se-PCA (1).kml', folder: 'RIBEIRÃO PRETO' },
-             { name: 'se-RIB.kml', url: './se-RIB.kml', folder: 'RIBEIRÃO PRETO' },
-             { name: 'se-RLE (1).kml', url: './se-RLE (1).kml', folder: 'RIBEIRÃO PRETO' },
-             { name: 'se-RNO (1).kml', url: './se-RNO (1).kml', folder: 'RIBEIRÃO PRETO' },
-             { name: 'se-RPS (2).kml', url: './se-RPS (2).kml', folder: 'RIBEIRÃO PRETO' },
-             { name: 'se-VAB.kml', url: './se-VAB.kml', folder: 'RIBEIRÃO PRETO' },
+             { name: 'RIBEIRAO PRETO NORTE.kmz', url: './RIBEIRAO PRETO NORTE.kmz', folder: 'RIBEIRÃƒO PRETO' },
+             { name: 'RIBEIRAO PRETO SUL.kmz', url: './RIBEIRAO PRETO SUL.kmz', folder: 'RIBEIRÃƒO PRETO' },
+             { name: 'se-BPA (1).kml', url: './se-BPA (1).kml', folder: 'RIBEIRÃƒO PRETO' },
+             { name: 'se-IPA (1).kml', url: './se-IPA (1).kml', folder: 'RIBEIRÃƒO PRETO' },
+             { name: 'se-IPI.kml', url: './se-IPI.kml', folder: 'RIBEIRÃƒO PRETO' },
+             { name: 'se-LEO (1).kml', url: './se-LEO (1).kml', folder: 'RIBEIRÃƒO PRETO' },
+             { name: 'se-MDC (1).kml', url: './se-MDC (1).kml', folder: 'RIBEIRÃƒO PRETO' },
+             { name: 'se-MTN (2).kml', url: './se-MTN (2).kml', folder: 'RIBEIRÃƒO PRETO' },
+             { name: 'se-PCA (1).kml', url: './se-PCA (1).kml', folder: 'RIBEIRÃƒO PRETO' },
+             { name: 'se-RIB.kml', url: './se-RIB.kml', folder: 'RIBEIRÃƒO PRETO' },
+             { name: 'se-RLE (1).kml', url: './se-RLE (1).kml', folder: 'RIBEIRÃƒO PRETO' },
+             { name: 'se-RNO (1).kml', url: './se-RNO (1).kml', folder: 'RIBEIRÃƒO PRETO' },
+             { name: 'se-RPS (2).kml', url: './se-RPS (2).kml', folder: 'RIBEIRÃƒO PRETO' },
+             { name: 'se-VAB.kml', url: './se-VAB.kml', folder: 'RIBEIRÃƒO PRETO' },
              { name: 'RINCAO.kmz', url: './RINCAO.kmz' },
              { name: 'SANTA ADELIA.kmz', url: './SANTA ADELIA.kmz' },
              { name: 'SANTA BARBARA DOESTE.kmz', url: './SANTA BARBARA DOESTE.kmz' },
@@ -1172,7 +1172,7 @@
             updateVisibleMarkers();
         }
 
-        // --- FUNÇÃO OTIMIZADA COM DEBOUNCE (PERFORMANCE MOBILE) ---
+        // --- FUNÃ‡ÃƒO OTIMIZADA COM DEBOUNCE (PERFORMANCE MOBILE) ---
         let debounceTimer = null;
 
         function ensureOperationalSourcesAndLayers() {
@@ -1236,7 +1236,7 @@
             debounceTimer = setTimeout(() => {
                 if (!dynamicMarkerSource) return;
                 
-                // Se o mapa estiver se movendo, não atualize ainda para não travar
+                // Se o mapa estiver se movendo, nÃ£o atualize ainda para nÃ£o travar
                 if (map.isMoving()) {
                     updateVisibleMarkers();
                     return;
@@ -1244,7 +1244,7 @@
 
                 const visibleGroups = Object.keys(state.markerGroups).filter(g => state.markerGroups[g].visible);
                 
-                // --- NOVIDADE: VERIFICA SE O ARQUIVO ESTÁ "LIGADO" NO MENU ---
+                // --- NOVIDADE: VERIFICA SE O ARQUIVO ESTÃ "LIGADO" NO MENU ---
                 const activeFileNames = state.files.filter(f => f.visible !== false).map(f => f.name);
 
                 if (visibleGroups.length === 0 || activeFileNames.length === 0) {
@@ -1258,7 +1258,7 @@
                 const limit = parseInt(state.visualSettings.markerLimit);
                 
                 const sortedFeatures = allPointFeatures
-                    // Mesma seleção do arquivo original: grupo e arquivo visíveis.
+                    // Mesma seleÃ§Ã£o do arquivo original: grupo e arquivo visÃ­veis.
                     .filter(feature => visibleGroups.includes(feature.properties.group) && activeFileNames.includes(feature.properties.fileName))
                     .map(feature => {
                         if (!feature.geometry || !Array.isArray(feature.geometry.coordinates) || feature.geometry.coordinates.length < 2) {
@@ -1282,7 +1282,7 @@
             }, 200); // Mesmo atraso do arquivo original.
         }
         
-        // --- FUNÇÃO MESTRA DO PIPELINE ÚNICO ---
+        // --- FUNÃ‡ÃƒO MESTRA DO PIPELINE ÃšNICO ---
         async function getGeoJSONFromFile(file) {
             // 1. Tenta pegar do Cache (Offline)
             const cachedEntry = await getDataFromDB(GEOJSON_STORE_NAME, file.name);
@@ -1296,7 +1296,7 @@
             }
 
             try {
-                // 2. Se não tem ou usa o conversor antigo, baixa da Rede
+                // 2. Se nÃ£o tem ou usa o conversor antigo, baixa da Rede
                 const geojson = await parseMapFileFromUrl(file.url, file.name);
 
                 // 3. Salva no banco automaticamente
@@ -1313,10 +1313,10 @@
 
                 return { geojson, source: 'network' };
             } catch (error) {
-                // Se a atualização de um KML antigo falhar por falta de rede,
-                // mantém o arquivo já armazenado disponível.
+                // Se a atualizaÃ§Ã£o de um KML antigo falhar por falta de rede,
+                // mantÃ©m o arquivo jÃ¡ armazenado disponÃ­vel.
                 if (cachedEntry) {
-                    console.warn(`Usando versão em cache de "${file.name}".`, error);
+                    console.warn(`Usando versÃ£o em cache de "${file.name}".`, error);
                     return { geojson: cachedEntry.geojson, source: 'cache' };
                 }
                 throw error;
@@ -1338,7 +1338,7 @@
             if (ArrayBuffer.isView(data)) {
                 return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
             }
-            throw new Error('Formato binário não suportado.');
+            throw new Error('Formato binÃ¡rio nÃ£o suportado.');
         }
 
         function isZipData(data) {
@@ -1366,37 +1366,37 @@
 
         function parseKMLText(kmlText, fileName = 'arquivo KML') {
             if (typeof toGeoJSON === 'undefined' || typeof toGeoJSON.kml !== 'function') {
-                throw new Error('Conversor KML não foi carregado.');
+                throw new Error('Conversor KML nÃ£o foi carregado.');
             }
 
             const xml = new DOMParser().parseFromString(kmlText, 'text/xml');
             const parserError = xml.getElementsByTagName('parsererror')[0];
             if (parserError) {
-                throw new Error(`XML inválido em "${fileName}".`);
+                throw new Error(`XML invÃ¡lido em "${fileName}".`);
             }
 
             const rootName = String(xml.documentElement?.localName || xml.documentElement?.nodeName || '').toLowerCase();
             if (rootName !== 'kml') {
-                throw new Error(`"${fileName}" não possui uma estrutura KML válida.`);
+                throw new Error(`"${fileName}" nÃ£o possui uma estrutura KML vÃ¡lida.`);
             }
 
             const geojson = toGeoJSON.kml(xml);
             if (!geojson || geojson.type !== 'FeatureCollection' || !Array.isArray(geojson.features)) {
-                throw new Error(`Não foi possível converter "${fileName}" para GeoJSON.`);
+                throw new Error(`NÃ£o foi possÃ­vel converter "${fileName}" para GeoJSON.`);
             }
             return geojson;
         }
 
         async function inflateRawData(compressedBytes) {
             if (typeof DecompressionStream === 'undefined') {
-                throw new Error('Este navegador não oferece descompactação KMZ nativa.');
+                throw new Error('Este navegador nÃ£o oferece descompactaÃ§Ã£o KMZ nativa.');
             }
 
             let decompressionStream;
             try {
                 decompressionStream = new DecompressionStream('deflate-raw');
             } catch (error) {
-                throw new Error('O navegador não suporta a compactação usada neste KMZ.');
+                throw new Error('O navegador nÃ£o suporta a compactaÃ§Ã£o usada neste KMZ.');
             }
 
             const stream = new Blob([compressedBytes])
@@ -1408,7 +1408,7 @@
         async function extractKMLFromKMZ(data) {
             const bytes = normalizeBinaryData(data);
             if (bytes.length < 22) {
-                throw new Error('KMZ inválido: arquivo ZIP incompleto.');
+                throw new Error('KMZ invÃ¡lido: arquivo ZIP incompleto.');
             }
             const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
             const endSearchAt = Math.max(0, bytes.length - 22 - 0xFFFF);
@@ -1421,19 +1421,19 @@
                 }
             }
             if (endOfCentralDirectory < 0) {
-                throw new Error('KMZ inválido: diretório ZIP não encontrado.');
+                throw new Error('KMZ invÃ¡lido: diretÃ³rio ZIP nÃ£o encontrado.');
             }
 
             const totalEntries = view.getUint16(endOfCentralDirectory + 10, true);
             const centralDirectoryOffset = view.getUint32(endOfCentralDirectory + 16, true);
             if (totalEntries === 0xFFFF || centralDirectoryOffset === 0xFFFFFFFF) {
-                throw new Error('KMZ no formato ZIP64 não é suportado.');
+                throw new Error('KMZ no formato ZIP64 nÃ£o Ã© suportado.');
             }
 
             let offset = centralDirectoryOffset;
             for (let index = 0; index < totalEntries; index++) {
                 if (offset + 46 > bytes.length || view.getUint32(offset, true) !== 0x02014B50) {
-                    throw new Error('KMZ inválido: entrada ZIP corrompida.');
+                    throw new Error('KMZ invÃ¡lido: entrada ZIP corrompida.');
                 }
 
                 const flags = view.getUint16(offset + 8, true);
@@ -1448,7 +1448,7 @@
                 const fileNameEnd = fileNameStart + fileNameLength;
 
                 if (fileNameEnd > bytes.length) {
-                    throw new Error('KMZ inválido: nome de entrada incompleto.');
+                    throw new Error('KMZ invÃ¡lido: nome de entrada incompleto.');
                 }
 
                 const entryName = new TextDecoder('utf-8')
@@ -1456,11 +1456,11 @@
 
                 if (/\.kml$/i.test(entryName) && !entryName.endsWith('/')) {
                     if (flags & 0x01) {
-                        throw new Error('KMZ protegido por senha não é suportado.');
+                        throw new Error('KMZ protegido por senha nÃ£o Ã© suportado.');
                     }
                     if (localHeaderOffset + 30 > bytes.length
                         || view.getUint32(localHeaderOffset, true) !== 0x04034B50) {
-                        throw new Error('KMZ inválido: cabeçalho do KML não encontrado.');
+                        throw new Error('KMZ invÃ¡lido: cabeÃ§alho do KML nÃ£o encontrado.');
                     }
 
                     const localFileNameLength = view.getUint16(localHeaderOffset + 26, true);
@@ -1468,7 +1468,7 @@
                     const dataStart = localHeaderOffset + 30 + localFileNameLength + localExtraLength;
                     const dataEnd = dataStart + compressedSize;
                     if (dataEnd > bytes.length) {
-                        throw new Error('KMZ inválido: conteúdo KML incompleto.');
+                        throw new Error('KMZ invÃ¡lido: conteÃºdo KML incompleto.');
                     }
 
                     const compressedBytes = bytes.subarray(dataStart, dataEnd);
@@ -1478,11 +1478,11 @@
                     } else if (compressionMethod === 8) {
                         kmlBytes = await inflateRawData(compressedBytes);
                     } else {
-                        throw new Error(`Compactação KMZ não suportada: método ${compressionMethod}.`);
+                        throw new Error(`CompactaÃ§Ã£o KMZ nÃ£o suportada: mÃ©todo ${compressionMethod}.`);
                     }
 
                     if (uncompressedSize && kmlBytes.length !== uncompressedSize) {
-                        throw new Error('KMZ inválido: tamanho do KML não confere.');
+                        throw new Error('KMZ invÃ¡lido: tamanho do KML nÃ£o confere.');
                     }
                     return kmlBytes;
                 }
@@ -1490,7 +1490,7 @@
                 offset = fileNameEnd + extraLength + commentLength;
             }
 
-            throw new Error('KML não encontrado dentro do KMZ.');
+            throw new Error('KML nÃ£o encontrado dentro do KMZ.');
         }
 
         async function parseKMZ(data, fileName = 'arquivo KMZ') {
@@ -1503,13 +1503,13 @@
                 return await parseKMZ(data, fileName);
             }
             if (/\.kmz$/i.test(fileName)) {
-                throw new Error(`"${fileName}" não é um arquivo KMZ válido.`);
+                throw new Error(`"${fileName}" nÃ£o Ã© um arquivo KMZ vÃ¡lido.`);
             }
             return parseKMLText(decodeKMLData(data), fileName);
         }
 
         async function parseMapFileFromUrl(url, fileName) {
-            if (!url) throw new Error(`Endereço de "${fileName}" não encontrado.`);
+            if (!url) throw new Error(`EndereÃ§o de "${fileName}" nÃ£o encontrado.`);
             const response = await fetch(url);
             if (!response.ok) {
                 throw new Error(`Falha HTTP ${response.status} ao buscar "${fileName}".`);
@@ -1530,7 +1530,7 @@
             }
         });
 
-        // --- FUNÇÃO DE EXIBIÇÃO DA LISTA (HÍBRIDA) ---
+        // --- FUNÃ‡ÃƒO DE EXIBIÃ‡ÃƒO DA LISTA (HÃBRIDA) ---
         async function displayFileList() {
             const listElement = document.getElementById('kmzList');
             listElement.innerHTML = ''; 
@@ -1545,7 +1545,7 @@
             // Adiciona predefinidos
             predefinedFiles.forEach(f => allFilesMap.set(f.name, { ...f }));
             
-            // Adiciona arquivos extras que estão no cache (uploads manuais)
+            // Adiciona arquivos extras que estÃ£o no cache (uploads manuais)
             cachedFileNames.forEach(name => {
                 if (!allFilesMap.has(name)) {
                     allFilesMap.set(name, { name: name, url: null });
@@ -1567,7 +1567,7 @@
                 
                 if (isOffline) li.classList.add('is-cached');
 
-                // 1. Checkbox: Só gerencia Offline (não carrega no mapa)
+                // 1. Checkbox: SÃ³ gerencia Offline (nÃ£o carrega no mapa)
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 checkbox.checked = isOffline;
@@ -1578,16 +1578,16 @@
                     e.stopPropagation(); 
                     
                     if (e.target.checked) {
-                        // Checkbox marcado - Se for arquivo de rede, será baixado no "Baixar Selecionados" ou ao clicar no nome
+                        // Checkbox marcado - Se for arquivo de rede, serÃ¡ baixado no "Baixar Selecionados" ou ao clicar no nome
                     } else {
-                        // Se desmarcar algo que já está salvo (verde), confirma deleção
+                        // Se desmarcar algo que jÃ¡ estÃ¡ salvo (verde), confirma deleÃ§Ã£o
                         if(li.classList.contains('is-cached')) {
                             if(confirm(`Remover "${file.name}" do armazenamento offline?`)) {
                                 await deleteDataFromDB(GEOJSON_STORE_NAME, file.name);
                                 await deleteDataFromDB(SPATIAL_INDEX_STORE_NAME, file.name);
                                 li.classList.remove('is-cached');
                                 
-                                // Se era um arquivo customizado (não predefinido), remove da lista visualmente
+                                // Se era um arquivo customizado (nÃ£o predefinido), remove da lista visualmente
                                 if (!predefinedFiles.find(pf => pf.name === file.name)) {
                                     li.remove();
                                 }
@@ -1598,7 +1598,7 @@
                     }
                 });
 
-                // 2. Nome: Carrega no Mapa (e baixa se necessário)
+                // 2. Nome: Carrega no Mapa (e baixa se necessÃ¡rio)
                 const span = document.createElement('span');
                 span.className = 'file-name';
                 span.textContent = file.name;
@@ -1647,7 +1647,7 @@
 
                         const folderArrow = document.createElement('span');
                         folderArrow.className = 'file-folder-arrow';
-                        folderArrow.textContent = '▼';
+                        folderArrow.textContent = 'â–¼';
 
                         const folderName = document.createElement('span');
                         folderName.textContent = file.folder;
@@ -1731,7 +1731,7 @@
             applyFileListFilter(e.target.value);
         });
         
-        // --- LOGICA DOS BOTÕES DE SELEÇÃO EM MASSA ---
+        // --- LOGICA DOS BOTÃ•ES DE SELEÃ‡ÃƒO EM MASSA ---
         
         let allSelected = false;
         document.getElementById('btnSelectAll').addEventListener('click', (e) => {
@@ -1742,7 +1742,7 @@
             e.target.textContent = allSelected ? "Desmarcar Todos" : "Selecionar Todos";
         });
 
-        // --- LÓGICA ATUALIZADA (v5.4): BAIXAR SEM RENDERIZAR NO MAPA ---
+        // --- LÃ“GICA ATUALIZADA (v5.4): BAIXAR SEM RENDERIZAR NO MAPA ---
         document.getElementById('btnLoadSelected').addEventListener('click', async (e) => {
             e.stopPropagation();
             const checkedBoxes = document.querySelectorAll('.file-list-integrated input[type="checkbox"]:checked');
@@ -1758,7 +1758,7 @@
             const total = checkedBoxes.length;
             const boxesArray = Array.from(checkedBoxes);
 
-            // Pausa a carga dinâmica enquanto baixa em massa para evitar conflito
+            // Pausa a carga dinÃ¢mica enquanto baixa em massa para evitar conflito
             isProcessingBatch = true; 
 
             for (const box of boxesArray) {
@@ -1772,8 +1772,8 @@
                     loadingBar.style.width = `${(count / total) * 100}%`;
 
                     try {
-                        // getGeoJSONFromFile já salva no IndexDB.
-                        // NÃO chamamos addDataToMap aqui para não travar o mapa.
+                        // getGeoJSONFromFile jÃ¡ salva no IndexDB.
+                        // NÃƒO chamamos addDataToMap aqui para nÃ£o travar o mapa.
                         await getGeoJSONFromFile(file); 
                         
                         // Atualizamos a interface para ficar verde (is-cached)
@@ -1792,9 +1792,9 @@
             loadingMsg.style.display = 'none';
             kmzMenu.style.display = 'none';
             
-            alert("Downloads concluídos! Os arquivos foram salvos no cache. O mapa carregará os 4 mais próximos automaticamente.");
+            alert("Downloads concluÃ­dos! Os arquivos foram salvos no cache. O mapa carregarÃ¡ os 4 mais prÃ³ximos automaticamente.");
             
-            // Força uma verificação imediata para carregar os 4 arquivos próximos agora que temos dados
+            // ForÃ§a uma verificaÃ§Ã£o imediata para carregar os 4 arquivos prÃ³ximos agora que temos dados
             checkAndLoadNearestFiles();
         }); 
         
@@ -1811,7 +1811,7 @@
             toggleAllMarkersVisibilityCheckbox.checked = state.markersVisible;
             toggleAllLinesVisibilityCheckbox.checked = state.linesVisible;
 
-            // --- INICIAR CARGA DINÂMICA SE ESTIVER MARCADO ---
+            // --- INICIAR CARGA DINÃ‚MICA SE ESTIVER MARCADO ---
             if (chkAutoLoad.checked) {
                 setTimeout(() => {
                     checkAndLoadNearestFiles();
@@ -1821,7 +1821,7 @@
             // --- SE AUTO-LOAD ESTIVER DESLIGADO, TENTA CARREGAR TUDO (LEGADO) ---
             (async () => {
                 if (chkAutoLoad.checked) {
-                    // Se dinâmico está ligado, não faz nada pesado no início.
+                    // Se dinÃ¢mico estÃ¡ ligado, nÃ£o faz nada pesado no inÃ­cio.
                     return; 
                 }
 
@@ -1863,7 +1863,7 @@
                         ytPercent.style.display = 'none';
                     }
                 } catch (err) {
-                    console.error("Erro crítico ao carregar dados iniciais:", err);
+                    console.error("Erro crÃ­tico ao carregar dados iniciais:", err);
                     ytLoader.style.display = 'none';
                     ytPercent.style.display = 'none';
                     document.getElementById('updateRescueModal').style.display = 'flex';
@@ -1885,7 +1885,7 @@
 
                 let popupHTML;
                 if (state.isRoutePlanning) {
-                    popupHTML = `<div><strong>${displayName}</strong><br><button id="popup-add-route-btn-${featureId}" style="margin-top: 5px; padding: 3px 8px; font-size: 11px; cursor: pointer; background-color: #f7b731; color: black; border: none; border-radius: 3px;">Adicionar à Rota</button></div>`;
+                    popupHTML = `<div><strong>${displayName}</strong><br><button id="popup-add-route-btn-${featureId}" style="margin-top: 5px; padding: 3px 8px; font-size: 11px; cursor: pointer; background-color: #f7b731; color: black; border: none; border-radius: 3px;">Adicionar Ã  Rota</button></div>`;
                 } else {
                     popupHTML = `<div><strong>${displayName}</strong><br><button id="popup-directions-btn-${featureId}" style="margin-top: 5px; padding: 3px 8px; font-size: 11px; cursor: pointer;">Obter Rota (Google Maps)</button></div>`;
                 }
@@ -1926,7 +1926,7 @@
         document.getElementById('btnLocation').addEventListener('click', goToCurrentLocation);
         document.getElementById('btnLineGroups').addEventListener('click', (e) => {
             e.stopPropagation();
-            if (state.selectedGroups.size === 0 && state.files.length === 0) alert('Não há grupos carregados para exibir.');
+            if (state.selectedGroups.size === 0 && state.files.length === 0) alert('NÃ£o hÃ¡ grupos carregados para exibir.');
             else toggleVisibility(lineMenu);
         });
         btnLoadedFiles.addEventListener('click', (e) => { e.stopPropagation(); toggleVisibility(loadedFilesMenu); });
@@ -2031,15 +2031,15 @@
             checkAndLoadNearestFiles();
         });
 
-        // --- CORREÇÃO DE PERFORMANCE: CARGA EM LOTE SUAVE ---
+        // --- CORREÃ‡ÃƒO DE PERFORMANCE: CARGA EM LOTE SUAVE ---
         chkAutoLoad.addEventListener('change', async (e) => {
             if(e.target.checked) {
-                // MODO ATIVADO: Limpa o excesso e foca nos próximos
-                alert("Modo Dinâmico Ativado: O sistema limpará arquivos distantes e carregará os próximos.");
+                // MODO ATIVADO: Limpa o excesso e foca nos prÃ³ximos
+                alert("Modo DinÃ¢mico Ativado: O sistema limparÃ¡ arquivos distantes e carregarÃ¡ os prÃ³ximos.");
                 checkAndLoadNearestFiles();
             } else {
-                // MODO DESATIVADO: Carrega TUDO que está no cache
-                if(confirm("ATENÇÃO: Desativar a Carga Dinâmica pode deixar o mapa lento em dispositivos fracos.\n\nDeseja carregar TODOS os arquivos salvos agora?")) {
+                // MODO DESATIVADO: Carrega TUDO que estÃ¡ no cache
+                if(confirm("ATENÃ‡ÃƒO: Desativar a Carga DinÃ¢mica pode deixar o mapa lento em dispositivos fracos.\n\nDeseja carregar TODOS os arquivos salvos agora?")) {
                     
                     const loadingMsg = document.getElementById('progressOverlay');
                     const loadingText = document.getElementById('progressText');
@@ -2059,11 +2059,11 @@
                             const total = allCachedFiles.length;
                             let count = 0;
 
-                            // Função recursiva para processar um por vez sem travar o navegador
+                            // FunÃ§Ã£o recursiva para processar um por vez sem travar o navegador
                             function processNextBatch() {
                                 if (count >= total) {
-                                    // FINALIZADO: Atualiza a interface visual UMA VEZ SÓ no final
-                                    loadingText.textContent = "Finalizando renderização...";
+                                    // FINALIZADO: Atualiza a interface visual UMA VEZ SÃ“ no final
+                                    loadingText.textContent = "Finalizando renderizaÃ§Ã£o...";
                                     
                                     // Pequeno delay para garantir que o mapa recebeu os dados
                                     setTimeout(() => {
@@ -2085,8 +2085,8 @@
                                 // Processa o arquivo atual
                                 const fileData = allCachedFiles[count];
                                 
-                                // OTIMIZAÇÃO CRÍTICA: skipRender = true
-                                // Carregamos os dados no mapa, mas NÃO recalculamos marcadores nem menus ainda
+                                // OTIMIZAÃ‡ÃƒO CRÃTICA: skipRender = true
+                                // Carregamos os dados no mapa, mas NÃƒO recalculamos marcadores nem menus ainda
                                 addDataToMap(fileData.geojson, fileData.name, true);
 
                                 // Marca o checkbox na lista visualmente (sem disparar eventos)
@@ -2102,7 +2102,7 @@
                                 loadingBar.style.width = `${percent}%`;
                                 loadingText.textContent = `Carregando ${count}/${total}: ${fileData.name}`;
 
-                                // Agenda o próximo para o próximo frame de animação (evita travamento)
+                                // Agenda o prÃ³ximo para o prÃ³ximo frame de animaÃ§Ã£o (evita travamento)
                                 requestAnimationFrame(processNextBatch);
                             }
 
@@ -2129,10 +2129,10 @@
         
         let spatialQueryDebounce = null;
         map.on('moveend', () => {
-            // 1. Atualização visual padrão
+            // 1. AtualizaÃ§Ã£o visual padrÃ£o
             updateVisibleMarkers();
 
-            // 2. Nova carga espacial (SÓ SE O SWITCH ESTIVER LIGADO)
+            // 2. Nova carga espacial (SÃ“ SE O SWITCH ESTIVER LIGADO)
             if (chkAutoLoad.checked) {
                 if (spatialQueryDebounce) clearTimeout(spatialQueryDebounce);
                 spatialQueryDebounce = setTimeout(() => {
@@ -2141,7 +2141,7 @@
             }
         });
 
-        // --- FUNÇÕES NOVAS DE SPATIAL QUERYING (MODO BATCH/SILENCIOSO E PARALELO) ---
+        // --- FUNÃ‡Ã•ES NOVAS DE SPATIAL QUERYING (MODO BATCH/SILENCIOSO E PARALELO) ---
         
         function removeFileFromMap(fileName, skipRender = false) {
             const fileIndex = state.files.findIndex(f => f.name === fileName);
@@ -2170,7 +2170,7 @@
                 if (li.textContent.includes(fileName)) li.remove();
             });
 
-            // 5. Atualiza o mapa visualmente SOMENTE se não estiver pulando
+            // 5. Atualiza o mapa visualmente SOMENTE se nÃ£o estiver pulando
             if (!skipRender) {
                 updateVisibleMarkers(); 
                 updateGroupMenu(); 
@@ -2181,7 +2181,7 @@
         async function checkAndLoadNearestFiles() {
             const isAutoLoadActive = document.getElementById('chkAutoLoad').checked;
             
-            // 1. SEGURANÇA: Se estiver desligado OU ocupado, não faz nada
+            // 1. SEGURANÃ‡A: Se estiver desligado OU ocupado, nÃ£o faz nada
             if (!isAutoLoadActive || isProcessingBatch) return;
 
             const center = map.getCenter();
@@ -2197,22 +2197,22 @@
                 if (!indexData || indexData.length === 0) return;
 
                 const distances = indexData.map(item => {
-                    // NOVA MATEMÁTICA: Calcula a distância para a BORDA da área (e não mais pro centro)
+                    // NOVA MATEMÃTICA: Calcula a distÃ¢ncia para a BORDA da Ã¡rea (e nÃ£o mais pro centro)
                     const [minLng, minLat, maxLng, maxLat] = item.bounds;
                     
                     const dx = Math.max(minLng - center.lng, 0, center.lng - maxLng);
                     const dy = Math.max(minLat - center.lat, 0, center.lat - maxLat);
-                    const distSq = dx * dx + dy * dy; // Distância 0 se a tela estiver dentro da área
+                    const distSq = dx * dx + dy * dy; // DistÃ¢ncia 0 se a tela estiver dentro da Ã¡rea
                     
-                    // Calculamos a área total do arquivo para usar como desempate
+                    // Calculamos a Ã¡rea total do arquivo para usar como desempate
                     const area = (maxLng - minLng) * (maxLat - minLat);
 
                     return { name: item.name, dist: distSq, area: area };
                 });
 
                 // Ordena os arquivos para carregar:
-                // 1º - Mais próximos (ou distância 0 se estiver dentro)
-                // 2º - Em caso de empate, prioriza arquivos GIGANTES (assim o arquivo de capacitores nunca é esquecido)
+                // 1Âº - Mais prÃ³ximos (ou distÃ¢ncia 0 se estiver dentro)
+                // 2Âº - Em caso de empate, prioriza arquivos GIGANTES (assim o arquivo de capacitores nunca Ã© esquecido)
                 distances.sort((a, b) => {
                     if (a.dist === b.dist) return b.area - a.area; 
                     return a.dist - b.dist;
@@ -2221,7 +2221,7 @@
                 // Arquivos que DEVEM estar carregados (Top 'limit')
                 const filesToLoad = distances.slice(0, limit).map(d => d.name);
                 
-                // Arquivos que PODEM ficar na memória (Top 'limit' + 'buffer')
+                // Arquivos que PODEM ficar na memÃ³ria (Top 'limit' + 'buffer')
                 const filesToKeepInMemory = distances.slice(0, unloadThreshold).map(d => d.name);
                 
                 let changesMade = false;
@@ -2251,10 +2251,10 @@
                 const results = await Promise.all(loadTasks);
                 if (results.some(r => r === true)) changesMade = true;
 
-                // --- REMOÇÃO COM HISTERESE ---
+                // --- REMOÃ‡ÃƒO COM HISTERESE ---
                 [...state.files].forEach(file => {
                     if (!filesToKeepInMemory.includes(file.name)) {
-                        // Exceção absoluta: Nunca remove arquivos que tem Capacitor ou que são puramente marcadores
+                        // ExceÃ§Ã£o absoluta: Nunca remove arquivos que tem Capacitor ou que sÃ£o puramente marcadores
                         if (file.name.toUpperCase().includes('CAPACITOR') || !file.hasLines) return;
 
                         console.log(`Removendo (fora do buffer): ${file.name}`);
@@ -2275,7 +2275,7 @@
                 }
 
             } catch (error) {
-                console.error("Erro na carga dinâmica:", error);
+                console.error("Erro na carga dinÃ¢mica:", error);
             } finally {
                 isProcessingBatch = false;
             }
@@ -2283,7 +2283,7 @@
 
         btnResetOfflineDB.addEventListener('click', (e) => {
             e.stopPropagation();
-            if (confirm('TEM CERTEZA? Isso limpará o cache offline.')) {
+            if (confirm('TEM CERTEZA? Isso limparÃ¡ o cache offline.')) {
                 const deleteRequest = indexedDB.deleteDatabase(DB_NAME);
                 deleteRequest.onsuccess = () => { alert('Cache limpo.'); location.reload(); };
             }
@@ -2291,7 +2291,7 @@
 
         btnResetLocalStorage.addEventListener('click', (e) => {
             e.stopPropagation();
-            if (confirm('TEM CERTEZA? Isso limpará configurações.')) { localStorage.clear(); alert('Resetado.'); location.reload(); }
+            if (confirm('TEM CERTEZA? Isso limparÃ¡ configuraÃ§Ãµes.')) { localStorage.clear(); alert('Resetado.'); location.reload(); }
         });
 
         btnResetAllStorage.addEventListener('click', (e) => {
@@ -2335,11 +2335,11 @@
                 const geojson = await parseMapFileFromUrl(url, fileName);
                 if(geojson) addDataToMap(geojson, fileName);
             } catch (error) {
-                console.log(`Não foi possível carregar "${fileName}" via URL. Verifique conexão.`);
+                console.log(`NÃ£o foi possÃ­vel carregar "${fileName}" via URL. Verifique conexÃ£o.`);
             }
         }
 
-        // --- CORREÇÃO: Função handleFile atualizada para salvar Spatial Index ---
+        // --- CORREÃ‡ÃƒO: FunÃ§Ã£o handleFile atualizada para salvar Spatial Index ---
         function handleFile(event) {
             const files = event.target.files;
             if (!files || files.length === 0) return;
@@ -2362,7 +2362,7 @@
                             parserVersion: MAP_PARSER_VERSION
                         });
 
-                        // 2. CORREÇÃO: Calcula e Salva o Índice Espacial
+                        // 2. CORREÃ‡ÃƒO: Calcula e Salva o Ãndice Espacial
                         const bounds = calculateBounds(data);
                         if (bounds) {
                             await saveDataToDB(SPATIAL_INDEX_STORE_NAME, { name: file.name, bounds });
@@ -2373,7 +2373,7 @@
                         
                         processedCount++;
                         if (processedCount === totalFiles) {
-                            alert(`Processamento concluído: ${totalFiles} arquivo(s) carregado(s).`);
+                            alert(`Processamento concluÃ­do: ${totalFiles} arquivo(s) carregado(s).`);
                         }
                     } catch (error) { 
                         console.error(error);
@@ -2466,7 +2466,7 @@
                     if (f.geometry.type === 'Point') {
                         const name = (f.properties.name || '').toUpperCase();
                         
-                        // OTIMIZAÇÃO Item 4: Pre-cálculo da chave de busca
+                        // OTIMIZAÃ‡ÃƒO Item 4: Pre-cÃ¡lculo da chave de busca
                         f.properties.searchKey = normalizeText(f.properties.name || f.properties.Alimentador || '');
 
                         let groupKey = 'default';
@@ -2512,7 +2512,7 @@
                 hasLines: lineFeatures.features.length > 0,
                 groupingProperty: groupingProperty,
                 lineFeatures: lineFeatures,
-                visible: true // <- MARCAÇÃO DE VISIBILIDADE DO ARQUIVO ADICIONADA
+                visible: true // <- MARCAÃ‡ÃƒO DE VISIBILIDADE DO ARQUIVO ADICIONADA
             };
             state.files.push(newFileEntry);
 
@@ -2738,7 +2738,7 @@
                                 currentGroups.delete(grp);
                             }
                             
-                            // Se ligamos algum grupo de linha, garante que o arquivo pai fique ativo para os marcadores não sumirem
+                            // Se ligamos algum grupo de linha, garante que o arquivo pai fique ativo para os marcadores nÃ£o sumirem
                             file.visible = true; 
 
                             applyGroupFilter();
@@ -2804,14 +2804,14 @@
         function hideAllGroups() {
             state.selectedGroups.forEach((groups, sourceId) => state.selectedGroups.set(sourceId, new Set()));
             document.querySelectorAll('#lineGroupsList input[type=checkbox]').forEach(chk => chk.checked = false);
-            state.files.forEach(f => f.visible = false); // Oculta todos os marcadores também
+            state.files.forEach(f => f.visible = false); // Oculta todos os marcadores tambÃ©m
             applyGroupFilter();
             updateVisibleMarkers();
         }
 
         function showAllGroups() {
             state.files.forEach(file => {
-                file.visible = true; // Exibe todos os marcadores também
+                file.visible = true; // Exibe todos os marcadores tambÃ©m
                 if (file.hasLines && file.groupingProperty) {
                     const allGroups = new Set();
                     if (file.lineFeatures && file.lineFeatures.features) {
@@ -2966,7 +2966,7 @@
 
         async function searchMapboxAddress() {
             const query = searchInput.value.trim();
-            if (!query) return alert('Digite uma rua, número, bairro ou cidade.');
+            if (!query) return alert('Digite uma rua, nÃºmero, bairro ou cidade.');
 
             const button = document.getElementById('btnAddressSearch');
             const originalText = button.textContent;
@@ -2996,8 +2996,8 @@
                     gtag('event', 'address_search', { result_count: (data.features || []).length });
                 }
             } catch (error) {
-                console.error('Erro na busca de endereço:', error);
-                alert('Não foi possível consultar o endereço. Verifique a conexão e as permissões do token Mapbox.');
+                console.error('Erro na busca de endereÃ§o:', error);
+                alert('NÃ£o foi possÃ­vel consultar o endereÃ§o. Verifique a conexÃ£o e as permissÃµes do token Mapbox.');
             } finally {
                 button.disabled = false;
                 button.textContent = originalText;
@@ -3009,7 +3009,7 @@
 
             if (results.length === 0) {
                 searchResults.style.display = 'none';
-                return alert('Nenhuma rua ou endereço encontrado.');
+                return alert('Nenhuma rua ou endereÃ§o encontrado.');
             }
 
             const ul = document.createElement('ul');
@@ -3023,7 +3023,7 @@
                     properties.full_address ||
                     [properties.name, properties.place_formatted].filter(Boolean).join(', ') ||
                     result.name ||
-                    'Endereço encontrado';
+                    'EndereÃ§o encontrado';
 
                 const li = document.createElement('li');
                 const infoDiv = document.createElement('div');
@@ -3101,9 +3101,9 @@
             const results = [];
             const seenIds = new Set();
             
-            // 1. Busca nos arquivos JÁ CARREGADOS (Memória)
+            // 1. Busca nos arquivos JÃ CARREGADOS (MemÃ³ria)
             allPointFeatures.forEach(f => {
-                // Se a chave não existir (arquivos antigos em cache sem migração), calcula na hora
+                // Se a chave nÃ£o existir (arquivos antigos em cache sem migraÃ§Ã£o), calcula na hora
                 const key = f.properties.searchKey || normalizeText(f.properties.name || f.properties.Alimentador || '');
                 if (key.includes(normalizedTerm)) {
                     const id = f.id || (f.properties.name + (f.geometry.coordinates ? f.geometry.coordinates.join(',') : ''));
@@ -3156,14 +3156,14 @@
                 if (aExact && !bExact) return -1;
                 if (!aExact && bExact) return 1;
 
-                // 2. MATCH DE INÍCIO
+                // 2. MATCH DE INÃCIO
                 const aStartsWith = nameA.startsWith(normalizedTerm);
                 const bStartsWith = nameB.startsWith(normalizedTerm);
 
                 if (aStartsWith && !bStartsWith) return -1;
                 if (!aStartsWith && bStartsWith) return 1;
                 
-                // 3. ORDEM ALFABÉTICA
+                // 3. ORDEM ALFABÃ‰TICA
                 return nameA.localeCompare(nameB);
 
             }).slice(0, 15);
@@ -3195,7 +3195,7 @@
                 btnVer.onclick = async (e) => {
                     e.stopPropagation();
                     
-                    // Carrega o arquivo se não estiver carregado
+                    // Carrega o arquivo se nÃ£o estiver carregado
                     if (fileName && !state.files.some(f => f.name === fileName)) {
                          try {
                              const cachedEntry = await getDataFromDB(GEOJSON_STORE_NAME, fileName);
@@ -3203,7 +3203,7 @@
                                  addDataToMap(cachedEntry.geojson, fileName, false);
                              }
                          } catch(err) {
-                             console.error("Erro ao carregar arquivo para visualização", err);
+                             console.error("Erro ao carregar arquivo para visualizaÃ§Ã£o", err);
                          }
                     }
 
@@ -3220,7 +3220,7 @@
 
                         let popupHTML;
                         if (state.isRoutePlanning) {
-                            popupHTML = `<div><strong>${displayName}</strong><br><button id="popup-add-route-btn-${featureId}" style="margin-top: 5px; padding: 3px 8px; font-size: 11px; cursor: pointer; background-color: #f7b731; color: black; border: none; border-radius: 3px;">Adicionar à Rota</button></div>`;
+                            popupHTML = `<div><strong>${displayName}</strong><br><button id="popup-add-route-btn-${featureId}" style="margin-top: 5px; padding: 3px 8px; font-size: 11px; cursor: pointer; background-color: #f7b731; color: black; border: none; border-radius: 3px;">Adicionar Ã  Rota</button></div>`;
                         } else {
                             popupHTML = `<div><strong>${displayName}</strong><br><button id="popup-directions-btn-${featureId}" style="margin-top: 5px; padding: 3px 8px; font-size: 11px; cursor: pointer;">Obter Rota (Google Maps)</button></div>`;
                         }
@@ -3242,7 +3242,7 @@
                                 const directionsBtn = popupElement.querySelector(`#popup-directions-btn-${featureId}`);
                                 if (directionsBtn) {
                                     directionsBtn.addEventListener('click', () => {
-                                        const url = `https://www.google.com/maps/dir/?api=1&destination=$${coordinates[1]},${coordinates[0]}&travelmode=driving`;
+                                        const url = `https://www.google.com/maps/dir/?api=1&destination=${coordinates[1]},${coordinates[0]}&travelmode=driving`;
                                         window.open(url, '_blank');
                                     });
                                 }
@@ -3250,7 +3250,7 @@
                         }, 100);
 
                     } else { 
-                        alert('Localização inválida.'); 
+                        alert('LocalizaÃ§Ã£o invÃ¡lida.'); 
                     }
                 };
 
@@ -3263,7 +3263,7 @@
                     if (center) {
                         const url = `https://www.google.com/maps/dir/?api=1&destination=${center[1]},${center[0]}&travelmode=driving`;
                         window.open(url, '_blank');
-                    } else { alert('Coordenadas inválidas.'); }
+                    } else { alert('Coordenadas invÃ¡lidas.'); }
                 };
 
                 actionsDiv.appendChild(btnVer);
@@ -3298,9 +3298,9 @@
         function computeDistance(coord1, coord2) {
              const toRad = (value) => value * Math.PI / 180;
              const R = 6371e3; 
-             const φ1 = toRad(coord1[1]), φ2 = toRad(coord2[1]);
-             const Δφ = toRad(coord2[1] - coord1[1]), Δλ = toRad(coord2[0] - coord1[0]);
-             const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+             const Ï†1 = toRad(coord1[1]), Ï†2 = toRad(coord2[1]);
+             const Î”Ï† = toRad(coord2[1] - coord1[1]), Î”Î» = toRad(coord2[0] - coord1[0]);
+             const a = Math.sin(Î”Ï† / 2) * Math.sin(Î”Ï† / 2) + Math.cos(Ï†1) * Math.cos(Ï†2) * Math.sin(Î”Î» / 2) * Math.sin(Î”Î» / 2);
              return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         }
 
@@ -3311,8 +3311,8 @@
                     state.userLocation = coords;
                     map.flyTo({ center: coords, zoom: 16 });
                     new maplibregl.Marker({ color: 'blue' }).setLngLat(coords).addTo(map);
-                }, () => alert('Erro ao obter localização.'));
-            } else alert('Geolocalização não suportada.');
+                }, () => alert('Erro ao obter localizaÃ§Ã£o.'));
+            } else alert('GeolocalizaÃ§Ã£o nÃ£o suportada.');
         }
 
         function toggleRoutePlanning() {
@@ -3340,9 +3340,9 @@
          }
 
         function addWaypointToRoute(feature) {
-             if (routeWaypoints.length >= MAX_WAYPOINTS) return alert('Máximo de pontos atingido.');
+             if (routeWaypoints.length >= MAX_WAYPOINTS) return alert('MÃ¡ximo de pontos atingido.');
              const coords = feature.geometry.coordinates.slice();
-             if (routeWaypoints.some(wp => computeDistance(wp.coordinates, coords) < 2)) return alert('Este ponto já está na rota.');
+             if (routeWaypoints.some(wp => computeDistance(wp.coordinates, coords) < 2)) return alert('Este ponto jÃ¡ estÃ¡ na rota.');
              const name = feature.properties.name || feature.properties.Alimentador || 'Ponto';
              routeWaypoints.push({ name: name, coordinates: coords });
              routeRequestVersion++;
@@ -3384,7 +3384,7 @@
              routeCounter.textContent = `Pontos: ${routeWaypoints.length} / ${MAX_WAYPOINTS}`;
              if (!routeSummary.classList.contains('active')) {
                  routeCompactSummary.textContent = routeWaypoints.length
-                     ? `${routeWaypoints.length} parada${routeWaypoints.length === 1 ? '' : 's'} • toque para abrir`
+                     ? `${routeWaypoints.length} parada${routeWaypoints.length === 1 ? '' : 's'} â€¢ toque para abrir`
                      : 'Toque para abrir o planejamento';
              }
              const routeReady = hasMinimumRoutePoints();
@@ -3411,10 +3411,10 @@
              if (map.getLayer('planned-route-outline')) map.removeLayer('planned-route-outline');
              if (map.getSource('planned-route')) map.removeSource('planned-route');
              routeSummary.classList.remove('active');
-             routeDistance.textContent = '—';
-             routeDuration.textContent = '—';
+             routeDistance.textContent = 'â€”';
+             routeDuration.textContent = 'â€”';
              routeCompactSummary.textContent = routeWaypoints.length
-                 ? `${routeWaypoints.length} parada${routeWaypoints.length === 1 ? '' : 's'} • toque para abrir`
+                 ? `${routeWaypoints.length} parada${routeWaypoints.length === 1 ? '' : 's'} â€¢ toque para abrir`
                  : 'Toque para abrir o planejamento';
              routeStatus.textContent = routeWaypoints.length ? 'Pronto para calcular.' : 'Selecione os pontos da rota.';
              routeStatus.classList.remove('error');
@@ -3436,14 +3436,14 @@
 
         function getCurrentRoutePosition() {
              if (routeOrigin.value !== 'gps') return Promise.resolve(null);
-             if (!navigator.geolocation) return Promise.reject(new Error('Geolocalização não suportada.'));
-             routeStatus.textContent = 'Obtendo sua localização…';
+             if (!navigator.geolocation) return Promise.reject(new Error('GeolocalizaÃ§Ã£o nÃ£o suportada.'));
+             routeStatus.textContent = 'Obtendo sua localizaÃ§Ã£oâ€¦';
              return new Promise((resolve, reject) => {
                  navigator.geolocation.getCurrentPosition(position => {
                      const coordinates = [position.coords.longitude, position.coords.latitude];
                      state.userLocation = coordinates;
                      resolve(coordinates);
-                 }, () => reject(new Error('Não foi possível obter sua localização.')), {
+                 }, () => reject(new Error('NÃ£o foi possÃ­vel obter sua localizaÃ§Ã£o.')), {
                      enableHighAccuracy: true,
                      timeout: 12000,
                      maximumAge: 30000
@@ -3476,7 +3476,7 @@
                      paint: { 'line-color': '#1a73e8', 'line-width': 5, 'line-opacity': 0.95 }
                  });
              }
-             // A rota é criada depois das camadas de pontos; reposiciona os
+             // A rota Ã© criada depois das camadas de pontos; reposiciona os
              // marcadores para que nunca fiquem escondidos sob o trajeto.
              ensureMarkerLayersOnTop();
              if (fitRoute) {
@@ -3505,8 +3505,8 @@
              const routeReady = hasMinimumRoutePoints();
              btnGenerateRoute.disabled = isBusy || !routeReady;
              btnOpenGoogleRoute.disabled = isBusy || !routeReady;
-             btnGenerateRoute.textContent = isBusy && action === 'mapbox' ? 'Calculando…' : 'Calcular rota Mapbox';
-             btnOpenGoogleRoute.textContent = isBusy && action === 'google' ? 'Preparando…' : 'Google Maps';
+             btnGenerateRoute.textContent = isBusy && action === 'mapbox' ? 'Calculandoâ€¦' : 'Calcular rota Mapbox';
+             btnOpenGoogleRoute.textContent = isBusy && action === 'google' ? 'Preparandoâ€¦' : 'Google Maps';
         }
 
         function buildRouteRequestSignature(points, {
@@ -3564,7 +3564,7 @@
              const gpsCoordinates = await getCurrentRoutePosition();
 
              if (requestVersion !== routeRequestVersion) {
-                 throw new Error('A rota foi alterada durante o cálculo. Tente novamente.');
+                 throw new Error('A rota foi alterada durante o cÃ¡lculo. Tente novamente.');
              }
 
              const inputPoints = selectedPoints.map(point => ({
@@ -3573,13 +3573,13 @@
              }));
              if (gpsCoordinates) {
                  inputPoints.unshift({
-                     name: 'Minha localização',
+                     name: 'Minha localizaÃ§Ã£o',
                      coordinates: gpsCoordinates.slice(),
                      isOrigin: true
                  });
              }
              if (inputPoints.length < 2) {
-                 throw new Error('Adicione pelo menos dois pontos ou use sua localização como origem.');
+                 throw new Error('Adicione pelo menos dois pontos ou use sua localizaÃ§Ã£o como origem.');
              }
 
              const optimize = optimizationSelected && inputPoints.length > 2;
@@ -3610,7 +3610,7 @@
                  url = `https://api.mapbox.com/directions/v5/${requestProfile}/${directionsCoordinates}?steps=true&language=pt-BR&geometries=geojson&overview=full&access_token=${MAPBOX_ACCESS_TOKEN}`;
              }
 
-             routeStatus.textContent = optimize ? 'Otimizando a ordem das paradas…' : 'Calculando o trajeto…';
+             routeStatus.textContent = optimize ? 'Otimizando a ordem das paradasâ€¦' : 'Calculando o trajetoâ€¦';
              const controller = new AbortController();
              if (routeAbortController) routeAbortController.abort();
              routeAbortController = controller;
@@ -3622,7 +3622,7 @@
                  data = await response.json();
              } catch (error) {
                  if (error.name === 'AbortError') {
-                     throw new Error('A rota foi alterada durante o cálculo. Tente novamente.');
+                     throw new Error('A rota foi alterada durante o cÃ¡lculo. Tente novamente.');
                  }
                  throw error;
              } finally {
@@ -3630,10 +3630,10 @@
              }
 
              if (requestVersion !== routeRequestVersion) {
-                 throw new Error('A rota foi alterada durante o cálculo. Tente novamente.');
+                 throw new Error('A rota foi alterada durante o cÃ¡lculo. Tente novamente.');
              }
              if (!response.ok || data.code !== 'Ok') {
-                 throw new Error(data.message || 'A Mapbox não encontrou uma rota para estes pontos.');
+                 throw new Error(data.message || 'A Mapbox nÃ£o encontrou uma rota para estes pontos.');
              }
 
              const result = optimize ? data.trips?.[0] : data.routes?.[0];
@@ -3642,7 +3642,7 @@
              let orderedWaypoints = selectedPoints;
              if (optimize) {
                  if (!Array.isArray(data.waypoints)) {
-                     throw new Error('A Mapbox não retornou a nova ordem das paradas.');
+                     throw new Error('A Mapbox nÃ£o retornou a nova ordem das paradas.');
                  }
                  orderedWaypoints = inputPoints
                      .map((point, inputIndex) => ({
@@ -3686,7 +3686,7 @@
              routeDistance.textContent = `${(calculation.result.distance / 1000).toFixed(1)} km`;
              routeDuration.textContent = formatRouteDuration(calculation.result.duration);
              routeSummary.classList.add('active');
-             routeCompactSummary.textContent = `${routeDistance.textContent} • ${routeDuration.textContent} • ${routeWaypoints.length} parada${routeWaypoints.length === 1 ? '' : 's'}`;
+             routeCompactSummary.textContent = `${routeDistance.textContent} â€¢ ${routeDuration.textContent} â€¢ ${routeWaypoints.length} parada${routeWaypoints.length === 1 ? '' : 's'}`;
              routeStatus.textContent = statusText || (calculation.optimized ? 'Rota otimizada pela Mapbox.' : 'Rota calculada pela Mapbox.');
              routeStatus.classList.remove('error');
              if (collapsePanel) setRoutePanelCollapsed(true);
@@ -3730,7 +3730,7 @@
              if (!origin && routeOrigin.value === 'first') origin = points.shift();
              const destination = routeRoundTrip.checked && origin ? origin.slice() : points.pop();
              if (!origin || !destination) {
-                 throw new Error('Adicione os pontos necessários para montar a rota.');
+                 throw new Error('Adicione os pontos necessÃ¡rios para montar a rota.');
              }
 
              const travelMode = routeProfile.value === 'mapbox/walking'
@@ -3754,7 +3754,7 @@
 
              const googleMapsWindow = window.open('about:blank', '_blank');
              if (!googleMapsWindow) {
-                 routeStatus.textContent = 'Não foi possível abrir o Google Maps. Verifique o bloqueio de pop-ups.';
+                 routeStatus.textContent = 'NÃ£o foi possÃ­vel abrir o Google Maps. Verifique o bloqueio de pop-ups.';
                  routeStatus.classList.add('error');
                  return;
              }
@@ -3776,7 +3776,7 @@
                          applyMapboxRouteResult(calculation, {
                              fitRoute: false,
                              collapsePanel: false,
-                             statusText: 'Rota otimizada. Abrindo no Google Maps…',
+                             statusText: 'Rota otimizada. Abrindo no Google Mapsâ€¦',
                              analyticsTarget: 'google_maps'
                          });
                          originCoordinates = calculation.originCoordinates;
@@ -3797,7 +3797,7 @@
 
                  const url = buildGoogleMapsUrl(originCoordinates);
                  if (googleMapsWindow.closed) {
-                     throw new Error('A janela do Google Maps foi fechada antes da conclusão.');
+                     throw new Error('A janela do Google Maps foi fechada antes da conclusÃ£o.');
                  }
                  googleMapsWindow.location.href = url;
                  routeStatus.textContent = routeWasOptimized
@@ -3819,7 +3819,7 @@
              }
         }
 
-        // Tooltip global para evitar problemas de sobreposição/corte na barra de rolagem
+        // Tooltip global para evitar problemas de sobreposiÃ§Ã£o/corte na barra de rolagem
         const globalTooltip = document.createElement('div');
         globalTooltip.className = 'button-legend';
         globalTooltip.style.position = 'fixed';
