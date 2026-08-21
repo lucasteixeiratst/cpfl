@@ -592,8 +592,8 @@
     <script>
         const DB_NAME = 'KMZOfflineDB';
         const DB_VERSION = 5;
-        const APP_VERSION = '5.8'; // VERSÃO DE CONTROLE DO CACHE
-        const MAP_PARSER_VERSION = 3;
+        const APP_VERSION = '5.9'; // VERSÃO DE CONTROLE DO CACHE
+        const MAP_PARSER_VERSION = 4;
         const GEOJSON_STORE_NAME = 'geojson_files';
         const SPATIAL_INDEX_STORE_NAME = 'spatial_index';
         const MAX_WAYPOINTS = 10;
@@ -1533,6 +1533,44 @@
             });
         }
 
+        // Normaliza o agrupamento das linhas por alimentador.
+        // Isso é importante quando várias redes (GPS/KVA/VPA) estão reunidas no mesmo KMZ:
+        // cada LineString mantém sua própria chave de cor em vez de herdar uma única chave do arquivo.
+        function normalizeKmlLineGroups(xml) {
+            const placemarks = Array.from(xml.getElementsByTagNameNS('*', 'Placemark'));
+
+            placemarks.forEach(placemark => {
+                if (!placemark.getElementsByTagNameNS('*', 'LineString').length) return;
+
+                const nameNode = Array.from(placemark.children)
+                    .find(node => String(node.localName || node.nodeName).toLowerCase() === 'name');
+                const currentName = String(nameNode?.textContent || '').trim();
+
+                const descriptionNode = Array.from(placemark.children)
+                    .find(node => String(node.localName || node.nodeName).toLowerCase() === 'description');
+                const fields = readKmlDescriptionFields(descriptionNode?.textContent || '');
+
+                // Nas exportações GIS novas, o alimentador costuma vir na tabela da descrição.
+                // Nos arquivos antigos (ex.: Águas de Lindóia), o próprio name já é a chave correta.
+                const feeder = String(
+                    fields['alimentador']
+                    || fields['alimentador primario']
+                    || fields['alimentador primário']
+                    || currentName
+                    || ''
+                ).trim();
+
+                if (!feeder) return;
+
+                ensurePlacemarkExtendedData(placemark, {
+                    MapGridLineGroup: feeder,
+                    Alimentador: feeder
+                });
+
+                if (nameNode && !currentName) nameNode.textContent = feeder;
+            });
+        }
+
         function parseKMLText(kmlText, fileName = 'arquivo KML') {
             if (typeof toGeoJSON === 'undefined' || typeof toGeoJSON.kml !== 'function') {
                 throw new Error('Conversor KML não foi carregado.');
@@ -1550,6 +1588,7 @@
             }
 
             normalizeNewKmlPlacemarkNames(xml);
+            normalizeKmlLineGroups(xml);
 
             const geojson = toGeoJSON.kml(xml);
             if (!geojson || geojson.type !== 'FeatureCollection' || !Array.isArray(geojson.features)) {
@@ -2626,9 +2665,10 @@
                 return geometries;
             }
 
-            let groupingProperty = null;
-            const exampleFeature = geojson.features.find(f => f.properties && (f.properties.Alimentador || f.properties.name));
-            if (exampleFeature) groupingProperty = exampleFeature.properties.Alimentador ? 'Alimentador' : 'name';
+            // Todas as linhas passam a usar uma chave interna única de agrupamento.
+            // Para arquivos antigos ela é preenchida a partir de Alimentador/name;
+            // para KMZ novos ela já vem do parser como MapGridLineGroup.
+            const groupingProperty = 'MapGridLineGroup';
 
             geojson.features.forEach(feature => {
                 const features = extractGeometries(feature);
@@ -2657,7 +2697,23 @@
                         pointFeaturesToAdd.push(f);
                     } else if (['LineString', 'MultiLineString', 'Polygon', 'MultiPolygon'].includes(f.geometry.type)) {
                         f.properties = f.properties || {};
-                        const groupName = f.properties[groupingProperty];
+
+                        // Resolve a chave de cada geometria individualmente.
+                        // Assim um único Valparaiso.kmz pode conter GPS21, GPS22, KVA08,
+                        // VPA21, VPA25 etc. e cada alimentador recebe sua própria cor.
+                        const groupName = String(
+                            f.properties.MapGridLineGroup
+                            || f.properties.Alimentador
+                            || f.properties.alimentador
+                            || f.properties.name
+                            || 'Sem grupo'
+                        ).trim() || 'Sem grupo';
+
+                        f.properties.MapGridLineGroup = groupName;
+                        if (!f.properties.Alimentador && groupName !== 'Sem grupo') {
+                            f.properties.Alimentador = groupName;
+                        }
+
                         let color = groupColorMap.get(groupName);
                         if (!color) {
                             color = colorPalette[groupColorMap.size % colorPalette.length];
