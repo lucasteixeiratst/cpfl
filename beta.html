@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-    <title>Visualizador de Rede v5.4</title>
+    <title>Visualizador de Rede v5.8</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; position: relative; }
@@ -51,7 +51,7 @@
             flex-direction: column;
         }
 
-        /* --- ESTILOS DO MENU DE ARQUIVOS (KMZ) --- */
+        /* --- ESTILOS DO MENU DE ARQUIVOS (KML/KMZ/ZIP) --- */
         .kmz-menu { width: 320px; }
         
         .device-upload-btn {
@@ -324,6 +324,7 @@
 
     <script src="./libs/maplibre-gl.js"></script>
     <script src="./libs/togeojson.umd.js"></script>
+    <script src="./libs/jszip.min.js"></script>
 
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-G7MC2S78V6"></script>
     <script>
@@ -572,7 +573,7 @@
         <div class="storage-buttons">
             <button id="btnResetOfflineDB" class="btn-danger">
                 Limpar Cache de Mapas (Offline)
-                <small>Remove todos os arquivos KML/KMZ baixados.</small>
+                <small>Remove todos os arquivos KML/KMZ/ZIP baixados.</small>
             </button>
             
             <button id="btnResetLocalStorage" class="btn-warning">
@@ -592,8 +593,8 @@
     <script>
         const DB_NAME = 'KMZOfflineDB';
         const DB_VERSION = 5;
-        const APP_VERSION = '5.7'; // VERSÃO DE CONTROLE DO CACHE
-        const MAP_PARSER_VERSION = 2;
+        const APP_VERSION = '6.2'; // VERSÃO DE CONTROLE DO CACHE
+        const MAP_PARSER_VERSION = 7;
         const GEOJSON_STORE_NAME = 'geojson_files';
         const SPATIAL_INDEX_STORE_NAME = 'spatial_index';
         const MAX_WAYPOINTS = 10;
@@ -636,6 +637,7 @@
                 '-RE': { color: '#008000', visible: true },
                 'TR': { color: '#0000FF', visible: true },  
                 'BC': { color: '#9C27B0', visible: true },
+                'RT': { color: '#00BCD4', visible: true },
                 'default': { color: '#FF5722', visible: true }
             },
             visualSettings: {
@@ -713,7 +715,20 @@
                      const transaction = db.transaction([storeName], 'readonly');
                      const store = transaction.objectStore(storeName);
                      const request = key ? store.get(key) : store.getAll();
-                     request.onsuccess = () => resolve(request.result);
+                     request.onsuccess = () => {
+                         let result = request.result;
+
+                         // GeoJSON gerado por um parser antigo não deve voltar ao mapa,
+                         // pois pode conter nomes/grupos incompatíveis (ex.: "Próprio").
+                         if (storeName === GEOJSON_STORE_NAME) {
+                             if (key) {
+                                 if (result && result.parserVersion !== MAP_PARSER_VERSION) result = null;
+                             } else if (Array.isArray(result)) {
+                                 result = result.filter(entry => entry && entry.parserVersion === MAP_PARSER_VERSION);
+                             }
+                         }
+                         resolve(result);
+                     };
                      request.onerror = () => reject(request.error);
                  });
              } catch (error) { return null; }
@@ -1209,7 +1224,7 @@
                     type: 'symbol',
                     source: 'dynamic-markers',
                     layout: {
-                        'text-field': ['coalesce', ['get', 'name'], ['get', 'Alimentador']],
+                        'text-field': ['coalesce', ['get', 'displayName'], ['get', 'name'], ['get', 'Alimentador']],
                         'text-font': ['Open Sans Bold'],
                         'text-size': parseInt(state.visualSettings.textSize),
                         'text-offset': [0, 1.5],
@@ -1287,7 +1302,7 @@
             // 1. Tenta pegar do Cache (Offline)
             const cachedEntry = await getDataFromDB(GEOJSON_STORE_NAME, file.name);
             const cachedKmlNeedsUpdate = cachedEntry
-                && /\.kml$/i.test(file.name)
+                && /\.(kml|kmz|zip)$/i.test(file.name)
                 && cachedEntry.parserVersion !== MAP_PARSER_VERSION
                 && file.url;
 
@@ -1364,6 +1379,199 @@
             }
         }
 
+        // --- COMPATIBILIDADE KML/KMZ: PADRÃO ANTIGO + NOVAS EXPORTAÇÕES GIS ---
+        // Arquivos antigos (ex.: Águas de Lindóia) já trazem -FU, -FA, -RE, -TR etc. no nome.
+        // Exportações novas podem trazer somente o número operativo e guardar o tipo em styleUrl,
+        // ou até usar "Próprio" como <name>. Antes do toGeoJSON, normalizamos somente esses casos.
+        function normalizeKmlMetadataText(value) {
+            return String(value || '')
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .toLowerCase()
+                .replace(/\(\s*\d+\s*\)/g, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        function readKmlDescriptionFields(description) {
+            const fields = {};
+            if (!description) return fields;
+
+            try {
+                const html = new DOMParser().parseFromString(String(description), 'text/html');
+                const rows = Array.from(html.querySelectorAll('tr'));
+
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('td, th');
+                    if (cells.length < 2) return;
+                    const key = normalizeKmlMetadataText(cells[0].textContent);
+                    const value = String(cells[1].textContent || '').trim();
+                    if (key && value) fields[key] = value;
+                });
+            } catch (error) {
+                console.warn('Não foi possível interpretar a descrição do Placemark.', error);
+            }
+            return fields;
+        }
+
+        function detectKmlEquipmentGroup(placemark) {
+            const styleUrlNode = placemark.getElementsByTagNameNS('*', 'styleUrl')[0];
+            const styleUrl = styleUrlNode?.textContent || '';
+            const iconHrefs = Array.from(placemark.getElementsByTagNameNS('*', 'href'))
+                .map(node => node.textContent || '')
+                .join(' ');
+            const signature = normalizeKmlMetadataText(`${styleUrl} ${iconHrefs}`)
+                .replace(/[\s-]+/g, '_');
+
+            if (signature.includes('posto_chave_fusivel') || signature.includes('chave_fusivel')) return '-FU';
+            if (signature.includes('posto_religador') || signature.includes('religador')) return '-RE';
+            if (signature.includes('posto_regulador_de_tensao') || signature.includes('regulador_de_tensao')) return 'RT';
+            if (signature.includes('posto_transformador') || signature.includes('transformador')) return 'TR';
+            if (signature.includes('posto_capacitor') || signature.includes('capacitor')) return 'BC';
+            if (signature.includes('posto_chave') || signature.includes('chave')) return '-FA';
+            return null;
+        }
+
+        function groupSuffix(groupKey) {
+            return ({
+                '-FU': 'FU',
+                '-FA': 'FA',
+                '-RE': 'RE',
+                'TR': 'TR',
+                'BC': 'BC',
+                'RT': 'RT'
+            })[groupKey] || '';
+        }
+
+        function ensurePlacemarkExtendedData(placemark, values) {
+            const kmlNamespace = placemark.namespaceURI || 'http://www.opengis.net/kml/2.2';
+            let extendedData = Array.from(placemark.children)
+                .find(node => String(node.localName || node.nodeName).toLowerCase() === 'extendeddata');
+
+            if (!extendedData) {
+                extendedData = placemark.ownerDocument.createElementNS(kmlNamespace, 'ExtendedData');
+                const geometry = Array.from(placemark.children).find(node =>
+                    ['Point', 'LineString', 'Polygon', 'MultiGeometry'].includes(node.localName || node.nodeName)
+                );
+                placemark.insertBefore(extendedData, geometry || null);
+            }
+
+            Object.entries(values).forEach(([dataName, dataValue]) => {
+                if (dataValue === undefined || dataValue === null || dataValue === '') return;
+
+                let dataNode = Array.from(extendedData.children).find(node =>
+                    String(node.localName || node.nodeName).toLowerCase() === 'data'
+                    && node.getAttribute('name') === dataName
+                );
+
+                if (!dataNode) {
+                    dataNode = placemark.ownerDocument.createElementNS(kmlNamespace, 'Data');
+                    dataNode.setAttribute('name', dataName);
+                    extendedData.appendChild(dataNode);
+                }
+
+                let valueNode = Array.from(dataNode.children).find(node =>
+                    String(node.localName || node.nodeName).toLowerCase() === 'value'
+                );
+                if (!valueNode) {
+                    valueNode = placemark.ownerDocument.createElementNS(kmlNamespace, 'value');
+                    dataNode.appendChild(valueNode);
+                }
+                valueNode.textContent = String(dataValue);
+            });
+        }
+
+        function normalizeNewKmlPlacemarkNames(xml) {
+            const placemarks = Array.from(xml.getElementsByTagNameNS('*', 'Placemark'));
+
+            placemarks.forEach(placemark => {
+                if (!placemark.getElementsByTagNameNS('*', 'Point').length) return;
+
+                const groupKey = detectKmlEquipmentGroup(placemark);
+                if (!groupKey) return;
+
+                const nameNode = Array.from(placemark.children)
+                    .find(node => String(node.localName || node.nodeName).toLowerCase() === 'name');
+                const currentName = String(nameNode?.textContent || '').trim();
+
+                const descriptionNode = Array.from(placemark.children)
+                    .find(node => String(node.localName || node.nodeName).toLowerCase() === 'description');
+                const fields = readKmlDescriptionFields(descriptionNode?.textContent || '');
+
+                const operativeNumber =
+                    fields['cpfl numero operativo']
+                    || fields['numero operativo']
+                    || '';
+
+                const normalState = fields['estado normal'] || '';
+                const feeder = fields['alimentador'] || '';
+                const totalKva = fields['total kva'] || '';
+                const ownership = fields['propriedade'] || fields['proprietario'] || '';
+
+                const suffix = groupSuffix(groupKey);
+                const alreadyTagged = /-(FU|FA|RE|TR|BC|RT)$/i.test(currentName);
+
+                const normalizedCurrent = normalizeKmlMetadataText(currentName);
+                const genericName = !currentName
+                    || ['proprio', 'particular', 'paulista', 'cpfl'].includes(normalizedCurrent);
+
+                let baseName = genericName ? operativeNumber : currentName;
+                if (!baseName && operativeNumber) baseName = operativeNumber;
+
+                if (nameNode && suffix && !alreadyTagged && baseName) {
+                    nameNode.textContent = `${baseName}-${suffix}`;
+                }
+
+                ensurePlacemarkExtendedData(placemark, {
+                    MapGridGroup: groupKey,
+                    MapGridEquipment: suffix,
+                    MapGridOperativeNumber: operativeNumber || baseName,
+                    MapGridNormalState: normalState,
+                    MapGridFeeder: feeder,
+                    MapGridTotalKVA: totalKva,
+                    MapGridOwnership: ownership
+                });
+            });
+        }
+
+        // Normaliza o agrupamento das linhas por alimentador.
+        // Isso é importante quando várias redes (GPS/KVA/VPA) estão reunidas no mesmo KMZ:
+        // cada LineString mantém sua própria chave de cor em vez de herdar uma única chave do arquivo.
+        function normalizeKmlLineGroups(xml) {
+            const placemarks = Array.from(xml.getElementsByTagNameNS('*', 'Placemark'));
+
+            placemarks.forEach(placemark => {
+                if (!placemark.getElementsByTagNameNS('*', 'LineString').length) return;
+
+                const nameNode = Array.from(placemark.children)
+                    .find(node => String(node.localName || node.nodeName).toLowerCase() === 'name');
+                const currentName = String(nameNode?.textContent || '').trim();
+
+                const descriptionNode = Array.from(placemark.children)
+                    .find(node => String(node.localName || node.nodeName).toLowerCase() === 'description');
+                const fields = readKmlDescriptionFields(descriptionNode?.textContent || '');
+
+                // Nas exportações GIS novas, o alimentador costuma vir na tabela da descrição.
+                // Nos arquivos antigos (ex.: Águas de Lindóia), o próprio name já é a chave correta.
+                const feeder = String(
+                    fields['alimentador']
+                    || fields['alimentador primario']
+                    || fields['alimentador primário']
+                    || currentName
+                    || ''
+                ).trim();
+
+                if (!feeder) return;
+
+                ensurePlacemarkExtendedData(placemark, {
+                    MapGridLineGroup: feeder,
+                    Alimentador: feeder
+                });
+
+                if (nameNode && !currentName) nameNode.textContent = feeder;
+            });
+        }
+
         function parseKMLText(kmlText, fileName = 'arquivo KML') {
             if (typeof toGeoJSON === 'undefined' || typeof toGeoJSON.kml !== 'function') {
                 throw new Error('Conversor KML não foi carregado.');
@@ -1379,6 +1587,9 @@
             if (rootName !== 'kml') {
                 throw new Error(`"${fileName}" não possui uma estrutura KML válida.`);
             }
+
+            normalizeNewKmlPlacemarkNames(xml);
+            normalizeKmlLineGroups(xml);
 
             const geojson = toGeoJSON.kml(xml);
             if (!geojson || geojson.type !== 'FeatureCollection' || !Array.isArray(geojson.features)) {
@@ -1405,11 +1616,12 @@
             return new Uint8Array(await new Response(stream).arrayBuffer());
         }
 
-        async function extractKMLFromKMZ(data) {
+        async function extractKMLEntriesFromZip(data) {
             const bytes = normalizeBinaryData(data);
             if (bytes.length < 22) {
-                throw new Error('KMZ inválido: arquivo ZIP incompleto.');
+                throw new Error('ZIP/KMZ inválido: arquivo incompleto.');
             }
+
             const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
             const endSearchAt = Math.max(0, bytes.length - 22 - 0xFFFF);
             let endOfCentralDirectory = -1;
@@ -1421,19 +1633,21 @@
                 }
             }
             if (endOfCentralDirectory < 0) {
-                throw new Error('KMZ inválido: diretório ZIP não encontrado.');
+                throw new Error('ZIP/KMZ inválido: diretório ZIP não encontrado.');
             }
 
             const totalEntries = view.getUint16(endOfCentralDirectory + 10, true);
             const centralDirectoryOffset = view.getUint32(endOfCentralDirectory + 16, true);
             if (totalEntries === 0xFFFF || centralDirectoryOffset === 0xFFFFFFFF) {
-                throw new Error('KMZ no formato ZIP64 não é suportado.');
+                throw new Error('Arquivos ZIP64 não são suportados.');
             }
 
+            const kmlEntries = [];
             let offset = centralDirectoryOffset;
+
             for (let index = 0; index < totalEntries; index++) {
                 if (offset + 46 > bytes.length || view.getUint32(offset, true) !== 0x02014B50) {
-                    throw new Error('KMZ inválido: entrada ZIP corrompida.');
+                    throw new Error('ZIP/KMZ inválido: entrada do diretório corrompida.');
                 }
 
                 const flags = view.getUint16(offset + 8, true);
@@ -1448,7 +1662,7 @@
                 const fileNameEnd = fileNameStart + fileNameLength;
 
                 if (fileNameEnd > bytes.length) {
-                    throw new Error('KMZ inválido: nome de entrada incompleto.');
+                    throw new Error('ZIP/KMZ inválido: nome de entrada incompleto.');
                 }
 
                 const entryName = new TextDecoder('utf-8')
@@ -1456,11 +1670,11 @@
 
                 if (/\.kml$/i.test(entryName) && !entryName.endsWith('/')) {
                     if (flags & 0x01) {
-                        throw new Error('KMZ protegido por senha não é suportado.');
+                        throw new Error(`O arquivo "${entryName}" está protegido por senha.`);
                     }
                     if (localHeaderOffset + 30 > bytes.length
                         || view.getUint32(localHeaderOffset, true) !== 0x04034B50) {
-                        throw new Error('KMZ inválido: cabeçalho do KML não encontrado.');
+                        throw new Error(`Cabeçalho ZIP de "${entryName}" não encontrado.`);
                     }
 
                     const localFileNameLength = view.getUint16(localHeaderOffset + 26, true);
@@ -1468,7 +1682,7 @@
                     const dataStart = localHeaderOffset + 30 + localFileNameLength + localExtraLength;
                     const dataEnd = dataStart + compressedSize;
                     if (dataEnd > bytes.length) {
-                        throw new Error('KMZ inválido: conteúdo KML incompleto.');
+                        throw new Error(`Conteúdo de "${entryName}" está incompleto.`);
                     }
 
                     const compressedBytes = bytes.subarray(dataStart, dataEnd);
@@ -1478,19 +1692,30 @@
                     } else if (compressionMethod === 8) {
                         kmlBytes = await inflateRawData(compressedBytes);
                     } else {
-                        throw new Error(`Compactação KMZ não suportada: método ${compressionMethod}.`);
+                        throw new Error(`Compactação ZIP não suportada em "${entryName}": método ${compressionMethod}.`);
                     }
 
                     if (uncompressedSize && kmlBytes.length !== uncompressedSize) {
-                        throw new Error('KMZ inválido: tamanho do KML não confere.');
+                        throw new Error(`Tamanho descompactado de "${entryName}" não confere.`);
                     }
-                    return kmlBytes;
+
+                    kmlEntries.push({ name: entryName, bytes: kmlBytes });
                 }
 
                 offset = fileNameEnd + extraLength + commentLength;
             }
 
-            throw new Error('KML não encontrado dentro do KMZ.');
+            if (kmlEntries.length === 0) {
+                throw new Error('Nenhum arquivo KML foi encontrado dentro do ZIP/KMZ.');
+            }
+            return kmlEntries;
+        }
+
+        async function extractKMLFromKMZ(data) {
+            const entries = await extractKMLEntriesFromZip(data);
+            // Mantém o comportamento tradicional do KMZ: usa um único KML principal.
+            // Dá preferência a doc.kml, como é comum em arquivos KMZ.
+            return (entries.find(entry => /(^|\/)doc\.kml$/i.test(entry.name)) || entries[0]).bytes;
         }
 
         async function parseKMZ(data, fileName = 'arquivo KMZ') {
@@ -1498,12 +1723,85 @@
             return parseKMLText(decodeKMLData(kmlBytes), fileName);
         }
 
-        async function parseMapData(data, fileName = 'arquivo de mapa') {
-            if (isZipData(data)) {
-                return await parseKMZ(data, fileName);
+        async function parseZipKMLBundle(data, fileName = 'pacote ZIP') {
+            // Para pacotes .zip com vários KML, usa JSZip (biblioteca local),
+            // evitando depender de DecompressionStream/deflate-raw do navegador.
+            if (typeof JSZip === 'undefined' || typeof JSZip.loadAsync !== 'function') {
+                throw new Error('JSZip não foi carregado. Verifique ./libs/jszip.min.js.');
             }
-            if (/\.kmz$/i.test(fileName)) {
-                throw new Error(`"${fileName}" não é um arquivo KMZ válido.`);
+
+            let zip;
+            try {
+                zip = await JSZip.loadAsync(data);
+            } catch (error) {
+                throw new Error(`ZIP inválido ou não suportado: ${error.message || error}`);
+            }
+
+            const entries = Object.values(zip.files)
+                .filter(entry => entry && !entry.dir && /\.kml$/i.test(entry.name))
+                .sort((a, b) => a.name.localeCompare(b.name));
+
+            if (entries.length === 0) {
+                throw new Error('Nenhum arquivo KML foi encontrado dentro do ZIP.');
+            }
+
+            const combinedFeatures = [];
+            const errors = [];
+
+            for (const entry of entries) {
+                try {
+                    // uint8array + decodeKMLData preserva o mesmo tratamento de
+                    // UTF-8/Windows-1252 usado nos arquivos KML/KMZ comuns.
+                    const bytes = await entry.async('uint8array');
+                    const geojson = parseKMLText(
+                        decodeKMLData(bytes),
+                        `${fileName} / ${entry.name}`
+                    );
+
+                    geojson.features.forEach(feature => {
+                        feature.properties = feature.properties || {};
+                        feature.properties.MapGridZipEntry = entry.name;
+                    });
+                    combinedFeatures.push(...geojson.features);
+                } catch (error) {
+                    const message = error?.message || String(error);
+                    console.error(`Erro ao processar KML interno "${entry.name}":`, error);
+                    errors.push(`${entry.name}: ${message}`);
+                }
+            }
+
+            if (combinedFeatures.length === 0) {
+                throw new Error(
+                    `Nenhum KML válido pôde ser carregado de "${fileName}".` +
+                    (errors.length ? ` Detalhes: ${errors.join(' | ')}` : '')
+                );
+            }
+
+            if (errors.length) {
+                console.warn(`ZIP "${fileName}" carregado parcialmente.`, errors);
+            }
+
+            console.log(
+                `ZIP "${fileName}": ${entries.length} KML(s), ` +
+                `${combinedFeatures.length} feições combinadas.`
+            );
+            return { type: 'FeatureCollection', features: combinedFeatures };
+        }
+
+        async function parseMapData(data, fileName = 'arquivo de mapa') {
+            const isZip = isZipData(data);
+            const isGenericZip = /\.zip$/i.test(fileName);
+
+            if (isZip) {
+                // .zip = pacote com todos os KML internos.
+                // .kmz = comportamento tradicional, usando o KML principal.
+                return isGenericZip
+                    ? await parseZipKMLBundle(data, fileName)
+                    : await parseKMZ(data, fileName);
+            }
+
+            if (/\.(kmz|zip)$/i.test(fileName)) {
+                throw new Error(`"${fileName}" não é um arquivo ZIP/KMZ válido.`);
             }
             return parseKMLText(decodeKMLData(data), fileName);
         }
@@ -1726,7 +2024,7 @@
         
         updateMenuVisibility();
         
-        // --- FILTRO DE ARQUIVOS KMZ ---
+        // --- FILTRO DE ARQUIVOS KML/KMZ/ZIP ---
         document.getElementById('kmzSearchInput').addEventListener('input', function(e) {
             applyFileListFilter(e.target.value);
         });
@@ -2323,7 +2621,7 @@
             const input = document.createElement('input');
             input.type = 'file';
             input.multiple = true;
-            input.accept = '.kml,.kmz';
+            input.accept = '.kml,.kmz,.zip';
             input.onchange = handleFile;
             input.value = ''; 
             input.click();
@@ -2376,8 +2674,9 @@
                             alert(`Processamento concluído: ${totalFiles} arquivo(s) carregado(s).`);
                         }
                     } catch (error) { 
-                        console.error(error);
-                        alert(`Erro ao processar arquivo: ${file.name}`); 
+                        console.error('Erro ao processar arquivo:', file.name, error);
+                        const detail = error?.message ? `\n\n${error.message}` : '';
+                        alert(`Erro ao processar arquivo: ${file.name}${detail}`); 
                         processedCount++;
                     }
                 };
@@ -2455,9 +2754,10 @@
                 return geometries;
             }
 
-            let groupingProperty = null;
-            const exampleFeature = geojson.features.find(f => f.properties && (f.properties.Alimentador || f.properties.name));
-            if (exampleFeature) groupingProperty = exampleFeature.properties.Alimentador ? 'Alimentador' : 'name';
+            // Todas as linhas passam a usar uma chave interna única de agrupamento.
+            // Para arquivos antigos ela é preenchida a partir de Alimentador/name;
+            // para KMZ novos ela já vem do parser como MapGridLineGroup.
+            const groupingProperty = 'MapGridLineGroup';
 
             geojson.features.forEach(feature => {
                 const features = extractGeometries(feature);
@@ -2469,20 +2769,40 @@
                         // OTIMIZAÇÃO Item 4: Pre-cálculo da chave de busca
                         f.properties.searchKey = normalizeText(f.properties.name || f.properties.Alimentador || '');
 
-                        let groupKey = 'default';
-                        if (fileName.toUpperCase().includes('CAPACITOR') || name.includes('BC')) groupKey = 'BC';
-                        else if (name.endsWith('-FU')) groupKey = '-FU';
-                        else if (name.endsWith('-FA')) groupKey = '-FA';
-                        else if (name.endsWith('-RE')) groupKey = '-RE';
-                        else if (name.endsWith('KVA') || name.includes('TR')) groupKey = 'TR'; 
+                        let groupKey = f.properties.MapGridGroup || f.properties.mapGridGroup || 'default';
+                        if (groupKey === 'default') {
+                            if (name.endsWith('-FU')) groupKey = '-FU';
+                            else if (name.endsWith('-FA')) groupKey = '-FA';
+                            else if (name.endsWith('-RE')) groupKey = '-RE';
+                            else if (name.endsWith('-TR') || name.endsWith('KVA') || name.includes('TR')) groupKey = 'TR';
+                            else if (name.endsWith('-BC') || fileName.toUpperCase().includes('CAPACITOR') || name.includes('BC')) groupKey = 'BC';
+                            else if (name.endsWith('-RT') || name.includes('RT')) groupKey = 'RT';
+                        }
 
                         f.properties.group = groupKey;
+                        f.properties.displayName = f.properties.name || f.properties.MapGridOperativeNumber || f.properties.Alimentador || '';
                         f.properties.color = state.markerGroups[groupKey] ? state.markerGroups[groupKey].color : state.markerGroups['default'].color;
                         f.properties.fileName = fileName;
                         pointFeaturesToAdd.push(f);
                     } else if (['LineString', 'MultiLineString', 'Polygon', 'MultiPolygon'].includes(f.geometry.type)) {
                         f.properties = f.properties || {};
-                        const groupName = f.properties[groupingProperty];
+
+                        // Resolve a chave de cada geometria individualmente.
+                        // Assim um único Valparaiso.kmz pode conter GPS21, GPS22, KVA08,
+                        // VPA21, VPA25 etc. e cada alimentador recebe sua própria cor.
+                        const groupName = String(
+                            f.properties.MapGridLineGroup
+                            || f.properties.Alimentador
+                            || f.properties.alimentador
+                            || f.properties.name
+                            || 'Sem grupo'
+                        ).trim() || 'Sem grupo';
+
+                        f.properties.MapGridLineGroup = groupName;
+                        if (!f.properties.Alimentador && groupName !== 'Sem grupo') {
+                            f.properties.Alimentador = groupName;
+                        }
+
                         let color = groupColorMap.get(groupName);
                         if (!color) {
                             color = colorPalette[groupColorMap.size % colorPalette.length];
@@ -2594,7 +2914,15 @@
                 chk.onchange = () => { state.markerGroups[groupKey].visible = chk.checked; updateVisibleMarkers(); };
                 
                 const textSpan = document.createElement('span');
-                textSpan.textContent = groupKey; textSpan.style.fontWeight = 'bold'; textSpan.style.color = group.color; textSpan.style.flexGrow = '1';
+                const groupLabels = {
+                    '-FU': 'Chave Fusível (FU)',
+                    '-FA': 'Chave Faca (FA)',
+                    '-RE': 'Religador (RE)',
+                    'TR': 'Transformador (TR)',
+                    'BC': 'Banco Capacitor (BC)',
+                    'RT': 'Regulador de Tensão (RT)'
+                };
+                textSpan.textContent = groupLabels[groupKey] || groupKey; textSpan.style.fontWeight = 'bold'; textSpan.style.color = group.color; textSpan.style.flexGrow = '1';
                 
                 const colorInput = document.createElement('input');
                 colorInput.type = 'color'; colorInput.value = group.color; colorInput.style.border = 'none'; colorInput.style.width = '30px'; colorInput.style.height = '25px'; colorInput.style.padding = '0'; colorInput.style.cursor = 'pointer'; colorInput.style.background = 'none';
