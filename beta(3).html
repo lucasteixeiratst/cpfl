@@ -324,6 +324,7 @@
 
     <script src="./libs/maplibre-gl.js"></script>
     <script src="./libs/togeojson.umd.js"></script>
+    <script src="./libs/jszip.min.js"></script>
 
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-G7MC2S78V6"></script>
     <script>
@@ -592,8 +593,8 @@
     <script>
         const DB_NAME = 'KMZOfflineDB';
         const DB_VERSION = 5;
-        const APP_VERSION = '6.1'; // VERSÃO DE CONTROLE DO CACHE
-        const MAP_PARSER_VERSION = 6;
+        const APP_VERSION = '6.2'; // VERSÃO DE CONTROLE DO CACHE
+        const MAP_PARSER_VERSION = 7;
         const GEOJSON_STORE_NAME = 'geojson_files';
         const SPATIAL_INDEX_STORE_NAME = 'spatial_index';
         const MAX_WAYPOINTS = 10;
@@ -1723,34 +1724,67 @@
         }
 
         async function parseZipKMLBundle(data, fileName = 'pacote ZIP') {
-            const entries = await extractKMLEntriesFromZip(data);
+            // Para pacotes .zip com vários KML, usa JSZip (biblioteca local),
+            // evitando depender de DecompressionStream/deflate-raw do navegador.
+            if (typeof JSZip === 'undefined' || typeof JSZip.loadAsync !== 'function') {
+                throw new Error('JSZip não foi carregado. Verifique ./libs/jszip.min.js.');
+            }
+
+            let zip;
+            try {
+                zip = await JSZip.loadAsync(data);
+            } catch (error) {
+                throw new Error(`ZIP inválido ou não suportado: ${error.message || error}`);
+            }
+
+            const entries = Object.values(zip.files)
+                .filter(entry => entry && !entry.dir && /\.kml$/i.test(entry.name))
+                .sort((a, b) => a.name.localeCompare(b.name));
+
+            if (entries.length === 0) {
+                throw new Error('Nenhum arquivo KML foi encontrado dentro do ZIP.');
+            }
+
             const combinedFeatures = [];
             const errors = [];
 
             for (const entry of entries) {
                 try {
-                    const geojson = parseKMLText(decodeKMLData(entry.bytes), `${fileName} / ${entry.name}`);
+                    // uint8array + decodeKMLData preserva o mesmo tratamento de
+                    // UTF-8/Windows-1252 usado nos arquivos KML/KMZ comuns.
+                    const bytes = await entry.async('uint8array');
+                    const geojson = parseKMLText(
+                        decodeKMLData(bytes),
+                        `${fileName} / ${entry.name}`
+                    );
+
                     geojson.features.forEach(feature => {
                         feature.properties = feature.properties || {};
-                        // Mantém a origem para diagnóstico sem interferir nos filtros existentes.
                         feature.properties.MapGridZipEntry = entry.name;
                     });
                     combinedFeatures.push(...geojson.features);
                 } catch (error) {
+                    const message = error?.message || String(error);
                     console.error(`Erro ao processar KML interno "${entry.name}":`, error);
-                    errors.push(`${entry.name}: ${error.message}`);
+                    errors.push(`${entry.name}: ${message}`);
                 }
             }
 
             if (combinedFeatures.length === 0) {
-                throw new Error(`Nenhum KML válido pôde ser carregado de "${fileName}".${errors.length ? ' ' + errors.join(' | ') : ''}`);
+                throw new Error(
+                    `Nenhum KML válido pôde ser carregado de "${fileName}".` +
+                    (errors.length ? ` Detalhes: ${errors.join(' | ')}` : '')
+                );
             }
 
             if (errors.length) {
                 console.warn(`ZIP "${fileName}" carregado parcialmente.`, errors);
             }
 
-            console.log(`ZIP "${fileName}": ${entries.length} KML(s), ${combinedFeatures.length} feições combinadas.`);
+            console.log(
+                `ZIP "${fileName}": ${entries.length} KML(s), ` +
+                `${combinedFeatures.length} feições combinadas.`
+            );
             return { type: 'FeatureCollection', features: combinedFeatures };
         }
 
@@ -2640,8 +2674,9 @@
                             alert(`Processamento concluído: ${totalFiles} arquivo(s) carregado(s).`);
                         }
                     } catch (error) { 
-                        console.error(error);
-                        alert(`Erro ao processar arquivo: ${file.name}`); 
+                        console.error('Erro ao processar arquivo:', file.name, error);
+                        const detail = error?.message ? `\n\n${error.message}` : '';
+                        alert(`Erro ao processar arquivo: ${file.name}${detail}`); 
                         processedCount++;
                     }
                 };
