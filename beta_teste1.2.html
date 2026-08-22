@@ -450,6 +450,7 @@
         .style-card-name { display: flex; align-items: center; gap: 6px; color: #27384b; font-size: 12px; font-weight: 800; }
         .style-card-description { margin-top: 3px; color: #718092; font-size: 10px; line-height: 1.25; }
         .style-active-badge { padding: 2px 6px; border-radius: 8px; background: #eee7f5; color: #654389; font-size: 8px; text-transform: uppercase; }
+        .style-limited-badge { padding: 2px 6px; border-radius: 8px; background: #fff0d8; color: #8a5a16; font-size: 8px; text-transform: uppercase; }
         .marker-group-menu {
             width: 330px;
             padding: 0;
@@ -1367,8 +1368,8 @@
         const MAP_STYLE_STORAGE_KEY = 'selectedMapStyle';
         let currentMapStyleKey = localStorage.getItem(MAP_STYLE_STORAGE_KEY) || 'voyager';
         const mapStyles = [
-            { key: 'mapbox-streets', name: 'Mapbox Streets', category: 'Ruas', preview: 'streets', description: 'Ruas detalhadas e pontos de interesse.', mapboxStyleId: 'streets-v12', attribution: '© Mapbox © OpenStreetMap' },
-            { key: 'mapbox-satellite', name: 'Mapbox Satélite', category: 'Satélite', preview: 'satellite', description: 'Imagem aérea com ruas e nomes.', mapboxStyleId: 'satellite-streets-v12', attribution: '© Mapbox © OpenStreetMap © Maxar' },
+            { key: 'mapbox-streets', name: 'Mapbox Streets', category: 'Mapbox — uso limitado', preview: 'streets', description: 'Ruas detalhadas; depende da cota e do token Mapbox.', limited: true, mapboxStyleId: 'streets-v12', attribution: '© Mapbox © OpenStreetMap' },
+            { key: 'mapbox-satellite', name: 'Mapbox Satélite', category: 'Mapbox — uso limitado', preview: 'satellite', description: 'Imagem aérea; depende da cota e do token Mapbox.', limited: true, mapboxStyleId: 'satellite-streets-v12', attribution: '© Mapbox © OpenStreetMap © Maxar' },
             {
                 key: 'positron',
                 name: 'Positron',
@@ -4140,7 +4141,7 @@
         function displayStyleList() {
             const styleList = document.getElementById('styleList');
             styleList.innerHTML = '';
-            const categoryOrder = ['Ruas', 'Satélite', 'Especial'];
+            const categoryOrder = ['Ruas', 'Satélite', 'Especial', 'Mapbox — uso limitado'];
             categoryOrder.forEach(category => {
                 const heading = document.createElement('li');
                 heading.className = 'style-category';
@@ -4151,7 +4152,7 @@
                 const li = document.createElement('li');
                 li.className = 'style-card';
                 li.classList.toggle('active', style.key === currentMapStyleKey);
-                li.innerHTML = `<span class="style-preview preview-${style.preview}"></span><span class="style-card-main"><span class="style-card-name">${style.name}${style.key === currentMapStyleKey ? '<span class="style-active-badge">Atual</span>' : ''}</span><span class="style-card-description">${style.description}</span></span>`;
+                li.innerHTML = `<span class="style-preview preview-${style.preview}"></span><span class="style-card-main"><span class="style-card-name">${style.name}${style.key === currentMapStyleKey ? '<span class="style-active-badge">Atual</span>' : ''}${style.limited ? '<span class="style-limited-badge">Limitado</span>' : ''}</span><span class="style-card-description">${style.description}</span></span>`;
                 li.setAttribute('role', 'button');
                 li.setAttribute('tabindex', '0');
                 const selectStyle = () => {
