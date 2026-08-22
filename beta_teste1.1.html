@@ -166,7 +166,233 @@
         .file-folder-items > li.file-entry.is-cached { background: #f1f8e9; }
 
         /* OUTROS MENUS */
-        .line-menu { width: 300px; padding: 10px; overflow-y: auto; }
+        .line-menu {
+            width: 350px;
+            padding: 0;
+            overflow-y: auto;
+            scrollbar-gutter: stable;
+            background: #f5f8f7;
+            border: 1px solid rgba(15, 91, 66, .12);
+        }
+        .line-menu-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 18px;
+            color: #fff;
+            background: linear-gradient(135deg, #176789 0%, #0b465f 100%);
+        }
+        .line-menu-header img {
+            width: 25px;
+            height: 25px;
+            padding: 8px;
+            border-radius: 12px;
+            background: rgba(255,255,255,.16);
+            filter: brightness(0) invert(1);
+        }
+        .line-menu-title h3 {
+            margin: 0;
+            padding: 0;
+            border: 0;
+            color: #fff;
+            font-size: 17px;
+        }
+        .line-menu-title p {
+            margin: 3px 0 0;
+            color: rgba(255,255,255,.78);
+            font-size: 11px;
+        }
+        .line-menu-controls {
+            padding: 14px;
+            border-bottom: 1px solid #dfe9e5;
+            background: #fff;
+        }
+        .line-search-wrap { position: relative; }
+        .line-menu #lineGroupSearch {
+            width: 100%;
+            margin: 0;
+            padding: 10px 12px 10px 34px;
+            border: 1px solid #cadbd5;
+            border-radius: 10px;
+            box-sizing: border-box;
+            outline: none;
+            font-size: 13px;
+            transition: border-color .15s ease, box-shadow .15s ease;
+        }
+        .line-menu #lineGroupSearch:focus {
+            border-color: #176789;
+            box-shadow: 0 0 0 3px rgba(23,103,137,.12);
+        }
+        .line-search-icon {
+            position: absolute;
+            left: 11px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #688078;
+            pointer-events: none;
+        }
+        .line-search-status {
+            min-height: 15px;
+            margin-top: 6px;
+            color: #61746d;
+            font-size: 11px;
+        }
+        .line-master-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #173e31;
+            cursor: pointer;
+        }
+        .line-master-toggle input {
+            width: 38px;
+            height: 21px;
+            margin: 0;
+            accent-color: #176789;
+            cursor: pointer;
+        }
+        .line-group-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .line-group-actions button {
+            padding: 9px 10px;
+            border: 1px solid #cbdde5;
+            border-radius: 9px;
+            background: #f4f8fa;
+            color: #244f61;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .line-group-actions .line-action-primary {
+            border-color: #176789;
+            background: #176789;
+            color: #fff;
+        }
+        .line-menu #lineGroupsList {
+            display: grid;
+            gap: 10px;
+            padding: 12px 16px 12px 12px;
+            box-sizing: border-box;
+        }
+        .line-menu #lineGroupsList .line-file-section {
+            padding: 0;
+            border: 1px solid #d8e5e0;
+            border-radius: 11px;
+            background: #fff;
+            overflow: hidden;
+            box-shadow: 0 2px 7px rgba(19,77,58,.06);
+        }
+        .line-file-header {
+            display: flex;
+            align-items: center;
+            min-height: 48px;
+            padding: 0 10px;
+            gap: 8px;
+            background: #edf4f6;
+            border-bottom: 1px solid #dbe7e3;
+            box-sizing: border-box;
+        }
+        .line-file-header label {
+            display: flex;
+            align-items: center;
+            min-width: 0;
+            flex: 1;
+            gap: 8px;
+        }
+        .line-file-header input[type="checkbox"],
+        .line-group-card input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            margin: 0;
+            flex: 0 0 auto;
+            accent-color: #176789;
+        }
+        .line-file-name {
+            min-width: 0;
+            flex: 1;
+            overflow: hidden;
+            color: #23453a;
+            font-size: 12px;
+            font-weight: 800;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .line-file-count {
+            padding: 3px 7px;
+            border-radius: 999px;
+            background: #d8e9ef;
+            color: #14536e;
+            font-size: 10px;
+            font-weight: 800;
+        }
+        .line-file-toggle {
+            width: 30px;
+            height: 30px;
+            padding: 0;
+            border: 0;
+            border-radius: 8px;
+            background: transparent;
+            color: #2d6653;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform .18s ease, background .15s ease;
+        }
+        .line-file-toggle:hover { background: rgba(23,103,137,.1); }
+        .line-file-section.collapsed .line-file-toggle { transform: rotate(-90deg); }
+        .line-file-groups {
+            display: grid;
+            gap: 6px;
+            padding: 8px;
+            list-style: none;
+        }
+        .line-file-section.collapsed .line-file-groups { display: none; }
+        .line-group-card {
+            padding: 0;
+            border: 1px solid #e1eae7;
+            border-radius: 9px;
+            background: #fff;
+        }
+        .line-group-card label {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            min-height: 42px;
+            padding: 0 8px 0 10px;
+            gap: 9px;
+            box-sizing: border-box;
+        }
+        .line-group-name {
+            min-width: 0;
+            flex: 1;
+            color: #263c35;
+            font-size: 13px;
+            font-weight: 700;
+        }
+        .line-color-picker {
+            width: 33px;
+            height: 32px;
+            flex: 0 0 auto;
+            padding: 3px;
+            border: 1px solid #d3e0db;
+            border-radius: 8px;
+            background: #f8faf9;
+            cursor: pointer;
+        }
+        .line-empty-state {
+            padding: 12px;
+            color: #73817c;
+            font-size: 12px;
+            font-style: italic;
+            text-align: center;
+        }
         .loaded-files-menu { width: 220px; padding: 10px; overflow-y: auto;}
         .style-menu { width: 200px; padding: 10px; overflow-y: auto;}
         .marker-group-menu {
@@ -624,15 +850,27 @@
     </div>
 
     <div class="line-menu" id="lineMenu">
-        <input type="text" id="lineGroupSearch" placeholder="Buscar alimentador..." style="width: 93%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; display: block;">
-        <div class="visibility-toggle">
-            <label>
-                <input type="checkbox" id="toggleAllLinesVisibility"> Exibir Todas as Linhas
-            </label>
+        <div class="line-menu-header">
+            <img src="ícones/waypoints.svg" alt="">
+            <div class="line-menu-title">
+                <h3>Alimentadores</h3>
+                <p>Organize linhas por arquivo, grupo e cor</p>
+            </div>
         </div>
-        <div style="display:flex; gap:10px; margin-bottom:10px;">
-            <button id="hideAll">Ocultar Todas</button>
-            <button id="showAll">Exibir Todas</button>
+        <div class="line-menu-controls">
+            <div class="line-search-wrap">
+                <span class="line-search-icon">⌕</span>
+                <input type="text" id="lineGroupSearch" placeholder="Buscar alimentador...">
+            </div>
+            <div class="line-search-status" id="lineSearchStatus"></div>
+            <label class="line-master-toggle">
+                <span>Camada de alimentadores</span>
+                <input type="checkbox" id="toggleAllLinesVisibility">
+            </label>
+            <div class="line-group-actions">
+                <button id="hideAll">Ocultar grupos</button>
+                <button id="showAll" class="line-action-primary">Exibir grupos</button>
+            </div>
         </div>
         <ul id="lineGroupsList"></ul>
     </div>
@@ -793,6 +1031,8 @@
         };
         const menuState = {
             collapsedFiles: new Set(),
+            initializedLineFiles: new Set(),
+            lineMenuHasOpened: false,
             collapsedFolders: new Set()
         };
         
@@ -2462,7 +2702,15 @@
         document.getElementById('btnLineGroups').addEventListener('click', (e) => {
             e.stopPropagation();
             if (state.selectedGroups.size === 0 && state.files.length === 0) alert('Não há grupos carregados para exibir.');
-            else toggleVisibility(lineMenu);
+            else {
+                if (!menuState.lineMenuHasOpened) {
+                    menuState.collapsedFiles.clear();
+                    state.files.slice(1).forEach(file => menuState.collapsedFiles.add(file.name));
+                    menuState.lineMenuHasOpened = true;
+                    updateGroupMenu();
+                }
+                toggleVisibility(lineMenu);
+            }
         });
         btnLoadedFiles.addEventListener('click', (e) => { e.stopPropagation(); toggleVisibility(loadedFilesMenu); });
         document.getElementById('btnSearch').addEventListener('click', searchFeatures);
@@ -2501,19 +2749,39 @@
         btnToggleUI.addEventListener('click', (e) => { e.stopPropagation(); mainMenu.classList.toggle('hidden'); });
         btnTools.addEventListener('click', (e) => { e.stopPropagation(); toggleVisibility(toolsMenu); });
 
-        document.getElementById('lineGroupSearch').addEventListener('input', function(e) {
-            const term = normalizeText(e.target.value);
-            const items = lineGroupsList.querySelectorAll('li');
-            
-            items.forEach(item => {
-                const text = normalizeText(item.textContent);
-                if (text.includes(term)) {
-                    item.style.display = 'block';
-                } else {
-                    item.style.display = 'none';
-                }
+        function applyLineGroupSearch() {
+            const input = document.getElementById('lineGroupSearch');
+            const status = document.getElementById('lineSearchStatus');
+            const term = normalizeText(input.value);
+            const sections = [...lineGroupsList.querySelectorAll('.line-file-section')];
+            let visibleCount = 0;
+            let totalCount = 0;
+
+            sections.forEach(section => {
+                const cards = [...section.querySelectorAll('.line-group-card')];
+                const groupList = section.querySelector('.line-file-groups');
+                let sectionMatches = 0;
+
+                cards.forEach(card => {
+                    totalCount++;
+                    const matches = !term || card.dataset.search.includes(term);
+                    card.style.display = matches ? '' : 'none';
+                    if (matches) {
+                        visibleCount++;
+                        sectionMatches++;
+                    }
+                });
+
+                section.style.display = !term || sectionMatches > 0 ? '' : 'none';
+                groupList.style.display = term && sectionMatches > 0 ? 'grid' : '';
             });
-        });
+
+            status.textContent = term
+                ? `${visibleCount} de ${totalCount} alimentador(es) encontrado(s)`
+                : `${totalCount} alimentador(es) em ${sections.length} arquivo(s)`;
+        }
+
+        document.getElementById('lineGroupSearch').addEventListener('input', applyLineGroupSearch);
 
         function updateMenuVisibility() {
             const hasFiles = state.files.length > 0;
@@ -2698,6 +2966,8 @@
 
             // 3. Remove do Estado
             state.files.splice(fileIndex, 1);
+            menuState.collapsedFiles.delete(fileName);
+            menuState.initializedLineFiles.delete(fileName);
             
             // 4. Remove da lista visual 
             const loadedListItems = document.querySelectorAll('#loadedFilesList li');
@@ -3237,152 +3507,157 @@
 
         function updateGroupMenu() {
             lineGroupsList.innerHTML = '';
-            state.files.forEach(file => {
+
+            state.files.forEach((file, fileIndex) => {
                 const selectedFileGroups = state.selectedGroups.get(file.sourceId) || new Set();
-                
                 const allFileGroups = new Set();
+
                 if (file.hasLines && file.groupingProperty && file.lineFeatures) {
                     file.lineFeatures.features.forEach(feature => {
-                        if (feature.properties && feature.properties[file.groupingProperty]) {
-                            allFileGroups.add(feature.properties[file.groupingProperty]);
-                        }
+                        const groupName = feature.properties?.[file.groupingProperty];
+                        if (groupName) allFileGroups.add(groupName);
                     });
                 }
-                
-                const sortedGroups = Array.from(allFileGroups).sort((a, b) => a.localeCompare(b));
 
-                const fileHeader = document.createElement('li'); // Use li for better structure
-                fileHeader.style.cssText = "background-color: #f0f0f0; padding: 5px; margin-top: 5px; font-weight: bold;";
-                
+                const sortedGroups = Array.from(allFileGroups).sort((a, b) =>
+                    a.localeCompare(b, 'pt-BR', { numeric: true, sensitivity: 'base' })
+                );
+
+                if (!menuState.initializedLineFiles.has(file.name)) {
+                    menuState.initializedLineFiles.add(file.name);
+                    if (fileIndex > 0) menuState.collapsedFiles.add(file.name);
+                }
+
+                const section = document.createElement('li');
+                section.className = 'line-file-section';
+                section.dataset.fileName = file.name;
+                if (menuState.collapsedFiles.has(file.name)) section.classList.add('collapsed');
+
+                const header = document.createElement('div');
+                header.className = 'line-file-header';
+
                 const fileLabel = document.createElement('label');
-                fileLabel.style.display = 'flex';
-                fileLabel.style.alignItems = 'center';
-                fileLabel.style.width = '100%';
-
+                fileLabel.title = file.name;
 
                 const fileCheckbox = document.createElement('input');
                 fileCheckbox.type = 'checkbox';
-                
+                fileCheckbox.setAttribute('aria-label', `Arquivo: ${file.name}`);
+
                 if (sortedGroups.length > 0) {
-                    const allVisible = sortedGroups.every(g => selectedFileGroups.has(g));
-                    const someVisible = sortedGroups.some(g => selectedFileGroups.has(g));
+                    const allVisible = sortedGroups.every(group => selectedFileGroups.has(group));
+                    const someVisible = sortedGroups.some(group => selectedFileGroups.has(group));
                     fileCheckbox.checked = allVisible;
-                    if (!allVisible && someVisible) {
-                        fileCheckbox.indeterminate = true;
-                    }
+                    fileCheckbox.indeterminate = !allVisible && someVisible;
                 } else {
-                    // Para arquivos sem linhas, ele segue o estado global de visibilidade do arquivo
                     fileCheckbox.checked = file.visible !== false;
                 }
 
                 fileCheckbox.onchange = () => {
-                    const isChecked = fileCheckbox.checked;
-                    file.visible = isChecked; // SALVA A VISIBILIDADE GLOBAL DO ARQUIVO
-
+                    const visible = fileCheckbox.checked;
+                    file.visible = visible;
                     const currentGroups = state.selectedGroups.get(file.sourceId) || new Set();
-                    if (isChecked) {
-                        sortedGroups.forEach(g => currentGroups.add(g));
-                        menuState.collapsedFiles.delete(file.name); // Expand
+                    if (visible) {
+                        sortedGroups.forEach(group => currentGroups.add(group));
                     } else {
-                        sortedGroups.forEach(g => currentGroups.delete(g));
-                        menuState.collapsedFiles.add(file.name); // Collapse
+                        sortedGroups.forEach(group => currentGroups.delete(group));
                     }
                     state.selectedGroups.set(file.sourceId, currentGroups);
-                    
                     applyGroupFilter();
-                    updateVisibleMarkers(); // ATUALIZA OS MARCADORES
-                    updateGroupMenu(); // Redraw
+                    updateVisibleMarkers();
+                    updateGroupMenu();
                 };
-                
-                const fileNameSpan = document.createElement('span');
-                fileNameSpan.textContent = `Arquivo: "${file.name}"`;
-                fileNameSpan.style.cursor = 'pointer';
-                fileNameSpan.style.flexGrow = '1';
-                fileNameSpan.style.marginLeft = '5px';
-                fileNameSpan.onclick = () => {
+
+                const fileName = document.createElement('span');
+                fileName.className = 'line-file-name';
+                fileName.textContent = file.name;
+
+                const count = document.createElement('span');
+                count.className = 'line-file-count';
+                count.textContent = sortedGroups.length;
+                count.title = `${sortedGroups.length} alimentador(es)`;
+
+                fileLabel.appendChild(fileCheckbox);
+                fileLabel.appendChild(fileName);
+                fileLabel.appendChild(count);
+
+                const toggleButton = document.createElement('button');
+                toggleButton.type = 'button';
+                toggleButton.className = 'line-file-toggle';
+                toggleButton.textContent = '▾';
+                toggleButton.title = menuState.collapsedFiles.has(file.name) ? 'Expandir arquivo' : 'Recolher arquivo';
+                toggleButton.setAttribute('aria-label', toggleButton.title);
+                toggleButton.onclick = () => {
                     if (menuState.collapsedFiles.has(file.name)) {
                         menuState.collapsedFiles.delete(file.name);
                     } else {
                         menuState.collapsedFiles.add(file.name);
                     }
-                    updateGroupMenu(); // Redraw to show/hide
+                    updateGroupMenu();
                 };
 
+                header.appendChild(fileLabel);
+                header.appendChild(toggleButton);
+                section.appendChild(header);
 
-                fileLabel.appendChild(fileCheckbox);
-                fileLabel.appendChild(fileNameSpan);
-                fileHeader.appendChild(fileLabel);
-                lineGroupsList.appendChild(fileHeader);
+                const groupList = document.createElement('ul');
+                groupList.className = 'line-file-groups';
 
-                const groupUl = document.createElement('ul');
-                groupUl.style.paddingLeft = '25px';
+                if (sortedGroups.length === 0) {
+                    const emptyState = document.createElement('li');
+                    emptyState.className = 'line-empty-state';
+                    emptyState.textContent = 'Este arquivo possui apenas marcadores.';
+                    groupList.appendChild(emptyState);
+                } else {
+                    sortedGroups.forEach(groupName => {
+                        const card = document.createElement('li');
+                        card.className = 'line-group-card';
+                        card.dataset.search = normalizeText(groupName);
 
-                // Hide/show based on collapsed state
-                if (menuState.collapsedFiles.has(file.name)) {
-                    groupUl.style.display = 'none';
-                }
+                        const label = document.createElement('label');
 
-                if (sortedGroups.length > 0) {
-                    sortedGroups.forEach(grp => {
-                        const li = document.createElement('li');
-                        li.style.fontWeight = "normal"; // reset
-                        const lbl = document.createElement('label');
-                        lbl.style.display = 'flex'; lbl.style.alignItems = 'center';
-                        const chk = document.createElement('input');
-                        chk.type = 'checkbox';
-                        chk.value = grp;
-                        chk.checked = selectedFileGroups.has(grp);
-                        const groupColor = groupColorMap.get(grp);
-                        
-                        chk.onchange = () => {
-                            const currentGroups = state.selectedGroups.get(file.sourceId);
-                            if (chk.checked) {
-                                currentGroups.add(grp);
-                            } else {
-                                currentGroups.delete(grp);
-                            }
-                            
-                            // Se ligamos algum grupo de linha, garante que o arquivo pai fique ativo para os marcadores não sumirem
-                            file.visible = true; 
-
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.checked = selectedFileGroups.has(groupName);
+                        checkbox.value = groupName;
+                        checkbox.setAttribute('aria-label', groupName);
+                        checkbox.onchange = () => {
+                            const currentGroups = state.selectedGroups.get(file.sourceId) || new Set();
+                            if (checkbox.checked) currentGroups.add(groupName);
+                            else currentGroups.delete(groupName);
+                            state.selectedGroups.set(file.sourceId, currentGroups);
+                            file.visible = true;
                             applyGroupFilter();
-                            updateGroupMenu(); // to update parent state
+                            updateVisibleMarkers();
+                            updateGroupMenu();
                         };
 
-                        lbl.appendChild(chk);
-                        lbl.appendChild(document.createTextNode(' ' + grp));
-                        
+                        const name = document.createElement('span');
+                        name.className = 'line-group-name';
+                        name.textContent = groupName;
+
                         const colorPicker = document.createElement('input');
                         colorPicker.type = 'color';
-                        colorPicker.value = groupColor || '#CCCCCC';
-                        colorPicker.style.marginLeft = 'auto';
-                        colorPicker.style.padding = '0';
-                        colorPicker.style.border = 'none';
-                        colorPicker.style.width = '30px';
-                        colorPicker.style.height = '20px';
-                        colorPicker.style.cursor = 'pointer';
-                        colorPicker.dataset.groupName = grp;
+                        colorPicker.className = 'line-color-picker';
+                        colorPicker.value = groupColorMap.get(groupName) || '#CCCCCC';
+                        colorPicker.dataset.groupName = groupName;
                         colorPicker.dataset.sourceId = file.sourceId;
+                        colorPicker.title = `Alterar cor de ${groupName}`;
                         colorPicker.onchange = handleColorChange;
-                        colorPicker.onclick = (e) => e.stopPropagation();
-                        
-                        lbl.appendChild(colorPicker);
-                        li.appendChild(lbl);
-                        groupUl.appendChild(li);
+                        colorPicker.onclick = event => event.stopPropagation();
+
+                        label.appendChild(checkbox);
+                        label.appendChild(name);
+                        label.appendChild(colorPicker);
+                        card.appendChild(label);
+                        groupList.appendChild(card);
                     });
-                } else {
-                    // ADICIONA O ITEM DE AVISO DE MARCADORES PARA ARQUIVOS SEM LINHAS
-                    const li = document.createElement('li');
-                    li.style.fontWeight = "normal";
-                    li.style.color = "#777";
-                    li.style.fontSize = "11px";
-                    li.style.fontStyle = "italic";
-                    li.textContent = "Apenas Marcadores (S/ Linhas)";
-                    groupUl.appendChild(li);
                 }
-                
-                lineGroupsList.appendChild(groupUl);
+
+                section.appendChild(groupList);
+                lineGroupsList.appendChild(section);
             });
+
+            applyLineGroupSearch();
         }
 
         function updateLoadedFilesList(fileName) {
