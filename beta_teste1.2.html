@@ -738,17 +738,36 @@
         .route-panel button#btnReverseRoute { background: #edf2f7; color: #40566d; }
 
         /* Storage Menu */
-        .storage-menu { width: 300px; padding: 15px; display: none; flex-direction: column; gap: 10px; }
-        .storage-menu p { font-size: 12px; color: #555; text-align: center; margin: 0 0 10px 0; border-bottom: 1px solid #f0f0f0; padding-bottom: 10px; }
-        .storage-menu .storage-buttons { display: flex; flex-direction: column; gap: 10px; }
-        .storage-menu .storage-buttons button { border: none; padding: 12px; border-radius: 5px; cursor: pointer; font-size: 13px; font-weight: bold; text-align: left; display: flex; flex-direction: column; transition: background-color 0.2s; }
-        .storage-menu .storage-buttons button small { font-size: 11px; font-weight: normal; opacity: 0.9; margin-top: 4px; }
-        .storage-menu .btn-danger { background-color: #fbebee; color: #c0392b; border: 1px solid #e74c3c; }
-        .storage-menu .btn-danger:hover { background-color: #fadbd8; }
-        .storage-menu .btn-warning { background-color: #fef9e7; color: #b08f00; border: 1px solid #f1c40f; }
-        .storage-menu .btn-warning:hover { background-color: #fcf3cf; }
-        .storage-menu .btn-danger-full { background-color: #e74c3c; color: white; text-align: center; }
-        .storage-menu .btn-danger-full:hover { background-color: #c0392b; }
+        .storage-menu { width: 370px; padding: 0; display: none; flex-direction: column; overflow-y: auto; background: #f6f8fa; border: 1px solid rgba(45,91,76,.14); }
+        .storage-header { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 12px; padding: 16px 18px; color: #fff; background: linear-gradient(135deg,#326c5b,#1e4c40); }
+        .storage-header img { width: 24px; height: 24px; padding: 8px; border-radius: 11px; background: rgba(255,255,255,.16); filter: brightness(0) invert(1); }
+        .storage-header h3 { margin: 0 !important; padding: 0 !important; border: 0 !important; color: #fff; text-align: left !important; font-size: 17px !important; }
+        .storage-header p { margin: 3px 0 0; padding: 0; border: 0; color: rgba(255,255,255,.78); text-align: left; font-size: 11px; }
+        .storage-summary { display: grid; grid-template-columns: repeat(2,1fr); gap: 7px; padding: 11px; background: #fff; border-bottom: 1px solid #dfe7e3; }
+        .storage-stat { padding: 9px; border-radius: 9px; background: #eef4f2; color: #315349; text-align: center; }
+        .storage-stat strong { display: block; font-size: 15px; }
+        .storage-stat span { display: block; margin-top: 2px; color: #6b7e78; font-size: 9px; text-transform: uppercase; }
+        .storage-persistent { grid-column: 1/-1; padding: 7px; border-radius: 8px; background: #eaf5ed; color: #2e6840; text-align: center; font-size: 10px; font-weight: 700; }
+        .storage-persistent.warning { background: #fff5df; color: #87601e; }
+        .storage-section { margin: 10px 11px 0; padding: 11px; border: 1px solid #dfe6e3; border-radius: 10px; background: #fff; }
+        .storage-section h4 { margin: 0 0 8px; color: #51665f; font-size: 10px; letter-spacing: .55px; text-transform: uppercase; }
+        .storage-action { width: 100%; padding: 10px; border: 1px solid #d7e0dd; border-radius: 8px; background: #f8faf9; color: #334d45; cursor: pointer; text-align: left; font-size: 12px; font-weight: 800; }
+        .storage-action small { display: block; margin-top: 4px; color: #70817b; font-size: 10px; font-weight: 400; line-height: 1.3; }
+        .storage-action.warning { border-color: #ead9ae; background: #fffaf0; color: #85631f; }
+        .storage-action.danger { border-color: #edc5c5; background: #fff3f3; color: #a23b3b; }
+        .storage-action + .storage-action { margin-top: 7px; }
+        .storage-status { min-height: 14px; padding: 10px 13px; color: #60746d; font-size: 10px; }
+        .storage-status.error { color: #a23b3b; }
+        .storage-confirm { display: none; margin: 10px 11px 11px; padding: 11px; border: 1px solid #e3c3c3; border-radius: 10px; background: #fff7f7; }
+        .storage-confirm.active { display: block; }
+        .storage-confirm strong { display: block; color: #8f3333; font-size: 12px; }
+        .storage-confirm p { margin: 5px 0 9px; padding: 0; border: 0; color: #665c5c; text-align: left; font-size: 10px; line-height: 1.35; }
+        .storage-confirm input { display: none; width: 100%; box-sizing: border-box; margin-bottom: 8px; padding: 7px; border: 1px solid #d5b6b6; border-radius: 6px; }
+        .storage-confirm.require-text input { display: block; }
+        .storage-confirm-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+        .storage-confirm-actions button { padding: 8px; border: 0; border-radius: 7px; cursor: pointer; font-size: 11px; font-weight: 700; }
+        #btnStorageConfirmCancel { background: #e9edef; color: #405058; }
+        #btnStorageConfirmApply { background: #c64141; color: #fff; }
 
         .maplibregl-popup-content { padding: 10px; font-size: 13px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
         .maplibregl-popup-close-button { padding: 4px; font-size: 16px; color: #888; }
@@ -895,7 +914,7 @@
         
         <button id="btnStorageMenu" aria-label="Gerenciar Armazenamento">
             <img src="ícones/database-zap.svg" alt="Limpar Dados"> 
-            <div class="button-legend">Limpar Dados</div>
+            <div class="button-legend">Armazenamento</div>
         </button>
 
         <button id="btnSupport" aria-label="Grupo de Suporte">
@@ -1071,23 +1090,22 @@
     </div>
 
     <div class="storage-menu" id="storageMenu">
-        <h3>Gerenciar Armazenamento</h3>
-        <p>Use com cuidado. Isso removerá dados salvos no seu navegador.</p>
-        <div class="storage-buttons">
-            <button id="btnResetOfflineDB" class="btn-danger">
-                Limpar Cache de Mapas (Offline)
-                <small>Remove todos os arquivos KML/KMZ/ZIP baixados.</small>
-            </button>
-            
-            <button id="btnResetLocalStorage" class="btn-warning">
-                Limpar Configurações
-                <small>Reseta cores e preferências.</small>
-            </button>
-            
-            <button id="btnResetAllStorage" class="btn-danger-full">
-                Resetar Tudo
-                <small>Limpa tudo e recarrega a página.</small>
-            </button>
+        <div class="storage-header"><img src="ícones/database-zap.svg" alt=""><div><h3>Gerenciar Armazenamento</h3><p>Veja e controle os dados guardados neste navegador</p></div></div>
+        <div class="storage-summary">
+            <div class="storage-stat"><strong id="storageUsageValue">—</strong><span>uso aproximado</span></div>
+            <div class="storage-stat"><strong id="storageOfflineCount">—</strong><span>arquivos offline</span></div>
+            <div class="storage-stat"><strong id="storageImportedCount">—</strong><span>importados</span></div>
+            <div class="storage-stat"><strong id="storagePreferenceCount">—</strong><span>preferências</span></div>
+            <div class="storage-persistent" id="storagePersistenceStatus">Verificando proteção dos dados…</div>
+        </div>
+        <section class="storage-section"><h4>Arquivos offline</h4><button id="btnResetOfflineDB" class="storage-action danger">Remover arquivos offline<small>Apaga KML, KMZ e ZIP salvos. Cores e preferências serão mantidas.</small></button></section>
+        <section class="storage-section"><h4>Preferências e aparência</h4><button id="btnResetLocalStorage" class="storage-action warning">Restaurar configurações<small>Reseta cores, estilo do mapa, ferramentas e preferências de rota. Não apaga arquivos offline.</small></button></section>
+        <section class="storage-section"><h4>Limpeza completa</h4><button id="btnResetAllStorage" class="storage-action danger">Apagar todos os dados<small>Remove arquivos offline, configurações e caches temporários desta aplicação.</small></button></section>
+        <div class="storage-status" id="storageActionStatus">Nenhuma limpeza foi executada.</div>
+        <div class="storage-confirm" id="storageConfirmPanel">
+            <strong id="storageConfirmTitle">Confirmar ação</strong><p id="storageConfirmMessage"></p>
+            <input id="storageConfirmInput" type="text" autocomplete="off" placeholder="Digite APAGAR para confirmar">
+            <div class="storage-confirm-actions"><button id="btnStorageConfirmCancel">Cancelar</button><button id="btnStorageConfirmApply">Confirmar</button></div>
         </div>
     </div>
     <footer>
@@ -1655,6 +1673,12 @@
         const btnResetOfflineDB = document.getElementById('btnResetOfflineDB');
         const btnResetLocalStorage = document.getElementById('btnResetLocalStorage');
         const btnResetAllStorage = document.getElementById('btnResetAllStorage');
+        const storageConfirmPanel = document.getElementById('storageConfirmPanel');
+        const storageConfirmTitle = document.getElementById('storageConfirmTitle');
+        const storageConfirmMessage = document.getElementById('storageConfirmMessage');
+        const storageConfirmInput = document.getElementById('storageConfirmInput');
+        const storageActionStatus = document.getElementById('storageActionStatus');
+        let pendingStorageAction = null;
 
         const progressOverlay = document.getElementById('progressOverlay');
         const progressBar = document.getElementById('progressBar');
@@ -3070,7 +3094,13 @@
         toggleAllMarkersVisibilityCheckbox.addEventListener('change', (e) => { toggleMarkers(e.target.checked); });
         toggleMarkerNamesVisibilityCheckbox.addEventListener('change', (e) => { toggleNames(e.target.checked); });
         toggleAllLinesVisibilityCheckbox.addEventListener('change', (e) => { toggleLines(e.target.checked); });
-        document.getElementById('btnStorageMenu').addEventListener('click', (e) => { e.stopPropagation(); toggleVisibility(storageMenu); });
+        document.getElementById('btnStorageMenu').addEventListener('click', (e) => {
+            e.stopPropagation();
+            refreshStorageSummary();
+            closeStorageConfirmation();
+            storageMenu.scrollTop = 0;
+            toggleVisibility(storageMenu);
+        });
         btnToggleUI.addEventListener('click', (e) => { e.stopPropagation(); mainMenu.classList.toggle('hidden'); });
         btnTools.addEventListener('click', (e) => { e.stopPropagation(); toggleVisibility(toolsMenu); });
 
@@ -3389,24 +3419,130 @@
             }
         }
 
-        btnResetOfflineDB.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (confirm('TEM CERTEZA? Isso limpará o cache offline.')) {
-                const deleteRequest = indexedDB.deleteDatabase(DB_NAME);
-                deleteRequest.onsuccess = () => { alert('Cache limpo.'); location.reload(); };
+        function formatStorageBytes(bytes) {
+            if (!Number.isFinite(bytes) || bytes <= 0) return '0 KB';
+            const units = ['B', 'KB', 'MB', 'GB'];
+            const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+            const value = bytes / Math.pow(1024, index);
+            return `${value >= 10 || index === 0 ? value.toFixed(0) : value.toFixed(1)} ${units[index]}`;
+        }
+
+        async function refreshStorageSummary() {
+            const [cachedNames, estimate, persisted] = await Promise.all([
+                getKeysFromDB(GEOJSON_STORE_NAME).catch(() => []),
+                navigator.storage?.estimate ? navigator.storage.estimate().catch(() => null) : Promise.resolve(null),
+                navigator.storage?.persisted ? navigator.storage.persisted().catch(() => false) : Promise.resolve(false)
+            ]);
+            const predefinedNames = new Set(predefinedFiles.map(file => file.name));
+            const importedCount = cachedNames.filter(name => !predefinedNames.has(name)).length;
+            document.getElementById('storageUsageValue').textContent = formatStorageBytes(estimate?.usage || 0);
+            document.getElementById('storageOfflineCount').textContent = cachedNames.length;
+            document.getElementById('storageImportedCount').textContent = importedCount;
+            document.getElementById('storagePreferenceCount').textContent = localStorage.length;
+            const persistenceStatus = document.getElementById('storagePersistenceStatus');
+            persistenceStatus.textContent = persisted
+                ? '✓ Armazenamento permanente protegido pelo navegador'
+                : 'Armazenamento sujeito à limpeza automática do navegador';
+            persistenceStatus.classList.toggle('warning', !persisted);
+        }
+
+        async function clearOfflineStores() {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([GEOJSON_STORE_NAME, SPATIAL_INDEX_STORE_NAME], 'readwrite');
+                transaction.objectStore(GEOJSON_STORE_NAME).clear();
+                transaction.objectStore(SPATIAL_INDEX_STORE_NAME).clear();
+                transaction.oncomplete = () => { db.close(); resolve(); };
+                transaction.onerror = () => { db.close(); reject(transaction.error); };
+                transaction.onabort = () => { db.close(); reject(transaction.error || new Error('Limpeza cancelada pelo navegador.')); };
+            });
+        }
+
+        async function clearApplicationCaches() {
+            if (!('caches' in window)) return;
+            const cacheNames = await caches.keys();
+            await Promise.all(cacheNames.map(cacheName => caches.delete(cacheName)));
+        }
+
+        function closeStorageConfirmation() {
+            pendingStorageAction = null;
+            storageConfirmPanel.classList.remove('active', 'require-text');
+            storageConfirmInput.value = '';
+            document.getElementById('btnStorageConfirmApply').disabled = false;
+        }
+
+        function requestStorageConfirmation({ title, message, requireText = false, action }) {
+            pendingStorageAction = action;
+            storageConfirmTitle.textContent = title;
+            storageConfirmMessage.textContent = message;
+            storageConfirmPanel.classList.toggle('require-text', requireText);
+            storageConfirmPanel.classList.add('active');
+            storageConfirmInput.value = '';
+            if (requireText) storageConfirmInput.focus();
+        }
+
+        btnResetOfflineDB.addEventListener('click', event => {
+            event.stopPropagation();
+            requestStorageConfirmation({
+                title: 'Remover todos os arquivos offline?',
+                message: 'KML, KMZ, ZIP e índices espaciais salvos serão apagados. Cores e preferências permanecerão.',
+                action: async () => {
+                    await clearOfflineStores();
+                    storageActionStatus.textContent = 'Arquivos offline removidos com sucesso. Recarregando…';
+                    await refreshStorageSummary();
+                }
+            });
+        });
+
+        btnResetLocalStorage.addEventListener('click', event => {
+            event.stopPropagation();
+            requestStorageConfirmation({
+                title: 'Restaurar todas as configurações?',
+                message: 'Cores, estilo do mapa, ferramentas e preferências de rota voltarão ao padrão. Arquivos offline não serão apagados.',
+                action: async () => {
+                    localStorage.clear();
+                    localStorage.setItem('app_version', APP_VERSION);
+                    storageActionStatus.textContent = 'Configurações restauradas. Recarregando…';
+                }
+            });
+        });
+
+        btnResetAllStorage.addEventListener('click', event => {
+            event.stopPropagation();
+            requestStorageConfirmation({
+                title: 'Apagar absolutamente todos os dados?',
+                message: 'Arquivos offline, importações, cores, preferências e caches temporários serão removidos. Digite APAGAR para continuar.',
+                requireText: true,
+                action: async () => {
+                    await clearOfflineStores();
+                    localStorage.clear();
+                    await clearApplicationCaches();
+                    storageActionStatus.textContent = 'Todos os dados foram removidos. Recarregando…';
+                }
+            });
+        });
+
+        document.getElementById('btnStorageConfirmCancel').addEventListener('click', closeStorageConfirmation);
+        document.getElementById('btnStorageConfirmApply').addEventListener('click', async event => {
+            if (!pendingStorageAction) return;
+            if (storageConfirmPanel.classList.contains('require-text') && storageConfirmInput.value.trim().toUpperCase() !== 'APAGAR') {
+                storageActionStatus.textContent = 'Digite APAGAR corretamente para confirmar a limpeza completa.';
+                storageActionStatus.classList.add('error');
+                return;
             }
-        });
-
-        btnResetLocalStorage.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (confirm('TEM CERTEZA? Isso limpará configurações.')) { localStorage.clear(); alert('Resetado.'); location.reload(); }
-        });
-
-        btnResetAllStorage.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (confirm('TEM CERTEZA ABSOLUTA? Reset Total.')) {
-                localStorage.clear();
-                indexedDB.deleteDatabase(DB_NAME).onsuccess = () => { alert('Tudo limpo.'); location.reload(); };
+            const action = pendingStorageAction;
+            event.currentTarget.disabled = true;
+            storageActionStatus.textContent = 'Processando limpeza…';
+            storageActionStatus.classList.remove('error');
+            try {
+                await action();
+                closeStorageConfirmation();
+                setTimeout(() => location.reload(), 900);
+            } catch (error) {
+                console.error('Erro ao limpar armazenamento:', error);
+                storageActionStatus.textContent = `Não foi possível concluir: ${error.message || 'erro desconhecido'}`;
+                storageActionStatus.classList.add('error');
+                event.currentTarget.disabled = false;
             }
         });
 
