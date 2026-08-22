@@ -490,6 +490,11 @@
             cursor: pointer;
             accent-color: #0d7652;
         }
+        .marker-names-toggle {
+            margin-top: 11px;
+            padding-top: 11px;
+            border-top: 1px solid #e4ece8;
+        }
         .marker-group-actions {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -786,11 +791,6 @@
             <img src="ícones/waypoints.svg" alt="Grupos de Linhas">
             <div class="button-legend">Grupos de Linhas</div>
         </button>
-        <button id="btnNames" aria-label="Exibir ou ocultar os nomes dos marcadores">
-            <img src="ícones/text-align-start.svg" alt="Exibir/Ocultar Nomes">
-            <div class="button-legend">Exibir/Ocultar Nomes</div>
-        </button>
-
         <button id="btnTools" aria-label="Ferramentas de Visualização">
             <img src="ícones/settings.svg" alt="Ferramentas"> <div class="button-legend">Ferramentas</div>
         </button>
@@ -943,6 +943,10 @@
             <label class="marker-master-toggle">
                 <span>Exibir marcadores no mapa</span>
                 <input type="checkbox" id="toggleAllMarkersVisibility">
+            </label>
+            <label class="marker-master-toggle marker-names-toggle">
+                <span>Exibir nomes dos postos</span>
+                <input type="checkbox" id="toggleMarkerNamesVisibility">
             </label>
             <div class="marker-group-actions">
                 <button id="hideAllMarkerGroups">Ocultar grupos</button>
@@ -1440,6 +1444,7 @@
         const styleMenu = document.getElementById('styleMenu');
         const markerGroupMenu = document.getElementById('markerGroupMenu');
         const markerGroupsList = document.getElementById('markerGroupsList');
+        const toggleMarkerNamesVisibilityCheckbox = document.getElementById('toggleMarkerNamesVisibility');
         
         const btnTools = document.getElementById('btnTools');
         const toolsMenu = document.getElementById('toolsMenu');
@@ -2705,6 +2710,7 @@
             ensureMarkerLayersOnTop();
 
             toggleAllMarkersVisibilityCheckbox.checked = state.markersVisible;
+            toggleMarkerNamesVisibilityCheckbox.checked = state.namesVisible;
             toggleAllLinesVisibilityCheckbox.checked = state.linesVisible;
 
             // --- INICIAR CARGA DINÂMICA SE ESTIVER MARCADO ---
@@ -2817,7 +2823,6 @@
             displayFileList();
             toggleVisibility(kmzMenu); 
         });
-        document.getElementById('btnNames').addEventListener('click', () => toggleNames());
         document.getElementById('btnReset').addEventListener('click', resetView);
         document.getElementById('btnLocation').addEventListener('click', goToCurrentLocation);
         document.getElementById('btnLineGroups').addEventListener('click', (e) => {
@@ -2865,6 +2870,7 @@
         document.getElementById('hideAllMarkerGroups').addEventListener('click', () => toggleAllMarkerGroups(false));
         document.getElementById('showAllMarkerGroups').addEventListener('click', () => toggleAllMarkerGroups(true));
         toggleAllMarkersVisibilityCheckbox.addEventListener('change', (e) => { toggleMarkers(e.target.checked); });
+        toggleMarkerNamesVisibilityCheckbox.addEventListener('change', (e) => { toggleNames(e.target.checked); });
         toggleAllLinesVisibilityCheckbox.addEventListener('change', (e) => { toggleLines(e.target.checked); });
         document.getElementById('btnStorageMenu').addEventListener('click', (e) => { e.stopPropagation(); toggleVisibility(storageMenu); });
         btnToggleUI.addEventListener('click', (e) => { e.stopPropagation(); mainMenu.classList.toggle('hidden'); });
@@ -2907,7 +2913,7 @@
         function updateMenuVisibility() {
             const hasFiles = state.files.length > 0;
             const buttonsToHide = [
-                'btnMarkerGroups', 'btnLineGroups', 'btnNames', 'btnTools', 
+                'btnMarkerGroups', 'btnLineGroups', 'btnTools',
                 'btnLocation', 'btnReset', 'btnLoadedFiles', 
                 'btnStyles', 'btnRoutePlanner'
             ];
@@ -3617,6 +3623,7 @@
         
         function toggleNames(forceVisibility) {
             state.namesVisible = (typeof forceVisibility === 'boolean') ? forceVisibility : !state.namesVisible;
+            toggleMarkerNamesVisibilityCheckbox.checked = state.namesVisible;
             if (map.getLayer('dynamic-marker-labels')) {
                 map.setLayoutProperty('dynamic-marker-labels', 'visibility', state.namesVisible && state.markersVisible ? 'visible' : 'none');
             }
