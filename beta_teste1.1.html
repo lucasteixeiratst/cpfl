@@ -169,7 +169,143 @@
         .line-menu { width: 300px; padding: 10px; overflow-y: auto; }
         .loaded-files-menu { width: 220px; padding: 10px; overflow-y: auto;}
         .style-menu { width: 200px; padding: 10px; overflow-y: auto;}
-        .marker-group-menu { width: 240px; padding: 10px; overflow-y: auto;}
+        .marker-group-menu {
+            width: 330px;
+            padding: 0;
+            overflow-y: auto;
+            background: #f5f8f7;
+            border: 1px solid rgba(15, 91, 66, 0.12);
+        }
+
+        .marker-menu-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 18px;
+            color: #fff;
+            background: linear-gradient(135deg, #0d7652 0%, #07503b 100%);
+        }
+        .marker-menu-header img {
+            width: 25px;
+            height: 25px;
+            padding: 8px;
+            border-radius: 12px;
+            background: rgba(255,255,255,.16);
+            filter: brightness(0) invert(1);
+        }
+        .marker-menu-title { min-width: 0; }
+        .marker-group-menu .marker-menu-title h3 {
+            margin: 0;
+            padding: 0;
+            border: 0;
+            color: #fff;
+            font-size: 17px;
+            text-align: left;
+        }
+        .marker-menu-title p {
+            margin: 3px 0 0;
+            color: rgba(255,255,255,.78);
+            font-size: 11px;
+        }
+
+        .marker-menu-controls {
+            padding: 14px;
+            border-bottom: 1px solid #dfe9e5;
+            background: #fff;
+        }
+        .marker-master-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #173e31;
+            cursor: pointer;
+        }
+        .marker-master-toggle input {
+            width: 38px;
+            height: 21px;
+            margin: 0;
+            cursor: pointer;
+            accent-color: #0d7652;
+        }
+        .marker-group-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .marker-group-actions button {
+            padding: 9px 10px;
+            border: 1px solid #cddfd8;
+            border-radius: 9px;
+            background: #f4f8f6;
+            color: #245243;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform .15s ease, background .15s ease, border-color .15s ease;
+        }
+        .marker-group-actions button:hover {
+            transform: translateY(-1px);
+            background: #e8f4ef;
+            border-color: #83b7a4;
+        }
+        .marker-group-actions .marker-action-primary {
+            border-color: #0d7652;
+            background: #0d7652;
+            color: #fff;
+        }
+        .marker-group-actions .marker-action-primary:hover { background: #095f43; }
+
+        .marker-group-menu #markerGroupsList {
+            display: grid;
+            gap: 8px;
+            padding: 12px;
+        }
+        .marker-group-menu #markerGroupsList .marker-group-card {
+            padding: 0;
+            border: 1px solid #dce8e3;
+            border-radius: 11px;
+            background: #fff;
+            box-shadow: 0 2px 7px rgba(19, 77, 58, .06);
+            overflow: hidden;
+            transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+        }
+        .marker-group-menu #markerGroupsList .marker-group-card:hover {
+            transform: translateY(-1px);
+            border-color: #a8cbbd;
+            box-shadow: 0 5px 13px rgba(19, 77, 58, .1);
+        }
+        .marker-group-card label {
+            min-height: 48px;
+            padding: 0 10px 0 12px;
+            gap: 10px;
+        }
+        .marker-group-card .marker-group-checkbox {
+            width: 18px;
+            height: 18px;
+            flex: 0 0 auto;
+            margin: 0;
+            accent-color: #0d7652;
+        }
+        .marker-group-card .marker-group-name {
+            min-width: 0;
+            flex: 1;
+            font-size: 13px;
+            line-height: 1.25;
+        }
+        .marker-group-card .marker-color-picker {
+            width: 34px;
+            height: 34px;
+            flex: 0 0 auto;
+            padding: 3px;
+            border: 1px solid #d3e0db;
+            border-radius: 9px;
+            background: #f8faf9;
+            cursor: pointer;
+        }
         
         .tools-menu { width: 280px; gap: 15px; padding: 15px; overflow-y: auto;}
         
@@ -507,15 +643,22 @@
     </div>
 
     <div class="marker-group-menu" id="markerGroupMenu">
-        <h3>Grupos de Postos</h3>
-         <div class="visibility-toggle">
-            <label>
-                <input type="checkbox" id="toggleAllMarkersVisibility"> Exibir Todos os Marcadores
+        <div class="marker-menu-header">
+            <img src="ícones/utility-pole.svg" alt="">
+            <div class="marker-menu-title">
+                <h3>Grupos de Postos</h3>
+                <p>Controle a visibilidade e as cores no mapa</p>
+            </div>
+        </div>
+        <div class="marker-menu-controls">
+            <label class="marker-master-toggle">
+                <span>Exibir marcadores no mapa</span>
+                <input type="checkbox" id="toggleAllMarkersVisibility">
             </label>
-         </div>
-        <div style="display:flex; gap:10px; margin-bottom:10px;">
-            <button id="hideAllMarkerGroups">Ocultar Todos</button>
-            <button id="showAllMarkerGroups">Exibir Todos</button>
+            <div class="marker-group-actions">
+                <button id="hideAllMarkerGroups">Ocultar grupos</button>
+                <button id="showAllMarkerGroups" class="marker-action-primary">Exibir grupos</button>
+            </div>
         </div>
         <ul id="markerGroupsList"></ul>
     </div>
@@ -3028,11 +3171,12 @@
                 if (groupKey === 'default') return;
                 const group = state.markerGroups[groupKey];
                 const li = document.createElement('li');
+                li.className = 'marker-group-card';
                 const lbl = document.createElement('label');
-                lbl.style.display = 'flex'; lbl.style.alignItems = 'center'; lbl.style.width = '100%'; lbl.dataset.groupLabel = groupKey;
+                lbl.dataset.groupLabel = groupKey;
                 
                 const chk = document.createElement('input');
-                chk.type = 'checkbox'; chk.checked = group.visible; chk.style.marginRight = '10px';
+                chk.type = 'checkbox'; chk.checked = group.visible; chk.className = 'marker-group-checkbox';
                 chk.onchange = () => { state.markerGroups[groupKey].visible = chk.checked; updateVisibleMarkers(); };
                 
                 const textSpan = document.createElement('span');
@@ -3044,10 +3188,16 @@
                     'BC': 'Banco Capacitor (BC)',
                     'RT': 'Regulador de Tensão (RT)'
                 };
-                textSpan.textContent = groupLabels[groupKey] || groupKey; textSpan.style.fontWeight = 'bold'; textSpan.style.color = group.color; textSpan.style.flexGrow = '1';
+                textSpan.textContent = groupLabels[groupKey] || groupKey;
+                textSpan.className = 'marker-group-name';
+                textSpan.style.fontWeight = 'bold';
+                textSpan.style.color = group.color;
                 
                 const colorInput = document.createElement('input');
-                colorInput.type = 'color'; colorInput.value = group.color; colorInput.style.border = 'none'; colorInput.style.width = '30px'; colorInput.style.height = '25px'; colorInput.style.padding = '0'; colorInput.style.cursor = 'pointer'; colorInput.style.background = 'none';
+                colorInput.type = 'color';
+                colorInput.value = group.color;
+                colorInput.className = 'marker-color-picker';
+                colorInput.title = `Alterar cor de ${groupLabels[groupKey] || groupKey}`;
                 colorInput.addEventListener('input', (e) => { textSpan.style.color = e.target.value; changeMarkerGroupColor(groupKey, e.target.value); });
                 colorInput.addEventListener('click', (e) => e.stopPropagation());
                 
