@@ -715,6 +715,18 @@
         .route-step { padding: 6px 4px; border-radius: 7px; background: #e8eef5; color: #52677d; text-align: center; font-size: 9px; font-weight: 700; }
         .route-step strong { display: inline-flex; width: 16px; height: 16px; margin-right: 3px; align-items: center; justify-content: center; border-radius: 50%; background: #246aa8; color: #fff; }
         .route-selection-banner { padding: 9px 10px; border: 1px solid #b7d4ee; border-radius: 8px; background: #eaf5ff; color: #174f7e; font-size: 11px; font-weight: 700; }
+        .route-address-box { padding: 9px; border: 1px solid #dce4ed; border-radius: 9px; background: #fff; }
+        .route-address-label { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; color: #40566d; font-size: 10px; font-weight: 800; }
+        .route-address-search { display: flex; gap: 5px; }
+        .route-address-search input { min-width: 0; flex: 1; padding: 8px; border: 1px solid #cdd8e4; border-radius: 7px; font-size: 11px; outline: none; }
+        .route-address-search input:focus { border-color: #246aa8; box-shadow: 0 0 0 2px rgba(36,106,168,.1); }
+        .route-address-search button { flex: 0 0 auto; padding: 7px 10px !important; background: #246aa8 !important; color: #fff !important; font-weight: 700; }
+        .route-address-results { display: grid; gap: 5px; margin-top: 7px; }
+        .route-address-result { display: flex; align-items: center; gap: 7px; padding: 7px; border: 1px solid #e1e7ee; border-radius: 7px; background: #f8fafc; }
+        .route-address-result-main { min-width: 0; flex: 1; }
+        .route-address-result strong { display: block; overflow: hidden; color: #344a61; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+        .route-address-result small { display: block; margin-top: 2px; overflow: hidden; color: #718092; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+        .route-address-result button { padding: 6px 8px !important; background: #e7f3eb !important; color: #246b3c !important; font-size: 10px !important; font-weight: 800; }
         .route-empty { justify-content: center !important; padding: 18px 8px !important; color: #78889a; text-align: center; font-size: 11px; }
         .route-stop-actions { display: flex; gap: 3px; flex-shrink: 0; }
         .route-stop-actions button { width: 25px; height: 25px; padding: 0 !important; border-radius: 6px !important; background: #edf1f5 !important; color: #44566a !important; font-size: 11px !important; }
@@ -1035,6 +1047,11 @@
                 <label><input id="routeRoundTrip" type="checkbox"> Retornar à origem</label>
             </div>
             <div class="route-selection-banner" id="routeSelectionBanner">Modo de seleção ativo — clique em um posto no mapa.</div>
+            <div class="route-address-box">
+                <div class="route-address-label"><span>Ou adicione por endereço</span><span class="route-limited-label">Mapbox limitado</span></div>
+                <div class="route-address-search"><input id="routeAddressInput" type="search" placeholder="Rua, número, bairro e cidade"><button id="btnRouteAddressSearch" type="button">Buscar</button></div>
+                <div class="route-address-results" id="routeAddressResults"></div>
+            </div>
             <ul id="routeList"></ul>
             <div class="route-summary" id="routeSummary">
                 <div><strong id="routeDistance">—</strong><small>Distância</small></div>
@@ -1606,6 +1623,9 @@
         const routeCompactSummary = document.getElementById('routeCompactSummary');
         const btnCollapseRoute = document.getElementById('btnCollapseRoute');
         const btnCloseRoute = document.getElementById('btnCloseRoute');
+        const routeAddressInput = document.getElementById('routeAddressInput');
+        const btnRouteAddressSearch = document.getElementById('btnRouteAddressSearch');
+        const routeAddressResults = document.getElementById('routeAddressResults');
         const ROUTE_PREFS_STORAGE_KEY = 'routePlannerPreferences';
 
         function loadRoutePreferences() {
@@ -3018,6 +3038,13 @@
             clearCalculatedRoute();
             rebuildRouteMarkers();
             updateRoutePanelUI();
+        });
+        btnRouteAddressSearch.addEventListener('click', searchRouteAddress);
+        routeAddressInput.addEventListener('keydown', event => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                searchRouteAddress();
+            }
         });
         [routeProfile, routeOrigin, routeOptimize, routeRoundTrip].forEach(control => {
             control.addEventListener('change', () => {
@@ -4717,6 +4744,93 @@
              rebuildRouteMarkers();
              updateRoutePanelUI();
         }
+
+        async function searchRouteAddress() {
+             const query = routeAddressInput.value.trim();
+             if (!query) {
+                 routeStatus.textContent = 'Digite uma rua, número, bairro ou cidade.';
+                 routeStatus.classList.add('error');
+                 routeAddressInput.focus();
+                 return;
+             }
+
+             btnRouteAddressSearch.disabled = true;
+             btnRouteAddressSearch.textContent = 'Buscando…';
+             routeAddressResults.innerHTML = '';
+             routeStatus.textContent = 'Consultando endereços no Mapbox…';
+             routeStatus.classList.remove('error');
+
+             try {
+                 const center = map.getCenter();
+                 const params = new URLSearchParams({
+                     q: query,
+                     access_token: MAPBOX_ACCESS_TOKEN,
+                     country: 'br',
+                     language: 'pt',
+                     limit: '5',
+                     autocomplete: 'false',
+                     types: 'address,street,place,locality,neighborhood,postcode',
+                     proximity: `${center.lng},${center.lat}`
+                 });
+                 const response = await fetchMapboxResource(`https://api.mapbox.com/search/geocode/v6/forward?${params}`);
+                 if (!response.ok) throw new MapboxServiceError(`Busca de endereço indisponível (HTTP ${response.status}).`, response.status);
+                 const data = await response.json();
+                 const results = (data.features || []).filter(result => Array.isArray(result.geometry?.coordinates));
+
+                 if (results.length === 0) {
+                     routeStatus.textContent = 'Nenhum endereço encontrado. Inclua cidade e número para refinar a busca.';
+                     routeStatus.classList.add('error');
+                     return;
+                 }
+
+                 results.forEach(result => {
+                     const properties = result.properties || {};
+                     const coordinates = result.geometry.coordinates.slice();
+                     const fullAddress = properties.full_address
+                         || [properties.name, properties.place_formatted].filter(Boolean).join(', ')
+                         || result.name
+                         || 'Endereço encontrado';
+                     const card = document.createElement('div');
+                     card.className = 'route-address-result';
+                     const main = document.createElement('div');
+                     main.className = 'route-address-result-main';
+                     const title = document.createElement('strong');
+                     title.textContent = properties.name || result.name || fullAddress;
+                     const details = document.createElement('small');
+                     details.textContent = fullAddress;
+                     const addButton = document.createElement('button');
+                     addButton.type = 'button';
+                     addButton.textContent = '+ Parada';
+                     addButton.addEventListener('click', () => {
+                         addWaypointToRoute({
+                             type: 'Feature',
+                             properties: { name: fullAddress, routeSource: 'address' },
+                             geometry: { type: 'Point', coordinates }
+                         });
+                         map.flyTo({ center: coordinates, zoom: 16, essential: true });
+                         routeAddressInput.value = '';
+                         routeAddressResults.innerHTML = '';
+                         routeStatus.textContent = `Endereço adicionado: ${fullAddress}`;
+                         routeStatus.classList.remove('error');
+                     });
+                     main.appendChild(title);
+                     main.appendChild(details);
+                     card.appendChild(main);
+                     card.appendChild(addButton);
+                     routeAddressResults.appendChild(card);
+                 });
+                 routeStatus.textContent = `${results.length} endereço(s) encontrado(s). Escolha uma opção.`;
+             } catch (error) {
+                 console.error('Erro ao buscar endereço para a rota:', error);
+                 routeStatus.textContent = error instanceof MapboxServiceError
+                     ? `Busca Mapbox limitada: ${error.message}`
+                     : 'Não foi possível buscar o endereço. Verifique a conexão e o token Mapbox.';
+                 routeStatus.classList.add('error');
+             } finally {
+                 btnRouteAddressSearch.disabled = false;
+                 btnRouteAddressSearch.textContent = 'Buscar';
+             }
+        }
         
         window.removeWaypoint = function(index) { 
              routeWaypoints.splice(index, 1);
@@ -4731,6 +4845,8 @@
              routeMarkers.forEach(marker => marker.remove());
              routeMarkers = [];
              routeWaypoints = [];
+             routeAddressInput.value = '';
+             routeAddressResults.innerHTML = '';
              clearCalculatedRoute();
              updateRoutePanelUI();
              map.getCanvas().style.cursor = 'crosshair';
@@ -4761,6 +4877,8 @@
              routeMarkers.forEach(m => m.remove());
              routeMarkers = [];
              routeWaypoints = [];
+             routeAddressInput.value = '';
+             routeAddressResults.innerHTML = '';
              clearCalculatedRoute();
              updateRoutePanelUI();
              routePanel.style.display = 'none';
