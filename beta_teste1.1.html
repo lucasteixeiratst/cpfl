@@ -52,12 +52,22 @@
         }
 
         /* --- ESTILOS DO MENU DE ARQUIVOS (KML/KMZ/ZIP) --- */
-        .kmz-menu { width: 320px; }
+        .kmz-menu { width: 370px; background: #f5f8fb; border: 1px solid rgba(31, 79, 143, .12); }
+        .network-files-header { padding: 16px; background: linear-gradient(135deg, #164a86, #2877c7); color: #fff; }
+        .network-files-title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .network-files-title { margin: 0; font-size: 17px; }
+        .network-files-subtitle { margin: 4px 0 0; font-size: 11px; opacity: .84; }
+        .network-files-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-top: 13px; }
+        .network-stat { padding: 7px 5px; border-radius: 8px; background: rgba(255,255,255,.14); text-align: center; }
+        .network-stat strong { display: block; font-size: 15px; }
+        .network-stat span { display: block; margin-top: 1px; font-size: 9px; text-transform: uppercase; letter-spacing: .45px; opacity: .86; }
         
         .device-upload-btn {
-            padding: 15px;
-            background-color: #f8f9fa;
-            border-bottom: 1px solid #eee;
+            padding: 11px 13px;
+            margin: 10px 12px 0;
+            background-color: #fff;
+            border: 1px dashed #8eb8e5;
+            border-radius: 9px;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -66,31 +76,31 @@
             color: #4285F4;
             transition: background 0.2s;
         }
-        .device-upload-btn:hover { background-color: #e8f0fe; }
+        .device-upload-btn:hover { background-color: #e8f0fe; border-color: #4285F4; }
         .device-upload-btn img { width: 20px; height: 20px; }
 
         /* Controles de Seleção em Massa */
         .kmz-controls {
-            padding: 10px;
+            padding: 8px 12px 11px;
             display: flex;
             gap: 5px;
-            border-bottom: 1px solid #eee;
-            background: #fff;
+            border-bottom: 1px solid #dfe7ef;
+            background: transparent;
         }
         .kmz-controls button {
             flex: 1;
             padding: 8px;
             border: none;
-            border-radius: 4px;
+            border-radius: 7px;
             cursor: pointer;
             font-size: 12px;
             font-weight: bold;
             transition: 0.2s;
         }
-        #btnSelectAll { background-color: #f1f3f4; color: #333; }
+        #btnSelectAll { background-color: #e6edf5; color: #28445f; }
         #btnSelectAll:hover { background-color: #e8eaed; }
         
-        #btnLoadSelected { background-color: #4285F4; color: white; }
+        #btnLoadSelected { background-color: #2877c7; color: white; }
         #btnLoadSelected:hover { background-color: #3367d6; }
 
         .file-list-integrated {
@@ -98,13 +108,17 @@
             padding: 0;
             margin: 0;
             overflow-y: auto;
-            max-height: 400px;
+            max-height: 300px;
+            padding: 7px;
         }
         .file-list-integrated li {
             display: flex;
             align-items: center;
-            padding: 10px 15px;
-            border-bottom: 1px solid #f0f0f0;
+            padding: 9px;
+            margin-bottom: 5px;
+            border: 1px solid #e2e8ef;
+            border-radius: 8px;
+            background: #fff;
             transition: background 0.2s;
         }
         .file-list-integrated li:hover { background-color: #fafafa; }
@@ -128,8 +142,7 @@
         .file-list-integrated span.file-name:hover { color: #4285F4; font-weight: bold; }
         
         /* Indicador de Cache (Verde) */
-        .file-list-integrated li.is-cached { background-color: #f1f8e9; }
-        .file-list-integrated li.is-cached span.file-name { color: #2e7d32; }
+        .file-list-integrated li.is-cached { border-color: #b9dfc4; }
         .file-list-integrated li.file-folder {
             display: block;
             padding: 0;
@@ -140,10 +153,11 @@
             display: flex;
             align-items: center;
             gap: 9px;
-            padding: 11px 14px;
+            padding: 10px 11px;
             color: #1f4f8f;
             background: #eef5ff;
-            border-bottom: 1px solid #d8e7fb;
+            border: 1px solid #d8e7fb;
+            border-radius: 8px;
             cursor: pointer;
             font-size: 13px;
             font-weight: bold;
@@ -162,8 +176,27 @@
             padding: 0;
         }
         .file-folder.collapsed .file-folder-items { display: none; }
-        .file-folder-items > li.file-entry { padding-left: 30px; background: #fbfdff; }
-        .file-folder-items > li.file-entry.is-cached { background: #f1f8e9; }
+        .file-folder-items { padding: 6px 0 1px 12px; }
+        .file-folder-items > li.file-entry { background: #fbfdff; }
+        .file-folder-count { margin-left: auto; padding: 2px 7px; border-radius: 10px; background: #d8e7fb; font-size: 10px; }
+        .network-search-wrap { position: relative; padding: 10px 12px 6px; }
+        .network-search-wrap span { position: absolute; left: 23px; top: 19px; font-size: 13px; opacity: .55; }
+        #kmzSearchInput { width: 100%; box-sizing: border-box; padding: 9px 10px 9px 31px; border: 1px solid #ccd8e4; border-radius: 8px; outline: none; }
+        #kmzSearchInput:focus { border-color: #4285F4; box-shadow: 0 0 0 3px rgba(66,133,244,.12); }
+        .network-filter-row { display: flex; gap: 5px; padding: 2px 12px 5px; }
+        .network-filter { border: 1px solid #ccd8e4; border-radius: 14px; background: #fff; color: #52687d; padding: 5px 9px; cursor: pointer; font-size: 10px; }
+        .network-filter.active { border-color: #2877c7; background: #e8f2ff; color: #165a9e; font-weight: 700; }
+        .network-result-count { margin-left: auto; align-self: center; color: #6e8091; font-size: 10px; }
+        .file-main { min-width: 0; flex: 1; }
+        .file-status-row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+        .file-badge { padding: 2px 6px; border-radius: 8px; font-size: 9px; font-weight: 700; }
+        .badge-offline { background: #e4f5e8; color: #28703b; }
+        .badge-loaded { background: #e8f2ff; color: #165a9e; }
+        .badge-imported { background: #f5eafa; color: #75428b; }
+        .file-remove-offline { border: 0; background: transparent; color: #9b3d3d; cursor: pointer; padding: 5px; border-radius: 5px; font-size: 15px; }
+        .file-remove-offline:hover { background: #fdeaea; }
+        .network-empty { padding: 24px 15px !important; justify-content: center; color: #6e8091; text-align: center; border: 0 !important; background: transparent !important; }
+        @media (max-width: 520px) { .kmz-menu { width: calc(100vw - 82px); max-height: calc(100vh - 95px); } .file-list-integrated { max-height: calc(100vh - 390px); min-height: 150px; } .kmz-controls { position: sticky; bottom: 0; z-index: 2; background: #f5f8fb; } }
 
         /* OUTROS MENUS */
         .line-menu {
@@ -798,16 +831,30 @@
     <div id="searchResults" class="search-results"></div>
 
     <div class="kmz-menu" id="kmzMenu">
+        <div class="network-files-header">
+            <div class="network-files-title-row"><div><h3 class="network-files-title">Arquivos de Rede</h3><p class="network-files-subtitle">Abra no mapa ou salve para trabalhar offline</p></div></div>
+            <div class="network-files-stats">
+                <div class="network-stat"><strong id="networkTotalCount">0</strong><span>arquivos</span></div>
+                <div class="network-stat"><strong id="networkOfflineCount">0</strong><span>offline</span></div>
+                <div class="network-stat"><strong id="networkSelectedCount">0</strong><span>selecionados</span></div>
+            </div>
+        </div>
         <div class="device-upload-btn" id="btnDeviceUpload">
             <img src="ícones/upload.svg" alt="Upload">
-            Abrir do Dispositivo...
+            Importar KML, KMZ ou ZIP do dispositivo
         </div>
-        <div style="padding: 10px 15px 0 15px;">
-             <input type="text" id="kmzSearchInput" placeholder="Filtrar arquivos..." style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+        <div class="network-search-wrap"><span>⌕</span>
+             <input type="text" id="kmzSearchInput" placeholder="Buscar arquivo ou pasta...">
+        </div>
+        <div class="network-filter-row">
+            <button class="network-filter active" data-filter="all">Todos</button>
+            <button class="network-filter" data-filter="offline">Offline</button>
+            <button class="network-filter" data-filter="loaded">No mapa</button>
+            <span class="network-result-count" id="networkResultCount">0 resultados</span>
         </div>
         <div class="kmz-controls">
-            <button id="btnSelectAll">Selecionar Todos</button>
-            <button id="btnLoadSelected">Baixar e Carregar</button>
+            <button id="btnSelectAll">Selecionar visíveis</button>
+            <button id="btnLoadSelected">Salvar offline</button>
         </div>
         <ul id="kmzList" class="file-list-integrated"></ul>
     </div>
@@ -2284,7 +2331,17 @@
             }
         });
 
-        // --- FUNÇÃO DE EXIBIÇÃO DA LISTA (HÍBRIDA) ---
+        // --- ARQUIVOS DE REDE: LISTA, FILTROS E SELEÇÃO OFFLINE ---
+        const networkFileSelection = new Set();
+        let networkFileFilter = 'all';
+
+        function updateNetworkSelectionSummary() {
+            document.getElementById('networkSelectedCount').textContent = networkFileSelection.size;
+            document.getElementById('btnLoadSelected').textContent = networkFileSelection.size
+                ? `Salvar offline (${networkFileSelection.size})`
+                : 'Salvar offline';
+        }
+
         async function displayFileList() {
             const listElement = document.getElementById('kmzList');
             listElement.innerHTML = ''; 
@@ -2297,17 +2354,36 @@
             const allFilesMap = new Map();
             
             // Adiciona predefinidos
-            predefinedFiles.forEach(f => allFilesMap.set(f.name, { ...f }));
+            predefinedFiles.forEach(f => allFilesMap.set(f.name, { ...f, isImported: false }));
             
             // Adiciona arquivos extras que estão no cache (uploads manuais)
             cachedFileNames.forEach(name => {
                 if (!allFilesMap.has(name)) {
-                    allFilesMap.set(name, { name: name, url: null });
+                    allFilesMap.set(name, { name: name, url: null, folder: 'Meus arquivos importados', isImported: true });
+                }
+            });
+
+            // Mantém importações manuais visíveis enquanto ainda estiverem abertas no mapa,
+            // mesmo que o usuário remova apenas a cópia offline.
+            state.files.forEach(loadedFile => {
+                if (!allFilesMap.has(loadedFile.name)) {
+                    allFilesMap.set(loadedFile.name, {
+                        name: loadedFile.name,
+                        url: null,
+                        folder: 'Meus arquivos importados',
+                        isImported: true
+                    });
                 }
             });
 
             // 3. Ordenar alfabeticamente
-            const sortedFiles = Array.from(allFilesMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+            const sortedFiles = Array.from(allFilesMap.values()).sort((a, b) =>
+                a.name.localeCompare(b.name, 'pt-BR', { numeric: true, sensitivity: 'base' })
+            );
+
+            document.getElementById('networkTotalCount').textContent = sortedFiles.length;
+            document.getElementById('networkOfflineCount').textContent = cachedSet.size;
+            updateNetworkSelectionSummary();
 
             const searchInput = document.getElementById('kmzSearchInput');
             const filterTerm = searchInput ? normalizeText(searchInput.value) : '';
@@ -2318,44 +2394,34 @@
                 li.classList.add('file-entry');
                 li.dataset.fileSearch = normalizeText(file.name);
                 const isOffline = cachedSet.has(file.name);
+                const isLoaded = state.files.some(loadedFile => loadedFile.name === file.name);
+                li.dataset.offline = String(isOffline);
+                li.dataset.loaded = String(isLoaded);
                 
                 if (isOffline) li.classList.add('is-cached');
 
-                // 1. Checkbox: Só gerencia Offline (não carrega no mapa)
+                // A caixa representa apenas a seleção temporária para ações em lote.
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
-                checkbox.checked = isOffline;
+                checkbox.checked = networkFileSelection.has(file.name);
                 checkbox.value = file.name;
-                checkbox.title = "Marcar: Baixar para Offline | Desmarcar: Apagar do Cache";
+                checkbox.title = 'Selecionar para salvar offline';
+                checkbox.setAttribute('aria-label', `Selecionar ${file.name}`);
                 
-                checkbox.addEventListener('change', async (e) => {
-                    e.stopPropagation(); 
-                    
-                    if (e.target.checked) {
-                        // Checkbox marcado - Se for arquivo de rede, será baixado no "Baixar Selecionados" ou ao clicar no nome
-                    } else {
-                        // Se desmarcar algo que já está salvo (verde), confirma deleção
-                        if(li.classList.contains('is-cached')) {
-                            if(confirm(`Remover "${file.name}" do armazenamento offline?`)) {
-                                await deleteDataFromDB(GEOJSON_STORE_NAME, file.name);
-                                await deleteDataFromDB(SPATIAL_INDEX_STORE_NAME, file.name);
-                                li.classList.remove('is-cached');
-                                
-                                // Se era um arquivo customizado (não predefinido), remove da lista visualmente
-                                if (!predefinedFiles.find(pf => pf.name === file.name)) {
-                                    li.remove();
-                                }
-                            } else {
-                                e.target.checked = true; // Cancela
-                            }
-                        }
-                    }
+                checkbox.addEventListener('change', e => {
+                    e.stopPropagation();
+                    if (e.target.checked) networkFileSelection.add(file.name);
+                    else networkFileSelection.delete(file.name);
+                    updateNetworkSelectionSummary();
                 });
 
                 // 2. Nome: Carrega no Mapa (e baixa se necessário)
+                const main = document.createElement('div');
+                main.className = 'file-main';
                 const span = document.createElement('span');
                 span.className = 'file-name';
                 span.textContent = file.name;
+                span.title = `Abrir ${file.name} no mapa`;
                 
                 span.addEventListener('click', async () => {
                       try {
@@ -2375,7 +2441,7 @@
                         
                         // Atualiza visual
                         li.classList.add('is-cached');
-                        checkbox.checked = true;
+                        li.dataset.offline = 'true';
                         
                         if (source === 'network') {
                             alert(`Arquivo baixado, carregado e salvo permanentemente para uso offline!`);
@@ -2389,8 +2455,32 @@
                       }
                 });
 
+                const statusRow = document.createElement('div');
+                statusRow.className = 'file-status-row';
+                if (isOffline) statusRow.insertAdjacentHTML('beforeend', '<span class="file-badge badge-offline">Offline</span>');
+                if (isLoaded) statusRow.insertAdjacentHTML('beforeend', '<span class="file-badge badge-loaded">No mapa</span>');
+                if (file.isImported) statusRow.insertAdjacentHTML('beforeend', '<span class="file-badge badge-imported">Importado</span>');
+                main.appendChild(span);
+                main.appendChild(statusRow);
                 li.appendChild(checkbox);
-                li.appendChild(span);
+                li.appendChild(main);
+
+                if (isOffline) {
+                    const removeOffline = document.createElement('button');
+                    removeOffline.className = 'file-remove-offline';
+                    removeOffline.textContent = '×';
+                    removeOffline.title = 'Remover somente do armazenamento offline';
+                    removeOffline.setAttribute('aria-label', `Remover ${file.name} do armazenamento offline`);
+                    removeOffline.addEventListener('click', async event => {
+                        event.stopPropagation();
+                        if (!confirm(`Remover "${file.name}" do armazenamento offline?\nO arquivo continuará no mapa até ser fechado.`)) return;
+                        await deleteDataFromDB(GEOJSON_STORE_NAME, file.name);
+                        await deleteDataFromDB(SPATIAL_INDEX_STORE_NAME, file.name);
+                        networkFileSelection.delete(file.name);
+                        await displayFileList();
+                    });
+                    li.appendChild(removeOffline);
+                }
 
                 if (file.folder) {
                     let folderElement = folderElements.get(file.folder);
@@ -2411,6 +2501,10 @@
 
                         const folderName = document.createElement('span');
                         folderName.textContent = file.folder;
+
+                        const folderCount = document.createElement('span');
+                        folderCount.className = 'file-folder-count';
+                        folderCount.textContent = '0';
 
                         const folderItems = document.createElement('ul');
                         folderItems.className = 'file-folder-items';
@@ -2436,15 +2530,17 @@
 
                         folderHeader.appendChild(folderArrow);
                         folderHeader.appendChild(folderName);
+                        folderHeader.appendChild(folderCount);
                         folderLi.appendChild(folderHeader);
                         folderLi.appendChild(folderItems);
                         setFolderCollapsed(menuState.collapsedFolders.has(file.folder));
                         listElement.appendChild(folderLi);
 
-                        folderElement = { li: folderLi, items: folderItems };
+                        folderElement = { li: folderLi, items: folderItems, count: folderCount };
                         folderElements.set(file.folder, folderElement);
                     }
                     folderElement.items.appendChild(li);
+                    folderElement.count.textContent = folderElement.items.children.length;
                 } else {
                     listElement.appendChild(li);
                 }
@@ -2463,7 +2559,10 @@
                     ? (folder.dataset.folderSearch || '').includes(normalizedTerm)
                     : false;
                 const fileMatches = (entry.dataset.fileSearch || '').includes(normalizedTerm);
-                entry.style.display = !normalizedTerm || folderMatches || fileMatches ? 'flex' : 'none';
+                const statusMatches = networkFileFilter === 'all'
+                    || (networkFileFilter === 'offline' && entry.dataset.offline === 'true')
+                    || (networkFileFilter === 'loaded' && entry.dataset.loaded === 'true');
+                entry.style.display = statusMatches && (!normalizedTerm || folderMatches || fileMatches) ? 'flex' : 'none';
             });
 
             document.querySelectorAll('#kmzList li.file-folder').forEach(folder => {
@@ -2480,6 +2579,9 @@
                     );
                 }
             });
+
+            const visibleCount = Array.from(fileEntries).filter(entry => entry.style.display !== 'none').length;
+            document.getElementById('networkResultCount').textContent = `${visibleCount} resultado${visibleCount === 1 ? '' : 's'}`;
         }
         
         displayFileList();
@@ -2490,16 +2592,31 @@
         document.getElementById('kmzSearchInput').addEventListener('input', function(e) {
             applyFileListFilter(e.target.value);
         });
+
+        document.querySelectorAll('.network-filter').forEach(button => {
+            button.addEventListener('click', event => {
+                event.stopPropagation();
+                networkFileFilter = button.dataset.filter;
+                document.querySelectorAll('.network-filter').forEach(item => item.classList.toggle('active', item === button));
+                applyFileListFilter(document.getElementById('kmzSearchInput').value);
+            });
+        });
         
         // --- LOGICA DOS BOTÕES DE SELEÇÃO EM MASSA ---
         
-        let allSelected = false;
         document.getElementById('btnSelectAll').addEventListener('click', (e) => {
             e.stopPropagation();
-            allSelected = !allSelected;
-            const checkboxes = document.querySelectorAll('.file-list-integrated input[type="checkbox"]');
-            checkboxes.forEach(chk => chk.checked = allSelected);
-            e.target.textContent = allSelected ? "Desmarcar Todos" : "Selecionar Todos";
+            const visibleEntries = Array.from(document.querySelectorAll('#kmzList li.file-entry'))
+                .filter(entry => entry.style.display !== 'none');
+            const shouldSelect = visibleEntries.some(entry => !entry.querySelector('input[type="checkbox"]').checked);
+            visibleEntries.forEach(entry => {
+                const checkbox = entry.querySelector('input[type="checkbox"]');
+                checkbox.checked = shouldSelect;
+                if (shouldSelect) networkFileSelection.add(checkbox.value);
+                else networkFileSelection.delete(checkbox.value);
+            });
+            e.target.textContent = shouldSelect ? 'Desmarcar visíveis' : 'Selecionar visíveis';
+            updateNetworkSelectionSummary();
         });
 
         // --- LÓGICA ATUALIZADA (v5.4): BAIXAR SEM RENDERIZAR NO MAPA ---
@@ -2507,7 +2624,7 @@
             e.stopPropagation();
             const checkedBoxes = document.querySelectorAll('.file-list-integrated input[type="checkbox"]:checked');
             
-            if(checkedBoxes.length === 0) return alert("Nada selecionado.");
+            if(checkedBoxes.length === 0) return alert("Selecione pelo menos um arquivo para salvar offline.");
             
             const loadingMsg = document.getElementById('progressOverlay');
             const loadingText = document.getElementById('progressText');
@@ -2530,7 +2647,7 @@
                 if (!file) file = { name: fileName, url: null };
                 
                 if (file) {
-                    loadingText.textContent = `Baixando p/ Cache ${count}/${total}: ${file.name}`;
+                    loadingText.textContent = `Salvando offline ${count}/${total}: ${file.name}`;
                     loadingBar.style.width = `${(count / total) * 100}%`;
 
                     try {
@@ -2539,9 +2656,12 @@
                         await getGeoJSONFromFile(file); 
                         successCount++;
                         
-                        // Atualizamos a interface para ficar verde (is-cached)
+                        // Atualiza o estado visual; a lista completa será redesenhada no final.
                         const li = box.closest('li');
-                        if(li) li.classList.add('is-cached');
+                        if(li) {
+                            li.classList.add('is-cached');
+                            li.dataset.offline = 'true';
+                        }
                         
                     } catch (err) {
                         console.error(`Falha em ${file.name}`, err);
@@ -2554,7 +2674,8 @@
             isProcessingBatch = false;
 
             loadingMsg.style.display = 'none';
-            kmzMenu.style.display = 'none';
+            networkFileSelection.clear();
+            await displayFileList();
             
             const persistent = await ensurePersistentStorage();
             const storageText = persistent
@@ -2566,7 +2687,7 @@
             alert(
                 `Downloads concluídos: ${successCount} de ${total} arquivo(s) salvos no ${storageText}.`
                 + failureText
-                + '\nO mapa carregará automaticamente os arquivos mais próximos.'
+                + '\nOs arquivos foram salvos sem alterar o que está aberto no mapa.'
             );
             
             // Força uma verificação imediata para carregar os 4 arquivos próximos agora que temos dados
@@ -2892,12 +3013,8 @@
                                 // Carregamos os dados no mapa, mas NÃO recalculamos marcadores nem menus ainda
                                 addDataToMap(fileData.geojson, fileData.name, true);
 
-                                // Marca o checkbox na lista visualmente (sem disparar eventos)
                                 const checkbox = document.querySelector(`input[value="${fileData.name}"]`);
-                                if(checkbox) {
-                                    checkbox.checked = true;
-                                    checkbox.closest('li').classList.add('is-cached');
-                                }
+                                if(checkbox) checkbox.closest('li').classList.add('is-cached');
 
                                 // Atualiza barra de progresso
                                 count++;
