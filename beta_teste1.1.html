@@ -695,8 +695,22 @@
             });
         }
 
+        let persistentStoragePromise = null;
+
+        async function ensurePersistentStorage() {
+            if (!navigator.storage?.persist) return false;
+            if (!persistentStoragePromise) {
+                persistentStoragePromise = (async () => {
+                    if (await navigator.storage.persisted()) return true;
+                    return navigator.storage.persist();
+                })().catch(() => false);
+            }
+            return persistentStoragePromise;
+        }
+
         async function saveDataToDB(storeName, data) {
             try {
+                await ensurePersistentStorage();
                 const db = await openDB();
                 return new Promise((resolve, reject) => {
                     const transaction = db.transaction([storeName], 'readwrite');
@@ -705,7 +719,10 @@
                     request.onsuccess = () => resolve();
                     request.onerror = () => reject(request.error);
                 });
-            } catch (error) { console.error("Falha ao salvar no DB", error); }
+            } catch (error) {
+                console.error("Falha ao salvar no DB", error);
+                throw error;
+            }
         }
 
         async function getDataFromDB(storeName, key) {
@@ -1214,6 +1231,23 @@
             const centerLng = (bounds[0] + bounds[2]) / 2;
             const centerLat = (bounds[1] + bounds[3]) / 2;
             return new maplibregl.LngLat(centerLng, centerLat);
+        }
+
+        function focusGeoJSON(geojson) {
+            const bounds = calculateBounds(geojson);
+            if (!bounds) return;
+
+            const [minLng, minLat, maxLng, maxLat] = bounds;
+            if (minLng === maxLng && minLat === maxLat) {
+                map.flyTo({ center: [minLng, minLat], zoom: 16 });
+                return;
+            }
+
+            map.fitBounds([[minLng, minLat], [maxLng, maxLat]], {
+                padding: 50,
+                maxZoom: 16,
+                duration: 800
+            });
         }
 
         function clearMap() {
@@ -1946,13 +1980,19 @@
 
                         // Aqui chamamos e usamos o retorno para carregar no mapa
                         const { geojson, source } = await getGeoJSONFromFile(file); 
+                        if (state.files.some(loadedFile => loadedFile.name === file.name)) {
+                            removeFileFromMap(file.name, true);
+                        }
                         addDataToMap(geojson, file.name);
+                        focusGeoJSON(geojson);
                         
                         // Atualiza visual
                         li.classList.add('is-cached');
                         checkbox.checked = true;
                         
-                        if (source === 'network') alert(`Arquivo baixado e carregado!`);
+                        if (source === 'network') {
+                            alert(`Arquivo baixado, carregado e salvo permanentemente para uso offline!`);
+                        }
                         kmzMenu.style.display = 'none';
 
                       } catch (error) {
@@ -2088,6 +2128,8 @@
             loadingMsg.style.display = 'flex';
             
             let count = 0;
+            let successCount = 0;
+            const failedFiles = [];
             const total = checkedBoxes.length;
             const boxesArray = Array.from(checkedBoxes);
 
@@ -2108,6 +2150,7 @@
                         // getGeoJSONFromFile já salva no IndexDB.
                         // NÃO chamamos addDataToMap aqui para não travar o mapa.
                         await getGeoJSONFromFile(file); 
+                        successCount++;
                         
                         // Atualizamos a interface para ficar verde (is-cached)
                         const li = box.closest('li');
@@ -2115,6 +2158,7 @@
                         
                     } catch (err) {
                         console.error(`Falha em ${file.name}`, err);
+                        failedFiles.push(file.name);
                     }
                 }
             }
@@ -2125,7 +2169,18 @@
             loadingMsg.style.display = 'none';
             kmzMenu.style.display = 'none';
             
-            alert("Downloads concluídos! Os arquivos foram salvos no cache. O mapa carregará os 4 mais próximos automaticamente.");
+            const persistent = await ensurePersistentStorage();
+            const storageText = persistent
+                ? 'armazenamento permanente offline'
+                : 'armazenamento offline do navegador';
+            const failureText = failedFiles.length > 0
+                ? `\nFalhas (${failedFiles.length}): ${failedFiles.join(', ')}`
+                : '';
+            alert(
+                `Downloads concluídos: ${successCount} de ${total} arquivo(s) salvos no ${storageText}.`
+                + failureText
+                + '\nO mapa carregará automaticamente os arquivos mais próximos.'
+            );
             
             // Força uma verificação imediata para carregar os 4 arquivos próximos agora que temos dados
             checkAndLoadNearestFiles();
@@ -2672,51 +2727,83 @@
             }
         }
 
-        // --- CORREÇÃO: Função handleFile atualizada para salvar Spatial Index ---
-        function handleFile(event) {
-            const files = event.target.files;
-            if (!files || files.length === 0) return;
-
-            let processedCount = 0;
-            const totalFiles = files.length;
-
-            Array.from(files).forEach(file => {
-                if (typeof gtag === 'function') gtag('event', 'map_load', { 'file_name': file.name, 'load_source': 'device' });
-
+        function readDeviceFile(file) {
+            return new Promise((resolve, reject) => {
                 const reader = new FileReader();
-                reader.onload = async () => {
-                    try {
-                        const data = await parseMapData(reader.result, file.name);
-                        
-                        // 1. Salva o Arquivo no Banco
-                        await saveDataToDB(GEOJSON_STORE_NAME, {
-                            name: file.name,
-                            geojson: data,
-                            parserVersion: MAP_PARSER_VERSION
-                        });
-
-                        // 2. CORREÇÃO: Calcula e Salva o Índice Espacial
-                        const bounds = calculateBounds(data);
-                        if (bounds) {
-                            await saveDataToDB(SPATIAL_INDEX_STORE_NAME, { name: file.name, bounds });
-                        }
-                        
-                        addDataToMap(data, file.name);
-                        displayFileList(); 
-                        
-                        processedCount++;
-                        if (processedCount === totalFiles) {
-                            alert(`Processamento concluído: ${totalFiles} arquivo(s) carregado(s).`);
-                        }
-                    } catch (error) { 
-                        console.error('Erro ao processar arquivo:', file.name, error);
-                        const detail = error?.message ? `\n\n${error.message}` : '';
-                        alert(`Erro ao processar arquivo: ${file.name}${detail}`); 
-                        processedCount++;
-                    }
-                };
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(reader.error || new Error('Não foi possível ler o arquivo.'));
                 reader.readAsArrayBuffer(file);
             });
+        }
+
+        async function processDeviceFile(file) {
+            if (typeof gtag === 'function') {
+                gtag('event', 'map_load', { 'file_name': file.name, 'load_source': 'device' });
+            }
+
+            const arrayBuffer = await readDeviceFile(file);
+            const geojson = await parseMapData(arrayBuffer, file.name);
+            const bounds = calculateBounds(geojson);
+
+            await saveDataToDB(GEOJSON_STORE_NAME, {
+                name: file.name,
+                geojson,
+                parserVersion: MAP_PARSER_VERSION
+            });
+            if (bounds) {
+                await saveDataToDB(SPATIAL_INDEX_STORE_NAME, { name: file.name, bounds });
+            }
+
+            // Um arquivo de mesmo nome substitui os dados anteriores no mapa,
+            // em vez de exibir sucesso mantendo a versão antiga.
+            if (state.files.some(loadedFile => loadedFile.name === file.name)) {
+                removeFileFromMap(file.name, true);
+            }
+            addDataToMap(geojson, file.name);
+            return { name: file.name, geojson };
+        }
+
+        async function handleFile(event) {
+            const files = Array.from(event.target.files || []);
+            if (files.length === 0) return;
+
+            const progressOverlay = document.getElementById('progressOverlay');
+            const progressText = document.getElementById('progressText');
+            progressOverlay.style.display = 'flex';
+            progressText.textContent = `Processando ${files.length} arquivo(s)...`;
+
+            const results = await Promise.allSettled(files.map(processDeviceFile));
+            const successes = results
+                .filter(result => result.status === 'fulfilled')
+                .map(result => result.value);
+            const failures = results
+                .map((result, index) => ({ result, file: files[index] }))
+                .filter(item => item.result.status === 'rejected');
+
+            failures.forEach(({ result, file }) => {
+                console.error('Erro ao processar arquivo:', file.name, result.reason);
+            });
+
+            await displayFileList();
+            progressOverlay.style.display = 'none';
+
+            if (successes.length > 0) {
+                focusGeoJSON(successes[successes.length - 1].geojson);
+            }
+
+            const persistent = await ensurePersistentStorage();
+            const storageText = persistent
+                ? 'armazenamento permanente offline'
+                : 'armazenamento offline do navegador';
+            const failureNames = failures.map(item => item.file.name).join(', ');
+            const errorText = failures.length > 0
+                ? `\nFalhas (${failures.length}): ${failureNames}`
+                : '';
+
+            alert(
+                `Processamento concluído: ${successes.length} arquivo(s) salvo(s) no ${storageText}.`
+                + errorText
+            );
         }
 
         function applyColorUpdate(groupName, sourceId, newColor) {
