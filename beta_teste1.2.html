@@ -670,6 +670,9 @@
         .route-panel h3 { margin: 0; font-size: 17px; color: #1f2937; }
         .route-compact-summary { display: none; color: #1d4ed8; font-size: 11px; font-weight: 600; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .route-collapse-button { flex: 0 0 34px !important; width: 34px; height: 30px; padding: 0 !important; border-radius: 15px !important; background: #eff6ff !important; color: #1a73e8 !important; font-size: 18px !important; font-weight: bold; line-height: 1; }
+        .route-header-actions { display: flex; align-items: center; gap: 5px; }
+        .route-close-button { flex: 0 0 30px !important; width: 30px; height: 30px; padding: 0 !important; border-radius: 15px !important; background: rgba(255,255,255,.16) !important; color: #fff !important; font-size: 18px !important; line-height: 1; }
+        .route-close-button:hover { background: rgba(255,255,255,.28) !important; }
         .route-panel-content { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
         .route-panel.collapsed { width: 270px; max-height: 64px; padding: 10px 12px; overflow: hidden; cursor: pointer; }
         .route-panel.collapsed .route-panel-content { display: none; }
@@ -1007,7 +1010,7 @@
     <div class="route-panel" id="routePanel">
         <div class="route-panel-header">
             <div class="route-panel-heading"><img src="ícones/route.svg" alt=""><div class="route-panel-title"><h3>Planejador inteligente</h3><div class="route-compact-summary" id="routeCompactSummary">Toque para abrir o planejamento</div></div></div>
-            <button class="route-collapse-button" id="btnCollapseRoute" type="button" title="Minimizar planejador" aria-label="Minimizar planejador">⌃</button>
+            <div class="route-header-actions"><button class="route-collapse-button" id="btnCollapseRoute" type="button" title="Minimizar planejador" aria-label="Minimizar planejador">⌃</button><button class="route-close-button" id="btnCloseRoute" type="button" title="Sair do planejador" aria-label="Sair do planejador">×</button></div>
         </div>
         <div class="route-panel-content">
             <div class="route-steps"><div class="route-step"><strong>1</strong>Configure</div><div class="route-step"><strong>2</strong>Selecione</div><div class="route-step"><strong>3</strong>Abra a rota</div></div>
@@ -1602,6 +1605,7 @@
         const routeStatus = document.getElementById('routeStatus');
         const routeCompactSummary = document.getElementById('routeCompactSummary');
         const btnCollapseRoute = document.getElementById('btnCollapseRoute');
+        const btnCloseRoute = document.getElementById('btnCloseRoute');
         const ROUTE_PREFS_STORAGE_KEY = 'routePlannerPreferences';
 
         function loadRoutePreferences() {
@@ -3026,6 +3030,10 @@
         btnCollapseRoute.addEventListener('click', (event) => {
             event.stopPropagation();
             setRoutePanelCollapsed(!routePanel.classList.contains('collapsed'));
+        });
+        btnCloseRoute.addEventListener('click', event => {
+            event.stopPropagation();
+            cancelRoutePlanning();
         });
         routePanel.querySelector('.route-panel-header').addEventListener('click', () => {
             if (routePanel.classList.contains('collapsed')) setRoutePanelCollapsed(false);
