@@ -696,10 +696,31 @@
         .route-panel-footer { border-top: 1px solid #e5e7eb; padding-top: 7px; }
         .route-panel-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }
         .route-panel button { background-color: #e5e7eb; color: #333; border: none; padding: 8px; border-radius: 7px; cursor: pointer; font-size: 12px; }
-        .route-panel button:disabled { opacity: .55; cursor: wait; }
+        .route-panel button:disabled { opacity: .55; cursor: not-allowed; }
         .route-panel button#btnGenerateRoute { background-color: #1a73e8; color: white; font-weight: bold; grid-column: 1 / -1; }
         .route-panel button#btnOpenGoogleRoute { background-color: #34a853; color: white; font-weight: bold; }
         .route-marker-number { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #f7b731; color: #111827; border: 2px solid white; box-shadow: 0 1px 5px rgba(0,0,0,.5); font: bold 12px Arial; }
+        .route-panel { padding: 0; overflow: hidden; background: #f6f8fb; }
+        .route-panel-header { padding: 14px 16px; color: #fff; background: linear-gradient(135deg,#246aa8,#174774); }
+        .route-panel-heading { display: flex; align-items: center; gap: 10px; min-width: 0; }
+        .route-panel-heading img { width: 22px; height: 22px; padding: 7px; border-radius: 10px; background: rgba(255,255,255,.16); filter: brightness(0) invert(1); }
+        .route-panel h3 { color: #fff; }
+        .route-compact-summary { color: rgba(255,255,255,.82); }
+        .route-collapse-button { background: rgba(255,255,255,.16) !important; color: #fff !important; }
+        .route-panel-content { padding: 12px; overflow-y: auto; }
+        .route-steps { display: grid; grid-template-columns: repeat(3,1fr); gap: 5px; }
+        .route-step { padding: 6px 4px; border-radius: 7px; background: #e8eef5; color: #52677d; text-align: center; font-size: 9px; font-weight: 700; }
+        .route-step strong { display: inline-flex; width: 16px; height: 16px; margin-right: 3px; align-items: center; justify-content: center; border-radius: 50%; background: #246aa8; color: #fff; }
+        .route-selection-banner { padding: 9px 10px; border: 1px solid #b7d4ee; border-radius: 8px; background: #eaf5ff; color: #174f7e; font-size: 11px; font-weight: 700; }
+        .route-empty { justify-content: center !important; padding: 18px 8px !important; color: #78889a; text-align: center; font-size: 11px; }
+        .route-stop-actions { display: flex; gap: 3px; flex-shrink: 0; }
+        .route-stop-actions button { width: 25px; height: 25px; padding: 0 !important; border-radius: 6px !important; background: #edf1f5 !important; color: #44566a !important; font-size: 11px !important; }
+        .route-stop-actions .remove-wp { background: #fde8e8 !important; color: #a63232 !important; margin: 0; }
+        .route-counter-row { display: flex; justify-content: space-between; gap: 8px; color: #526275; font-size: 11px; }
+        .route-limited-label { margin-left: 4px; padding: 2px 5px; border-radius: 7px; background: #fff0d8; color: #8a5a16; font-size: 8px; text-transform: uppercase; }
+        .route-panel button#btnOpenGoogleRoute { grid-column: 1 / -1; padding: 10px; }
+        .route-panel button#btnGenerateRoute { grid-column: 1 / -1; background: #eef2f6; color: #31516e; border: 1px solid #d6e0e9; }
+        .route-panel button#btnReverseRoute { background: #edf2f7; color: #40566d; }
 
         /* Storage Menu */
         .storage-menu { width: 300px; padding: 15px; display: none; flex-direction: column; gap: 10px; }
@@ -985,14 +1006,11 @@
     
     <div class="route-panel" id="routePanel">
         <div class="route-panel-header">
-            <div class="route-panel-title">
-                <h3>Planejador inteligente</h3>
-                <div class="route-compact-summary" id="routeCompactSummary">Toque para abrir o planejamento</div>
-            </div>
+            <div class="route-panel-heading"><img src="ícones/route.svg" alt=""><div class="route-panel-title"><h3>Planejador inteligente</h3><div class="route-compact-summary" id="routeCompactSummary">Toque para abrir o planejamento</div></div></div>
             <button class="route-collapse-button" id="btnCollapseRoute" type="button" title="Minimizar planejador" aria-label="Minimizar planejador">⌃</button>
         </div>
         <div class="route-panel-content">
-            <p>Adicione até 10 pontos pelos marcadores ou pela busca. Com “Otimizar ordem” marcado, a rota também será reorganizada automaticamente antes de abrir no Google Maps.</p>
+            <div class="route-steps"><div class="route-step"><strong>1</strong>Configure</div><div class="route-step"><strong>2</strong>Selecione</div><div class="route-step"><strong>3</strong>Abra a rota</div></div>
             <div class="route-options">
                 <label class="route-field">Deslocamento
                     <select id="routeProfile">
@@ -1013,6 +1031,7 @@
                 <label><input id="routeOptimize" type="checkbox" checked> Otimizar ordem</label>
                 <label><input id="routeRoundTrip" type="checkbox"> Retornar à origem</label>
             </div>
+            <div class="route-selection-banner" id="routeSelectionBanner">Modo de seleção ativo — clique em um posto no mapa.</div>
             <ul id="routeList"></ul>
             <div class="route-summary" id="routeSummary">
                 <div><strong id="routeDistance">—</strong><small>Distância</small></div>
@@ -1020,11 +1039,12 @@
             </div>
             <div class="route-status" id="routeStatus">Selecione os pontos da rota.</div>
             <div class="route-panel-footer">
-                <span id="routeCounter">Pontos: 0 / 10</span>
+                <div class="route-counter-row"><span id="routeCounter">Pontos: 0 / 10</span><span id="routeRemaining">Restam 10</span></div>
                 <div class="route-panel-buttons">
                     <button id="btnCancelRoute">Limpar</button>
-                    <button id="btnOpenGoogleRoute">Google Maps</button>
-                    <button id="btnGenerateRoute">Calcular rota Mapbox</button>
+                    <button id="btnReverseRoute">Inverter ordem</button>
+                    <button id="btnOpenGoogleRoute">Abrir no Google Maps</button>
+                    <button id="btnGenerateRoute">Pré-visualizar rota <span class="route-limited-label">Mapbox limitado</span></button>
                 </div>
             </div>
         </div>
@@ -1567,8 +1587,10 @@
         const routePanel = document.getElementById('routePanel');
         const routeList = document.getElementById('routeList');
         const routeCounter = document.getElementById('routeCounter');
+        const routeRemaining = document.getElementById('routeRemaining');
         const btnGenerateRoute = document.getElementById('btnGenerateRoute');
         const btnCancelRoute = document.getElementById('btnCancelRoute');
+        const btnReverseRoute = document.getElementById('btnReverseRoute');
         const btnOpenGoogleRoute = document.getElementById('btnOpenGoogleRoute');
         const routeProfile = document.getElementById('routeProfile');
         const routeOrigin = document.getElementById('routeOrigin');
@@ -1580,6 +1602,30 @@
         const routeStatus = document.getElementById('routeStatus');
         const routeCompactSummary = document.getElementById('routeCompactSummary');
         const btnCollapseRoute = document.getElementById('btnCollapseRoute');
+        const ROUTE_PREFS_STORAGE_KEY = 'routePlannerPreferences';
+
+        function loadRoutePreferences() {
+            try {
+                const preferences = JSON.parse(localStorage.getItem(ROUTE_PREFS_STORAGE_KEY) || '{}');
+                if ([...routeProfile.options].some(option => option.value === preferences.profile)) routeProfile.value = preferences.profile;
+                if ([...routeOrigin.options].some(option => option.value === preferences.origin)) routeOrigin.value = preferences.origin;
+                if (typeof preferences.optimize === 'boolean') routeOptimize.checked = preferences.optimize;
+                if (typeof preferences.roundTrip === 'boolean') routeRoundTrip.checked = preferences.roundTrip;
+            } catch (error) {
+                console.warn('Não foi possível restaurar as preferências de rota.', error);
+            }
+        }
+
+        function saveRoutePreferences() {
+            localStorage.setItem(ROUTE_PREFS_STORAGE_KEY, JSON.stringify({
+                profile: routeProfile.value,
+                origin: routeOrigin.value,
+                optimize: routeOptimize.checked,
+                roundTrip: routeRoundTrip.checked
+            }));
+        }
+
+        loadRoutePreferences();
         
         const storageMenu = document.getElementById('storageMenu');
         const btnResetOfflineDB = document.getElementById('btnResetOfflineDB');
@@ -2961,9 +3007,17 @@
         btnRoutePlanner.addEventListener('click', (e) => { e.stopPropagation(); toggleRoutePlanning(); });
         btnGenerateRoute.addEventListener('click', calculateMapboxRoute);
         btnOpenGoogleRoute.addEventListener('click', generateGoogleMapsUrl);
-        btnCancelRoute.addEventListener('click', cancelRoutePlanning);
+        btnCancelRoute.addEventListener('click', clearRouteWaypoints);
+        btnReverseRoute.addEventListener('click', () => {
+            routeWaypoints.reverse();
+            routeRequestVersion++;
+            clearCalculatedRoute();
+            rebuildRouteMarkers();
+            updateRoutePanelUI();
+        });
         [routeProfile, routeOrigin, routeOptimize, routeRoundTrip].forEach(control => {
             control.addEventListener('change', () => {
+                saveRoutePreferences();
                 routeRequestVersion++;
                 clearCalculatedRoute();
                 updateRoutePanelUI();
@@ -4614,12 +4668,23 @@
 
         function updateRoutePanelUI() {
              routeList.innerHTML = '';
+             if (routeWaypoints.length === 0) {
+                 const empty = document.createElement('li');
+                 empty.className = 'route-empty';
+                 empty.textContent = 'Nenhuma parada selecionada. Clique em um posto no mapa para começar.';
+                 routeList.appendChild(empty);
+             }
              routeWaypoints.forEach((wp, i) => {
                  const li = document.createElement('li');
-                 li.innerHTML = `<span class="route-stop-number">${i + 1}</span><span title="${escapeHTML(wp.name)}">${escapeHTML(wp.name)}</span><button class="remove-wp" onclick="removeWaypoint(${i})">X</button>`;
+                 li.innerHTML = `<span class="route-stop-number">${i + 1}</span><span title="${escapeHTML(wp.name)}">${escapeHTML(wp.name)}</span><span class="route-stop-actions"><button class="move-up" title="Mover para cima" aria-label="Mover ${escapeHTML(wp.name)} para cima" ${i === 0 ? 'disabled' : ''}>↑</button><button class="move-down" title="Mover para baixo" aria-label="Mover ${escapeHTML(wp.name)} para baixo" ${i === routeWaypoints.length - 1 ? 'disabled' : ''}>↓</button><button class="remove-wp" title="Remover parada" aria-label="Remover ${escapeHTML(wp.name)}">×</button></span>`;
+                 li.querySelector('.move-up').addEventListener('click', () => moveWaypoint(i, -1));
+                 li.querySelector('.move-down').addEventListener('click', () => moveWaypoint(i, 1));
+                 li.querySelector('.remove-wp').addEventListener('click', () => removeWaypoint(i));
                  routeList.appendChild(li);
              });
              routeCounter.textContent = `Pontos: ${routeWaypoints.length} / ${MAX_WAYPOINTS}`;
+             const remaining = MAX_WAYPOINTS - routeWaypoints.length;
+             routeRemaining.textContent = `Restam ${remaining}`;
              if (!routeSummary.classList.contains('active')) {
                  routeCompactSummary.textContent = routeWaypoints.length
                      ? `${routeWaypoints.length} parada${routeWaypoints.length === 1 ? '' : 's'} • toque para abrir`
@@ -4628,6 +4693,21 @@
              const routeReady = hasMinimumRoutePoints();
              btnGenerateRoute.disabled = !routeReady;
              btnOpenGoogleRoute.disabled = !routeReady;
+             btnCancelRoute.disabled = routeWaypoints.length === 0;
+             btnReverseRoute.disabled = routeWaypoints.length < 2;
+             routeStatus.textContent = routeWaypoints.length === 0
+                 ? (routeOrigin.value === 'gps' ? 'Selecione pelo menos uma parada.' : 'Selecione pelo menos dois pontos.')
+                 : routeReady ? 'Pronto para calcular ou abrir no Google Maps.' : 'Adicione mais um ponto para montar a rota.';
+        }
+
+        function moveWaypoint(index, direction) {
+             const targetIndex = index + direction;
+             if (targetIndex < 0 || targetIndex >= routeWaypoints.length) return;
+             [routeWaypoints[index], routeWaypoints[targetIndex]] = [routeWaypoints[targetIndex], routeWaypoints[index]];
+             routeRequestVersion++;
+             clearCalculatedRoute();
+             rebuildRouteMarkers();
+             updateRoutePanelUI();
         }
         
         window.removeWaypoint = function(index) { 
@@ -4637,6 +4717,16 @@
              rebuildRouteMarkers();
              updateRoutePanelUI();
         };
+
+        function clearRouteWaypoints() {
+             routeRequestVersion++;
+             routeMarkers.forEach(marker => marker.remove());
+             routeMarkers = [];
+             routeWaypoints = [];
+             clearCalculatedRoute();
+             updateRoutePanelUI();
+             map.getCanvas().style.cursor = 'crosshair';
+        }
 
         function clearCalculatedRoute() {
              lastRouteCalculation = null;
@@ -4675,7 +4765,7 @@
         function getCurrentRoutePosition() {
              if (routeOrigin.value !== 'gps') return Promise.resolve(null);
              if (!navigator.geolocation) return Promise.reject(new Error('Geolocalização não suportada.'));
-             routeStatus.textContent = 'Obtendo sua localização…';
+             routeStatus.textContent = 'Aguardando autorização do GPS no navegador…';
              return new Promise((resolve, reject) => {
                  navigator.geolocation.getCurrentPosition(position => {
                      const coordinates = [position.coords.longitude, position.coords.latitude];
@@ -4743,8 +4833,10 @@
              const routeReady = hasMinimumRoutePoints();
              btnGenerateRoute.disabled = isBusy || !routeReady;
              btnOpenGoogleRoute.disabled = isBusy || !routeReady;
-             btnGenerateRoute.textContent = isBusy && action === 'mapbox' ? 'Calculando…' : 'Calcular rota Mapbox';
-             btnOpenGoogleRoute.textContent = isBusy && action === 'google' ? 'Preparando…' : 'Google Maps';
+             btnGenerateRoute.innerHTML = isBusy && action === 'mapbox'
+                 ? 'Calculando…'
+                 : 'Pré-visualizar rota <span class="route-limited-label">Mapbox limitado</span>';
+             btnOpenGoogleRoute.textContent = isBusy && action === 'google' ? 'Preparando…' : 'Abrir no Google Maps';
         }
 
         function buildRouteRequestSignature(points, {
@@ -4954,7 +5046,9 @@
                  const calculation = await requestMapboxRoute();
                  applyMapboxRouteResult(calculation);
              } catch (error) {
-                 routeStatus.textContent = error.message;
+                 routeStatus.textContent = error instanceof MapboxServiceError
+                     ? `Serviço Mapbox limitado: ${error.message}`
+                     : error.message;
                  routeStatus.classList.add('error');
              } finally {
                  setRouteActionsBusy(false);
