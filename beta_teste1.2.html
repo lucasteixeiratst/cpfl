@@ -427,7 +427,29 @@
             text-align: center;
         }
         .loaded-files-menu { width: 220px; padding: 10px; overflow-y: auto;}
-        .style-menu { width: 200px; padding: 10px; overflow-y: auto;}
+        .style-menu { width: 360px; padding: 0; overflow-y: auto; background: #f5f7fb; border: 1px solid rgba(49,91,145,.14); }
+        .style-menu-header { display: flex; align-items: center; gap: 12px; padding: 16px 18px; color: #fff; background: linear-gradient(135deg, #76529b, #49336b); }
+        .style-menu-header img { width: 24px; height: 24px; padding: 8px; border-radius: 11px; background: rgba(255,255,255,.16); filter: brightness(0) invert(1); }
+        .style-menu-header h3 { margin: 0; font-size: 17px; }
+        .style-menu-header p { margin: 3px 0 0; color: rgba(255,255,255,.78); font-size: 11px; }
+        .style-menu-status { min-height: 15px; padding: 8px 13px; border-bottom: 1px solid #e1e6ee; background: #fff; color: #687789; font-size: 10px; }
+        .style-menu-status.loading { color: #315b91; }
+        .style-menu-status.error { color: #a33b3b; background: #fff2f2; }
+        .style-list { max-height: 370px; padding: 8px 10px 11px !important; overflow-y: auto; }
+        .style-category { margin: 9px 3px 6px; color: #687789; font-size: 10px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; }
+        .style-card { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; padding: 9px !important; border: 1px solid #e0e5ec !important; border-radius: 10px; background: #fff; cursor: pointer; transition: border-color .15s, box-shadow .15s, transform .15s; }
+        .style-card:hover { transform: translateY(-1px); border-color: #b5a3cb !important; box-shadow: 0 4px 11px rgba(73,51,107,.1); background: #fff !important; }
+        .style-card.active { border-color: #76529b !important; box-shadow: 0 0 0 2px rgba(118,82,155,.12); }
+        .style-preview { width: 48px; height: 38px; flex: 0 0 auto; border-radius: 8px; border: 1px solid rgba(0,0,0,.1); }
+        .preview-streets { background: linear-gradient(145deg,#dbe8d2 0 35%,#fff 36% 48%,#bfd3e5 49% 62%,#f3d7a3 63%); }
+        .preview-satellite { background: linear-gradient(145deg,#183d2d,#476b38 45%,#7a6950 46% 60%,#274b37 61%); }
+        .preview-positron { background: linear-gradient(145deg,#f4f2ed,#e7ebed 55%,#fff 56% 68%,#dbe4e8 69%); }
+        .preview-dark { background: linear-gradient(145deg,#11151b,#29313b 55%,#52606d 56% 61%,#171c23 62%); }
+        .preview-voyager { background: linear-gradient(145deg,#e9f0d7,#f8edcf 42%,#fff 43% 51%,#b8dce7 52% 66%,#dbe8c8 67%); }
+        .style-card-main { min-width: 0; flex: 1; }
+        .style-card-name { display: flex; align-items: center; gap: 6px; color: #27384b; font-size: 12px; font-weight: 800; }
+        .style-card-description { margin-top: 3px; color: #718092; font-size: 10px; line-height: 1.25; }
+        .style-active-badge { padding: 2px 6px; border-radius: 8px; background: #eee7f5; color: #654389; font-size: 8px; text-transform: uppercase; }
         .marker-group-menu {
             width: 330px;
             padding: 0;
@@ -930,7 +952,9 @@
     </div>
 
     <div class="style-menu" id="styleMenu">
-        <ul id="styleList"></ul>
+        <div class="style-menu-header"><img src="ícones/palette.svg" alt=""><div><h3>Estilos do Mapa</h3><p>Escolha apenas a camada-base do mapa</p></div></div>
+        <div class="style-menu-status" id="styleMenuStatus">Mapa atual: Voyager</div>
+        <ul id="styleList" class="style-list"></ul>
     </div>
 
     <div class="marker-group-menu" id="markerGroupMenu">
@@ -1340,39 +1364,51 @@
             return response;
         }
 
+        const MAP_STYLE_STORAGE_KEY = 'selectedMapStyle';
+        let currentMapStyleKey = localStorage.getItem(MAP_STYLE_STORAGE_KEY) || 'voyager';
         const mapStyles = [
-            { name: 'Mapbox Streets', mapboxStyleId: 'streets-v12', attribution: '© Mapbox © OpenStreetMap' },
-            { name: 'Mapbox Satélite', mapboxStyleId: 'satellite-streets-v12', attribution: '© Mapbox © OpenStreetMap © Maxar' },
+            { key: 'mapbox-streets', name: 'Mapbox Streets', category: 'Ruas', preview: 'streets', description: 'Ruas detalhadas e pontos de interesse.', mapboxStyleId: 'streets-v12', attribution: '© Mapbox © OpenStreetMap' },
+            { key: 'mapbox-satellite', name: 'Mapbox Satélite', category: 'Satélite', preview: 'satellite', description: 'Imagem aérea com ruas e nomes.', mapboxStyleId: 'satellite-streets-v12', attribution: '© Mapbox © OpenStreetMap © Maxar' },
             {
+                key: 'positron',
                 name: 'Positron',
+                category: 'Ruas', preview: 'positron', description: 'Fundo claro, ideal para destacar a rede.',
                 rasterLayers: [{
                     tiles: ['https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png'],
                     attribution: '© CARTO © OpenStreetMap'
                 }]
             },
             {
+                key: 'dark-matter',
                 name: 'Dark Matter',
+                category: 'Especial', preview: 'dark', description: 'Tema escuro com alto contraste.',
                 rasterLayers: [{
                     tiles: ['https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png'],
                     attribution: '© CARTO © OpenStreetMap'
                 }]
             },
             {
+                key: 'voyager',
                 name: 'Voyager',
+                category: 'Ruas', preview: 'voyager', description: 'Mapa equilibrado para uso geral.',
                 rasterLayers: [{
                     tiles: ['https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png'],
                     attribution: '© CARTO © OpenStreetMap'
                 }]
             },
             {
-                name: 'Esri Satélite (Limpo)',
+                key: 'esri-clean',
+                name: 'Esri Satélite sem nomes',
+                category: 'Satélite', preview: 'satellite', description: 'Imagem aérea limpa, sem textos sobrepostos.',
                 rasterLayers: [{
                     tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
                     attribution: '© Esri, Maxar, Earthstar Geographics'
                 }]
             },
             {
-                name: 'Esri Satélite (Com Nomes)',
+                key: 'esri-labels',
+                name: 'Esri Satélite com ruas e nomes',
+                category: 'Satélite', preview: 'satellite', description: 'Imagem aérea com referências e transporte.',
                 rasterLayers: [
                     {
                         tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
@@ -1428,6 +1464,9 @@
 
             startMapboxCooldown(Number(statusMatch[1]));
             mapboxFallbackInProgress = true;
+            currentMapStyleKey = 'voyager';
+            localStorage.setItem(MAP_STYLE_STORAGE_KEY, currentMapStyleKey);
+            setStyleMenuStatus('Mapbox indisponível. Voyager foi ativado automaticamente.', 'error');
             activateRasterBasemap(mapStyles.find(style => style.name === 'Voyager'));
             map.once('idle', () => {
                 mapboxFallbackInProgress = false;
@@ -2773,6 +2812,16 @@
             toggleMarkerNamesVisibilityCheckbox.checked = state.namesVisible;
             toggleAllLinesVisibilityCheckbox.checked = state.linesVisible;
 
+            const savedMapStyle = mapStyles.find(style => style.key === currentMapStyleKey) || mapStyles.find(style => style.key === 'voyager');
+            currentMapStyleKey = savedMapStyle.key;
+            setStyleMenuStatus(`Mapa atual: ${savedMapStyle.name}`);
+            if (savedMapStyle.key !== 'voyager') {
+                setTimeout(() => {
+                    if (savedMapStyle.mapboxStyleId) activateMapboxStyle(savedMapStyle);
+                    else activateRasterBasemap(savedMapStyle);
+                }, 250);
+            }
+
             // --- INICIAR CARGA DINÂMICA SE ESTIVER MARCADO ---
             if (chkAutoLoad.checked) {
                 setTimeout(() => {
@@ -2973,8 +3022,7 @@
             const hasFiles = state.files.length > 0;
             const buttonsToHide = [
                 'btnMarkerGroups', 'btnLineGroups', 'btnTools',
-                'btnLocation', 'btnReset',
-                'btnStyles', 'btnRoutePlanner'
+                'btnLocation', 'btnReset', 'btnRoutePlanner'
             ];
             buttonsToHide.forEach(id => {
                 const btn = document.getElementById(id);
@@ -3914,7 +3962,31 @@
             if (map.getSource(MAPBOX_BASEMAP_SOURCE_ID)) map.removeSource(MAPBOX_BASEMAP_SOURCE_ID);
         }
 
+        function setStyleMenuStatus(message, type = '') {
+            const status = document.getElementById('styleMenuStatus');
+            if (!status) return;
+            status.textContent = message;
+            status.className = `style-menu-status${type ? ` ${type}` : ''}`;
+        }
+
+        function finishBasemapActivation(style) {
+            currentMapStyleKey = style.key;
+            localStorage.setItem(MAP_STYLE_STORAGE_KEY, currentMapStyleKey);
+            setStyleMenuStatus(`Mapa atual: ${style.name}`);
+            displayStyleList();
+        }
+
+        function waitForBasemap(style) {
+            setStyleMenuStatus(`Carregando ${style.name}...`, 'loading');
+            map.once('idle', () => {
+                finishBasemapActivation(style);
+                setTimeout(() => { styleMenu.style.display = 'none'; }, 350);
+            });
+        }
+
         function activateRasterBasemap(style) {
+            if (!style) return false;
+            waitForBasemap(style);
             clearRuntimeBasemap();
             const firstOperationalLayerId = getFirstOperationalLayerId();
 
@@ -3942,11 +4014,16 @@
             applyGroupFilter();
             toggleLines(state.linesVisible);
             ensureMarkerLayersOnTop();
+            return true;
         }
 
         function activateMapboxStyle(style) {
-            if (isMapboxCoolingDown()) return;
+            if (isMapboxCoolingDown()) {
+                setStyleMenuStatus('Mapbox temporariamente indisponível. Escolha outro mapa ou tente mais tarde.', 'error');
+                return false;
+            }
 
+            waitForBasemap(style);
             clearRuntimeBasemap();
 
             map.addSource(MAPBOX_BASEMAP_SOURCE_ID, {
@@ -3969,6 +4046,7 @@
 
             renderVisibleMarkersNow();
             ensureMarkerLayersOnTop();
+            return true;
         }
 
         function preserveOperationalStyle(previousStyle, nextStyle) {
@@ -4062,15 +4140,39 @@
         function displayStyleList() {
             const styleList = document.getElementById('styleList');
             styleList.innerHTML = '';
-            mapStyles.forEach(style => {
+            const categoryOrder = ['Ruas', 'Satélite', 'Especial'];
+            categoryOrder.forEach(category => {
+                const heading = document.createElement('li');
+                heading.className = 'style-category';
+                heading.textContent = category;
+                styleList.appendChild(heading);
+
+                mapStyles.filter(style => style.category === category).forEach(style => {
                 const li = document.createElement('li');
-                li.textContent = style.name;
-                li.addEventListener('click', () => {
+                li.className = 'style-card';
+                li.classList.toggle('active', style.key === currentMapStyleKey);
+                li.innerHTML = `<span class="style-preview preview-${style.preview}"></span><span class="style-card-main"><span class="style-card-name">${style.name}${style.key === currentMapStyleKey ? '<span class="style-active-badge">Atual</span>' : ''}</span><span class="style-card-description">${style.description}</span></span>`;
+                li.setAttribute('role', 'button');
+                li.setAttribute('tabindex', '0');
+                const selectStyle = () => {
+                    if (style.key === currentMapStyleKey) {
+                        setStyleMenuStatus(`Mapa atual: ${style.name}`);
+                        return;
+                    }
                     if (style.mapboxStyleId) activateMapboxStyle(style);
                     else activateRasterBasemap(style);
-                    styleMenu.style.display = 'none';
+                };
+                li.addEventListener('click', () => {
+                    selectStyle();
+                });
+                li.addEventListener('keydown', event => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        selectStyle();
+                    }
                 });
                 styleList.appendChild(li);
+                });
             });
         }
 
