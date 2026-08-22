@@ -575,9 +575,30 @@
             cursor: pointer;
         }
         
-        .tools-menu { width: 280px; gap: 15px; padding: 15px; overflow-y: auto;}
+        .tools-menu { width: 350px; padding: 0; overflow-y: auto; background: #f5f7fb; border: 1px solid rgba(42,77,122,.14); }
+        .tools-header { display: flex; align-items: center; gap: 12px; padding: 16px 18px; color: #fff; background: linear-gradient(135deg, #315b91, #203f6b); }
+        .tools-header img { width: 24px; height: 24px; padding: 8px; border-radius: 11px; background: rgba(255,255,255,.16); filter: brightness(0) invert(1); }
+        .tools-header h3 { margin: 0 !important; padding: 0 !important; border: 0 !important; color: #fff; text-align: left !important; font-size: 17px !important; }
+        .tools-header p { margin: 3px 0 0; color: rgba(255,255,255,.78); font-size: 11px; }
+        .tools-presets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 11px 12px; background: #fff; border-bottom: 1px solid #dde5ef; }
+        .tools-preset { padding: 7px 5px; border: 1px solid #cbd7e5; border-radius: 8px; background: #f7f9fc; color: #36516f; font-size: 11px; font-weight: 700; cursor: pointer; }
+        .tools-preset:hover, .tools-preset.active { border-color: #315b91; background: #e9f1fb; color: #214f86; }
+        .tools-section { margin: 10px 11px; padding: 12px; border: 1px solid #dfe6ef; border-radius: 11px; background: #fff; box-shadow: 0 2px 7px rgba(33,63,105,.05); }
+        .tools-section-title { margin: 0 0 10px; color: #263f5c; font-size: 11px; letter-spacing: .55px; text-transform: uppercase; }
+        .tools-switch-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #263f5c; font-size: 12px; font-weight: 700; }
+        .tools-help { display: block; margin-top: 7px; color: #6d7d8e; font-size: 10px; line-height: 1.35; }
+        .tool-slider { margin-top: 12px; }
+        .tool-slider:first-of-type { margin-top: 0; }
+        .tool-slider label { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #354b63; font-size: 12px; font-weight: 600; }
+        .tool-value { min-width: 42px; padding: 3px 7px; border-radius: 10px; background: #e9f1fb; color: #214f86; text-align: center; font-size: 10px; font-weight: 800; }
+        .tools-menu input[type="range"] { width: 100%; margin: 8px 0 0; accent-color: #315b91; }
+        .tool-slider.is-disabled { opacity: .45; }
+        .tools-load-all { width: 100%; margin-top: 11px; padding: 9px; border: 1px solid #c9d6e4; border-radius: 8px; background: #f5f8fc; color: #36516f; font-size: 11px; font-weight: 700; cursor: pointer; }
+        .tools-load-all:hover { background: #e9f1fb; border-color: #7898bd; }
+        .tools-footer-actions { display: flex; justify-content: flex-end; padding: 0 11px 12px; }
+        .tools-reset { border: 0; background: transparent; color: #66798d; font-size: 11px; text-decoration: underline; cursor: pointer; }
         
-        .tools-menu h3, .marker-group-menu h3, .loaded-files-menu h3, .storage-menu h3 { 
+        .marker-group-menu h3, .loaded-files-menu h3, .storage-menu h3 {
             margin: 0 0 10px 0; font-size: 16px; text-align: center; border-bottom: 1px solid #eee; padding-bottom: 5px; 
         }
 
@@ -856,40 +877,25 @@
     </div>
 
     <div class="tools-menu" id="toolsMenu">
-        <h3>Ferramentas de Visualização</h3>
-
-        <div class="tool-item" style="border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <label style="font-weight: bold; color: #4285F4;">Carga Dinâmica (Auto):</label>
-                <label class="switch">
-                    <input type="checkbox" id="chkAutoLoad" checked>
-                    <span class="slider round"></span>
-                </label>
-            </div>
-            <div style="margin-top: 8px;">
-                <label>Manter arquivos próximos: <span id="valAutoLoadLimit">4</span></label>
-                <input type="range" id="rngAutoLoadLimit" min="1" max="10" value="4" step="1">
-                <small style="color: #666; font-size: 10px; display: block; margin-top: 2px;">
-                    Carrega os mais próximos e remove os distantes automaticamente ao mover o mapa.
-                </small>
-            </div>
+        <div class="tools-header"><img src="ícones/settings.svg" alt=""><div><h3>Ferramentas de Visualização</h3><p>Ajuste desempenho e aparência do mapa</p></div></div>
+        <div class="tools-presets" aria-label="Perfis rápidos">
+            <button class="tools-preset" data-preset="light">Leve</button><button class="tools-preset" data-preset="balanced">Equilibrado</button><button class="tools-preset" data-preset="detailed">Detalhado</button>
         </div>
-        <div class="tool-item">
-            <label>Espessura da Linha: <span id="valLineWidth">4</span>px</label>
-            <input type="range" id="rngLineWidth" min="1" max="15" value="4">
-        </div>
-        <div class="tool-item">
-            <label>Tamanho do Marcador: <span id="valMarkerSize">6</span>px</label>
-            <input type="range" id="rngMarkerSize" min="2" max="20" value="6">
-        </div>
-        <div class="tool-item">
-            <label>Tamanho do Texto: <span id="valTextSize">12</span>px</label>
-            <input type="range" id="rngTextSize" min="8" max="24" value="12">
-        </div>
-        <div class="tool-item">
-            <label>Qtd. Marcadores: <span id="valMarkerLimit">500</span></label>
-            <input type="range" id="rngMarkerLimit" min="0" max="3000" value="500" step="50">
-        </div>
+        <section class="tools-section">
+            <h4 class="tools-section-title">Desempenho</h4>
+            <label class="tools-switch-row"><span>Carregar arquivos próximos automaticamente</span><span class="switch"><input type="checkbox" id="chkAutoLoad" checked><span class="slider round"></span></span></label>
+            <small class="tools-help">Mantém somente os arquivos próximos enquanto você movimenta o mapa.</small>
+            <div class="tool-slider" id="autoLoadLimitControl"><label><span>Arquivos próximos</span><span class="tool-value" id="valAutoLoadLimit">4</span></label><input type="range" id="rngAutoLoadLimit" min="1" max="10" value="4" step="1"></div>
+            <div class="tool-slider"><label><span>Limite de postos exibidos</span><span class="tool-value" id="valMarkerLimit">500</span></label><input type="range" id="rngMarkerLimit" min="0" max="3000" value="500" step="50"></div>
+            <button id="btnLoadAllOffline" class="tools-load-all">Carregar todos os arquivos offline</button>
+        </section>
+        <section class="tools-section">
+            <h4 class="tools-section-title">Aparência</h4>
+            <div class="tool-slider"><label><span>Espessura das linhas</span><span class="tool-value"><span id="valLineWidth">4</span> px</span></label><input type="range" id="rngLineWidth" min="1" max="15" value="4"></div>
+            <div class="tool-slider"><label><span>Tamanho dos marcadores</span><span class="tool-value"><span id="valMarkerSize">6</span> px</span></label><input type="range" id="rngMarkerSize" min="2" max="20" value="6"></div>
+            <div class="tool-slider"><label><span>Tamanho dos textos</span><span class="tool-value"><span id="valTextSize">12</span> px</span></label><input type="range" id="rngTextSize" min="8" max="24" value="12"></div>
+        </section>
+        <div class="tools-footer-actions"><button id="btnResetVisualTools" class="tools-reset">Restaurar padrões</button></div>
     </div>
 
     <div class="line-menu" id="lineMenu">
@@ -1457,6 +1463,65 @@
         const rngAutoLoadLimit = document.getElementById('rngAutoLoadLimit');
         const valAutoLoadLimit = document.getElementById('valAutoLoadLimit');
         const chkAutoLoad = document.getElementById('chkAutoLoad');
+        const autoLoadLimitControl = document.getElementById('autoLoadLimitControl');
+        const VISUAL_TOOLS_STORAGE_KEY = 'visualToolsSettings';
+        const visualToolDefaults = { autoLoad: true, autoLoadLimit: 4, lineWidth: 4, markerSize: 6, textSize: 12, markerLimit: 500 };
+        const visualToolPresets = {
+            light: { autoLoad: true, autoLoadLimit: 2, lineWidth: 3, markerSize: 5, textSize: 10, markerLimit: 250 },
+            balanced: { ...visualToolDefaults },
+            detailed: { autoLoad: true, autoLoadLimit: 7, lineWidth: 5, markerSize: 8, textSize: 14, markerLimit: 1500 }
+        };
+
+        function readVisualToolsSettings() {
+            try {
+                return { ...visualToolDefaults, ...JSON.parse(localStorage.getItem(VISUAL_TOOLS_STORAGE_KEY) || '{}') };
+            } catch (error) {
+                console.warn('Configurações visuais inválidas; usando padrões.', error);
+                return { ...visualToolDefaults };
+            }
+        }
+
+        function syncVisualToolsUI(settings = readVisualToolsSettings()) {
+            chkAutoLoad.checked = Boolean(settings.autoLoad);
+            rngAutoLoadLimit.value = settings.autoLoadLimit;
+            rngLineWidth.value = settings.lineWidth;
+            rngMarkerSize.value = settings.markerSize;
+            rngTextSize.value = settings.textSize;
+            rngMarkerLimit.value = settings.markerLimit;
+            valAutoLoadLimit.textContent = settings.autoLoadLimit;
+            valLineWidth.textContent = settings.lineWidth;
+            valMarkerSize.textContent = settings.markerSize;
+            valTextSize.textContent = settings.textSize;
+            valMarkerLimit.textContent = settings.markerLimit;
+            autoLoadLimitControl.classList.toggle('is-disabled', !settings.autoLoad);
+            rngAutoLoadLimit.disabled = !settings.autoLoad;
+            state.visualSettings = {
+                lineWidth: settings.lineWidth,
+                markerSize: settings.markerSize,
+                textSize: settings.textSize,
+                markerLimit: settings.markerLimit
+            };
+        }
+
+        function saveVisualToolsSettings() {
+            const settings = {
+                autoLoad: chkAutoLoad.checked,
+                autoLoadLimit: Number(rngAutoLoadLimit.value),
+                lineWidth: Number(rngLineWidth.value),
+                markerSize: Number(rngMarkerSize.value),
+                textSize: Number(rngTextSize.value),
+                markerLimit: Number(rngMarkerLimit.value)
+            };
+            localStorage.setItem(VISUAL_TOOLS_STORAGE_KEY, JSON.stringify(settings));
+            document.querySelectorAll('.tools-preset').forEach(button => {
+                const preset = visualToolPresets[button.dataset.preset];
+                const matches = Object.keys(preset).every(key => settings[key] === preset[key]);
+                button.classList.toggle('active', matches);
+            });
+            return settings;
+        }
+
+        syncVisualToolsUI();
 
         const btnRoutePlanner = document.getElementById('btnRoutePlanner');
         const routePanel = document.getElementById('routePanel');
@@ -2931,121 +2996,104 @@
         rngLineWidth.addEventListener('input', (e) => {
             valLineWidth.textContent = e.target.value;
             state.visualSettings.lineWidth = e.target.value;
+            saveVisualToolsSettings();
             updateMapVisuals();
         });
         rngMarkerSize.addEventListener('input', (e) => {
             valMarkerSize.textContent = e.target.value;
             state.visualSettings.markerSize = e.target.value;
+            saveVisualToolsSettings();
             updateMapVisuals();
         });
         rngTextSize.addEventListener('input', (e) => {
             valTextSize.textContent = e.target.value;
             state.visualSettings.textSize = e.target.value;
+            saveVisualToolsSettings();
             updateMapVisuals();
         });
         rngMarkerLimit.addEventListener('input', (e) => {
             valMarkerLimit.textContent = e.target.value;
             state.visualSettings.markerLimit = e.target.value;
+            saveVisualToolsSettings();
             updateVisibleMarkers(); 
         });
         
         // --- SPATIAL QUERYING EVENT LISTENERS ---
         rngAutoLoadLimit.addEventListener('input', (e) => {
             valAutoLoadLimit.textContent = e.target.value;
+            saveVisualToolsSettings();
             checkAndLoadNearestFiles();
         });
 
-        // --- CORREÇÃO DE PERFORMANCE: CARGA EM LOTE SUAVE ---
-        chkAutoLoad.addEventListener('change', async (e) => {
-            if(e.target.checked) {
-                // MODO ATIVADO: Limpa o excesso e foca nos próximos
-                alert("Modo Dinâmico Ativado: O sistema limpará arquivos distantes e carregará os próximos.");
-                checkAndLoadNearestFiles();
-            } else {
-                // MODO DESATIVADO: Carrega TUDO que está no cache
-                if(confirm("ATENÇÃO: Desativar a Carga Dinâmica pode deixar o mapa lento em dispositivos fracos.\n\nDeseja carregar TODOS os arquivos salvos agora?")) {
-                    
-                    const loadingMsg = document.getElementById('progressOverlay');
-                    const loadingText = document.getElementById('progressText');
-                    const loadingBar = document.getElementById('progressBar');
-                    
-                    loadingMsg.style.display = 'flex';
-                    loadingText.textContent = "Preparando...";
-                    loadingBar.style.width = "0%";
-
-                    // Trava processos concorrentes
-                    isProcessingBatch = true;
-
-                    try {
-                        const allCachedFiles = await getDataFromDB(GEOJSON_STORE_NAME);
-                        
-                        if (allCachedFiles && allCachedFiles.length > 0) {
-                            const total = allCachedFiles.length;
-                            let count = 0;
-
-                            // Função recursiva para processar um por vez sem travar o navegador
-                            function processNextBatch() {
-                                if (count >= total) {
-                                    // FINALIZADO: Atualiza a interface visual UMA VEZ SÓ no final
-                                    loadingText.textContent = "Finalizando renderização...";
-                                    
-                                    // Pequeno delay para garantir que o mapa recebeu os dados
-                                    setTimeout(() => {
-                                        updateGroupMenu();       
-                                        updateVisibleMarkers(); 
-                                        applyGroupFilter();      
-                                        
-                                        // Garante ordem das camadas (opcional, mas bom para visual)
-                                        if (map.getLayer('dynamic-marker-circles')) map.moveLayer('dynamic-marker-circles');
-                                        if (map.getLayer('dynamic-marker-labels')) map.moveLayer('dynamic-marker-labels');
-
-                                        isProcessingBatch = false;
-                                        loadingMsg.style.display = 'none';
-                                        alert("Todos os arquivos foram carregados.");
-                                    }, 500);
-                                    return;
-                                }
-
-                                // Processa o arquivo atual
-                                const fileData = allCachedFiles[count];
-                                
-                                // OTIMIZAÇÃO CRÍTICA: skipRender = true
-                                // Carregamos os dados no mapa, mas NÃO recalculamos marcadores nem menus ainda
-                                addDataToMap(fileData.geojson, fileData.name, true);
-
-                                const checkbox = document.querySelector(`input[value="${fileData.name}"]`);
-                                if(checkbox) checkbox.closest('li').classList.add('is-cached');
-
-                                // Atualiza barra de progresso
-                                count++;
-                                const percent = Math.round((count / total) * 100);
-                                loadingBar.style.width = `${percent}%`;
-                                loadingText.textContent = `Carregando ${count}/${total}: ${fileData.name}`;
-
-                                // Agenda o próximo para o próximo frame de animação (evita travamento)
-                                requestAnimationFrame(processNextBatch);
-                            }
-
-                            // Inicia o processo
-                            processNextBatch();
-
-                        } else {
-                            isProcessingBatch = false;
-                            loadingMsg.style.display = 'none';
-                            alert("Nenhum arquivo no cache para carregar.");
-                        }
-                    } catch (err) {
-                        console.error("Erro ao carregar tudo:", err);
-                        alert("Erro ao tentar carregar todos os arquivos.");
-                        isProcessingBatch = false;
-                        loadingMsg.style.display = 'none';
-                    }
-                } else {
-                    // Cancelou
-                    e.target.checked = true;
-                }
-            }
+        chkAutoLoad.addEventListener('change', e => {
+            autoLoadLimitControl.classList.toggle('is-disabled', !e.target.checked);
+            rngAutoLoadLimit.disabled = !e.target.checked;
+            saveVisualToolsSettings();
+            if (e.target.checked) checkAndLoadNearestFiles();
         });
+
+        async function loadAllOfflineFiles() {
+            if (!confirm('Carregar todos os arquivos offline no mapa? Isso pode reduzir o desempenho em dispositivos mais fracos.')) return;
+            const loadingMsg = document.getElementById('progressOverlay');
+            const loadingText = document.getElementById('progressText');
+            const loadingBar = document.getElementById('progressBar');
+            loadingMsg.style.display = 'flex';
+            loadingText.textContent = 'Preparando arquivos offline...';
+            loadingBar.style.width = '0%';
+            isProcessingBatch = true;
+
+            try {
+                const allCachedFiles = await getDataFromDB(GEOJSON_STORE_NAME);
+                if (!allCachedFiles || allCachedFiles.length === 0) {
+                    alert('Nenhum arquivo offline foi encontrado.');
+                    return;
+                }
+                for (let index = 0; index < allCachedFiles.length; index++) {
+                    const fileData = allCachedFiles[index];
+                    if (state.files.some(file => file.name === fileData.name)) removeFileFromMap(fileData.name, true);
+                    addDataToMap(fileData.geojson, fileData.name, true);
+                    const percent = Math.round(((index + 1) / allCachedFiles.length) * 100);
+                    loadingBar.style.width = `${percent}%`;
+                    loadingText.textContent = `Carregando ${index + 1}/${allCachedFiles.length}: ${fileData.name}`;
+                    await new Promise(resolve => requestAnimationFrame(resolve));
+                }
+                updateGroupMenu();
+                updateVisibleMarkers();
+                applyGroupFilter();
+                ensureMarkerLayersOnTop();
+                alert(`${allCachedFiles.length} arquivo(s) offline carregado(s) no mapa.`);
+            } catch (error) {
+                console.error('Erro ao carregar arquivos offline:', error);
+                alert('Não foi possível carregar todos os arquivos offline.');
+            } finally {
+                isProcessingBatch = false;
+                loadingMsg.style.display = 'none';
+            }
+        }
+
+        document.getElementById('btnLoadAllOffline').addEventListener('click', loadAllOfflineFiles);
+
+        document.querySelectorAll('.tools-preset').forEach(button => {
+            button.addEventListener('click', () => {
+                const settings = visualToolPresets[button.dataset.preset];
+                localStorage.setItem(VISUAL_TOOLS_STORAGE_KEY, JSON.stringify(settings));
+                syncVisualToolsUI(settings);
+                saveVisualToolsSettings();
+                updateMapVisuals();
+                updateVisibleMarkers();
+                if (settings.autoLoad) checkAndLoadNearestFiles();
+            });
+        });
+
+        document.getElementById('btnResetVisualTools').addEventListener('click', () => {
+            localStorage.setItem(VISUAL_TOOLS_STORAGE_KEY, JSON.stringify(visualToolDefaults));
+            syncVisualToolsUI(visualToolDefaults);
+            saveVisualToolsSettings();
+            updateMapVisuals();
+            updateVisibleMarkers();
+        });
+
+        saveVisualToolsSettings();
         
         let spatialQueryDebounce = null;
         map.on('moveend', () => {
@@ -4927,6 +4975,9 @@
             });
             button.addEventListener('mouseout', () => { 
                 globalTooltip.style.display = 'none'; 
+            });
+            button.addEventListener('click', () => {
+                globalTooltip.style.display = 'none';
             });
         });
     </script>
