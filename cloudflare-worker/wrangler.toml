@@ -1,0 +1,12 @@
+name = "cpfl-network-api"
+main = "src/index.js"
+compatibility_date = "2026-08-22"
+
+[[r2_buckets]]
+binding = "NETWORK_FILES"
+bucket_name = "cpfl-network-files"
+
+[vars]
+SUPABASE_URL = "https://sskhxmbigdcyeiivjzuj.supabase.co"
+SUPABASE_PUBLISHABLE_KEY = "sb_publishable_DKXLIGEI34sFR4pTDE-V6w_7-1cJ4aa"
+

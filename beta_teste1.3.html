@@ -820,6 +820,21 @@
         .youtube-percentage {
             position: fixed; top: 10px; right: 10px; color: #ff0000; font-weight: bold; font-size: 14px; z-index: 99999; display: none; text-shadow: 1px 1px 0 #fff;
         }
+        .cloud-menu { position:absolute; top:20px; left:80px; z-index:1100; width:350px; max-height:calc(100vh - 40px); overflow:auto; display:none; background:#f6f8fb; border:1px solid rgba(31,79,143,.16); border-radius:14px; box-shadow:0 12px 36px rgba(23,48,82,.22); }
+        .cloud-header { padding:16px 18px; color:#fff; background:linear-gradient(135deg,#315b91,#183b67); }
+        .cloud-header h3,.cloud-header p { margin:0; } .cloud-header p { margin-top:4px; font-size:11px; opacity:.8; }
+        .cloud-body { padding:14px; display:grid; gap:12px; }
+        .cloud-card { padding:12px; background:#fff; border:1px solid #dce4ee; border-radius:10px; display:grid; gap:9px; }
+        .cloud-card[hidden] { display:none !important; }
+        .cloud-card h4 { margin:0; font-size:13px; color:#274d7a; }
+        .cloud-card input,.cloud-card select { box-sizing:border-box; width:100%; padding:9px 10px; border:1px solid #cbd6e2; border-radius:8px; }
+        .cloud-actions { display:flex; gap:8px; flex-wrap:wrap; }
+        .cloud-actions button,.cloud-card>button { flex:1; min-width:105px; padding:9px; border:0; border-radius:8px; cursor:pointer; background:#e7edf5; color:#264b76; font-weight:600; }
+        .cloud-actions .primary { background:#315b91; color:#fff; } .cloud-actions .danger { background:#fff0f0; color:#a33b3b; }
+        .cloud-status { padding:9px 10px; border-radius:8px; background:#eaf1f8; color:#315b91; font-size:11px; line-height:1.35; }
+        .cloud-status.error { background:#fff0f0; color:#a33b3b; } .cloud-status.success { background:#eaf7ef; color:#277345; }
+        .cloud-user { font-size:12px; color:#536579; overflow-wrap:anywhere; }
+        @media (max-width:520px) { .cloud-menu { left:10px; top:70px; width:calc(100vw - 20px); max-height:calc(100vh - 140px); } }
     </style>
 
     <!-- Bibliotecas locais: mesma estrutura do arquivo original. -->
@@ -828,6 +843,7 @@
     <script src="./libs/maplibre-gl.js"></script>
     <script src="./libs/togeojson.umd.js"></script>
     <script src="./libs/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-G7MC2S78V6"></script>
     <script>
@@ -915,6 +931,11 @@
         <button id="btnStorageMenu" aria-label="Gerenciar Armazenamento">
             <img src="ícones/database-zap.svg" alt="Limpar Dados"> 
             <div class="button-legend">Armazenamento</div>
+        </button>
+
+        <button id="btnCloud" aria-label="Conta e sincronização na nuvem">
+            <img src="ícones/database-zap.svg" alt="Nuvem">
+            <div class="button-legend">Conta e Nuvem</div>
         </button>
 
         <button id="btnSupport" aria-label="Grupo de Suporte">
@@ -1106,6 +1127,29 @@
             <strong id="storageConfirmTitle">Confirmar ação</strong><p id="storageConfirmMessage"></p>
             <input id="storageConfirmInput" type="text" autocomplete="off" placeholder="Digite APAGAR para confirmar">
             <div class="storage-confirm-actions"><button id="btnStorageConfirmCancel">Cancelar</button><button id="btnStorageConfirmApply">Confirmar</button></div>
+        </div>
+    </div>
+    <div class="cloud-menu" id="cloudMenu">
+        <div class="cloud-header"><h3>Conta e Nuvem</h3><p>Supabase protegido por usuário</p></div>
+        <div class="cloud-body">
+            <div id="cloudStatus" class="cloud-status">Conectando ao Supabase…</div>
+            <div class="cloud-card" id="cloudAuthCard">
+                <h4>Entrar ou criar conta</h4>
+                <input id="cloudEmail" type="email" autocomplete="email" placeholder="Seu e-mail">
+                <input id="cloudPassword" type="password" autocomplete="current-password" minlength="6" placeholder="Senha (mínimo 6 caracteres)">
+                <div class="cloud-actions"><button id="btnCloudLogin" class="primary">Entrar</button><button id="btnCloudSignup">Criar conta</button></div>
+            </div>
+            <div class="cloud-card" id="cloudSessionCard" hidden>
+                <h4>Sessão conectada</h4><div id="cloudUser" class="cloud-user"></div>
+                <div class="cloud-actions"><button id="btnCloudSync" class="primary">Sincronizar agora</button><button id="btnCloudLogout" class="danger">Sair</button></div>
+            </div>
+            <div class="cloud-card" id="cloudRoutesCard" hidden>
+                <h4>Rotas salvas</h4>
+                <input id="cloudRouteName" type="text" maxlength="80" placeholder="Nome desta rota">
+                <div class="cloud-actions"><button id="btnCloudSaveRoute" class="primary">Salvar rota atual</button><button id="btnCloudRefreshRoutes">Atualizar lista</button></div>
+                <select id="cloudSavedRoutes"><option value="">Nenhuma rota carregada</option></select>
+                <button id="btnCloudLoadRoute">Abrir rota selecionada</button>
+            </div>
         </div>
     </div>
     <footer>
@@ -1670,6 +1714,7 @@
         loadRoutePreferences();
         
         const storageMenu = document.getElementById('storageMenu');
+        const cloudMenu = document.getElementById('cloudMenu');
         const btnResetOfflineDB = document.getElementById('btnResetOfflineDB');
         const btnResetLocalStorage = document.getElementById('btnResetLocalStorage');
         const btnResetAllStorage = document.getElementById('btnResetAllStorage');
@@ -2518,7 +2563,7 @@
         }
 
         map.on('click', (e) => { 
-            if (!e.originalEvent.target.closest('.menu, .search-bar, .search-results, .kmz-menu, .line-menu, .loaded-files-menu, .style-menu, .marker-group-menu, .maplibregl-popup, .route-panel, .storage-menu, .toggle-menu-btn, .tools-menu')) {
+            if (!e.originalEvent.target.closest('.menu, .search-bar, .search-results, .kmz-menu, .line-menu, .loaded-files-menu, .style-menu, .marker-group-menu, .maplibregl-popup, .route-panel, .storage-menu, .cloud-menu, .toggle-menu-btn, .tools-menu')) {
                 kmzMenu.style.display = 'none';
                 lineMenu.style.display = 'none';
                 loadedFilesMenu.style.display = 'none';
@@ -3101,6 +3146,7 @@
             storageMenu.scrollTop = 0;
             toggleVisibility(storageMenu);
         });
+        document.getElementById('btnCloud').addEventListener('click', (e) => { e.stopPropagation(); toggleVisibility(cloudMenu); });
         btnToggleUI.addEventListener('click', (e) => { e.stopPropagation(); mainMenu.classList.toggle('hidden'); });
         btnTools.addEventListener('click', (e) => { e.stopPropagation(); toggleVisibility(toolsMenu); });
 
@@ -3549,7 +3595,7 @@
         document.getElementById('btnSupport').addEventListener('click', (e) => { e.stopPropagation(); window.open('https://chat.whatsapp.com/KmBQvO3u5Pm53cV3XWz2dX', '_blank'); });
 
         function toggleVisibility(element) {
-            [kmzMenu, lineMenu, loadedFilesMenu, styleMenu, markerGroupMenu, routePanel, storageMenu, toolsMenu].forEach(menu => {
+            [kmzMenu, lineMenu, loadedFilesMenu, styleMenu, markerGroupMenu, routePanel, storageMenu, toolsMenu, cloudMenu].forEach(menu => {
                 if (menu !== element) {
                     if (menu === routePanel && state.isRoutePlanning) {} else { menu.style.display = 'none'; }
                 }
@@ -5412,6 +5458,116 @@
                  setRouteActionsBusy(false);
              }
         }
+
+        // --- CONTA, SINCRONIZAÇÃO E ROTAS NA NUVEM (SUPABASE) ---
+        const SUPABASE_URL = 'https://sskhxmbigdcyeiivjzuj.supabase.co';
+        const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_DKXLIGEI34sFR4pTDE-V6w_7-1cJ4aa';
+        const CLOUD_LOCAL_KEYS = ['markerGroupColors', 'groupColorMap', MAP_STYLE_STORAGE_KEY, VISUAL_TOOLS_STORAGE_KEY, ROUTE_PREFS_STORAGE_KEY];
+        const supabaseClient = window.supabase?.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+            auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+        });
+        let cloudUser = null;
+        let cloudSavedRoutes = [];
+
+        function setCloudStatus(message, type = '') {
+            const element = document.getElementById('cloudStatus');
+            element.textContent = message;
+            element.className = `cloud-status${type ? ` ${type}` : ''}`;
+        }
+
+        function collectCloudPreferences() {
+            const values = {};
+            CLOUD_LOCAL_KEYS.forEach(key => { const value = localStorage.getItem(key); if (value !== null) values[key] = value; });
+            values.markersVisible = state.markersVisible;
+            values.namesVisible = state.namesVisible;
+            values.linesVisible = state.linesVisible;
+            return values;
+        }
+
+        async function saveCloudPreferences(silent = false) {
+            if (!cloudUser || !supabaseClient) return;
+            const { error } = await supabaseClient.from('user_preferences').upsert({ user_id: cloudUser.id, preferences: collectCloudPreferences() });
+            if (error) throw error;
+            if (!silent) setCloudStatus('Preferências sincronizadas com segurança.', 'success');
+        }
+
+        async function restoreCloudPreferences() {
+            if (!cloudUser || !supabaseClient) return;
+            const { data, error } = await supabaseClient.from('user_preferences').select('preferences').eq('user_id', cloudUser.id).maybeSingle();
+            if (error) throw error;
+            if (!data?.preferences) { await saveCloudPreferences(true); return; }
+            CLOUD_LOCAL_KEYS.forEach(key => {
+                if (typeof data.preferences[key] === 'string') localStorage.setItem(key, data.preferences[key]);
+            });
+            if (!sessionStorage.getItem(`cloud_preferences_loaded_${cloudUser.id}`)) {
+                sessionStorage.setItem(`cloud_preferences_loaded_${cloudUser.id}`, '1');
+                location.reload();
+            }
+        }
+
+        async function refreshCloudRoutes() {
+            if (!cloudUser || !supabaseClient) return;
+            const { data, error } = await supabaseClient.from('saved_routes').select('id,name,waypoints,settings,updated_at').order('updated_at', { ascending:false });
+            if (error) throw error;
+            cloudSavedRoutes = data || [];
+            const select = document.getElementById('cloudSavedRoutes');
+            select.innerHTML = cloudSavedRoutes.length ? '<option value="">Escolha uma rota salva</option>' : '<option value="">Nenhuma rota salva</option>';
+            cloudSavedRoutes.forEach(route => {
+                const option = document.createElement('option'); option.value = route.id; option.textContent = route.name; select.appendChild(option);
+            });
+        }
+
+        async function updateCloudSession(user) {
+            cloudUser = user || null;
+            document.getElementById('cloudAuthCard').hidden = Boolean(cloudUser);
+            document.getElementById('cloudSessionCard').hidden = !cloudUser;
+            document.getElementById('cloudRoutesCard').hidden = !cloudUser;
+            document.getElementById('cloudUser').textContent = cloudUser?.email || '';
+            if (!cloudUser) { setCloudStatus('Entre para sincronizar preferências e rotas.'); return; }
+            setCloudStatus('Conta conectada. Sincronizando…');
+            try { await restoreCloudPreferences(); await refreshCloudRoutes(); setCloudStatus('Nuvem pronta e protegida por usuário.', 'success'); }
+            catch (error) { console.error(error); setCloudStatus(`Falha na sincronização: ${error.message}`, 'error'); }
+        }
+
+        async function cloudAuth(mode) {
+            if (!supabaseClient) return setCloudStatus('Biblioteca do Supabase não carregou. Verifique a internet.', 'error');
+            const email = document.getElementById('cloudEmail').value.trim();
+            const password = document.getElementById('cloudPassword').value;
+            if (!email || password.length < 6) return setCloudStatus('Informe e-mail e senha com pelo menos 6 caracteres.', 'error');
+            setCloudStatus(mode === 'signup' ? 'Criando conta…' : 'Entrando…');
+            const result = mode === 'signup'
+                ? await supabaseClient.auth.signUp({ email, password, options:{ emailRedirectTo: location.href.split('#')[0] } })
+                : await supabaseClient.auth.signInWithPassword({ email, password });
+            if (result.error) return setCloudStatus(result.error.message, 'error');
+            if (mode === 'signup' && !result.data.session) setCloudStatus('Conta criada. Confirme o link enviado ao seu e-mail.', 'success');
+        }
+
+        document.getElementById('btnCloudLogin').addEventListener('click', () => cloudAuth('login'));
+        document.getElementById('btnCloudSignup').addEventListener('click', () => cloudAuth('signup'));
+        document.getElementById('btnCloudLogout').addEventListener('click', async () => { await supabaseClient?.auth.signOut(); });
+        document.getElementById('btnCloudSync').addEventListener('click', async () => { try { await saveCloudPreferences(); } catch(error) { setCloudStatus(error.message, 'error'); } });
+        document.getElementById('btnCloudRefreshRoutes').addEventListener('click', async () => { try { await refreshCloudRoutes(); setCloudStatus('Lista de rotas atualizada.', 'success'); } catch(error) { setCloudStatus(error.message, 'error'); } });
+        document.getElementById('btnCloudSaveRoute').addEventListener('click', async () => {
+            if (!cloudUser) return setCloudStatus('Entre antes de salvar uma rota.', 'error');
+            if (!routeWaypoints.length) return setCloudStatus('Adicione pelo menos uma parada à rota.', 'error');
+            const name = document.getElementById('cloudRouteName').value.trim() || `Rota ${new Date().toLocaleDateString('pt-BR')}`;
+            const settings = { profile:routeProfile.value, origin:routeOrigin.value, optimize:routeOptimize.checked, roundTrip:routeRoundTrip.checked };
+            const { error } = await supabaseClient.from('saved_routes').insert({ user_id:cloudUser.id, name, waypoints:routeWaypoints, settings });
+            if (error) return setCloudStatus(error.message, 'error');
+            document.getElementById('cloudRouteName').value = ''; await refreshCloudRoutes(); setCloudStatus('Rota salva na nuvem.', 'success');
+        });
+        document.getElementById('btnCloudLoadRoute').addEventListener('click', () => {
+            const route = cloudSavedRoutes.find(item => item.id === document.getElementById('cloudSavedRoutes').value);
+            if (!route) return setCloudStatus('Escolha uma rota salva.', 'error');
+            routeWaypoints = Array.isArray(route.waypoints) ? route.waypoints : [];
+            if (route.settings) { routeProfile.value=route.settings.profile||routeProfile.value; routeOrigin.value=route.settings.origin||routeOrigin.value; routeOptimize.checked=route.settings.optimize!==false; routeRoundTrip.checked=Boolean(route.settings.roundTrip); }
+            rebuildRouteMarkers(); clearCalculatedRoute(); updateRoutePanelUI(); state.isRoutePlanning=true; routePanel.style.display='flex'; setRoutePanelCollapsed(false); cloudMenu.style.display='none';
+        });
+        if (supabaseClient) {
+            supabaseClient.auth.getSession().then(({data}) => updateCloudSession(data.session?.user));
+            supabaseClient.auth.onAuthStateChange((_event, session) => setTimeout(() => updateCloudSession(session?.user), 0));
+            window.addEventListener('beforeunload', () => { if (cloudUser) saveCloudPreferences(true).catch(() => {}); });
+        } else setCloudStatus('Supabase indisponível. O mapa local continua funcionando.', 'error');
 
         // Tooltip global para evitar problemas de sobreposição/corte na barra de rolagem
         const globalTooltip = document.createElement('div');
