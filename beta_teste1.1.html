@@ -886,11 +886,49 @@
         const mapStyles = [
             { name: 'Mapbox Streets', mapboxStyleId: 'streets-v12', attribution: '© Mapbox © OpenStreetMap' },
             { name: 'Mapbox Satélite', mapboxStyleId: 'satellite-streets-v12', attribution: '© Mapbox © OpenStreetMap © Maxar' },
-            { name: 'Positron', url: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json' },
-            { name: 'Dark Matter', url: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json' },
-            { name: 'Voyager', url: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json' },
-            { name: 'Esri Satélite (Limpo)', style: esriSatelliteCleanStyle },
-            { name: 'Esri Satélite (Com Nomes)', style: esriSatelliteHybridStyle }
+            {
+                name: 'Positron',
+                rasterLayers: [{
+                    tiles: ['https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png'],
+                    attribution: '© CARTO © OpenStreetMap'
+                }]
+            },
+            {
+                name: 'Dark Matter',
+                rasterLayers: [{
+                    tiles: ['https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png'],
+                    attribution: '© CARTO © OpenStreetMap'
+                }]
+            },
+            {
+                name: 'Voyager',
+                rasterLayers: [{
+                    tiles: ['https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png'],
+                    attribution: '© CARTO © OpenStreetMap'
+                }]
+            },
+            {
+                name: 'Esri Satélite (Limpo)',
+                rasterLayers: [{
+                    tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+                    attribution: '© Esri, Maxar, Earthstar Geographics'
+                }]
+            },
+            {
+                name: 'Esri Satélite (Com Nomes)',
+                rasterLayers: [
+                    {
+                        tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+                        attribution: '© Esri, Maxar, Earthstar Geographics'
+                    },
+                    {
+                        tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}']
+                    },
+                    {
+                        tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}']
+                    }
+                ]
+            }
         ];
 
         const colorPalette = ['#FF6347', '#4682B4', '#B0E0E6', '#FFD700', '#5F9EA0', '#F0E68C', '#F08080', '#20B2AA', '#ADD8E6', '#FFA07A', '#87CEEB', '#E6E6FA', '#FF7F50', '#6A5ACD', '#FFFACD', '#E55300', '#483D8B', '#DDA0DD', '#D4A29C', '#008080', '#87CEFA', '#C46210', '#53736F', '#98FB98', '#F4A460', '#3B83BD', '#FFB6C1', '#FF4500', '#33A1C9', '#F5DEB3'];
@@ -933,7 +971,7 @@
 
             startMapboxCooldown(Number(statusMatch[1]));
             mapboxFallbackInProgress = true;
-            changeMapStyle('https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json');
+            activateRasterBasemap(mapStyles.find(style => style.name === 'Voyager'));
             map.once('idle', () => {
                 mapboxFallbackInProgress = false;
             });
@@ -1245,56 +1283,53 @@
             if (map.getLayer('dynamic-marker-labels')) map.moveLayer('dynamic-marker-labels');
         }
 
+        function getVisibleMarkerGeoJSON() {
+            const visibleGroups = Object.keys(state.markerGroups).filter(group => state.markerGroups[group].visible);
+            const activeFileNames = new Set(
+                state.files.filter(file => file.visible !== false).map(file => file.name)
+            );
+
+            if (visibleGroups.length === 0 || activeFileNames.size === 0) {
+                return { type: 'FeatureCollection', features: [] };
+            }
+
+            const mapCenter = map.getCenter();
+            const centerLng = mapCenter.lng;
+            const centerLat = mapCenter.lat;
+            const limit = parseInt(state.visualSettings.markerLimit);
+
+            const features = allPointFeatures
+                .filter(feature =>
+                    visibleGroups.includes(feature.properties.group)
+                    && activeFileNames.has(feature.properties.fileName)
+                )
+                .map(feature => {
+                    const coordinates = feature.geometry?.coordinates;
+                    if (!Array.isArray(coordinates) || coordinates.length < 2) {
+                        return { feature, distSq: Infinity };
+                    }
+                    const distSq = (coordinates[0] - centerLng) ** 2 + (coordinates[1] - centerLat) ** 2;
+                    return { feature, distSq };
+                })
+                .sort((a, b) => a.distSq - b.distSq)
+                .slice(0, limit)
+                .map(item => item.feature);
+
+            return { type: 'FeatureCollection', features };
+        }
+
+        function renderVisibleMarkersNow() {
+            ensureOperationalSourcesAndLayers();
+            dynamicMarkerSource = map.getSource('dynamic-markers');
+            if (!dynamicMarkerSource) return;
+
+            dynamicMarkerSource.setData(getVisibleMarkerGeoJSON());
+            ensureMarkerLayersOnTop();
+        }
+
         function updateVisibleMarkers() {
             if (debounceTimer) clearTimeout(debounceTimer);
-
-            debounceTimer = setTimeout(() => {
-                if (!dynamicMarkerSource) return;
-                
-                // Se o mapa estiver se movendo, não atualize ainda para não travar
-                if (map.isMoving()) {
-                    updateVisibleMarkers();
-                    return;
-                }
-
-                const visibleGroups = Object.keys(state.markerGroups).filter(g => state.markerGroups[g].visible);
-                
-                // --- NOVIDADE: VERIFICA SE O ARQUIVO ESTÁ "LIGADO" NO MENU ---
-                const activeFileNames = state.files.filter(f => f.visible !== false).map(f => f.name);
-
-                if (visibleGroups.length === 0 || activeFileNames.length === 0) {
-                    dynamicMarkerSource.setData({ type: 'FeatureCollection', features: [] });
-                    return;
-                }
-
-                const mapCenter = map.getCenter();
-                const centerLng = mapCenter.lng;
-                const centerLat = mapCenter.lat;
-                const limit = parseInt(state.visualSettings.markerLimit);
-                
-                const sortedFeatures = allPointFeatures
-                    // Mesma seleção do arquivo original: grupo e arquivo visíveis.
-                    .filter(feature => visibleGroups.includes(feature.properties.group) && activeFileNames.includes(feature.properties.fileName))
-                    .map(feature => {
-                        if (!feature.geometry || !Array.isArray(feature.geometry.coordinates) || feature.geometry.coordinates.length < 2) {
-                             return { feature, distSq: Infinity };
-                        }
-                        const coord = feature.geometry.coordinates;
-                        const distSq = (coord[0] - centerLng) ** 2 + (coord[1] - centerLat) ** 2;
-                        return { feature, distSq }; 
-                    })
-                    .sort((a, b) => a.distSq - b.distSq)
-                    .slice(0, limit)
-                    .map(item => item.feature);
-
-                const geojson = {
-                    type: 'FeatureCollection',
-                    features: sortedFeatures
-                };
-                
-                dynamicMarkerSource.setData(geojson);
-                ensureMarkerLayersOnTop();
-            }, 200); // Mesmo atraso do arquivo original.
+            debounceTimer = setTimeout(renderVisibleMarkersNow, 200);
         }
         
         // --- FUNÇÃO MESTRA DO PIPELINE ÚNICO ---
@@ -3166,11 +3201,71 @@
         
         function resetView() { map.easeTo({ center: [-47.068847, -22.934973], zoom: 11 }); }
 
-        function activateMapboxStyle(style) {
-            if (isMapboxCoolingDown()) return;
+        function getFirstOperationalLayerId() {
+            const operationalLayerIds = new Set([
+                'planned-route-outline',
+                'planned-route-line',
+                'dynamic-marker-circles',
+                'dynamic-marker-labels'
+            ]);
+            return (map.getStyle().layers || []).find(layer =>
+                operationalLayerIds.has(layer.id) || layer.id.startsWith('lines-source-')
+            )?.id;
+        }
+
+        function clearRuntimeBasemap() {
+            const runtimeLayers = (map.getStyle().layers || [])
+                .filter(layer => layer.id.startsWith('runtime-basemap-layer-'))
+                .map(layer => layer.id)
+                .reverse();
+            runtimeLayers.forEach(layerId => {
+                if (map.getLayer(layerId)) map.removeLayer(layerId);
+            });
+
+            Object.keys(map.getStyle().sources || {})
+                .filter(sourceId => sourceId.startsWith('runtime-basemap-source-'))
+                .forEach(sourceId => {
+                    if (map.getSource(sourceId)) map.removeSource(sourceId);
+                });
 
             if (map.getLayer(MAPBOX_BASEMAP_LAYER_ID)) map.removeLayer(MAPBOX_BASEMAP_LAYER_ID);
             if (map.getSource(MAPBOX_BASEMAP_SOURCE_ID)) map.removeSource(MAPBOX_BASEMAP_SOURCE_ID);
+        }
+
+        function activateRasterBasemap(style) {
+            clearRuntimeBasemap();
+            const firstOperationalLayerId = getFirstOperationalLayerId();
+
+            style.rasterLayers.forEach((rasterLayer, index) => {
+                const sourceId = `runtime-basemap-source-${index}`;
+                const layerId = `runtime-basemap-layer-${index}`;
+
+                map.addSource(sourceId, {
+                    type: 'raster',
+                    tiles: rasterLayer.tiles,
+                    tileSize: 256,
+                    maxzoom: 22,
+                    attribution: rasterLayer.attribution || ''
+                });
+                map.addLayer({
+                    id: layerId,
+                    type: 'raster',
+                    source: sourceId,
+                    minzoom: 0,
+                    maxzoom: 24
+                }, firstOperationalLayerId);
+            });
+
+            renderVisibleMarkersNow();
+            applyGroupFilter();
+            toggleLines(state.linesVisible);
+            ensureMarkerLayersOnTop();
+        }
+
+        function activateMapboxStyle(style) {
+            if (isMapboxCoolingDown()) return;
+
+            clearRuntimeBasemap();
 
             map.addSource(MAPBOX_BASEMAP_SOURCE_ID, {
                 type: 'raster',
@@ -3182,25 +3277,51 @@
                 attribution: style.attribution
             });
 
-            const operationalLayerIds = new Set([
-                'planned-route-outline',
-                'planned-route-line',
-                'dynamic-marker-circles',
-                'dynamic-marker-labels'
-            ]);
-            const firstOperationalLayer = (map.getStyle().layers || []).find(layer =>
-                operationalLayerIds.has(layer.id) || layer.id.startsWith('lines-source-')
-            );
-
             map.addLayer({
                 id: MAPBOX_BASEMAP_LAYER_ID,
                 type: 'raster',
                 source: MAPBOX_BASEMAP_SOURCE_ID,
                 minzoom: 0,
                 maxzoom: 24
-            }, firstOperationalLayer ? firstOperationalLayer.id : undefined);
+            }, getFirstOperationalLayerId());
 
+            renderVisibleMarkersNow();
             ensureMarkerLayersOnTop();
+        }
+
+        function preserveOperationalStyle(previousStyle, nextStyle) {
+            if (!previousStyle || !nextStyle) return nextStyle;
+
+            const isOperationalLayer = layer => layer && (
+                layer.id === 'dynamic-marker-circles'
+                || layer.id === 'dynamic-marker-labels'
+                || layer.id === 'planned-route-outline'
+                || layer.id === 'planned-route-line'
+                || layer.id.startsWith('lines-source-')
+            );
+
+            const operationalSourceIds = new Set([
+                'dynamic-markers',
+                'planned-route',
+                ...state.files
+                    .filter(file => file.hasLines)
+                    .map(file => `${file.sourceId}-lines`)
+            ]);
+
+            nextStyle.sources = nextStyle.sources || {};
+            operationalSourceIds.forEach(sourceId => {
+                if (previousStyle.sources?.[sourceId]) {
+                    nextStyle.sources[sourceId] = previousStyle.sources[sourceId];
+                }
+            });
+
+            const operationalLayers = (previousStyle.layers || []).filter(isOperationalLayer);
+            nextStyle.layers = [
+                ...(nextStyle.layers || []).filter(layer => !isOperationalLayer(layer)),
+                ...operationalLayers
+            ];
+
+            return nextStyle;
         }
 
         function changeMapStyle(newStyleUrlOrObject) {
@@ -3238,7 +3359,9 @@
                 if (calculatedRouteGeoJSON) drawCalculatedRoute(calculatedRouteGeoJSON.geometry, false);
                 ensureMarkerLayersOnTop();
 
-                updateVisibleMarkers();
+                // Os dados KMZ permanecem no estado da aplicação e são
+                // reaplicados imediatamente sobre a nova camada-base.
+                renderVisibleMarkersNow();
                 applyGroupFilter();
                 toggleLines(state.linesVisible);
                 if (map.getLayer('dynamic-marker-circles')) {
@@ -3249,7 +3372,9 @@
                 }
             });
 
-            map.setStyle(newStyleUrlOrObject);
+            map.setStyle(newStyleUrlOrObject, {
+                transformStyle: preserveOperationalStyle
+            });
         }
 
         function displayStyleList() {
@@ -3260,7 +3385,7 @@
                 li.textContent = style.name;
                 li.addEventListener('click', () => {
                     if (style.mapboxStyleId) activateMapboxStyle(style);
-                    else changeMapStyle(style.url || style.style);
+                    else activateRasterBasemap(style);
                     styleMenu.style.display = 'none';
                 });
                 styleList.appendChild(li);
