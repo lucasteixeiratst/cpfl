@@ -803,10 +803,6 @@
             <img src="ícones/rotate-cw.svg" alt="Resetar Visão">
             <div class="button-legend">Resetar Visão</div>
         </button>
-        <button id="btnLoadedFiles" aria-label="Ver arquivos carregados atualmente">
-            <img src="ícones/folder-open.svg" alt="Arquivos Carregados">
-            <div class="button-legend">Arquivos Carregados</div>
-        </button>
         <button id="btnStyles" aria-label="Mudar o estilo do mapa">
             <img src="ícones/palette.svg" alt="Estilos do Mapa">
             <div class="button-legend">Estilos do Mapa</div>
@@ -1440,7 +1436,6 @@
         const lineGroupsList = document.getElementById('lineGroupsList');
         const loadedFilesMenu = document.getElementById('loadedFilesMenu');
         const loadedFilesList = document.getElementById('loadedFilesList');
-        const btnLoadedFiles = document.getElementById('btnLoadedFiles');
         const styleMenu = document.getElementById('styleMenu');
         const markerGroupMenu = document.getElementById('markerGroupMenu');
         const markerGroupsList = document.getElementById('markerGroupsList');
@@ -2838,7 +2833,6 @@
                 toggleVisibility(lineMenu);
             }
         });
-        btnLoadedFiles.addEventListener('click', (e) => { e.stopPropagation(); toggleVisibility(loadedFilesMenu); });
         document.getElementById('btnSearch').addEventListener('click', searchFeatures);
         document.getElementById('btnAddressSearch').addEventListener('click', searchMapboxAddress);
         
@@ -2914,7 +2908,7 @@
             const hasFiles = state.files.length > 0;
             const buttonsToHide = [
                 'btnMarkerGroups', 'btnLineGroups', 'btnTools',
-                'btnLocation', 'btnReset', 'btnLoadedFiles', 
+                'btnLocation', 'btnReset',
                 'btnStyles', 'btnRoutePlanner'
             ];
             buttonsToHide.forEach(id => {
